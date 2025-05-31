@@ -1,0 +1,35 @@
+<div class="grid">
+  <div class="col-12">
+      <p-tabView [(activeIndex)]="activeTabIndex">
+        <p-tabPanel header="Overall">
+          <ng-container *featureFlag="'dashboard-overall'">
+            <app-overall></app-overall>
+          </ng-container>
+        </p-tabPanel>
+
+        <p-tabPanel header="Today">
+          <ng-container *featureFlag="'dashboard-today'">
+            <app-today></app-today>
+          </ng-container>
+        </p-tabPanel>
+
+        <p-tabPanel header="This Week">
+          <ng-container *featureFlag="'dashboard-week'">
+            <app-this-week></app-this-week>
+          </ng-container>
+        </p-tabPanel>
+
+        <p-tabPanel header="This Month">
+          <ng-container *featureFlag="'dashboard-month'">
+            <app-this-month></app-this-month>
+          </ng-container>
+        </p-tabPanel>
+
+        <p-tabPanel header="This Year">
+          <ng-container *featureFlag="'dashboard-year'">
+            <app-this-year></app-this-year>
+          </ng-container>
+        </p-tabPanel>
+      </p-tabView>
+  </div>
+</div>

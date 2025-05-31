@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
+    <!-- 
+        This file is used to suppress false positives in the OWASP dependency check.
+        Add suppressions in the following format:
+        
+        <suppress>
+            <notes>Reason for suppression</notes>
+            <gav regex="true">groupId:artifactId:version</gav>
+            <cve>CVE-YYYY-XXXXX</cve>
+        </suppress>
+        
+        You can also suppress by CPE:
+        <suppress>
+            <notes>Reason for suppression</notes>
+            <cpe>cpe:/a:apache:tomcat:7.0.0</cpe>
+        </suppress>
+        
+        Or by file path:
+        <suppress>
+            <notes>Reason for suppression</notes>
+            <filePath regex="true">.*\bsome-file.jar</filePath>
+            <cve>CVE-YYYY-XXXXX</cve>
+        </suppress>
+    -->
+    
+    <!-- Example suppression (remove or replace with actual suppressions as needed) -->
+    <!--
+    <suppress>
+        <notes>This CVE is not applicable because we're not using the affected functionality</notes>
+        <gav regex="true">org\.springframework\.boot:spring-boot-starter-web:.*</gav>
+        <cve>CVE-2023-12345</cve>
+    </suppress>
+    -->
+</suppressions>
