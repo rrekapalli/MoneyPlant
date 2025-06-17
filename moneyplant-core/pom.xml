@@ -9,7 +9,7 @@
         <version>1.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>money-plant-core</artifactId>
+    <artifactId>moneyplant-core</artifactId>
 
     <properties>
         <maven.compiler.source>21</maven.compiler.source>

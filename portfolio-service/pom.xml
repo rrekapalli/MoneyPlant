@@ -61,7 +61,7 @@
 
         <dependency>
             <groupId>com.moneyplant</groupId>
-            <artifactId>money-plant-core</artifactId>
+            <artifactId>moneyplant-core</artifactId>
             <version>1.0-SNAPSHOT</version>
             <scope>compile</scope>
         </dependency>
