@@ -55,9 +55,7 @@ class PortfolioServiceTest {
     @Test
     void createPortfolio_Success() {
         // Arrange
-        when(portfolioMapper.toEntity(any(PortfolioDto.class))).thenReturn(portfolio);
         when(portfolioRepository.save(any(Portfolio.class))).thenReturn(portfolio);
-        when(portfolioMapper.toResponseDto(any(Portfolio.class))).thenReturn(portfolioResponseDto);
 
         // Act
         PortfolioResponseDto result = portfolioService.createPortfolio(portfolioDto);
@@ -73,7 +71,6 @@ class PortfolioServiceTest {
     @Test
     void createPortfolio_ThrowsServiceException_WhenRepositoryThrowsException() {
         // Arrange
-        when(portfolioMapper.toEntity(any(PortfolioDto.class))).thenReturn(portfolio);
         when(portfolioRepository.save(any(Portfolio.class))).thenThrow(new RuntimeException("Database error"));
 
         // Act & Assert
@@ -85,7 +82,6 @@ class PortfolioServiceTest {
         // Arrange
         List<Portfolio> portfolios = Arrays.asList(portfolio);
         when(portfolioRepository.findAll()).thenReturn(portfolios);
-        when(portfolioMapper.toResponseDto(any(Portfolio.class))).thenReturn(portfolioResponseDto);
 
         // Act
         List<PortfolioResponseDto> result = portfolioService.getAllPortfolios();
@@ -110,7 +106,6 @@ class PortfolioServiceTest {
     void getPortfolioById_Success() {
         // Arrange
         when(portfolioRepository.findById("test-id")).thenReturn(Optional.of(portfolio));
-        when(portfolioMapper.toResponseDto(any(Portfolio.class))).thenReturn(portfolioResponseDto);
 
         // Act
         PortfolioResponseDto result = portfolioService.getPortfolioById("test-id");
