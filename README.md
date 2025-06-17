@@ -114,8 +114,19 @@ For more details, see the [Docker Image Building Guide](README-docker-images.md)
 
 ## API Documentation
 
-The API documentation is available through Swagger UI at:
-http://localhost:8080/swagger-ui.html
+### Swagger UI Access
+
+The API documentation is available through Swagger UI for each service:
+
+- **Main Application**: http://localhost:8080/swagger-ui.html
+- **Stock Service**: http://localhost:8081/swagger-ui.html
+- **Portfolio Service**: http://localhost:8082/swagger-ui.html
+- **Transaction Service**: http://localhost:8083/swagger-ui.html
+- **Watchlist Service**: http://localhost:8084/swagger-ui.html
+
+When running in monolithic mode (through the main application), all services' APIs are accessible through the main Swagger UI at http://localhost:8080/swagger-ui.html.
+
+### API Versioning
 
 All APIs follow a versioned approach with the format:
 ```
