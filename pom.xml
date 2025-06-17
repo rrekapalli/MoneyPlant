@@ -18,13 +18,11 @@
 
     <modules>
         <module>moneyplant-core</module>
-        <module>api-gateway</module>
-        <module>discovery-server</module>
-        <module>config-server</module>
         <module>stock-service</module>
         <module>portfolio-service</module>
         <module>watchlist-service</module>
         <module>transaction-service</module>
+        <module>moneyplant-app</module>
     </modules>
 
     <properties>

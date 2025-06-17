@@ -3,7 +3,7 @@ package com.moneyplant.portfolioservice.controllers;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.moneyplant.portfolioservice.dtos.PortfolioDto;
 import com.moneyplant.portfolioservice.dtos.PortfolioResponseDto;
-import com.moneyplant.portfolioservice.exceptions.ResourceNotFoundException;
+import com.moneyplant.core.exceptions.ResourceNotFoundException;
 import com.moneyplant.portfolioservice.services.PortfolioService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

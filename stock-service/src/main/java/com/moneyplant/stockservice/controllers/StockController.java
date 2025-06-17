@@ -2,7 +2,7 @@ package com.moneyplant.stockservice.controllers;
 
 import com.moneyplant.stockservice.dtos.StockDto;
 import com.moneyplant.stockservice.dtos.StockResponseDto;
-import com.moneyplant.stockservice.exceptions.ResourceNotFoundException;
+import com.moneyplant.core.exceptions.ResourceNotFoundException;
 import com.moneyplant.stockservice.services.StockService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

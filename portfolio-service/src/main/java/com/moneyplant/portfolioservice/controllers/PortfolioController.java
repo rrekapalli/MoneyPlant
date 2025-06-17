@@ -2,7 +2,7 @@ package com.moneyplant.portfolioservice.controllers;
 
 import com.moneyplant.portfolioservice.dtos.PortfolioDto;
 import com.moneyplant.portfolioservice.dtos.PortfolioResponseDto;
-import com.moneyplant.portfolioservice.exceptions.ResourceNotFoundException;
+import com.moneyplant.core.exceptions.ResourceNotFoundException;
 import com.moneyplant.portfolioservice.services.PortfolioService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

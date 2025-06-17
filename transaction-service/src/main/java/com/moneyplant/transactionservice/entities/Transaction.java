@@ -1,6 +1,6 @@
 package com.moneyplant.transactionservice.entities;
 
-import com.moneyplant.moneyplantcore.entities.BaseAuditEntity;
+import com.moneyplant.core.entities.BaseAuditEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
