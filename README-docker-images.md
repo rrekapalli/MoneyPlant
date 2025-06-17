@@ -1,10 +1,10 @@
 # Docker Image Building for MoneyPlant
 
-This document explains how to build Docker images for the MoneyPlant microservices.
+This document explains how to build a Docker image for the MoneyPlant monolithic application.
 
 ## Automatic Docker Image Building
 
-The project is configured to automatically build Docker images whenever a Maven package is created. This is done using the Maven Exec Plugin, which runs a script after the package phase.
+The project is configured to automatically build a Docker image whenever a Maven package is created. This is done using the Maven Exec Plugin, which runs a script after the package phase.
 
 ### How It Works
 
@@ -12,13 +12,13 @@ The project is configured to automatically build Docker images whenever a Maven 
    - `build-docker-images.sh` for Unix/Linux/macOS
    - `build-docker-images.ps1` for Windows
 
-2. The script will build Docker images for all microservices using the jib-maven-plugin, which is configured in each module's pom.xml.
+2. The script will build a Docker image for the monolithic application (moneyplant-app) using the jib-maven-plugin, which is configured in the module's pom.xml.
 
-3. The images will be tagged with the project version and "latest" and will be available in your local Docker registry.
+3. The image will be tagged with the project version and "latest" and will be available in your local Docker registry.
 
 ## Manual Docker Image Building
 
-If you want to build Docker images manually, you can run the scripts directly:
+If you want to build the Docker image manually, you can run the scripts directly:
 
 ### Windows
 
@@ -42,7 +42,7 @@ Then run it:
 
 ## Docker Image Configuration
 
-The Docker images are configured in the parent pom.xml using the jib-maven-plugin. The configuration includes:
+The Docker image is configured in the parent pom.xml using the jib-maven-plugin. The configuration includes:
 
 - Base image: eclipse-temurin:21-jre
 - Image name: rrekapalli/money-plant:${project.artifactId}
@@ -50,17 +50,15 @@ The Docker images are configured in the parent pom.xml using the jib-maven-plugi
 - JVM flags: -Xms256m -Xmx512m
 - Exposed port: 8080
 
-Each module can override these settings in its own pom.xml.
+The moneyplant-app module has the jib-maven-plugin enabled with skip=false.
 
-## Running the Docker Containers
+## Running the Docker Container
 
-After building the Docker images, you can run the containers using Docker commands. For example:
+After building the Docker image, you can run the container using Docker commands. For example:
 
 ```bash
-docker run -p 8080:8080 rrekapalli/money-plant:api-gateway
+docker run -p 8080:8080 rrekapalli/money-plant:moneyplant-app
 ```
-
-Or you can create a docker-compose.yml file to run all the services together.
 
 ## Troubleshooting
 

@@ -1,7 +1,7 @@
-# Script to build Docker images for all MoneyPlant services
+# Script to build Docker image for MoneyPlant monolithic application
 # This script is triggered after Maven package is created
 
-Write-Host "Building Docker images for MoneyPlant services..." -ForegroundColor Green
+Write-Host "Building Docker image for MoneyPlant monolithic application..." -ForegroundColor Green
 
 # Set the working directory to the project root
 $projectRoot = Get-Location
@@ -28,22 +28,11 @@ function Build-DockerImage {
     Write-Host "Docker image for $serviceName built successfully!" -ForegroundColor Green
 }
 
-# Build Docker images for all services
-Write-Host "Building Docker images for all services..." -ForegroundColor Cyan
+# Build Docker image for the monolithic application
+Write-Host "Building Docker image for monolithic application..." -ForegroundColor Cyan
 
+# MoneyPlant App (Monolithic Application)
+Build-DockerImage -serviceName "MoneyPlant App" -directory "$projectRoot\moneyplant-app"
 
-# Portfolio Service
-Build-DockerImage -serviceName "Portfolio Service" -directory "$projectRoot\portfolio-service"
-
-# Stock Service
-Build-DockerImage -serviceName "Stock Service" -directory "$projectRoot\stock-service"
-
-# Transaction Service
-Build-DockerImage -serviceName "Transaction Service" -directory "$projectRoot\transaction-service"
-
-# Watchlist Service
-Build-DockerImage -serviceName "Watchlist Service" -directory "$projectRoot\watchlist-service"
-
-
-Write-Host "All Docker images have been built successfully!" -ForegroundColor Green
-Write-Host "You can now run the containers using Docker commands." -ForegroundColor Green
+Write-Host "Docker image has been built successfully!" -ForegroundColor Green
+Write-Host "You can now run the container using Docker commands." -ForegroundColor Green

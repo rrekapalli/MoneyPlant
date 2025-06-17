@@ -1,8 +1,8 @@
 #!/bin/bash
-# Script to build Docker images for all MoneyPlant services
+# Script to build Docker image for MoneyPlant monolithic application
 # This script is triggered after Maven package is created
 
-echo -e "\e[32mBuilding Docker images for MoneyPlant services...\e[0m"
+echo -e "\e[32mBuilding Docker image for MoneyPlant monolithic application...\e[0m"
 
 # Set the working directory to the project root
 project_root=$(pwd)
@@ -27,22 +27,11 @@ build_docker_image() {
     echo -e "\e[32mDocker image for $service_name built successfully!\e[0m"
 }
 
-# Build Docker images for all services
-echo -e "\e[36mBuilding Docker images for all services...\e[0m"
+# Build Docker image for the monolithic application
+echo -e "\e[36mBuilding Docker image for monolithic application...\e[0m"
 
+# MoneyPlant App (Monolithic Application)
+build_docker_image "MoneyPlant App" "$project_root/moneyplant-app"
 
-# Portfolio Service
-build_docker_image "Portfolio Service" "$project_root/portfolio-service"
-
-# Stock Service
-build_docker_image "Stock Service" "$project_root/stock-service"
-
-# Transaction Service
-build_docker_image "Transaction Service" "$project_root/transaction-service"
-
-# Watchlist Service
-build_docker_image "Watchlist Service" "$project_root/watchlist-service"
-
-
-echo -e "\e[32mAll Docker images have been built successfully!\e[0m"
-echo -e "\e[32mYou can now run the containers using Docker commands.\e[0m"
+echo -e "\e[32mDocker image has been built successfully!\e[0m"
+echo -e "\e[32mYou can now run the container using Docker commands.\e[0m"
