@@ -4,6 +4,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,6 +23,7 @@ import java.util.List;
  * This filter checks for the presence of a valid API key in the request header.
  * If a valid API key is found, it sets the authentication in the security context.
  */
+@Slf4j
 @Component
 public class ApiKeyAuthFilter extends OncePerRequestFilter {
 
