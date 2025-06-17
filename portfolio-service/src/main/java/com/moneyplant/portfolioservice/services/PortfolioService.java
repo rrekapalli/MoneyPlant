@@ -5,12 +5,10 @@ import com.moneyplant.portfolioservice.dtos.PortfolioResponseDto;
 import com.moneyplant.portfolioservice.entities.Portfolio;
 import com.moneyplant.core.exceptions.ResourceNotFoundException;
 import com.moneyplant.core.exceptions.ServiceException;
-import com.moneyplant.portfolioservice.mappers.PortfolioMapper;
 import com.moneyplant.portfolioservice.repositories.PortfolioRepository;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cloud.client.circuitbreaker.CircuitBreakerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
@@ -21,42 +19,51 @@ import java.util.List;
 @RequiredArgsConstructor
 public class PortfolioService {
     private final PortfolioRepository portfolioRepository;
-    private final CircuitBreakerFactory circuitBreakerFactory;
-    private final PortfolioMapper portfolioMapper;
 
     private static final String PORTFOLIO_SERVICE = "portfolioService";
 
     /**
-     * Creates a new portfolio using the programmatic circuit breaker approach.
+     * Creates a new portfolio using the annotation-based circuit breaker approach.
      * 
      * @param portfolioDto The portfolio data to create
      * @return The created portfolio response
      * @throws ServiceException if there is an error creating the portfolio
      */
+    @CircuitBreaker(name = PORTFOLIO_SERVICE, fallbackMethod = "createPortfolioFallback")
     public PortfolioResponseDto createPortfolio(PortfolioDto portfolioDto) {
-        return circuitBreakerFactory.create(PORTFOLIO_SERVICE).run(
-            () -> {
-                try {
-                    // Convert DTO to entity using mapper
-                    Portfolio newPortfolio = portfolioMapper.toEntity(portfolioDto);
+        try {
+            // Convert DTO to entity manually
+            Portfolio newPortfolio = new Portfolio();
+            newPortfolio.setName(portfolioDto.getName());
+            newPortfolio.setDescription(portfolioDto.getDescription());
 
-                    // Save the entity
-                    portfolioRepository.save(newPortfolio);
+            // Save the entity
+            portfolioRepository.save(newPortfolio);
 
-                    log.info("Portfolio created successfully!");
+            log.info("Portfolio created successfully!");
 
-                    // Convert entity to response DTO using mapper
-                    return portfolioMapper.toResponseDto(newPortfolio);
-                } catch (Exception e) {
-                    log.error("Error creating portfolio: {}", e.getMessage());
-                    throw new ServiceException("Error creating portfolio: " + e.getMessage(), e);
-                }
-            },
-            throwable -> {
-                log.error("Circuit breaker triggered for createPortfolio: {}", throwable.getMessage());
-                throw new ServiceException("Service unavailable", throwable);
-            }
-        );
+            // Convert entity to response DTO manually
+            return new PortfolioResponseDto(
+                newPortfolio.getId(),
+                newPortfolio.getName(),
+                newPortfolio.getDescription()
+            );
+        } catch (Exception e) {
+            log.error("Error creating portfolio: {}", e.getMessage());
+            throw new ServiceException("Error creating portfolio: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Fallback method for createPortfolio when the circuit is open.
+     * 
+     * @param portfolioDto The portfolio data that was being created
+     * @param e The exception that triggered the fallback
+     * @return null
+     */
+    public PortfolioResponseDto createPortfolioFallback(PortfolioDto portfolioDto, Exception e) {
+        log.error("Circuit breaker triggered for createPortfolio: {}", e.getMessage());
+        throw new ServiceException("Service unavailable", e);
     }
 
     /**
@@ -70,7 +77,11 @@ public class PortfolioService {
         try {
             return portfolioRepository.findAll()
                     .stream()
-                    .map(portfolioMapper::toResponseDto)
+                    .map(portfolio -> new PortfolioResponseDto(
+                        portfolio.getId(),
+                        portfolio.getName(),
+                        portfolio.getDescription()
+                    ))
                     .toList();
         } catch (Exception e) {
             log.error("Error retrieving portfolios: {}", e.getMessage());
@@ -92,7 +103,11 @@ public class PortfolioService {
             Portfolio portfolio = portfolioRepository.findById(id)
                     .orElseThrow(() -> new ResourceNotFoundException("Portfolio not found with id: " + id));
 
-            return portfolioMapper.toResponseDto(portfolio);
+            return new PortfolioResponseDto(
+                portfolio.getId(),
+                portfolio.getName(),
+                portfolio.getDescription()
+            );
         } catch (ResourceNotFoundException e) {
             throw e;
         } catch (Exception e) {

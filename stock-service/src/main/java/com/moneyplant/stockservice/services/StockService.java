@@ -9,7 +9,6 @@ import com.moneyplant.stockservice.repositories.StockRepository;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cloud.client.circuitbreaker.CircuitBreakerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
@@ -20,46 +19,50 @@ import java.util.List;
 @RequiredArgsConstructor
 public class StockService {
     private final StockRepository stockRepository;
-    private final CircuitBreakerFactory circuitBreakerFactory;
 
     private static final String STOCK_SERVICE = "stockService";
 
     /**
-     * Creates a new stock using the programmatic circuit breaker approach.
+     * Creates a new stock using the annotation-based circuit breaker approach.
      * 
      * @param stockDto The stock data to create
      * @return The created stock response
      * @throws ServiceException if there is an error creating the stock
      */
+    @CircuitBreaker(name = STOCK_SERVICE, fallbackMethod = "createStockFallback")
     public StockResponseDto createStock(StockDto stockDto) {
-        return circuitBreakerFactory.create(STOCK_SERVICE).run(
-            () -> {
-                try {
-                    Stock newStock = new Stock();
+        try {
+            Stock newStock = new Stock();
 
-                    newStock.setName(stockDto.getName());
-                    newStock.setSymbol(stockDto.getSymbol());
+            newStock.setName(stockDto.getName());
+            newStock.setSymbol(stockDto.getSymbol());
 
-                    stockRepository.save(newStock);
+            stockRepository.save(newStock);
 
-                    log.info("Stock created successfully!");
+            log.info("Stock created successfully!");
 
-                    // TODO:  Need mapper
-                    return new StockResponseDto(
-                            newStock.getId(),
-                            newStock.getName(),
-                            newStock.getSymbol()
-                    );
-                } catch (Exception e) {
-                    log.error("Error creating stock: {}", e.getMessage());
-                    throw new ServiceException("Error creating stock: " + e.getMessage(), e);
-                }
-            },
-            throwable -> {
-                log.error("Circuit breaker triggered for createStock: {}", throwable.getMessage());
-                throw new ServiceException("Service unavailable", throwable);
-            }
-        );
+            // TODO:  Need mapper
+            return new StockResponseDto(
+                    newStock.getId(),
+                    newStock.getName(),
+                    newStock.getSymbol()
+            );
+        } catch (Exception e) {
+            log.error("Error creating stock: {}", e.getMessage());
+            throw new ServiceException("Error creating stock: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Fallback method for createStock when the circuit is open.
+     * 
+     * @param stockDto The stock data that was being created
+     * @param e The exception that triggered the fallback
+     * @return null
+     */
+    public StockResponseDto createStockFallback(StockDto stockDto, Exception e) {
+        log.error("Circuit breaker triggered for createStock: {}", e.getMessage());
+        throw new ServiceException("Service unavailable", e);
     }
 
     /**

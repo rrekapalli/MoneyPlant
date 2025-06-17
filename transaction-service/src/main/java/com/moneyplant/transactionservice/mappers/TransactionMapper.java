@@ -4,22 +4,16 @@ import com.moneyplant.transactionservice.dtos.CreateTransactionDTO;
 import com.moneyplant.transactionservice.dtos.TransactionDTO;
 import com.moneyplant.transactionservice.entities.Transaction;
 import com.moneyplant.transactionservice.entities.TransactionStatus;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
-import org.mapstruct.Named;
-import org.mapstruct.factory.Mappers;
+import org.mapstruct.*;
 
 import java.util.List;
 
 /**
- * Mapper interface for converting between Transaction entity and DTOs.
- * Uses MapStruct for automatic implementation.
+ * Mapper interface for converting between Transaction entities and DTOs.
+ * This interface is implemented by MapStruct.
  */
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface TransactionMapper {
-
-    TransactionMapper INSTANCE = Mappers.getMapper(TransactionMapper.class);
 
     /**
      * Convert a Transaction entity to a TransactionDTO.
@@ -44,27 +38,14 @@ public interface TransactionMapper {
      * @param createTransactionDTO the CreateTransactionDTO
      * @return the Transaction entity
      */
+    @Mapping(target = "status", constant = "PENDING")
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "createdBy", ignore = true)
+    @Mapping(target = "totalValue", ignore = true)
     @Mapping(target = "createdOn", ignore = true)
-    @Mapping(target = "modifiedBy", ignore = true)
+    @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "modifiedOn", ignore = true)
+    @Mapping(target = "modifiedBy", ignore = true)
     Transaction toEntity(CreateTransactionDTO createTransactionDTO);
-
-    /**
-     * Default implementation for toEntity that sets the status and totalValue fields.
-     *
-     * @param createTransactionDTO the CreateTransactionDTO
-     * @return the Transaction entity
-     */
-    default Transaction toEntityWithDefaults(CreateTransactionDTO createTransactionDTO) {
-        Transaction transaction = toEntity(createTransactionDTO);
-        transaction.setStatus(TransactionStatus.PENDING);
-        if (createTransactionDTO.getQuantity() != null && createTransactionDTO.getPricePerShare() != null) {
-            transaction.setTotalValue(createTransactionDTO.getPricePerShare().multiply(java.math.BigDecimal.valueOf(createTransactionDTO.getQuantity())));
-        }
-        return transaction;
-    }
 
     /**
      * Update a Transaction entity from a CreateTransactionDTO.
@@ -73,23 +54,11 @@ public interface TransactionMapper {
      * @param transaction the Transaction entity to update
      */
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "createdBy", ignore = true)
+    @Mapping(target = "status", ignore = true)
+    @Mapping(target = "totalValue", ignore = true)
     @Mapping(target = "createdOn", ignore = true)
-    @Mapping(target = "modifiedBy", ignore = true)
+    @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "modifiedOn", ignore = true)
+    @Mapping(target = "modifiedBy", ignore = true)
     void updateEntityFromDto(CreateTransactionDTO createTransactionDTO, @MappingTarget Transaction transaction);
-
-    /**
-     * Default implementation for updateEntityFromDto that sets the totalValue field.
-     *
-     * @param createTransactionDTO the CreateTransactionDTO
-     * @param transaction the Transaction entity to update
-     */
-    default void updateEntityFromDtoWithDefaults(CreateTransactionDTO createTransactionDTO, Transaction transaction) {
-        updateEntityFromDto(createTransactionDTO, transaction);
-        if (createTransactionDTO.getQuantity() != null && createTransactionDTO.getPricePerShare() != null) {
-            transaction.setTotalValue(createTransactionDTO.getPricePerShare().multiply(java.math.BigDecimal.valueOf(createTransactionDTO.getQuantity())));
-        }
-    }
-
 }

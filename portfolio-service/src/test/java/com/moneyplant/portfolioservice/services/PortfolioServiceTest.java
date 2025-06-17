@@ -5,7 +5,6 @@ import com.moneyplant.portfolioservice.dtos.PortfolioResponseDto;
 import com.moneyplant.portfolioservice.entities.Portfolio;
 import com.moneyplant.core.exceptions.ResourceNotFoundException;
 import com.moneyplant.core.exceptions.ServiceException;
-import com.moneyplant.portfolioservice.mappers.PortfolioMapper;
 import com.moneyplant.portfolioservice.repositories.PortfolioRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,14 +12,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.cloud.client.circuitbreaker.CircuitBreaker;
-import org.springframework.cloud.client.circuitbreaker.CircuitBreakerFactory;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
-import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -31,15 +26,6 @@ class PortfolioServiceTest {
 
     @Mock
     private PortfolioRepository portfolioRepository;
-
-    @Mock
-    private CircuitBreakerFactory circuitBreakerFactory;
-
-    @Mock
-    private CircuitBreaker circuitBreaker;
-
-    @Mock
-    private PortfolioMapper portfolioMapper;
 
     @InjectMocks
     private PortfolioService portfolioService;
@@ -64,13 +50,6 @@ class PortfolioServiceTest {
         portfolioResponseDto.setId("test-id");
         portfolioResponseDto.setName("Test Portfolio");
         portfolioResponseDto.setDescription("Test Description");
-
-        // Setup circuit breaker mock
-        when(circuitBreakerFactory.create(anyString())).thenReturn(circuitBreaker);
-        when(circuitBreaker.run(any(), any())).thenAnswer(invocation -> {
-            Supplier<?> supplier = invocation.getArgument(0);
-            return supplier.get();
-        });
     }
 
     @Test

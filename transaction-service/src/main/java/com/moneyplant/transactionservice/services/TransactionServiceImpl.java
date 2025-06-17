@@ -11,11 +11,13 @@ import com.moneyplant.transactionservice.repositories.TransactionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -29,6 +31,7 @@ public class TransactionServiceImpl implements TransactionService {
     private final TransactionRepository transactionRepository;
     private final TransactionMapper transactionMapper;
 
+
     @Override
     @Transactional
     public TransactionDTO createTransaction(CreateTransactionDTO createTransactionDTO) {
@@ -37,11 +40,14 @@ public class TransactionServiceImpl implements TransactionService {
                 createTransactionDTO.getPortfolioId(),
                 createTransactionDTO.getStockSymbol());
 
+        // Convert DTO to entity using mapper
         Transaction transaction = transactionMapper.toEntity(createTransactionDTO);
         transaction.calculateTotalValue();
         Transaction savedTransaction = transactionRepository.save(transaction);
 
         log.info("Transaction created with ID: {}", savedTransaction.getId());
+
+        // Convert entity to DTO using mapper
         return transactionMapper.toDto(savedTransaction);
     }
 
