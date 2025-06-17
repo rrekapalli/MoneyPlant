@@ -11,27 +11,10 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 @Slf4j
 @SpringBootApplication
 @ComponentScan(
-        basePackages = {
-                "com.moneyplant.core",
-                "com.moneyplant.stockservice",
-                "com.moneyplant.portfolioservice",
-                "com.moneyplant.transactionservice",
-                "com.moneyplant.watchlistservice",
-                "com.moneyplant.app"
-        }
+    basePackages = {"com.moneyplant.*"}
 )
-@EntityScan(basePackages = {
-        "com.moneyplant.core.entities",
-        "com.moneyplant.stockservice.entities",
-        "com.moneyplant.portfolioservice.entities",
-        "com.moneyplant.transactionservice.entities",
-        "com.moneyplant.watchlistservice.entities"
-})
-@EnableJpaRepositories(basePackages = {
-        "com.moneyplant.stockservice.repositories",
-        "com.moneyplant.portfolioservice.repositories",
-        "com.moneyplant.transactionservice.repositories"
-})
+@EntityScan(basePackages = {"com.moneyplant.*"})
+@EnableJpaRepositories(basePackages = {"com.moneyplant.*"})
 public class MoneyPlantApplication {
 
     public static void main(String[] args) {
