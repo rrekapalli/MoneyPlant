@@ -91,8 +91,6 @@
               "outputHashing": "all",
               "optimization": true,
               "aot": true,
-              "buildOptimizer": true,
-              "vendorChunk": false,
               "namedChunks": false,
               "verbose": true
             },

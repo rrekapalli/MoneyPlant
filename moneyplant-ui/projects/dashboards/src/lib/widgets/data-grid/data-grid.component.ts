@@ -9,6 +9,7 @@ import { DropdownModule } from 'primeng/dropdown';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { FormsModule } from '@angular/forms';
 import { PaginatorModule } from 'primeng/paginator';
+import { IDataGridOptions } from '../../entities/IDataGridOptions';
 
 @Component({
   selector: 'vis-data-grid',
@@ -48,14 +49,14 @@ import { PaginatorModule } from 'primeng/paginator';
       >
         <ng-template pTemplate="caption">
           <div class="flex justify-content-between align-items-center">
-            <h5 class="m-0">{{ widget.config?.header?.title || 'Data Grid' }}</h5>
+            <h5 class="m-0">{{ getWidgetTitle() }}</h5>
             <div class="table-header-container">
               <span class="p-input-icon-left">
                 <i class="pi pi-search"></i>
                 <input 
                   pInputText 
                   type="text" 
-                  (input)="dt.filterGlobal($event.target.value, 'contains')" 
+                  (input)="onFilterInput($event, dt)" 
                   placeholder="Search..." 
                 />
               </span>
@@ -109,13 +110,13 @@ import { PaginatorModule } from 'primeng/paginator';
       display: flex;
       flex-direction: column;
     }
-    
+
     .table-header-container {
       display: flex;
       align-items: center;
       gap: 0.5rem;
     }
-    
+
     /* Responsive styles */
     @media screen and (max-width: 768px) {
       :host ::ng-deep .p-datatable-responsive .p-datatable-tbody > tr > td {
@@ -133,7 +134,7 @@ import { PaginatorModule } from 'primeng/paginator';
         display: inline-block;
         margin-right: 0.5rem;
       }
-      
+
       .table-header-container {
         flex-direction: column;
         align-items: stretch;
@@ -144,69 +145,88 @@ import { PaginatorModule } from 'primeng/paginator';
 })
 export class DataGridComponent extends BaseWidgetComponent implements OnInit {
   @ViewChild('dt') table: any;
-  
+
   data: any[] = [];
   columns: string[] = [];
   sortField: string = '';
   sortOrder: number = 1;
-  
+
   constructor(
     protected override eventBus: EventBusService,
     private elementRef: ElementRef
   ) {
     super(eventBus);
   }
-  
+
   override ngOnInit(): void {
     super.ngOnInit();
-    
+
     // Initialize data grid
     this.initializeDataGrid();
   }
-  
+
   /**
    * Initializes the data grid with configuration from the widget
    */
   private initializeDataGrid(): void {
     // Extract columns from widget configuration
-    if (this.widget.config?.options?.columns) {
-      this.columns = this.widget.config.options.columns as string[];
+    if (this.widget.config?.options) {
+      const options = this.widget.config.options as IDataGridOptions;
+
+      if (options.columns) {
+        this.columns = options.columns;
+      }
+
+      // Extract initial sort field and order if available
+      if (options.sortField) {
+        this.sortField = options.sortField;
+      }
+
+      if (options.sortOrder) {
+        this.sortOrder = options.sortOrder;
+      }
     }
-    
-    // Extract initial sort field and order if available
-    if (this.widget.config?.options?.sortField) {
-      this.sortField = this.widget.config.options.sortField as string;
-    }
-    
-    if (this.widget.config?.options?.sortOrder) {
-      this.sortOrder = this.widget.config.options.sortOrder as number;
-    }
-    
+
     // Load data
     this.loadData();
   }
-  
+
   /**
    * Called when the widget is updated
    */
   protected override onWidgetUpdated(): void {
     this.initializeDataGrid();
   }
-  
+
   /**
    * Called when filters are updated
    */
   protected override onFilterUpdated(filterData: any): void {
     this.loadData();
   }
-  
+
   /**
    * Clears all filters in the table
    */
   clear(table: any): void {
     table.clear();
   }
-  
+
+  /**
+   * Handles the input event for the global filter
+   */
+  onFilterInput(event: Event, table: any): void {
+    const inputElement = event.target as HTMLInputElement;
+    table.filterGlobal(inputElement.value, 'contains');
+  }
+
+  /**
+   * Gets the widget title from the configuration or returns a default
+   */
+  getWidgetTitle(): string {
+    return this.widget.config?.header?.title || 'Data Grid';
+  }
+
   /**
    * Processes data received from the server
    */
@@ -215,7 +235,7 @@ export class DataGridComponent extends BaseWidgetComponent implements OnInit {
       this.data = [];
       return;
     }
-    
+
     // If data is an array, use it directly
     if (Array.isArray(data)) {
       this.data = data;
@@ -228,7 +248,7 @@ export class DataGridComponent extends BaseWidgetComponent implements OnInit {
     else if (data.data && Array.isArray(data.data)) {
       this.data = data.data;
     }
-    
+
     // If no columns are defined, extract them from the first data item
     if (this.columns.length === 0 && this.data.length > 0) {
       this.columns = Object.keys(this.data[0]);

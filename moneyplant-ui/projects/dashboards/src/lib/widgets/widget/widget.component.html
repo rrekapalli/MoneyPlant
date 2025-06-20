@@ -1,4 +1,4 @@
-@if(widget?.error) {
+@if(widget.error) {
     <div class="widget-error" [style]="getWidgetHeight()">
         <div class="error-container" role="alert" aria-live="assertive">
             <div class="error-icon" aria-hidden="true">⚠️</div>
@@ -15,7 +15,7 @@
             </button>
         </div>
     </div>
-} @else if(widget?.loading) {
+} @else if(widget.loading) {
     <div class="widget-loading" [style]="getWidgetHeight()" role="status" aria-live="polite">
         <div class="loading-container">
             <div class="loading-spinner" aria-hidden="true"></div>

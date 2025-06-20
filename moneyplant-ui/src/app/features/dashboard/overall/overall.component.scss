@@ -1,1 +1,54 @@
-/* Styles for the overall tab component */
+/* Styles for the overall dashboard component */
+.dashboard-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 1rem;
+  background-color: #f8f9fa;
+}
+
+.dashboard-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+/* Make sure the dashboard container takes up available space */
+:host {
+  display: block;
+  height: 100%;
+  width: 100%;
+}
+
+/* Ensure widgets have proper spacing */
+::ng-deep {
+  .gridster-item {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    background-color: #ffffff;
+    overflow: hidden;
+  }
+
+  /* Style widget headers */
+  .widget-header {
+    padding: 0.5rem 1rem;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+  }
+
+  /* Style widget content */
+  .widget-content {
+    padding: 1rem;
+    height: calc(100% - 40px);
+  }
+
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .dashboard-title {
+      font-size: 1.25rem;
+      margin-bottom: 1rem;
+    }
+  }
+}

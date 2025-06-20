@@ -9,6 +9,7 @@
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "sourceMap": true,
     "declaration": false,
     "experimentalDecorators": true,
@@ -17,6 +18,16 @@
     "target": "ES2022",
     "module": "ES2022",
     "useDefineForClassFields": false,
+    "typeRoots": [
+      "node_modules/@types",
+      "src/types"
+    ],
+    "paths": {
+      "dashboards": ["./dist/dashboards"],
+      "dashboards/*": ["./dist/dashboards/*"],
+      "@dashboards/*": ["./projects/dashboards/src/lib/*"],
+      "echarts": ["./src/types/echarts"]
+    },
     "lib": [
       "ES2022",
       "dom"

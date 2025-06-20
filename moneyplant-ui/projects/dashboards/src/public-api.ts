@@ -29,6 +29,7 @@ export * from './lib/entities/ITableOptions';
 export * from './lib/entities/ITileOptions';
 export * from './lib/entities/IWidget';
 export * from './lib/entities/IWidgetPlugin';
+export * from './lib/entities/IDataGridOptions';
 
 // Widgets
 export * from './lib/widgets/echarts/echart.component';
