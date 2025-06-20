@@ -384,6 +384,12 @@ declare class WidgetDataCacheService {
 declare class VirtualScrollService {
     private viewportHeight;
     private bufferSize;
+    private scrollPosition;
+    private scrollPositionSubject;
+    scrollPosition$: Observable<number>;
+    private visibleWidgetsSubject;
+    visibleWidgets$: Observable<IWidget[]>;
+    private widgetPositionCache;
     constructor();
     /**
      * Sets the viewport height
@@ -397,6 +403,31 @@ declare class VirtualScrollService {
      * @param rows - The buffer size in rows
      */
     setBufferSize(rows: number): void;
+    /**
+     * Updates the scroll position and recalculates visible widgets
+     *
+     * @param scrollTop - The new scroll position in rows
+     * @param widgets - All widgets in the dashboard
+     */
+    updateScrollPosition(scrollTop: number, widgets: IWidget[]): void;
+    /**
+     * Gets the current scroll position
+     *
+     * @returns The current scroll position in rows
+     */
+    getScrollPosition(): number;
+    /**
+     * Gets an observable of the scroll position
+     *
+     * @returns An observable of the scroll position
+     */
+    getScrollPosition$(): Observable<number>;
+    /**
+     * Gets an observable of the visible widgets
+     *
+     * @returns An observable of the visible widgets
+     */
+    getVisibleWidgets$(): Observable<IWidget[]>;
     /**
      * Determines which widgets should be rendered based on the current scroll position
      *
@@ -412,6 +443,12 @@ declare class VirtualScrollService {
      * @returns The total height in rows
      */
     getTotalHeight(widgets: IWidget[]): number;
+    /**
+     * Updates the widget position cache
+     *
+     * @param widgets - All widgets in the dashboard
+     */
+    private updateWidgetPositionCache;
     /**
      * Creates placeholder widgets for the virtual scroll
      *
@@ -823,7 +860,7 @@ declare class WidgetPluginService {
     /**
      * Gets a placeholder component to use while the real component is loading
      *
-     * @returns A placeholder component
+     * @returns The placeholder component type
      */
     private getPlaceholderComponent;
     /**
@@ -1637,6 +1674,20 @@ declare class EchartComponent extends BaseWidgetComponent implements AfterViewIn
      */
     private convertToDatasetAPI;
     /**
+     * Converts pie chart data to use the dataset API
+     *
+     * @param options - The ECharts options to convert
+     * @param seriesArray - The array of series
+     */
+    private convertPieChartToDataset;
+    /**
+     * Converts multiple series data to use the dataset API
+     *
+     * @param options - The ECharts options to convert
+     * @param seriesArray - The array of series
+     */
+    private convertMultiSeriesToDataset;
+    /**
      * Lifecycle hook that is called after the component's view has been initialized
      */
     ngAfterViewInit(): void;
@@ -1650,6 +1701,7 @@ declare class EchartComponent extends BaseWidgetComponent implements AfterViewIn
     private setupResizeHandling;
     /**
      * Resizes the chart to fit its container
+     * Uses requestAnimationFrame for better performance
      */
     private resizeChart;
     /**

@@ -278,8 +278,11 @@ export class DashboardContainerComponent implements OnInit, OnDestroy {
     const rowHeight = 50; // Approximate row height in pixels
     this.currentScrollPosition = Math.floor(scrollTop / rowHeight);
 
-    // Update visible widgets
-    this.updateVisibleWidgets();
+    // Use the VirtualScrollService to update scroll position and visible widgets
+    this.virtualScrollService.updateScrollPosition(this.currentScrollPosition, this.widgets);
+
+    // Get the updated visible widgets
+    this.visibleWidgets = this.virtualScrollService.getVisibleWidgets(this.widgets, this.currentScrollPosition);
   }
 
   /**

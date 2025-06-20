@@ -1,5 +1,6 @@
-import { Injectable } from '@angular/core';
+import { Injectable, Type } from '@angular/core';
 import { IWidgetPlugin } from '../entities/IWidgetPlugin';
+import { PlaceholderComponent } from '../widgets/placeholder/placeholder.component';
 
 /**
  * Service for managing widget plugins in the dashboard framework
@@ -133,15 +134,11 @@ export class WidgetPluginService {
   /**
    * Gets a placeholder component to use while the real component is loading
    * 
-   * @returns A placeholder component
+   * @returns The placeholder component type
    */
-  private getPlaceholderComponent(): any {
-    // This could be a simple loading component
-    // For now, we'll just return a dummy object that won't cause errors
-    return { 
-      __isPlaceholder: true,
-      __componentType: 'placeholder'
-    };
+  private getPlaceholderComponent(): Type<any> {
+    // Return the actual placeholder component
+    return PlaceholderComponent;
   }
 
   /**
@@ -239,8 +236,7 @@ export class WidgetPluginService {
       canBeFilterSource: false
     });
 
-    // Preload commonly used components
-    this.loadComponentForType('echart');
-    this.loadComponentForType('filter');
+    // Don't preload components - let them be loaded on demand
+    // This improves initial loading performance
   }
 }

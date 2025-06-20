@@ -76,8 +76,37 @@ export class EchartComponent extends BaseWidgetComponent implements AfterViewIni
       return;
     }
 
+    // If dataset is already defined, don't override it
+    if (options.dataset) {
+      return;
+    }
+
+    // Handle different series types differently
+    const seriesArray = options.series as any[];
+
+    // Check if all series have the same data structure
+    const allSeriesHaveSameStructure = seriesArray.every(series => 
+      series.type === seriesArray[0].type && 
+      Array.isArray(series.data)
+    );
+
+    if (allSeriesHaveSameStructure) {
+      // For pie charts, we need a different approach
+      if (seriesArray[0].type === 'pie') {
+        this.convertPieChartToDataset(options, seriesArray);
+        return;
+      }
+
+      // For bar and line charts with multiple series
+      if (['bar', 'line'].includes(seriesArray[0].type) && seriesArray.length > 1) {
+        this.convertMultiSeriesToDataset(options, seriesArray);
+        return;
+      }
+    }
+
+    // Default conversion for simple cases
     // Check if the first series has data
-    const firstSeries = options.series[0] as any;
+    const firstSeries = seriesArray[0];
     if (!firstSeries.data || !Array.isArray(firstSeries.data)) {
       return;
     }
@@ -88,10 +117,116 @@ export class EchartComponent extends BaseWidgetComponent implements AfterViewIni
     };
 
     // Update series to use the dataset
-    options.series = options.series.map((series: any) => {
+    options.series = seriesArray.map((series: any) => {
+      const newSeries = { ...series };
+
+      // Keep the data reference for scatter plots which often need the original data
+      if (series.type !== 'scatter') {
+        delete newSeries.data;
+      }
+
+      return newSeries;
+    });
+  }
+
+  /**
+   * Converts pie chart data to use the dataset API
+   * 
+   * @param options - The ECharts options to convert
+   * @param seriesArray - The array of series
+   */
+  private convertPieChartToDataset(options: echarts.EChartsOption, seriesArray: any[]): void {
+    const firstSeries = seriesArray[0];
+    if (!firstSeries.data || !Array.isArray(firstSeries.data)) {
+      return;
+    }
+
+    // For pie charts, we need to keep the name property
+    options.dataset = {
+      source: firstSeries.data.map((item: any) => ({
+        name: item.name,
+        value: item.value
+      }))
+    };
+
+    // Update series to use the dataset
+    options.series = seriesArray.map((series: any) => {
       const newSeries = { ...series };
       delete newSeries.data;
+
+      // Add encode property to tell ECharts how to map dataset fields
+      newSeries.encode = {
+        itemName: 'name',
+        value: 'value'
+      };
+
       return newSeries;
+    });
+  }
+
+  /**
+   * Converts multiple series data to use the dataset API
+   * 
+   * @param options - The ECharts options to convert
+   * @param seriesArray - The array of series
+   */
+  private convertMultiSeriesToDataset(options: echarts.EChartsOption, seriesArray: any[]): void {
+    // Extract all unique x-axis values
+    const xAxisValues = new Set<string>();
+    seriesArray.forEach(series => {
+      if (series.data && Array.isArray(series.data)) {
+        series.data.forEach((item: any) => {
+          if (Array.isArray(item) && item.length >= 2) {
+            xAxisValues.add(item[0].toString());
+          } else if (item && item.name) {
+            xAxisValues.add(item.name.toString());
+          }
+        });
+      }
+    });
+
+    // Create a source array with all series data
+    const source: any[] = [['product', ...seriesArray.map(s => s.name || `Series ${seriesArray.indexOf(s)}`)]]
+
+    // Add data for each x-axis value
+    Array.from(xAxisValues).forEach(xValue => {
+      const row = [xValue];
+
+      seriesArray.forEach(series => {
+        if (series.data && Array.isArray(series.data)) {
+          const dataItem = series.data.find((item: any) => 
+            (Array.isArray(item) && item[0].toString() === xValue) ||
+            (item && item.name && item.name.toString() === xValue)
+          );
+
+          if (dataItem) {
+            row.push(Array.isArray(dataItem) ? dataItem[1] : dataItem.value);
+          } else {
+            row.push('');
+          }
+        } else {
+          row.push('');
+        }
+      });
+
+      source.push(row);
+    });
+
+    // Set the dataset
+    options.dataset = { source };
+
+    // Update series to use the dataset
+    options.series = seriesArray.map((series: any, index: number) => {
+      return {
+        type: series.type,
+        name: series.name,
+        // Use the series index + 1 as the y-axis dimension (0 is the x-axis)
+        encode: { x: 0, y: index + 1 },
+        // Preserve other properties except data
+        ...Object.keys(series)
+          .filter(key => key !== 'data' && key !== 'type' && key !== 'name')
+          .reduce((obj, key) => ({ ...obj, [key]: series[key] }), {})
+      };
     });
   }
 
@@ -159,10 +294,33 @@ export class EchartComponent extends BaseWidgetComponent implements AfterViewIni
 
   /**
    * Resizes the chart to fit its container
+   * Uses requestAnimationFrame for better performance
    */
   private resizeChart(): void {
     if (this.widget?.chartInstance) {
-      this.widget.chartInstance.resize();
+      // Use requestAnimationFrame to optimize resize performance
+      // This ensures the resize happens during the next animation frame
+      // which prevents multiple resize calls in the same frame
+      requestAnimationFrame(() => {
+        if (this.widget?.chartInstance) {
+          // Get the container dimensions
+          const container = this.elementRef.nativeElement.querySelector('.echart-container');
+          if (container) {
+            const { width, height } = container.getBoundingClientRect();
+
+            // Only resize if dimensions are valid (non-zero)
+            if (width > 0 && height > 0) {
+              this.widget.chartInstance.resize({
+                width: width,
+                height: height
+              });
+            }
+          } else {
+            // Fallback to auto-resize if container not found
+            this.widget.chartInstance.resize();
+          }
+        }
+      });
     }
   }
 

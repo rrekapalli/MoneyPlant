@@ -1,5 +1,5 @@
 import * as i0 from '@angular/core';
-import { Injectable, EventEmitter, Component, Output, Input, ChangeDetectionStrategy } from '@angular/core';
+import { Component, Input, Injectable, EventEmitter, Output, ChangeDetectionStrategy } from '@angular/core';
 import { GridType, GridsterComponent, GridsterItemComponent } from 'angular-gridster2';
 import * as i4 from '@angular/common';
 import { NgComponentOutlet, NgIf, CommonModule } from '@angular/common';
@@ -169,6 +169,36 @@ class WidgetBuilder {
 }
 
 /**
+ * A placeholder component shown while the actual widget component is being loaded
+ */
+class PlaceholderComponent {
+    static { this.ɵfac = function PlaceholderComponent_Factory(__ngFactoryType__) { return new (__ngFactoryType__ || PlaceholderComponent)(); }; }
+    static { this.ɵcmp = /*@__PURE__*/ i0.ɵɵdefineComponent({ type: PlaceholderComponent, selectors: [["vis-placeholder"]], inputs: { widget: "widget" }, decls: 5, vars: 1, consts: [[1, "placeholder-container"], [1, "placeholder-content"], [1, "placeholder-spinner"], [1, "placeholder-text"]], template: function PlaceholderComponent_Template(rf, ctx) { if (rf & 1) {
+            i0.ɵɵelementStart(0, "div", 0)(1, "div", 1);
+            i0.ɵɵelement(2, "div", 2);
+            i0.ɵɵelementStart(3, "div", 3);
+            i0.ɵɵtext(4, "Loading widget...");
+            i0.ɵɵelementEnd()()();
+        } if (rf & 2) {
+            i0.ɵɵattribute("aria-label", "Loading " + ((ctx.widget == null ? null : ctx.widget.config == null ? null : ctx.widget.config.header == null ? null : ctx.widget.config.header.title) || "widget"));
+        } }, styles: [".placeholder-container[_ngcontent-%COMP%]{display:flex;justify-content:center;align-items:center;height:100%;background-color:#00000005;border-radius:8px;padding:20px}.placeholder-content[_ngcontent-%COMP%]{display:flex;flex-direction:column;align-items:center;text-align:center}.placeholder-spinner[_ngcontent-%COMP%]{width:40px;height:40px;border:3px solid rgba(0,0,0,.1);border-radius:50%;border-top-color:#3498db;animation:_ngcontent-%COMP%_spin 1s ease-in-out infinite;margin-bottom:12px}@keyframes _ngcontent-%COMP%_spin{to{transform:rotate(360deg)}}.placeholder-text[_ngcontent-%COMP%]{color:#666;font-size:14px;animation:_ngcontent-%COMP%_fadeInOut 1.5s ease-in-out infinite}@keyframes _ngcontent-%COMP%_fadeInOut{0%{opacity:.6}50%{opacity:1}to{opacity:.6}}"] }); }
+}
+(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassMetadata(PlaceholderComponent, [{
+        type: Component,
+        args: [{ selector: 'vis-placeholder', standalone: true, template: `
+    <div class="placeholder-container" [attr.aria-label]="'Loading ' + (widget?.config?.header?.title || 'widget')">
+      <div class="placeholder-content">
+        <div class="placeholder-spinner"></div>
+        <div class="placeholder-text">Loading widget...</div>
+      </div>
+    </div>
+  `, styles: [".placeholder-container{display:flex;justify-content:center;align-items:center;height:100%;background-color:#00000005;border-radius:8px;padding:20px}.placeholder-content{display:flex;flex-direction:column;align-items:center;text-align:center}.placeholder-spinner{width:40px;height:40px;border:3px solid rgba(0,0,0,.1);border-radius:50%;border-top-color:#3498db;animation:spin 1s ease-in-out infinite;margin-bottom:12px}@keyframes spin{to{transform:rotate(360deg)}}.placeholder-text{color:#666;font-size:14px;animation:fadeInOut 1.5s ease-in-out infinite}@keyframes fadeInOut{0%{opacity:.6}50%{opacity:1}to{opacity:.6}}\n"] }]
+    }], null, { widget: [{
+            type: Input
+        }] }); })();
+(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassDebugInfo(PlaceholderComponent, { className: "PlaceholderComponent", filePath: "lib/widgets/placeholder/placeholder.component.ts", lineNumber: 64 }); })();
+
+/**
  * Service for managing widget plugins in the dashboard framework
  *
  * This service provides methods for registering, retrieving, and managing
@@ -286,15 +316,11 @@ class WidgetPluginService {
     /**
      * Gets a placeholder component to use while the real component is loading
      *
-     * @returns A placeholder component
+     * @returns The placeholder component type
      */
     getPlaceholderComponent() {
-        // This could be a simple loading component
-        // For now, we'll just return a dummy object that won't cause errors
-        return {
-            __isPlaceholder: true,
-            __componentType: 'placeholder'
-        };
+        // Return the actual placeholder component
+        return PlaceholderComponent;
     }
     /**
      * Registers the default widget plugins
@@ -385,9 +411,8 @@ class WidgetPluginService {
             supportsFiltering: false,
             canBeFilterSource: false
         });
-        // Preload commonly used components
-        this.loadComponentForType('echart');
-        this.loadComponentForType('filter');
+        // Don't preload components - let them be loaded on demand
+        // This improves initial loading performance
     }
     static { this.ɵfac = function WidgetPluginService_Factory(__ngFactoryType__) { return new (__ngFactoryType__ || WidgetPluginService)(); }; }
     static { this.ɵprov = /*@__PURE__*/ i0.ɵɵdefineInjectable({ token: WidgetPluginService, factory: WidgetPluginService.ɵfac, providedIn: 'root' }); }
@@ -1825,6 +1850,16 @@ class VirtualScrollService {
         this.viewportHeight = 20;
         // Buffer size in rows (widgets this many rows outside the viewport will still be rendered)
         this.bufferSize = 5;
+        // Scroll position in rows
+        this.scrollPosition = 0;
+        // Observable for scroll position changes
+        this.scrollPositionSubject = new BehaviorSubject(0);
+        this.scrollPosition$ = this.scrollPositionSubject.asObservable();
+        // Observable for visible widgets
+        this.visibleWidgetsSubject = new BehaviorSubject([]);
+        this.visibleWidgets$ = this.visibleWidgetsSubject.asObservable();
+        // Cache of widget positions for faster lookup
+        this.widgetPositionCache = new Map();
     }
     /**
      * Sets the viewport height
@@ -1843,6 +1878,43 @@ class VirtualScrollService {
         this.bufferSize = rows;
     }
     /**
+     * Updates the scroll position and recalculates visible widgets
+     *
+     * @param scrollTop - The new scroll position in rows
+     * @param widgets - All widgets in the dashboard
+     */
+    updateScrollPosition(scrollTop, widgets) {
+        this.scrollPosition = scrollTop;
+        this.scrollPositionSubject.next(scrollTop);
+        // Update visible widgets
+        const visibleWidgets = this.getVisibleWidgets(widgets, scrollTop);
+        this.visibleWidgetsSubject.next(visibleWidgets);
+    }
+    /**
+     * Gets the current scroll position
+     *
+     * @returns The current scroll position in rows
+     */
+    getScrollPosition() {
+        return this.scrollPosition;
+    }
+    /**
+     * Gets an observable of the scroll position
+     *
+     * @returns An observable of the scroll position
+     */
+    getScrollPosition$() {
+        return this.scrollPosition$;
+    }
+    /**
+     * Gets an observable of the visible widgets
+     *
+     * @returns An observable of the visible widgets
+     */
+    getVisibleWidgets$() {
+        return this.visibleWidgets$;
+    }
+    /**
      * Determines which widgets should be rendered based on the current scroll position
      *
      * @param widgets - All widgets in the dashboard
@@ -1856,13 +1928,29 @@ class VirtualScrollService {
         // Calculate the visible range with buffer
         const visibleRangeStart = Math.max(0, scrollTop - this.bufferSize);
         const visibleRangeEnd = scrollTop + this.viewportHeight + this.bufferSize;
+        // Update widget position cache if needed
+        this.updateWidgetPositionCache(widgets);
         // Filter widgets to only include those in the visible range
         return widgets.filter(widget => {
             if (!widget.position) {
                 return true; // Include widgets without position info
             }
-            const widgetTop = widget.position.y;
-            const widgetBottom = widget.position.y + widget.position.rows;
+            // Get widget position from cache if available
+            const widgetId = widget.id || '';
+            let widgetTop;
+            let widgetBottom;
+            if (this.widgetPositionCache.has(widgetId)) {
+                const cachedPosition = this.widgetPositionCache.get(widgetId);
+                widgetTop = cachedPosition.top;
+                widgetBottom = cachedPosition.bottom;
+            }
+            else {
+                // Calculate position if not in cache
+                widgetTop = widget.position.y;
+                widgetBottom = widget.position.y + widget.position.rows;
+                // Add to cache
+                this.widgetPositionCache.set(widgetId, { top: widgetTop, bottom: widgetBottom });
+            }
             // Widget is visible if any part of it is in the visible range
             return ((widgetTop >= visibleRangeStart && widgetTop <= visibleRangeEnd) || // Top edge in range
                 (widgetBottom >= visibleRangeStart && widgetBottom <= visibleRangeEnd) || // Bottom edge in range
@@ -1888,6 +1976,40 @@ class VirtualScrollService {
             const bottom = widget.position.y + widget.position.rows;
             return Math.max(maxBottom, bottom);
         }, 0);
+    }
+    /**
+     * Updates the widget position cache
+     *
+     * @param widgets - All widgets in the dashboard
+     */
+    updateWidgetPositionCache(widgets) {
+        // Create a set of current widget IDs
+        const currentWidgetIds = new Set();
+        // Update cache for each widget
+        widgets.forEach(widget => {
+            if (widget.id && widget.position) {
+                const widgetId = widget.id;
+                currentWidgetIds.add(widgetId);
+                // Only update cache if position has changed or is not in cache
+                const cachedPosition = this.widgetPositionCache.get(widgetId);
+                const currentTop = widget.position.y;
+                const currentBottom = widget.position.y + widget.position.rows;
+                if (!cachedPosition ||
+                    cachedPosition.top !== currentTop ||
+                    cachedPosition.bottom !== currentBottom) {
+                    this.widgetPositionCache.set(widgetId, {
+                        top: currentTop,
+                        bottom: currentBottom
+                    });
+                }
+            }
+        });
+        // Remove cache entries for widgets that no longer exist
+        for (const cachedId of this.widgetPositionCache.keys()) {
+            if (!currentWidgetIds.has(cachedId)) {
+                this.widgetPositionCache.delete(cachedId);
+            }
+        }
     }
     /**
      * Creates placeholder widgets for the virtual scroll
@@ -2379,8 +2501,10 @@ class DashboardContainerComponent {
         const scrollTop = event.target.scrollTop;
         const rowHeight = 50; // Approximate row height in pixels
         this.currentScrollPosition = Math.floor(scrollTop / rowHeight);
-        // Update visible widgets
-        this.updateVisibleWidgets();
+        // Use the VirtualScrollService to update scroll position and visible widgets
+        this.virtualScrollService.updateScrollPosition(this.currentScrollPosition, this.widgets);
+        // Get the updated visible widgets
+        this.visibleWidgets = this.virtualScrollService.getVisibleWidgets(this.widgets, this.currentScrollPosition);
     }
     /**
      * Subscribes to events from the event bus
@@ -5198,8 +5322,30 @@ class EchartComponent extends BaseWidgetComponent {
         if (!options.series || !Array.isArray(options.series) || options.series.length === 0) {
             return;
         }
+        // If dataset is already defined, don't override it
+        if (options.dataset) {
+            return;
+        }
+        // Handle different series types differently
+        const seriesArray = options.series;
+        // Check if all series have the same data structure
+        const allSeriesHaveSameStructure = seriesArray.every(series => series.type === seriesArray[0].type &&
+            Array.isArray(series.data));
+        if (allSeriesHaveSameStructure) {
+            // For pie charts, we need a different approach
+            if (seriesArray[0].type === 'pie') {
+                this.convertPieChartToDataset(options, seriesArray);
+                return;
+            }
+            // For bar and line charts with multiple series
+            if (['bar', 'line'].includes(seriesArray[0].type) && seriesArray.length > 1) {
+                this.convertMultiSeriesToDataset(options, seriesArray);
+                return;
+            }
+        }
+        // Default conversion for simple cases
         // Check if the first series has data
-        const firstSeries = options.series[0];
+        const firstSeries = seriesArray[0];
         if (!firstSeries.data || !Array.isArray(firstSeries.data)) {
             return;
         }
@@ -5208,10 +5354,102 @@ class EchartComponent extends BaseWidgetComponent {
             source: firstSeries.data
         };
         // Update series to use the dataset
-        options.series = options.series.map((series) => {
+        options.series = seriesArray.map((series) => {
+            const newSeries = { ...series };
+            // Keep the data reference for scatter plots which often need the original data
+            if (series.type !== 'scatter') {
+                delete newSeries.data;
+            }
+            return newSeries;
+        });
+    }
+    /**
+     * Converts pie chart data to use the dataset API
+     *
+     * @param options - The ECharts options to convert
+     * @param seriesArray - The array of series
+     */
+    convertPieChartToDataset(options, seriesArray) {
+        const firstSeries = seriesArray[0];
+        if (!firstSeries.data || !Array.isArray(firstSeries.data)) {
+            return;
+        }
+        // For pie charts, we need to keep the name property
+        options.dataset = {
+            source: firstSeries.data.map((item) => ({
+                name: item.name,
+                value: item.value
+            }))
+        };
+        // Update series to use the dataset
+        options.series = seriesArray.map((series) => {
             const newSeries = { ...series };
             delete newSeries.data;
+            // Add encode property to tell ECharts how to map dataset fields
+            newSeries.encode = {
+                itemName: 'name',
+                value: 'value'
+            };
             return newSeries;
+        });
+    }
+    /**
+     * Converts multiple series data to use the dataset API
+     *
+     * @param options - The ECharts options to convert
+     * @param seriesArray - The array of series
+     */
+    convertMultiSeriesToDataset(options, seriesArray) {
+        // Extract all unique x-axis values
+        const xAxisValues = new Set();
+        seriesArray.forEach(series => {
+            if (series.data && Array.isArray(series.data)) {
+                series.data.forEach((item) => {
+                    if (Array.isArray(item) && item.length >= 2) {
+                        xAxisValues.add(item[0].toString());
+                    }
+                    else if (item && item.name) {
+                        xAxisValues.add(item.name.toString());
+                    }
+                });
+            }
+        });
+        // Create a source array with all series data
+        const source = [['product', ...seriesArray.map(s => s.name || `Series ${seriesArray.indexOf(s)}`)]];
+        // Add data for each x-axis value
+        Array.from(xAxisValues).forEach(xValue => {
+            const row = [xValue];
+            seriesArray.forEach(series => {
+                if (series.data && Array.isArray(series.data)) {
+                    const dataItem = series.data.find((item) => (Array.isArray(item) && item[0].toString() === xValue) ||
+                        (item && item.name && item.name.toString() === xValue));
+                    if (dataItem) {
+                        row.push(Array.isArray(dataItem) ? dataItem[1] : dataItem.value);
+                    }
+                    else {
+                        row.push('');
+                    }
+                }
+                else {
+                    row.push('');
+                }
+            });
+            source.push(row);
+        });
+        // Set the dataset
+        options.dataset = { source };
+        // Update series to use the dataset
+        options.series = seriesArray.map((series, index) => {
+            return {
+                type: series.type,
+                name: series.name,
+                // Use the series index + 1 as the y-axis dimension (0 is the x-axis)
+                encode: { x: 0, y: index + 1 },
+                // Preserve other properties except data
+                ...Object.keys(series)
+                    .filter(key => key !== 'data' && key !== 'type' && key !== 'name')
+                    .reduce((obj, key) => ({ ...obj, [key]: series[key] }), {})
+            };
         });
     }
     /**
@@ -5264,10 +5502,33 @@ class EchartComponent extends BaseWidgetComponent {
     }
     /**
      * Resizes the chart to fit its container
+     * Uses requestAnimationFrame for better performance
      */
     resizeChart() {
         if (this.widget?.chartInstance) {
-            this.widget.chartInstance.resize();
+            // Use requestAnimationFrame to optimize resize performance
+            // This ensures the resize happens during the next animation frame
+            // which prevents multiple resize calls in the same frame
+            requestAnimationFrame(() => {
+                if (this.widget?.chartInstance) {
+                    // Get the container dimensions
+                    const container = this.elementRef.nativeElement.querySelector('.echart-container');
+                    if (container) {
+                        const { width, height } = container.getBoundingClientRect();
+                        // Only resize if dimensions are valid (non-zero)
+                        if (width > 0 && height > 0) {
+                            this.widget.chartInstance.resize({
+                                width: width,
+                                height: height
+                            });
+                        }
+                    }
+                    else {
+                        // Fallback to auto-resize if container not found
+                        this.widget.chartInstance.resize();
+                    }
+                }
+            });
         }
     }
     /**
