@@ -1,24 +1,38 @@
 import * as i0 from '@angular/core';
 import { Injectable, EventEmitter, Component, Output, Input, ChangeDetectionStrategy } from '@angular/core';
 import { GridType, GridsterComponent, GridsterItemComponent } from 'angular-gridster2';
-import * as i6 from '@angular/common';
-import { NgComponentOutlet, CommonModule } from '@angular/common';
-import { FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { Subject, fromEvent } from 'rxjs';
-import { filter, map, takeUntil, debounceTime } from 'rxjs/operators';
+import * as i4 from '@angular/common';
+import { NgComponentOutlet, NgIf, CommonModule } from '@angular/common';
+import * as i1 from '@angular/forms';
+import { Validators, FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { Subject, BehaviorSubject, takeUntil, fromEvent } from 'rxjs';
+import { filter, map, takeUntil as takeUntil$1, debounceTime } from 'rxjs/operators';
 import * as i3 from 'primeng/panel';
 import { PanelModule } from 'primeng/panel';
 import * as i1$1 from 'primeng/sidebar';
 import { SidebarModule } from 'primeng/sidebar';
+import * as i5 from 'primeng/tabmenu';
 import { TabMenuModule } from 'primeng/tabmenu';
+import * as i6 from 'primeng/scrollpanel';
 import { ScrollPanelModule } from 'primeng/scrollpanel';
-import * as i1 from 'primeng/button';
+import * as i7 from 'primeng/button';
 import { ButtonModule, Button } from 'primeng/button';
-import * as i2 from 'primeng/toast';
+import * as i8 from 'primeng/toast';
 import { ToastModule, Toast } from 'primeng/toast';
-import * as i2$1 from 'primeng/api';
+import * as i2 from 'primeng/api';
 import { MessageService } from 'primeng/api';
+import * as i9 from 'primeng/inputtext';
+import { InputTextModule } from 'primeng/inputtext';
+import * as i10 from 'primeng/dropdown';
+import { DropdownModule } from 'primeng/dropdown';
+import * as i11 from 'primeng/inputnumber';
+import { InputNumberModule } from 'primeng/inputnumber';
+import * as i12 from 'primeng/inputswitch';
+import { InputSwitchModule } from 'primeng/inputswitch';
+import { InputTextarea } from 'primeng/inputtextarea';
 import { NgxPrintModule } from 'ngx-print';
+import * as i9$1 from 'primeng/tooltip';
+import { TooltipModule } from 'primeng/tooltip';
 import buildQuery from 'odata-query';
 import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
 import * as echarts from 'echarts';
@@ -518,7 +532,26 @@ class EventBusService {
             }]
     }], null, null); })();
 
-const _c0$1 = () => ({ height: "20vh" });
+function WidgetComponent_Conditional_0_p_9_Template(rf, ctx) { if (rf & 1) {
+    i0.ɵɵelementStart(0, "p", 11);
+    i0.ɵɵtext(1);
+    i0.ɵɵelementEnd();
+} if (rf & 2) {
+    const ctx_r1 = i0.ɵɵnextContext(2);
+    i0.ɵɵadvance();
+    i0.ɵɵtextInterpolate((ctx_r1.widget.error == null ? null : ctx_r1.widget.error.stack) || "");
+} }
+function WidgetComponent_Conditional_0_button_10_Template(rf, ctx) { if (rf & 1) {
+    const _r3 = i0.ɵɵgetCurrentView();
+    i0.ɵɵelementStart(0, "button", 12);
+    i0.ɵɵlistener("click", function WidgetComponent_Conditional_0_button_10_Template_button_click_0_listener() { i0.ɵɵrestoreView(_r3); const ctx_r1 = i0.ɵɵnextContext(2); return i0.ɵɵresetView(ctx_r1.toggleErrorDetails()); });
+    i0.ɵɵtext(1);
+    i0.ɵɵelementEnd();
+} if (rf & 2) {
+    const ctx_r1 = i0.ɵɵnextContext(2);
+    i0.ɵɵadvance();
+    i0.ɵɵtextInterpolate1(" ", ctx_r1.showErrorDetails ? "Hide Details" : "Show Details", " ");
+} }
 function WidgetComponent_Conditional_0_Template(rf, ctx) { if (rf & 1) {
     const _r1 = i0.ɵɵgetCurrentView();
     i0.ɵɵelementStart(0, "div", 3)(1, "div", 4)(2, "div", 5);
@@ -529,36 +562,46 @@ function WidgetComponent_Conditional_0_Template(rf, ctx) { if (rf & 1) {
     i0.ɵɵelementEnd();
     i0.ɵɵelementStart(7, "p");
     i0.ɵɵtext(8);
-    i0.ɵɵelementEnd()();
-    i0.ɵɵelementStart(9, "button", 7);
-    i0.ɵɵlistener("click", function WidgetComponent_Conditional_0_Template_button_click_9_listener() { i0.ɵɵrestoreView(_r1); const ctx_r1 = i0.ɵɵnextContext(); return i0.ɵɵresetView(ctx_r1.retryLoad()); });
-    i0.ɵɵtext(10, "Retry");
+    i0.ɵɵelementEnd();
+    i0.ɵɵtemplate(9, WidgetComponent_Conditional_0_p_9_Template, 2, 1, "p", 7)(10, WidgetComponent_Conditional_0_button_10_Template, 2, 1, "button", 8);
+    i0.ɵɵelementEnd();
+    i0.ɵɵelementStart(11, "button", 9);
+    i0.ɵɵlistener("click", function WidgetComponent_Conditional_0_Template_button_click_11_listener() { i0.ɵɵrestoreView(_r1); const ctx_r1 = i0.ɵɵnextContext(); return i0.ɵɵresetView(ctx_r1.retryLoad()); });
+    i0.ɵɵelementStart(12, "span", 10);
+    i0.ɵɵtext(13, "\u21BB");
+    i0.ɵɵelementEnd();
+    i0.ɵɵtext(14, " Retry ");
     i0.ɵɵelementEnd()()();
 } if (rf & 2) {
     const ctx_r1 = i0.ɵɵnextContext();
-    i0.ɵɵstyleMap(i0.ɵɵpureFunction0(3, _c0$1));
+    i0.ɵɵstyleMap(ctx_r1.getWidgetHeight());
     i0.ɵɵadvance(8);
-    i0.ɵɵtextInterpolate((ctx_r1.widget.error == null ? null : ctx_r1.widget.error.message) || "An unknown error occurred");
+    i0.ɵɵtextInterpolate(ctx_r1.getErrorMessage());
+    i0.ɵɵadvance();
+    i0.ɵɵproperty("ngIf", ctx_r1.showErrorDetails);
+    i0.ɵɵadvance();
+    i0.ɵɵproperty("ngIf", ctx_r1.widget.error == null ? null : ctx_r1.widget.error.stack);
 } }
 function WidgetComponent_Conditional_1_Template(rf, ctx) { if (rf & 1) {
-    i0.ɵɵelementStart(0, "div", 8)(1, "div", 9);
-    i0.ɵɵelement(2, "div", 10);
-    i0.ɵɵelementStart(3, "div", 11);
-    i0.ɵɵtext(4, "Loading...");
+    i0.ɵɵelementStart(0, "div", 13)(1, "div", 14);
+    i0.ɵɵelement(2, "div", 15);
+    i0.ɵɵelementStart(3, "div", 16);
+    i0.ɵɵtext(4, "Loading widget data...");
     i0.ɵɵelementEnd()()();
 } if (rf & 2) {
-    i0.ɵɵstyleMap(i0.ɵɵpureFunction0(2, _c0$1));
+    const ctx_r1 = i0.ɵɵnextContext();
+    i0.ɵɵstyleMap(ctx_r1.getWidgetHeight());
 } }
 function WidgetComponent_Conditional_2_ng_container_1_Template(rf, ctx) { if (rf & 1) {
     i0.ɵɵelementContainer(0);
 } }
 function WidgetComponent_Conditional_2_Template(rf, ctx) { if (rf & 1) {
     i0.ɵɵelementStart(0, "div");
-    i0.ɵɵtemplate(1, WidgetComponent_Conditional_2_ng_container_1_Template, 1, 0, "ng-container", 12);
+    i0.ɵɵtemplate(1, WidgetComponent_Conditional_2_ng_container_1_Template, 1, 0, "ng-container", 17);
     i0.ɵɵelementEnd();
 } if (rf & 2) {
     const ctx_r1 = i0.ɵɵnextContext();
-    i0.ɵɵstyleMap(i0.ɵɵpureFunction0(4, _c0$1));
+    i0.ɵɵstyleMap(ctx_r1.getWidgetHeight());
     i0.ɵɵadvance();
     i0.ɵɵproperty("ngComponentOutlet", ctx_r1.currentWidget.component)("ngComponentOutletInputs", ctx_r1.currentWidget.inputs);
 } }
@@ -567,11 +610,11 @@ function WidgetComponent_Conditional_3_ng_container_1_Template(rf, ctx) { if (rf
 } }
 function WidgetComponent_Conditional_3_Template(rf, ctx) { if (rf & 1) {
     i0.ɵɵelementStart(0, "div");
-    i0.ɵɵtemplate(1, WidgetComponent_Conditional_3_ng_container_1_Template, 1, 0, "ng-container", 12);
+    i0.ɵɵtemplate(1, WidgetComponent_Conditional_3_ng_container_1_Template, 1, 0, "ng-container", 17);
     i0.ɵɵelementEnd();
 } if (rf & 2) {
     const ctx_r1 = i0.ɵɵnextContext();
-    i0.ɵɵstyleMap(i0.ɵɵpureFunction0(4, _c0$1));
+    i0.ɵɵstyleMap(ctx_r1.getWidgetHeight());
     i0.ɵɵadvance();
     i0.ɵɵproperty("ngComponentOutlet", ctx_r1.currentWidget.component)("ngComponentOutletInputs", ctx_r1.currentWidget.inputs);
 } }
@@ -586,6 +629,10 @@ class WidgetComponent {
         this.onDataLoad = new EventEmitter();
         /** Event emitted when filter values are updated */
         this.onUpdateFilter = new EventEmitter();
+        /** Whether to show detailed error information */
+        this.showErrorDetails = false;
+        /** Default widget height in pixels */
+        this.defaultHeight = '300px';
     }
     /**
      * Gets the current widget component and its inputs
@@ -617,6 +664,7 @@ class WidgetComponent {
         }
         // Clear the error state
         this.widget.error = null;
+        this.showErrorDetails = false;
         // Set loading state
         this.widget.loading = true;
         // Emit the data load event
@@ -624,16 +672,67 @@ class WidgetComponent {
         // Also publish through the event bus
         this.eventBus.publishDataLoad(this.widget, this.widget.id);
     }
+    /**
+     * Gets the appropriate widget height based on the widget configuration
+     * @returns A style object with the height property
+     */
+    getWidgetHeight() {
+        if (!this.widget) {
+            return { height: this.defaultHeight };
+        }
+        // Use the widget's configured height if available
+        if (this.widget.config?.height) {
+            return { height: `${this.widget.config.height}px` };
+        }
+        // Use the widget's gridster item size if available
+        if (this.widget.rows) {
+            // Calculate height based on rows (approximate 50px per row)
+            const calculatedHeight = this.widget.rows * 50;
+            return { height: `${calculatedHeight}px` };
+        }
+        // Fall back to default height
+        return { height: this.defaultHeight };
+    }
+    /**
+     * Gets a user-friendly error message from the widget's error object
+     * @returns A formatted error message
+     */
+    getErrorMessage() {
+        if (!this.widget?.error) {
+            return 'An unknown error occurred';
+        }
+        // If the error is a string, return it directly
+        if (typeof this.widget.error === 'string') {
+            return this.widget.error;
+        }
+        // If the error has a message property, return that
+        if (this.widget.error.message) {
+            return this.widget.error.message;
+        }
+        // Try to convert the error to a string
+        try {
+            return JSON.stringify(this.widget.error);
+        }
+        catch {
+            return 'An unknown error occurred';
+        }
+    }
+    /**
+     * Toggles the display of detailed error information
+     */
+    toggleErrorDetails() {
+        this.showErrorDetails = !this.showErrorDetails;
+    }
     static { this.ɵfac = function WidgetComponent_Factory(__ngFactoryType__) { return new (__ngFactoryType__ || WidgetComponent)(i0.ɵɵdirectiveInject(WidgetPluginService), i0.ɵɵdirectiveInject(EventBusService)); }; }
-    static { this.ɵcmp = /*@__PURE__*/ i0.ɵɵdefineComponent({ type: WidgetComponent, selectors: [["vis-widget"]], inputs: { widget: "widget" }, outputs: { onDataLoad: "onDataLoad", onUpdateFilter: "onUpdateFilter" }, decls: 4, vars: 1, consts: [[1, "widget-error", 3, "style"], [1, "widget-loading", 3, "style"], [3, "style"], [1, "widget-error"], [1, "error-container"], [1, "error-icon"], [1, "error-message"], [1, "retry-button", 3, "click"], [1, "widget-loading"], [1, "loading-container"], [1, "loading-spinner"], [1, "loading-text"], [4, "ngComponentOutlet", "ngComponentOutletInputs"]], template: function WidgetComponent_Template(rf, ctx) { if (rf & 1) {
-            i0.ɵɵconditionalCreate(0, WidgetComponent_Conditional_0_Template, 11, 4, "div", 0)(1, WidgetComponent_Conditional_1_Template, 5, 3, "div", 1)(2, WidgetComponent_Conditional_2_Template, 2, 5, "div", 2)(3, WidgetComponent_Conditional_3_Template, 2, 5, "div", 2);
+    static { this.ɵcmp = /*@__PURE__*/ i0.ɵɵdefineComponent({ type: WidgetComponent, selectors: [["vis-widget"]], inputs: { widget: "widget" }, outputs: { onDataLoad: "onDataLoad", onUpdateFilter: "onUpdateFilter" }, decls: 4, vars: 1, consts: [[1, "widget-error", 3, "style"], ["role", "status", "aria-live", "polite", 1, "widget-loading", 3, "style"], [3, "style"], [1, "widget-error"], ["role", "alert", "aria-live", "assertive", 1, "error-container"], ["aria-hidden", "true", 1, "error-icon"], [1, "error-message"], ["class", "error-details", 4, "ngIf"], ["class", "details-button", 3, "click", 4, "ngIf"], ["aria-label", "Retry loading widget", 1, "retry-button", 3, "click"], ["aria-hidden", "true", 1, "retry-icon"], [1, "error-details"], [1, "details-button", 3, "click"], ["role", "status", "aria-live", "polite", 1, "widget-loading"], [1, "loading-container"], ["aria-hidden", "true", 1, "loading-spinner"], [1, "loading-text"], [4, "ngComponentOutlet", "ngComponentOutletInputs"]], template: function WidgetComponent_Template(rf, ctx) { if (rf & 1) {
+            i0.ɵɵconditionalCreate(0, WidgetComponent_Conditional_0_Template, 15, 5, "div", 0)(1, WidgetComponent_Conditional_1_Template, 5, 2, "div", 1)(2, WidgetComponent_Conditional_2_Template, 2, 4, "div", 2)(3, WidgetComponent_Conditional_3_Template, 2, 4, "div", 2);
         } if (rf & 2) {
             i0.ɵɵconditional((ctx.widget == null ? null : ctx.widget.error) ? 0 : (ctx.widget == null ? null : ctx.widget.loading) ? 1 : ctx.isEchartComponent ? 2 : 3);
-        } }, dependencies: [NgComponentOutlet], styles: [".widget-error[_ngcontent-%COMP%]{display:flex;justify-content:center;align-items:center;height:100%;background-color:#ff00000d;border:1px solid rgba(255,0,0,.2);border-radius:4px}.error-container[_ngcontent-%COMP%]{display:flex;flex-direction:column;align-items:center;padding:16px;text-align:center}.error-icon[_ngcontent-%COMP%]{font-size:24px;margin-bottom:8px}.error-message[_ngcontent-%COMP%]   h3[_ngcontent-%COMP%]{margin:0 0 8px;color:#d32f2f}.error-message[_ngcontent-%COMP%]   p[_ngcontent-%COMP%]{margin:0 0 16px;color:#666}.retry-button[_ngcontent-%COMP%]{padding:8px 16px;background-color:#f44336;color:#fff;border:none;border-radius:4px;cursor:pointer}.retry-button[_ngcontent-%COMP%]:hover{background-color:#d32f2f}.widget-loading[_ngcontent-%COMP%]{display:flex;justify-content:center;align-items:center;height:100%;background-color:#00000005}.loading-container[_ngcontent-%COMP%]{display:flex;flex-direction:column;align-items:center}.loading-spinner[_ngcontent-%COMP%]{width:32px;height:32px;border:3px solid rgba(0,0,0,.1);border-radius:50%;border-top-color:#3498db;animation:_ngcontent-%COMP%_spin 1s ease-in-out infinite;margin-bottom:8px}@keyframes _ngcontent-%COMP%_spin{to{transform:rotate(360deg)}}.loading-text[_ngcontent-%COMP%]{color:#666}"] }); }
+        } }, dependencies: [NgComponentOutlet, NgIf], styles: [".widget-error[_ngcontent-%COMP%]{display:flex;justify-content:center;align-items:center;height:100%;background-color:#ff00000d;border:1px solid rgba(255,0,0,.2);border-radius:8px;box-shadow:0 2px 4px #0000000d;overflow:hidden;transition:all .3s ease}.error-container[_ngcontent-%COMP%]{display:flex;flex-direction:column;align-items:center;padding:20px;text-align:center;max-width:90%}.error-icon[_ngcontent-%COMP%]{font-size:32px;margin-bottom:12px;animation:_ngcontent-%COMP%_pulse 2s infinite}@keyframes _ngcontent-%COMP%_pulse{0%{transform:scale(1)}50%{transform:scale(1.1)}to{transform:scale(1)}}.error-message[_ngcontent-%COMP%]{width:100%}.error-message[_ngcontent-%COMP%]   h3[_ngcontent-%COMP%]{margin:0 0 12px;color:#d32f2f;font-size:18px}.error-message[_ngcontent-%COMP%]   p[_ngcontent-%COMP%]{margin:0 0 16px;color:#666;font-size:14px;line-height:1.4}.error-details[_ngcontent-%COMP%]{background-color:#0000000d;padding:10px;border-radius:4px;font-family:monospace;font-size:12px;text-align:left;overflow-x:auto;white-space:pre-wrap;max-height:150px;overflow-y:auto}.details-button[_ngcontent-%COMP%]{padding:6px 12px;background-color:#f0f0f0;color:#333;border:1px solid #ddd;border-radius:4px;cursor:pointer;margin-bottom:16px;font-size:12px}.details-button[_ngcontent-%COMP%]:hover{background-color:#e0e0e0}.retry-button[_ngcontent-%COMP%]{padding:10px 20px;background-color:#f44336;color:#fff;border:none;border-radius:4px;cursor:pointer;display:flex;align-items:center;font-weight:500;transition:background-color .2s ease}.retry-icon[_ngcontent-%COMP%]{margin-right:8px;font-size:16px}.retry-button[_ngcontent-%COMP%]:hover{background-color:#d32f2f}.retry-button[_ngcontent-%COMP%]:focus{outline:2px solid #f44336;outline-offset:2px}.widget-loading[_ngcontent-%COMP%]{display:flex;justify-content:center;align-items:center;height:100%;background-color:#00000005;border-radius:8px}.loading-container[_ngcontent-%COMP%]{display:flex;flex-direction:column;align-items:center}.loading-spinner[_ngcontent-%COMP%]{width:40px;height:40px;border:3px solid rgba(0,0,0,.1);border-radius:50%;border-top-color:#3498db;animation:_ngcontent-%COMP%_spin 1s ease-in-out infinite;margin-bottom:12px}@keyframes _ngcontent-%COMP%_spin{to{transform:rotate(360deg)}}.loading-text[_ngcontent-%COMP%]{color:#666;font-size:14px;animation:_ngcontent-%COMP%_fadeInOut 1.5s ease-in-out infinite}@keyframes _ngcontent-%COMP%_fadeInOut{0%{opacity:.6}50%{opacity:1}to{opacity:.6}}"] }); }
 }
 (() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassMetadata(WidgetComponent, [{
         type: Component,
-        args: [{ selector: 'vis-widget', standalone: true, imports: [NgComponentOutlet], template: "@if(widget?.error) {\r\n    <div [style]=\"{ height: '20vh' }\" class=\"widget-error\">\r\n        <div class=\"error-container\">\r\n            <div class=\"error-icon\">\u26A0\uFE0F</div>\r\n            <div class=\"error-message\">\r\n                <h3>Error loading widget</h3>\r\n                <p>{{ widget.error?.message || 'An unknown error occurred' }}</p>\r\n            </div>\r\n            <button (click)=\"retryLoad()\" class=\"retry-button\">Retry</button>\r\n        </div>\r\n    </div>\r\n} @else if(widget?.loading) {\r\n    <div [style]=\"{ height: '20vh' }\" class=\"widget-loading\">\r\n        <div class=\"loading-container\">\r\n            <div class=\"loading-spinner\"></div>\r\n            <div class=\"loading-text\">Loading...</div>\r\n        </div>\r\n    </div>\r\n} @else if(isEchartComponent) {\r\n    <div [style]=\"{ height: '20vh' }\">\r\n        <ng-container \r\n            *ngComponentOutlet=\"currentWidget.component; inputs: currentWidget.inputs\">\r\n        </ng-container>\r\n    </div>\r\n} @else {\r\n    <div [style]=\"{ height: '20vh' }\">\r\n        <ng-container \r\n            *ngComponentOutlet=\"currentWidget.component; inputs: currentWidget.inputs\">\r\n        </ng-container>\r\n    </div>\r\n}\r\n", styles: [".widget-error{display:flex;justify-content:center;align-items:center;height:100%;background-color:#ff00000d;border:1px solid rgba(255,0,0,.2);border-radius:4px}.error-container{display:flex;flex-direction:column;align-items:center;padding:16px;text-align:center}.error-icon{font-size:24px;margin-bottom:8px}.error-message h3{margin:0 0 8px;color:#d32f2f}.error-message p{margin:0 0 16px;color:#666}.retry-button{padding:8px 16px;background-color:#f44336;color:#fff;border:none;border-radius:4px;cursor:pointer}.retry-button:hover{background-color:#d32f2f}.widget-loading{display:flex;justify-content:center;align-items:center;height:100%;background-color:#00000005}.loading-container{display:flex;flex-direction:column;align-items:center}.loading-spinner{width:32px;height:32px;border:3px solid rgba(0,0,0,.1);border-radius:50%;border-top-color:#3498db;animation:spin 1s ease-in-out infinite;margin-bottom:8px}@keyframes spin{to{transform:rotate(360deg)}}.loading-text{color:#666}\n"] }]
+        args: [{ selector: 'vis-widget', standalone: true, imports: [NgComponentOutlet, NgIf], template: "@if(widget?.error) {\r\n    <div class=\"widget-error\" [style]=\"getWidgetHeight()\">\r\n        <div class=\"error-container\" role=\"alert\" aria-live=\"assertive\">\r\n            <div class=\"error-icon\" aria-hidden=\"true\">\u26A0\uFE0F</div>\r\n            <div class=\"error-message\">\r\n                <h3>Error loading widget</h3>\r\n                <p>{{ getErrorMessage() }}</p>\r\n                <p class=\"error-details\" *ngIf=\"showErrorDetails\">{{ widget.error?.stack || '' }}</p>\r\n                <button *ngIf=\"widget.error?.stack\" (click)=\"toggleErrorDetails()\" class=\"details-button\">\r\n                    {{ showErrorDetails ? 'Hide Details' : 'Show Details' }}\r\n                </button>\r\n            </div>\r\n            <button (click)=\"retryLoad()\" class=\"retry-button\" aria-label=\"Retry loading widget\">\r\n                <span class=\"retry-icon\" aria-hidden=\"true\">\u21BB</span> Retry\r\n            </button>\r\n        </div>\r\n    </div>\r\n} @else if(widget?.loading) {\r\n    <div class=\"widget-loading\" [style]=\"getWidgetHeight()\" role=\"status\" aria-live=\"polite\">\r\n        <div class=\"loading-container\">\r\n            <div class=\"loading-spinner\" aria-hidden=\"true\"></div>\r\n            <div class=\"loading-text\">Loading widget data...</div>\r\n        </div>\r\n    </div>\r\n} @else if(isEchartComponent) {\r\n    <div [style]=\"getWidgetHeight()\">\r\n        <ng-container \r\n            *ngComponentOutlet=\"currentWidget.component; inputs: currentWidget.inputs\">\r\n        </ng-container>\r\n    </div>\r\n} @else {\r\n    <div [style]=\"getWidgetHeight()\">\r\n        <ng-container \r\n            *ngComponentOutlet=\"currentWidget.component; inputs: currentWidget.inputs\">\r\n        </ng-container>\r\n    </div>\r\n}\r\n", styles: [".widget-error{display:flex;justify-content:center;align-items:center;height:100%;background-color:#ff00000d;border:1px solid rgba(255,0,0,.2);border-radius:8px;box-shadow:0 2px 4px #0000000d;overflow:hidden;transition:all .3s ease}.error-container{display:flex;flex-direction:column;align-items:center;padding:20px;text-align:center;max-width:90%}.error-icon{font-size:32px;margin-bottom:12px;animation:pulse 2s infinite}@keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.1)}to{transform:scale(1)}}.error-message{width:100%}.error-message h3{margin:0 0 12px;color:#d32f2f;font-size:18px}.error-message p{margin:0 0 16px;color:#666;font-size:14px;line-height:1.4}.error-details{background-color:#0000000d;padding:10px;border-radius:4px;font-family:monospace;font-size:12px;text-align:left;overflow-x:auto;white-space:pre-wrap;max-height:150px;overflow-y:auto}.details-button{padding:6px 12px;background-color:#f0f0f0;color:#333;border:1px solid #ddd;border-radius:4px;cursor:pointer;margin-bottom:16px;font-size:12px}.details-button:hover{background-color:#e0e0e0}.retry-button{padding:10px 20px;background-color:#f44336;color:#fff;border:none;border-radius:4px;cursor:pointer;display:flex;align-items:center;font-weight:500;transition:background-color .2s ease}.retry-icon{margin-right:8px;font-size:16px}.retry-button:hover{background-color:#d32f2f}.retry-button:focus{outline:2px solid #f44336;outline-offset:2px}.widget-loading{display:flex;justify-content:center;align-items:center;height:100%;background-color:#00000005;border-radius:8px}.loading-container{display:flex;flex-direction:column;align-items:center}.loading-spinner{width:40px;height:40px;border:3px solid rgba(0,0,0,.1);border-radius:50%;border-top-color:#3498db;animation:spin 1s ease-in-out infinite;margin-bottom:12px}@keyframes spin{to{transform:rotate(360deg)}}.loading-text{color:#666;font-size:14px;animation:fadeInOut 1.5s ease-in-out infinite}@keyframes fadeInOut{0%{opacity:.6}50%{opacity:1}to{opacity:.6}}\n"] }]
     }], () => [{ type: WidgetPluginService }, { type: EventBusService }], { widget: [{
             type: Input
         }], onDataLoad: [{
@@ -641,116 +740,622 @@ class WidgetComponent {
         }], onUpdateFilter: [{
             type: Output
         }] }); })();
-(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassDebugInfo(WidgetComponent, { className: "WidgetComponent", filePath: "lib/widgets/widget/widget.component.ts", lineNumber: 95 }); })();
+(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassDebugInfo(WidgetComponent, { className: "WidgetComponent", filePath: "lib/widgets/widget/widget.component.ts", lineNumber: 164 }); })();
 
+const _c0$1 = () => ({ width: "100%", height: "400px" });
+function WidgetConfigComponent_div_9_small_8_Template(rf, ctx) { if (rf & 1) {
+    i0.ɵɵelementStart(0, "small", 21);
+    i0.ɵɵtext(1, " Title is required ");
+    i0.ɵɵelementEnd();
+} }
+function WidgetConfigComponent_div_9_small_15_Template(rf, ctx) { if (rf & 1) {
+    i0.ɵɵelementStart(0, "small", 22);
+    i0.ɵɵtext(1, " Widget type is required ");
+    i0.ɵɵelementEnd();
+} }
+function WidgetConfigComponent_div_9_Template(rf, ctx) { if (rf & 1) {
+    i0.ɵɵelementStart(0, "div", 11)(1, "form", 12)(2, "div", 13)(3, "label", 14);
+    i0.ɵɵtext(4, "Widget Title ");
+    i0.ɵɵelementStart(5, "span", 15);
+    i0.ɵɵtext(6, "*");
+    i0.ɵɵelementEnd()();
+    i0.ɵɵelement(7, "input", 16);
+    i0.ɵɵtemplate(8, WidgetConfigComponent_div_9_small_8_Template, 2, 0, "small", 17);
+    i0.ɵɵelementEnd();
+    i0.ɵɵelementStart(9, "div", 13)(10, "label", 18);
+    i0.ɵɵtext(11, "Widget Type ");
+    i0.ɵɵelementStart(12, "span", 15);
+    i0.ɵɵtext(13, "*");
+    i0.ɵɵelementEnd()();
+    i0.ɵɵelement(14, "p-dropdown", 19);
+    i0.ɵɵtemplate(15, WidgetConfigComponent_div_9_small_15_Template, 2, 0, "small", 20);
+    i0.ɵɵelementEnd()()();
+} if (rf & 2) {
+    const ctx_r0 = i0.ɵɵnextContext();
+    i0.ɵɵadvance();
+    i0.ɵɵproperty("formGroup", ctx_r0.generalForm);
+    i0.ɵɵadvance(6);
+    i0.ɵɵattribute("aria-invalid", ctx_r0.isFieldInvalid("generalForm", "title"));
+    i0.ɵɵadvance();
+    i0.ɵɵproperty("ngIf", ctx_r0.isFieldInvalid("generalForm", "title"));
+    i0.ɵɵadvance(6);
+    i0.ɵɵproperty("options", ctx_r0.availableComponents)("disabled", !ctx_r0.isNewWidget);
+    i0.ɵɵattribute("aria-invalid", ctx_r0.isFieldInvalid("generalForm", "component"));
+    i0.ɵɵadvance();
+    i0.ɵɵproperty("ngIf", ctx_r0.isFieldInvalid("generalForm", "component"));
+} }
+function WidgetConfigComponent_div_10_Template(rf, ctx) { if (rf & 1) {
+    i0.ɵɵelementStart(0, "div", 11)(1, "form", 12)(2, "div", 23)(3, "div", 13)(4, "label", 24);
+    i0.ɵɵtext(5, "X Position");
+    i0.ɵɵelementEnd();
+    i0.ɵɵelement(6, "p-inputNumber", 25);
+    i0.ɵɵelementEnd();
+    i0.ɵɵelementStart(7, "div", 13)(8, "label", 26);
+    i0.ɵɵtext(9, "Y Position");
+    i0.ɵɵelementEnd();
+    i0.ɵɵelement(10, "p-inputNumber", 27);
+    i0.ɵɵelementEnd()();
+    i0.ɵɵelementStart(11, "div", 23)(12, "div", 13)(13, "label", 28);
+    i0.ɵɵtext(14, "Width (Columns)");
+    i0.ɵɵelementEnd();
+    i0.ɵɵelement(15, "p-inputNumber", 29);
+    i0.ɵɵelementEnd();
+    i0.ɵɵelementStart(16, "div", 13)(17, "label", 30);
+    i0.ɵɵtext(18, "Height (Rows)");
+    i0.ɵɵelementEnd();
+    i0.ɵɵelement(19, "p-inputNumber", 31);
+    i0.ɵɵelementEnd()()()();
+} if (rf & 2) {
+    const ctx_r0 = i0.ɵɵnextContext();
+    i0.ɵɵadvance();
+    i0.ɵɵproperty("formGroup", ctx_r0.positionForm);
+    i0.ɵɵadvance(5);
+    i0.ɵɵproperty("showButtons", true)("min", 0);
+    i0.ɵɵadvance(4);
+    i0.ɵɵproperty("showButtons", true)("min", 0);
+    i0.ɵɵadvance(5);
+    i0.ɵɵproperty("showButtons", true)("min", 1)("max", 12);
+    i0.ɵɵadvance(4);
+    i0.ɵɵproperty("showButtons", true)("min", 1);
+} }
+function WidgetConfigComponent_div_11_div_1_Template(rf, ctx) { if (rf & 1) {
+    i0.ɵɵelementStart(0, "div", 11)(1, "form", 12)(2, "div", 13)(3, "label", 33);
+    i0.ɵɵtext(4, "Chart Type");
+    i0.ɵɵelementEnd();
+    i0.ɵɵelement(5, "p-dropdown", 34);
+    i0.ɵɵelementEnd();
+    i0.ɵɵelementStart(6, "div", 13)(7, "label", 35);
+    i0.ɵɵtext(8, "Chart Theme");
+    i0.ɵɵelementEnd();
+    i0.ɵɵelement(9, "p-dropdown", 36);
+    i0.ɵɵelementEnd();
+    i0.ɵɵelementStart(10, "div", 13)(11, "label");
+    i0.ɵɵtext(12, "Show Legend");
+    i0.ɵɵelementEnd();
+    i0.ɵɵelement(13, "p-inputSwitch", 37);
+    i0.ɵɵelementEnd();
+    i0.ɵɵelementStart(14, "div", 13)(15, "label");
+    i0.ɵɵtext(16, "Enable Data Zoom");
+    i0.ɵɵelementEnd();
+    i0.ɵɵelement(17, "p-inputSwitch", 38);
+    i0.ɵɵelementEnd();
+    i0.ɵɵelementStart(18, "div", 13)(19, "label", 39);
+    i0.ɵɵtext(20, "Chart Title");
+    i0.ɵɵelementEnd();
+    i0.ɵɵelement(21, "input", 40);
+    i0.ɵɵelementEnd()()();
+} if (rf & 2) {
+    const ctx_r0 = i0.ɵɵnextContext(2);
+    i0.ɵɵadvance();
+    i0.ɵɵproperty("formGroup", ctx_r0.optionsForm);
+    i0.ɵɵadvance(4);
+    i0.ɵɵproperty("options", ctx_r0.chartTypes);
+    i0.ɵɵadvance(4);
+    i0.ɵɵproperty("options", ctx_r0.chartThemes);
+} }
+function WidgetConfigComponent_div_11_div_2_Template(rf, ctx) { if (rf & 1) {
+    i0.ɵɵelementStart(0, "div", 11)(1, "form", 12)(2, "div", 13)(3, "label", 41);
+    i0.ɵɵtext(4, "Filter Type");
+    i0.ɵɵelementEnd();
+    i0.ɵɵelement(5, "p-dropdown", 42);
+    i0.ɵɵelementEnd();
+    i0.ɵɵelementStart(6, "div", 13)(7, "label");
+    i0.ɵɵtext(8, "Multi-select");
+    i0.ɵɵelementEnd();
+    i0.ɵɵelement(9, "p-inputSwitch", 43);
+    i0.ɵɵelementEnd();
+    i0.ɵɵelementStart(10, "div", 13)(11, "label", 44);
+    i0.ɵɵtext(12, "Placeholder Text");
+    i0.ɵɵelementEnd();
+    i0.ɵɵelement(13, "input", 45);
+    i0.ɵɵelementEnd()()();
+} if (rf & 2) {
+    const ctx_r0 = i0.ɵɵnextContext(2);
+    i0.ɵɵadvance();
+    i0.ɵɵproperty("formGroup", ctx_r0.filterForm);
+    i0.ɵɵadvance(4);
+    i0.ɵɵproperty("options", ctx_r0.filterTypes);
+} }
+function WidgetConfigComponent_div_11_div_3_Template(rf, ctx) { if (rf & 1) {
+    i0.ɵɵelementStart(0, "div", 46)(1, "p");
+    i0.ɵɵtext(2, "Options for this widget type are not available in the configuration panel.");
+    i0.ɵɵelementEnd();
+    i0.ɵɵelementStart(3, "p");
+    i0.ɵɵtext(4, "Please use the JSON editor for advanced configuration.");
+    i0.ɵɵelementEnd()();
+} }
+function WidgetConfigComponent_div_11_Template(rf, ctx) { if (rf & 1) {
+    i0.ɵɵelementStart(0, "div", 11);
+    i0.ɵɵtemplate(1, WidgetConfigComponent_div_11_div_1_Template, 22, 3, "div", 5)(2, WidgetConfigComponent_div_11_div_2_Template, 14, 2, "div", 5)(3, WidgetConfigComponent_div_11_div_3_Template, 5, 0, "div", 32);
+    i0.ɵɵelementEnd();
+} if (rf & 2) {
+    const ctx_r0 = i0.ɵɵnextContext();
+    i0.ɵɵadvance();
+    i0.ɵɵproperty("ngIf", ctx_r0.isEchartWidget());
+    i0.ɵɵadvance();
+    i0.ɵɵproperty("ngIf", ctx_r0.isFilterWidget());
+    i0.ɵɵadvance();
+    i0.ɵɵproperty("ngIf", !ctx_r0.isEchartWidget() && !ctx_r0.isFilterWidget());
+} }
+function WidgetConfigComponent_div_12_small_5_Template(rf, ctx) { if (rf & 1) {
+    i0.ɵɵelementStart(0, "small", 52);
+    i0.ɵɵtext(1, " Invalid JSON format ");
+    i0.ɵɵelementEnd();
+} }
+function WidgetConfigComponent_div_12_Template(rf, ctx) { if (rf & 1) {
+    const _r2 = i0.ɵɵgetCurrentView();
+    i0.ɵɵelementStart(0, "div", 11)(1, "div", 13)(2, "label", 47);
+    i0.ɵɵtext(3, "JSON Configuration");
+    i0.ɵɵelementEnd();
+    i0.ɵɵelement(4, "textarea", 48);
+    i0.ɵɵtemplate(5, WidgetConfigComponent_div_12_small_5_Template, 2, 0, "small", 49);
+    i0.ɵɵelementEnd();
+    i0.ɵɵelementStart(6, "div", 50)(7, "p-button", 51);
+    i0.ɵɵlistener("click", function WidgetConfigComponent_div_12_Template_p_button_click_7_listener() { i0.ɵɵrestoreView(_r2); const ctx_r0 = i0.ɵɵnextContext(); return i0.ɵɵresetView(ctx_r0.formatJson()); });
+    i0.ɵɵelementEnd()()();
+} if (rf & 2) {
+    const ctx_r0 = i0.ɵɵnextContext();
+    i0.ɵɵadvance(4);
+    i0.ɵɵproperty("rows", 10)("cols", 30);
+    i0.ɵɵattribute("aria-invalid", ctx_r0.isJsonInvalid);
+    i0.ɵɵadvance();
+    i0.ɵɵproperty("ngIf", ctx_r0.isJsonInvalid);
+    i0.ɵɵadvance(2);
+    i0.ɵɵproperty("disabled", ctx_r0.isJsonInvalid);
+} }
 class WidgetConfigComponent {
-    constructor() {
-        this.sidebarVisible = true;
-        this.onUpdate = new EventEmitter();
-        this.formModel = {};
-        this.items = [
-            { label: 'Positions', value: 0 },
-            { label: 'Options', value: 1 },
-            { label: 'Data Options', value: 2 },
-        ];
-        this.activeItem = this.items[0];
-        this.formWidgetOptions = new FormGroup({});
-        this.form = new FormGroup({});
-        this.formSeriesOptions = new FormGroup({});
-    }
     set widget(value) {
         this._widget = value;
-        // Use ngZone.runOutsideAngular to avoid triggering change detection
-        // This ensures the form is patched after the component is fully initialized
-        queueMicrotask(() => {
-            this.formWidgetOptions.patchValue({
-                position: value?.position,
-                config: value?.config,
-            });
+        this.originalWidget = JSON.parse(JSON.stringify(value)); // Deep copy for reset functionality
+        // Initialize forms when widget changes
+        this.initForms();
+    }
+    get widget() {
+        return this._widget;
+    }
+    constructor(fb, messageService, widgetPluginService) {
+        this.fb = fb;
+        this.messageService = messageService;
+        this.widgetPluginService = widgetPluginService;
+        // Visibility state
+        this.sidebarVisible = true;
+        // Event emitters
+        this.onUpdate = new EventEmitter();
+        this.onCancel = new EventEmitter();
+        // Tab menu items
+        this.items = [
+            { label: 'General', value: 0 },
+            { label: 'Position', value: 1 },
+            { label: 'Options', value: 2 },
+            { label: 'Advanced', value: 3 },
+        ];
+        this.activeItem = this.items[0];
+        // Dropdown options
+        this.availableComponents = [];
+        this.chartTypes = [];
+        this.chartThemes = [];
+        this.filterTypes = [];
+        // JSON validation
+        this.isJsonInvalid = false;
+        // Initialize form groups
+        this.generalForm = this.fb.group({
+            title: ['', Validators.required],
+            component: ['', Validators.required]
+        });
+        this.positionForm = this.fb.group({
+            x: [0, [Validators.required, Validators.min(0)]],
+            y: [0, [Validators.required, Validators.min(0)]],
+            cols: [6, [Validators.required, Validators.min(1), Validators.max(12)]],
+            rows: [4, [Validators.required, Validators.min(1)]]
+        });
+        this.optionsForm = this.fb.group({
+            chartType: ['bar'],
+            chartTheme: ['default'],
+            showLegend: [true],
+            enableDataZoom: [false],
+            chartTitle: ['']
+        });
+        this.filterForm = this.fb.group({
+            filterType: ['dropdown'],
+            multiSelect: [false],
+            placeholder: ['Select...']
+        });
+        this.advancedForm = this.fb.group({
+            jsonConfig: ['', this.validateJson]
         });
     }
-    get title() {
-        return this.widget?.config?.header?.title;
-    }
     ngOnInit() {
-        this.formModel = {};
+        // Initialize available components
+        this.availableComponents = [
+            { label: 'Chart', value: 'echart' },
+            { label: 'Filter', value: 'filter' },
+            { label: 'Table', value: 'table' },
+            { label: 'Markdown', value: 'markdown' },
+            { label: 'Code', value: 'code' }
+        ];
+        // Initialize chart types
+        this.chartTypes = [
+            { label: 'Bar Chart', value: 'bar' },
+            { label: 'Line Chart', value: 'line' },
+            { label: 'Pie Chart', value: 'pie' },
+            { label: 'Scatter Chart', value: 'scatter' },
+            { label: 'Radar Chart', value: 'radar' }
+        ];
+        // Initialize chart themes
+        this.chartThemes = [
+            { label: 'Default', value: 'default' },
+            { label: 'Dark', value: 'dark' },
+            { label: 'Light', value: 'light' }
+        ];
+        // Initialize filter types
+        this.filterTypes = [
+            { label: 'Dropdown', value: 'dropdown' },
+            { label: 'Multi-select', value: 'multiselect' },
+            { label: 'Date Range', value: 'daterange' },
+            { label: 'Slider', value: 'slider' }
+        ];
+        // Initialize forms with widget data
+        this.initForms();
     }
+    /**
+     * Initializes all form groups with widget data
+     */
+    initForms() {
+        if (!this._widget)
+            return;
+        // General form
+        this.generalForm.patchValue({
+            title: this._widget.config?.header?.title || '',
+            component: this._widget.config?.component || ''
+        });
+        // Position form
+        this.positionForm.patchValue({
+            x: this._widget.position?.x || 0,
+            y: this._widget.position?.y || 0,
+            cols: this._widget.position?.cols || 6,
+            rows: this._widget.position?.rows || 4
+        });
+        // Options form - depends on widget type
+        if (this.isEchartWidget()) {
+            const options = this._widget.config?.options;
+            this.optionsForm.patchValue({
+                chartType: this.getChartType(options),
+                chartTheme: 'default',
+                showLegend: options.legend !== undefined,
+                enableDataZoom: options.dataZoom !== undefined,
+                chartTitle: options.title ? (typeof options.title === 'object' ? (Array.isArray(options.title) ? (options.title[0]?.text || '') : options.title.text || '') : '') : ''
+            });
+        }
+        // Filter form
+        if (this.isFilterWidget()) {
+            const options = this._widget.config?.options;
+            this.filterForm.patchValue({
+                filterType: options.type || 'dropdown',
+                multiSelect: options.multiSelect || false,
+                placeholder: options.placeholder || 'Select...'
+            });
+        }
+        // Advanced form
+        this.advancedForm.patchValue({
+            jsonConfig: JSON.stringify(this._widget, null, 2)
+        });
+    }
+    /**
+     * Gets the widget title
+     */
+    get title() {
+        return this.widget?.config?.header?.title || 'Configure Widget';
+    }
+    /**
+     * Gets the widget type name for display
+     */
+    getWidgetTypeName() {
+        const component = this.widget?.config?.component;
+        if (!component)
+            return 'New Widget';
+        switch (component) {
+            case 'echart': return 'Chart Widget';
+            case 'filter': return 'Filter Widget';
+            case 'table': return 'Table Widget';
+            case 'markdown': return 'Markdown Widget';
+            case 'code': return 'Code Widget';
+            default: return component.charAt(0).toUpperCase() + component.slice(1) + ' Widget';
+        }
+    }
+    /**
+     * Checks if the widget is a new widget
+     */
+    get isNewWidget() {
+        return !this.widget?.id;
+    }
+    /**
+     * Checks if the widget is an EChart widget
+     */
+    isEchartWidget() {
+        return this.widget?.config?.component === 'echart';
+    }
+    /**
+     * Checks if the widget is a filter widget
+     */
+    isFilterWidget() {
+        return this.widget?.config?.component === 'filter';
+    }
+    /**
+     * Gets the chart type from ECharts options
+     */
+    getChartType(options) {
+        if (!options.series)
+            return 'bar';
+        const series = Array.isArray(options.series) ? options.series[0] : options.series;
+        return series.type || 'bar';
+    }
+    /**
+     * Validates JSON input
+     */
+    validateJson(control) {
+        if (!control.value) {
+            return null;
+        }
+        try {
+            JSON.parse(control.value);
+            return null;
+        }
+        catch (e) {
+            return { invalidJson: true };
+        }
+    }
+    /**
+     * Checks if a field is invalid
+     */
+    isFieldInvalid(formName, fieldName) {
+        const form = this[formName];
+        const field = form.get(fieldName);
+        return field ? (field.invalid && (field.dirty || field.touched)) : false;
+    }
+    /**
+     * Formats the JSON in the advanced tab
+     */
+    formatJson() {
+        try {
+            const json = JSON.parse(this.advancedForm.get('jsonConfig')?.value);
+            this.advancedForm.patchValue({
+                jsonConfig: JSON.stringify(json, null, 2)
+            });
+            this.isJsonInvalid = false;
+        }
+        catch (e) {
+            this.isJsonInvalid = true;
+        }
+    }
+    /**
+     * Checks if all forms are valid
+     */
+    isFormValid() {
+        return this.generalForm.valid && this.positionForm.valid &&
+            ((this.isEchartWidget() && this.optionsForm.valid) ||
+                (this.isFilterWidget() && this.filterForm.valid) ||
+                (!this.isEchartWidget() && !this.isFilterWidget())) &&
+            !this.isJsonInvalid;
+    }
+    /**
+     * Handles tab change
+     */
     onActiveTabItemChange(event) {
         this.activeItem = event;
     }
-    onWidgetSave() {
-        // const newOptions = merge(this._widget, this.formModel);
-        // set(newOptions, 'config.options.series', this.formModel.series);
-        // this.onUpdate.emit(newOptions);
-        //
-        // if(this._widget && this._widget){
-        //   if(this._widget.series && this._widget.series.length < 1){
-        //     this._widget.series?.push({});
-        //   }
-        // }
-        //
-        // const payload = {
-        //   name: (this._widget?.config?.header?.title ?? this._widget?.id) ?? 'New Widget',
-        //   category: this._widget?.config.component ?? 'BarChartVisual',
-        //   description: this._widget?.config.component ?? 'BarChartVisual',
-        //   placementOptions: JSON.stringify(this._widget?.position),
-        //   chartOptions: JSON.stringify(this._widget?.config),
-        //   otherOptions: JSON.stringify(this._widget?.series),
-        // };
-        // // Call the API to save the widget
-        // this.dashboardApi.updateByQuery(`${this.selectedDashboardId}/${this._widget?.id}/visualization`, payload)
-        // .subscribe({
-        //   next: (res: any) => {
-        //     if(res && this._widget) {
-        //       this._widget.id = res.id;
-        //     }
-        //   },
-        //   error: (error) => {
-        //     console.error('Error saving visualization:', error);
-        //     this.messageService.add({
-        //       severity: 'error',
-        //       summary: 'ERROR',
-        //       detail: 'Error saving visualization',
-        //       key: 'br',
-        //       life: 3000
-        //     });
-        //   },
-        //   complete: () => {
-        //     this.messageService.add({
-        //       severity: 'success',
-        //       summary: 'SUCCESS',
-        //       detail: 'Visualization saved successfully',
-        //       key: 'br',
-        //       life: 3000
-        //     });
-        //   }
-        // });
+    /**
+     * Resets the form to the original widget state
+     */
+    onReset() {
+        this._widget = JSON.parse(JSON.stringify(this.originalWidget));
+        this.initForms();
+        this.messageService.add({
+            severity: 'info',
+            summary: 'Reset',
+            detail: 'Form has been reset to original values',
+            key: 'br',
+            life: 3000
+        });
     }
-    static { this.ɵfac = function WidgetConfigComponent_Factory(__ngFactoryType__) { return new (__ngFactoryType__ || WidgetConfigComponent)(); }; }
-    static { this.ɵcmp = /*@__PURE__*/ i0.ɵɵdefineComponent({ type: WidgetConfigComponent, selectors: [["vis-widget-config"]], inputs: { selectedDashboardId: "selectedDashboardId", widget: "widget" }, outputs: { onUpdate: "onUpdate" }, features: [i0.ɵɵProvidersFeature([MessageService])], decls: 9, vars: 3, consts: [["id", "panelId", 2, "height", "100%", "overflow-y", "visible"], [1, "form-buttons"], [1, "form-button"], ["type", "button", "label", "Save", 3, "click", "outlined"], ["type", "button", "label", "Edit", 1, "ui-button-warning", "ml-2", "mr-2", 3, "outlined"], ["type", "reset", "label", "Reset", 1, "ui-button-danger", 3, "outlined"], ["position", "bottom-right", "key", "br"]], template: function WidgetConfigComponent_Template(rf, ctx) { if (rf & 1) {
-            i0.ɵɵelementStart(0, "div", 0)(1, "div", 1)(2, "div", 2)(3, "p-button", 3);
-            i0.ɵɵlistener("click", function WidgetConfigComponent_Template_p_button_click_3_listener() { return ctx.onWidgetSave(); });
-            i0.ɵɵelementEnd()();
-            i0.ɵɵelementStart(4, "div", 2);
-            i0.ɵɵelement(5, "p-button", 4);
+    /**
+     * Cancels editing and emits cancel event
+     */
+    handleCancel() {
+        this.onCancel.emit();
+    }
+    /**
+     * Saves the widget configuration
+     */
+    onWidgetSave() {
+        if (!this.isFormValid()) {
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Validation Error',
+                detail: 'Please fix the form errors before saving',
+                key: 'br',
+                life: 3000
+            });
+            return;
+        }
+        try {
+            // Create updated widget from form values
+            const updatedWidget = this._widget ? { ...this._widget } : {};
+            // Update from general form
+            if (!updatedWidget.config) {
+                updatedWidget.config = {
+                    options: {}
+                };
+            }
+            if (!updatedWidget.config.header) {
+                updatedWidget.config.header = {
+                    title: ''
+                };
+            }
+            updatedWidget.config.header.title = this.generalForm.value.title;
+            updatedWidget.config.component = this.generalForm.value.component;
+            // Update from position form
+            if (!updatedWidget.position) {
+                updatedWidget.position = {
+                    x: 0,
+                    y: 0,
+                    cols: 6,
+                    rows: 4
+                };
+            }
+            updatedWidget.position.x = this.positionForm.value.x;
+            updatedWidget.position.y = this.positionForm.value.y;
+            updatedWidget.position.cols = this.positionForm.value.cols;
+            updatedWidget.position.rows = this.positionForm.value.rows;
+            // Update from options form based on widget type
+            if (this.isEchartWidget()) {
+                const options = updatedWidget.config.options;
+                // Create basic chart options if they don't exist
+                if (!options.series) {
+                    options.series = [{
+                            type: this.optionsForm.value.chartType,
+                            data: []
+                        }];
+                }
+                else if (Array.isArray(options.series)) {
+                    options.series.forEach((series) => {
+                        series.type = this.optionsForm.value.chartType;
+                    });
+                }
+                // Update legend
+                if (this.optionsForm.value.showLegend) {
+                    options.legend = options.legend || {};
+                }
+                else {
+                    delete options.legend;
+                }
+                // Update dataZoom
+                if (this.optionsForm.value.enableDataZoom) {
+                    options.dataZoom = options.dataZoom || [{ type: 'inside' }];
+                }
+                else {
+                    delete options.dataZoom;
+                }
+                // Update title
+                if (this.optionsForm.value.chartTitle) {
+                    options.title = {
+                        text: this.optionsForm.value.chartTitle
+                    };
+                }
+                else {
+                    delete options.title;
+                }
+            }
+            // Update from filter form
+            if (this.isFilterWidget()) {
+                const options = updatedWidget.config.options;
+                options.type = this.filterForm.value.filterType;
+                options.multiSelect = this.filterForm.value.multiSelect;
+                options.placeholder = this.filterForm.value.placeholder;
+            }
+            // Check if advanced JSON was modified and is valid
+            if (this.advancedForm.value.jsonConfig && !this.isJsonInvalid) {
+                try {
+                    const jsonConfig = JSON.parse(this.advancedForm.value.jsonConfig);
+                    // Only update if the JSON is valid and has the required structure
+                    if (jsonConfig.config && jsonConfig.position) {
+                        // Merge with the form values to ensure all changes are included
+                        updatedWidget.config = { ...updatedWidget.config, ...jsonConfig.config };
+                        updatedWidget.position = { ...updatedWidget.position, ...jsonConfig.position };
+                        if (jsonConfig.series) {
+                            updatedWidget.series = jsonConfig.series;
+                        }
+                    }
+                }
+                catch (e) {
+                    // JSON parsing error - already handled by validation
+                }
+            }
+            // Emit the updated widget
+            this.onUpdate.emit(updatedWidget);
+            // Show success message
+            this.messageService.add({
+                severity: 'success',
+                summary: 'SUCCESS',
+                detail: 'Widget configuration saved successfully',
+                key: 'br',
+                life: 3000
+            });
+        }
+        catch (error) {
+            console.error('Error saving widget configuration:', error);
+            this.messageService.add({
+                severity: 'error',
+                summary: 'ERROR',
+                detail: 'Error saving widget configuration',
+                key: 'br',
+                life: 3000
+            });
+        }
+    }
+    static { this.ɵfac = function WidgetConfigComponent_Factory(__ngFactoryType__) { return new (__ngFactoryType__ || WidgetConfigComponent)(i0.ɵɵdirectiveInject(i1.FormBuilder), i0.ɵɵdirectiveInject(i2.MessageService), i0.ɵɵdirectiveInject(WidgetPluginService)); }; }
+    static { this.ɵcmp = /*@__PURE__*/ i0.ɵɵdefineComponent({ type: WidgetConfigComponent, selectors: [["vis-widget-config"]], inputs: { selectedDashboardId: "selectedDashboardId", widget: "widget" }, outputs: { onUpdate: "onUpdate", onCancel: "onCancel" }, features: [i0.ɵɵProvidersFeature([MessageService])], decls: 18, vars: 12, consts: [["id", "panelId", 1, "widget-config-panel"], [1, "widget-config-header"], [1, "widget-type"], [3, "activeItemChange", "model", "activeItem"], [1, "widget-config-content"], ["class", "config-section", 4, "ngIf"], [1, "widget-config-footer"], ["icon", "pi pi-times", "label", "Cancel", "styleClass", "p-button-outlined p-button-secondary", 3, "click"], ["icon", "pi pi-refresh", "label", "Reset", "styleClass", "p-button-outlined p-button-warning", 3, "click"], ["icon", "pi pi-check", "label", "Save", 3, "click", "disabled"], ["position", "bottom-right", "key", "br"], [1, "config-section"], [3, "formGroup"], [1, "form-field"], ["for", "widgetTitle"], [1, "required"], ["id", "widgetTitle", "type", "text", "pInputText", "", "formControlName", "title", "aria-describedby", "titleError"], ["id", "titleError", "class", "error-message", 4, "ngIf"], ["for", "widgetComponent"], ["id", "widgetComponent", "formControlName", "component", "optionLabel", "label", "optionValue", "value", "aria-describedby", "componentError", 3, "options", "disabled"], ["id", "componentError", "class", "error-message", 4, "ngIf"], ["id", "titleError", 1, "error-message"], ["id", "componentError", 1, "error-message"], [1, "form-row"], ["for", "widgetX"], ["id", "widgetX", "formControlName", "x", "buttonLayout", "horizontal", "decrementButtonClass", "p-button-secondary", "incrementButtonClass", "p-button-secondary", "incrementButtonIcon", "pi pi-plus", "decrementButtonIcon", "pi pi-minus", 3, "showButtons", "min"], ["for", "widgetY"], ["id", "widgetY", "formControlName", "y", "buttonLayout", "horizontal", "decrementButtonClass", "p-button-secondary", "incrementButtonClass", "p-button-secondary", "incrementButtonIcon", "pi pi-plus", "decrementButtonIcon", "pi pi-minus", 3, "showButtons", "min"], ["for", "widgetCols"], ["id", "widgetCols", "formControlName", "cols", "buttonLayout", "horizontal", "decrementButtonClass", "p-button-secondary", "incrementButtonClass", "p-button-secondary", "incrementButtonIcon", "pi pi-plus", "decrementButtonIcon", "pi pi-minus", 3, "showButtons", "min", "max"], ["for", "widgetRows"], ["id", "widgetRows", "formControlName", "rows", "buttonLayout", "horizontal", "decrementButtonClass", "p-button-secondary", "incrementButtonClass", "p-button-secondary", "incrementButtonIcon", "pi pi-plus", "decrementButtonIcon", "pi pi-minus", 3, "showButtons", "min"], ["class", "empty-state", 4, "ngIf"], ["for", "chartType"], ["id", "chartType", "formControlName", "chartType", "optionLabel", "label", "optionValue", "value", 3, "options"], ["for", "chartTheme"], ["id", "chartTheme", "formControlName", "chartTheme", "optionLabel", "label", "optionValue", "value", 3, "options"], ["formControlName", "showLegend"], ["formControlName", "enableDataZoom"], ["for", "chartTitle"], ["id", "chartTitle", "type", "text", "pInputText", "", "formControlName", "chartTitle"], ["for", "filterType"], ["id", "filterType", "formControlName", "filterType", "optionLabel", "label", "optionValue", "value", 3, "options"], ["formControlName", "multiSelect"], ["for", "placeholder"], ["id", "placeholder", "type", "text", "pInputText", "", "formControlName", "placeholder"], [1, "empty-state"], ["for", "jsonConfig"], ["id", "jsonConfig", "pInputTextarea", "", "formControlName", "jsonConfig", 1, "json-editor", 3, "rows", "cols"], ["class", "error-message", 4, "ngIf"], [1, "form-actions"], ["label", "Format JSON", "icon", "pi pi-code", 3, "click", "disabled"], [1, "error-message"]], template: function WidgetConfigComponent_Template(rf, ctx) { if (rf & 1) {
+            i0.ɵɵelementStart(0, "div", 0)(1, "div", 1)(2, "h2");
+            i0.ɵɵtext(3);
             i0.ɵɵelementEnd();
-            i0.ɵɵelementStart(6, "div", 2);
-            i0.ɵɵelement(7, "p-button", 5);
+            i0.ɵɵelementStart(4, "p", 2);
+            i0.ɵɵtext(5);
+            i0.ɵɵelementEnd()();
+            i0.ɵɵelementStart(6, "p-tabMenu", 3);
+            i0.ɵɵlistener("activeItemChange", function WidgetConfigComponent_Template_p_tabMenu_activeItemChange_6_listener($event) { return ctx.onActiveTabItemChange($event); });
+            i0.ɵɵelementEnd();
+            i0.ɵɵelementStart(7, "div", 4)(8, "p-scrollPanel");
+            i0.ɵɵtemplate(9, WidgetConfigComponent_div_9_Template, 16, 7, "div", 5)(10, WidgetConfigComponent_div_10_Template, 20, 10, "div", 5)(11, WidgetConfigComponent_div_11_Template, 4, 3, "div", 5)(12, WidgetConfigComponent_div_12_Template, 8, 5, "div", 5);
+            i0.ɵɵelementEnd()();
+            i0.ɵɵelementStart(13, "div", 6)(14, "p-button", 7);
+            i0.ɵɵlistener("click", function WidgetConfigComponent_Template_p_button_click_14_listener() { return ctx.handleCancel(); });
+            i0.ɵɵelementEnd();
+            i0.ɵɵelementStart(15, "p-button", 8);
+            i0.ɵɵlistener("click", function WidgetConfigComponent_Template_p_button_click_15_listener() { return ctx.onReset(); });
+            i0.ɵɵelementEnd();
+            i0.ɵɵelementStart(16, "p-button", 9);
+            i0.ɵɵlistener("click", function WidgetConfigComponent_Template_p_button_click_16_listener() { return ctx.onWidgetSave(); });
             i0.ɵɵelementEnd()()();
-            i0.ɵɵelement(8, "p-toast", 6);
+            i0.ɵɵelement(17, "p-toast", 10);
         } if (rf & 2) {
             i0.ɵɵadvance(3);
-            i0.ɵɵproperty("outlined", true);
+            i0.ɵɵtextInterpolate(ctx.title || "Configure Widget");
             i0.ɵɵadvance(2);
-            i0.ɵɵproperty("outlined", true);
+            i0.ɵɵtextInterpolate(ctx.getWidgetTypeName());
+            i0.ɵɵadvance();
+            i0.ɵɵproperty("model", ctx.items)("activeItem", ctx.activeItem);
             i0.ɵɵadvance(2);
-            i0.ɵɵproperty("outlined", true);
-        } }, dependencies: [CommonModule,
-            FormsModule,
-            ReactiveFormsModule,
-            TabMenuModule,
-            ScrollPanelModule,
-            ButtonModule, i1.Button, ToastModule, i2.Toast], styles: [".form-buttons[_ngcontent-%COMP%]{display:flex;justify-content:end;margin-top:2rem;padding:1.2rem;align-items:end;position:absolute;bottom:0;right:0}  .p-sidebar .p-sidebar-header .p-sidebar-close, .p-sidebar[_ngcontent-%COMP%]   .p-sidebar-header[_ngcontent-%COMP%]   .p-sidebar-icon[_ngcontent-%COMP%]   button[_ngcontent-%COMP%]{border-top-left-radius:5px;border-bottom-left-radius:5px;background:#fff;position:absolute;top:.625rem;padding:.4166666667rem!important;box-shadow:0 .125rem .25rem #00000014;z-index:20;left:-39px;height:3rem;width:3.25rem;color:red}  .form-alignment{margin-left:1rem;margin-right:1rem;width:86.2%}"] }); }
+            i0.ɵɵstyleMap(i0.ɵɵpureFunction0(11, _c0$1));
+            i0.ɵɵadvance();
+            i0.ɵɵproperty("ngIf", ctx.activeItem["value"] === 0);
+            i0.ɵɵadvance();
+            i0.ɵɵproperty("ngIf", ctx.activeItem["value"] === 1);
+            i0.ɵɵadvance();
+            i0.ɵɵproperty("ngIf", ctx.activeItem["value"] === 2);
+            i0.ɵɵadvance();
+            i0.ɵɵproperty("ngIf", ctx.activeItem["value"] === 3);
+            i0.ɵɵadvance(4);
+            i0.ɵɵproperty("disabled", !ctx.isFormValid());
+        } }, dependencies: [CommonModule, i4.NgIf, FormsModule, i1.ɵNgNoValidate, i1.DefaultValueAccessor, i1.NgControlStatus, i1.NgControlStatusGroup, ReactiveFormsModule, i1.FormGroupDirective, i1.FormControlName, TabMenuModule, i5.TabMenu, ScrollPanelModule, i6.ScrollPanel, ButtonModule, i7.Button, ToastModule, i8.Toast, InputTextModule, i9.InputText, DropdownModule, i10.Dropdown, InputNumberModule, i11.InputNumber, InputSwitchModule, i12.InputSwitch, InputTextarea], styles: [".form-buttons[_ngcontent-%COMP%]{display:flex;justify-content:end;margin-top:2rem;padding:1.2rem;align-items:end;position:absolute;bottom:0;right:0}  .p-sidebar .p-sidebar-header .p-sidebar-close, .p-sidebar[_ngcontent-%COMP%]   .p-sidebar-header[_ngcontent-%COMP%]   .p-sidebar-icon[_ngcontent-%COMP%]   button[_ngcontent-%COMP%]{border-top-left-radius:5px;border-bottom-left-radius:5px;background:#fff;position:absolute;top:.625rem;padding:.4166666667rem!important;box-shadow:0 .125rem .25rem #00000014;z-index:20;left:-39px;height:3rem;width:3.25rem;color:red}  .form-alignment{margin-left:1rem;margin-right:1rem;width:86.2%}"] }); }
 }
 (() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassMetadata(WidgetConfigComponent, [{
         type: Component,
@@ -762,15 +1367,22 @@ class WidgetConfigComponent {
                     ScrollPanelModule,
                     ButtonModule,
                     ToastModule,
-                ], providers: [MessageService], template: "<div id=\"panelId\" style=\"height:100%; overflow-y: visible;\">\r\n  <div class=\"form-buttons\">\r\n    <!-- Buttons in Footer -->\r\n    <div class=\"form-button\">\r\n      <p-button [outlined]=\"true\" type=\"button\" label=\"Save\" (click)=\"onWidgetSave()\"></p-button>\r\n    </div>\r\n    <div class=\"form-button\">\r\n      <p-button [outlined]=\"true\" type=\"button\" label=\"Edit\" class=\"ui-button-warning ml-2 mr-2\"></p-button>\r\n    </div>\r\n    <div class=\"form-button\">\r\n      <p-button [outlined]=\"true\" type=\"reset\" label=\"Reset\" class=\"ui-button-danger\"></p-button>\r\n    </div>\r\n  </div>\r\n</div>\r\n\r\n\r\n<!-- Toast Message -->\r\n<p-toast position=\"bottom-right\" key=\"br\" />", styles: [".form-buttons{display:flex;justify-content:end;margin-top:2rem;padding:1.2rem;align-items:end;position:absolute;bottom:0;right:0}::ng-deep .p-sidebar .p-sidebar-header .p-sidebar-close,.p-sidebar .p-sidebar-header .p-sidebar-icon button{border-top-left-radius:5px;border-bottom-left-radius:5px;background:#fff;position:absolute;top:.625rem;padding:.4166666667rem!important;box-shadow:0 .125rem .25rem #00000014;z-index:20;left:-39px;height:3rem;width:3.25rem;color:red}::ng-deep .form-alignment{margin-left:1rem;margin-right:1rem;width:86.2%}\n"] }]
-    }], null, { onUpdate: [{
+                    InputTextModule,
+                    DropdownModule,
+                    InputNumberModule,
+                    InputSwitchModule,
+                    InputTextarea
+                ], providers: [MessageService], template: "<div id=\"panelId\" class=\"widget-config-panel\">\r\n  <div class=\"widget-config-header\">\r\n    <h2>{{ title || 'Configure Widget' }}</h2>\r\n    <p class=\"widget-type\">{{ getWidgetTypeName() }}</p>\r\n  </div>\r\n\r\n  <p-tabMenu [model]=\"items\" [activeItem]=\"activeItem\" (activeItemChange)=\"onActiveTabItemChange($event)\"></p-tabMenu>\r\n\r\n  <div class=\"widget-config-content\">\r\n    <p-scrollPanel [style]=\"{width: '100%', height: '400px'}\">\r\n      <!-- General Settings Tab -->\r\n      <div *ngIf=\"activeItem['value'] === 0\" class=\"config-section\">\r\n        <form [formGroup]=\"generalForm\">\r\n          <div class=\"form-field\">\r\n            <label for=\"widgetTitle\">Widget Title <span class=\"required\">*</span></label>\r\n            <input id=\"widgetTitle\" type=\"text\" pInputText formControlName=\"title\" \r\n                  [attr.aria-invalid]=\"isFieldInvalid('generalForm', 'title')\" \r\n                  aria-describedby=\"titleError\">\r\n            <small id=\"titleError\" class=\"error-message\" *ngIf=\"isFieldInvalid('generalForm', 'title')\">\r\n              Title is required\r\n            </small>\r\n          </div>\r\n\r\n          <div class=\"form-field\">\r\n            <label for=\"widgetComponent\">Widget Type <span class=\"required\">*</span></label>\r\n            <p-dropdown id=\"widgetComponent\" [options]=\"availableComponents\" formControlName=\"component\" \r\n                      optionLabel=\"label\" optionValue=\"value\" [disabled]=\"!isNewWidget\"\r\n                      [attr.aria-invalid]=\"isFieldInvalid('generalForm', 'component')\"\r\n                      aria-describedby=\"componentError\"></p-dropdown>\r\n            <small id=\"componentError\" class=\"error-message\" *ngIf=\"isFieldInvalid('generalForm', 'component')\">\r\n              Widget type is required\r\n            </small>\r\n          </div>\r\n        </form>\r\n      </div>\r\n\r\n      <!-- Position Tab -->\r\n      <div *ngIf=\"activeItem['value'] === 1\" class=\"config-section\">\r\n        <form [formGroup]=\"positionForm\">\r\n          <div class=\"form-row\">\r\n            <div class=\"form-field\">\r\n              <label for=\"widgetX\">X Position</label>\r\n              <p-inputNumber id=\"widgetX\" formControlName=\"x\" [showButtons]=\"true\" [min]=\"0\" buttonLayout=\"horizontal\"\r\n                          decrementButtonClass=\"p-button-secondary\" incrementButtonClass=\"p-button-secondary\"\r\n                          incrementButtonIcon=\"pi pi-plus\" decrementButtonIcon=\"pi pi-minus\"></p-inputNumber>\r\n            </div>\r\n\r\n            <div class=\"form-field\">\r\n              <label for=\"widgetY\">Y Position</label>\r\n              <p-inputNumber id=\"widgetY\" formControlName=\"y\" [showButtons]=\"true\" [min]=\"0\" buttonLayout=\"horizontal\"\r\n                          decrementButtonClass=\"p-button-secondary\" incrementButtonClass=\"p-button-secondary\"\r\n                          incrementButtonIcon=\"pi pi-plus\" decrementButtonIcon=\"pi pi-minus\"></p-inputNumber>\r\n            </div>\r\n          </div>\r\n\r\n          <div class=\"form-row\">\r\n            <div class=\"form-field\">\r\n              <label for=\"widgetCols\">Width (Columns)</label>\r\n              <p-inputNumber id=\"widgetCols\" formControlName=\"cols\" [showButtons]=\"true\" [min]=\"1\" [max]=\"12\" buttonLayout=\"horizontal\"\r\n                          decrementButtonClass=\"p-button-secondary\" incrementButtonClass=\"p-button-secondary\"\r\n                          incrementButtonIcon=\"pi pi-plus\" decrementButtonIcon=\"pi pi-minus\"></p-inputNumber>\r\n            </div>\r\n\r\n            <div class=\"form-field\">\r\n              <label for=\"widgetRows\">Height (Rows)</label>\r\n              <p-inputNumber id=\"widgetRows\" formControlName=\"rows\" [showButtons]=\"true\" [min]=\"1\" buttonLayout=\"horizontal\"\r\n                          decrementButtonClass=\"p-button-secondary\" incrementButtonClass=\"p-button-secondary\"\r\n                          incrementButtonIcon=\"pi pi-plus\" decrementButtonIcon=\"pi pi-minus\"></p-inputNumber>\r\n            </div>\r\n          </div>\r\n        </form>\r\n      </div>\r\n\r\n      <!-- Widget Options Tab -->\r\n      <div *ngIf=\"activeItem['value'] === 2\" class=\"config-section\">\r\n        <div *ngIf=\"isEchartWidget()\" class=\"config-section\">\r\n          <form [formGroup]=\"optionsForm\">\r\n            <div class=\"form-field\">\r\n              <label for=\"chartType\">Chart Type</label>\r\n              <p-dropdown id=\"chartType\" [options]=\"chartTypes\" formControlName=\"chartType\" \r\n                        optionLabel=\"label\" optionValue=\"value\"></p-dropdown>\r\n            </div>\r\n\r\n            <div class=\"form-field\">\r\n              <label for=\"chartTheme\">Chart Theme</label>\r\n              <p-dropdown id=\"chartTheme\" [options]=\"chartThemes\" formControlName=\"chartTheme\" \r\n                        optionLabel=\"label\" optionValue=\"value\"></p-dropdown>\r\n            </div>\r\n\r\n            <div class=\"form-field\">\r\n              <label>Show Legend</label>\r\n              <p-inputSwitch formControlName=\"showLegend\"></p-inputSwitch>\r\n            </div>\r\n\r\n            <div class=\"form-field\">\r\n              <label>Enable Data Zoom</label>\r\n              <p-inputSwitch formControlName=\"enableDataZoom\"></p-inputSwitch>\r\n            </div>\r\n\r\n            <div class=\"form-field\">\r\n              <label for=\"chartTitle\">Chart Title</label>\r\n              <input id=\"chartTitle\" type=\"text\" pInputText formControlName=\"chartTitle\">\r\n            </div>\r\n          </form>\r\n        </div>\r\n\r\n        <div *ngIf=\"isFilterWidget()\" class=\"config-section\">\r\n          <form [formGroup]=\"filterForm\">\r\n            <div class=\"form-field\">\r\n              <label for=\"filterType\">Filter Type</label>\r\n              <p-dropdown id=\"filterType\" [options]=\"filterTypes\" formControlName=\"filterType\" \r\n                        optionLabel=\"label\" optionValue=\"value\"></p-dropdown>\r\n            </div>\r\n\r\n            <div class=\"form-field\">\r\n              <label>Multi-select</label>\r\n              <p-inputSwitch formControlName=\"multiSelect\"></p-inputSwitch>\r\n            </div>\r\n\r\n            <div class=\"form-field\">\r\n              <label for=\"placeholder\">Placeholder Text</label>\r\n              <input id=\"placeholder\" type=\"text\" pInputText formControlName=\"placeholder\">\r\n            </div>\r\n          </form>\r\n        </div>\r\n\r\n        <div *ngIf=\"!isEchartWidget() && !isFilterWidget()\" class=\"empty-state\">\r\n          <p>Options for this widget type are not available in the configuration panel.</p>\r\n          <p>Please use the JSON editor for advanced configuration.</p>\r\n        </div>\r\n      </div>\r\n\r\n      <!-- Advanced Tab -->\r\n      <div *ngIf=\"activeItem['value'] === 3\" class=\"config-section\">\r\n        <div class=\"form-field\">\r\n          <label for=\"jsonConfig\">JSON Configuration</label>\r\n          <textarea id=\"jsonConfig\" pInputTextarea [rows]=\"10\" [cols]=\"30\" formControlName=\"jsonConfig\" \r\n                  class=\"json-editor\" [attr.aria-invalid]=\"isJsonInvalid\"></textarea>\r\n          <small class=\"error-message\" *ngIf=\"isJsonInvalid\">\r\n            Invalid JSON format\r\n          </small>\r\n        </div>\r\n        <div class=\"form-actions\">\r\n          <p-button label=\"Format JSON\" icon=\"pi pi-code\" (click)=\"formatJson()\" [disabled]=\"isJsonInvalid\"></p-button>\r\n        </div>\r\n      </div>\r\n    </p-scrollPanel>\r\n  </div>\r\n\r\n  <div class=\"widget-config-footer\">\r\n    <p-button icon=\"pi pi-times\" label=\"Cancel\" styleClass=\"p-button-outlined p-button-secondary\" (click)=\"handleCancel()\"></p-button>\r\n    <p-button icon=\"pi pi-refresh\" label=\"Reset\" styleClass=\"p-button-outlined p-button-warning\" (click)=\"onReset()\"></p-button>\r\n    <p-button icon=\"pi pi-check\" label=\"Save\" [disabled]=\"!isFormValid()\" (click)=\"onWidgetSave()\"></p-button>\r\n  </div>\r\n</div>\r\n\r\n<!-- Toast Message -->\r\n<p-toast position=\"bottom-right\" key=\"br\" />\r\n", styles: [".form-buttons{display:flex;justify-content:end;margin-top:2rem;padding:1.2rem;align-items:end;position:absolute;bottom:0;right:0}::ng-deep .p-sidebar .p-sidebar-header .p-sidebar-close,.p-sidebar .p-sidebar-header .p-sidebar-icon button{border-top-left-radius:5px;border-bottom-left-radius:5px;background:#fff;position:absolute;top:.625rem;padding:.4166666667rem!important;box-shadow:0 .125rem .25rem #00000014;z-index:20;left:-39px;height:3rem;width:3.25rem;color:red}::ng-deep .form-alignment{margin-left:1rem;margin-right:1rem;width:86.2%}\n"] }]
+    }], () => [{ type: i1.FormBuilder }, { type: i2.MessageService }, { type: WidgetPluginService }], { onUpdate: [{
+            type: Output
+        }], onCancel: [{
             type: Output
         }], selectedDashboardId: [{
             type: Input
         }], widget: [{
             type: Input
         }] }); })();
-(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassDebugInfo(WidgetConfigComponent, { className: "WidgetConfigComponent", filePath: "lib/widget-config/widget-config.component.ts", lineNumber: 28 }); })();
+(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassDebugInfo(WidgetConfigComponent, { className: "WidgetConfigComponent", filePath: "lib/widget-config/widget-config.component.ts", lineNumber: 39 }); })();
 
 const _c0 = () => ({ "width": "30%", height: "100%", padding: "0px", "padding-right": "2px" });
 const _c1 = () => ["PROJECT_WRITE", "PROJECT_UPDATE", "PROJECTUSERS_DELETE"];
@@ -853,7 +1465,7 @@ class WidgetHeaderComponent {
             i0.ɵɵtwoWayProperty("visible", ctx.sidebarVisible);
             i0.ɵɵproperty("appendTo", "body");
         } }, dependencies: [CommonModule,
-            SidebarModule, i1$1.Sidebar, i2$1.PrimeTemplate, PanelModule, i3.Panel, FormsModule,
+            SidebarModule, i1$1.Sidebar, i2.PrimeTemplate, PanelModule, i3.Panel, FormsModule,
             ReactiveFormsModule,
             WidgetConfigComponent,
             Button], styles: [".panel-button[_ngcontent-%COMP%]{display:flex;flex-direction:row;justify-content:end}[_nghost-%COMP%]     .p-panel .p-panel-content{display:none}"] }); }
@@ -1311,41 +1923,211 @@ class VirtualScrollService {
             }]
     }], () => [], null); })();
 
+/**
+ * Maximum number of states to keep in history
+ */
+const MAX_HISTORY_SIZE = 50;
+/**
+ * Service for managing undo/redo functionality in the dashboard
+ */
+class UndoRedoService {
+    constructor() {
+        /**
+         * History of dashboard states
+         */
+        this.history = [];
+        /**
+         * Current position in history
+         */
+        this.currentIndex = -1;
+        /**
+         * Subject for tracking can undo state
+         */
+        this.canUndoSubject = new BehaviorSubject(false);
+        /**
+         * Subject for tracking can redo state
+         */
+        this.canRedoSubject = new BehaviorSubject(false);
+        /**
+         * Subject for current state
+         */
+        this.currentStateSubject = new BehaviorSubject(null);
+    }
+    /**
+     * Observable for can undo state
+     */
+    get canUndo$() {
+        return this.canUndoSubject.asObservable();
+    }
+    /**
+     * Observable for can redo state
+     */
+    get canRedo$() {
+        return this.canRedoSubject.asObservable();
+    }
+    /**
+     * Observable for current state
+     */
+    get currentState$() {
+        return this.currentStateSubject.asObservable();
+    }
+    /**
+     * Whether undo is available
+     */
+    get canUndo() {
+        return this.currentIndex > 0;
+    }
+    /**
+     * Whether redo is available
+     */
+    get canRedo() {
+        return this.currentIndex < this.history.length - 1;
+    }
+    /**
+     * Adds a new state to the history
+     *
+     * @param widgets - The current widgets array
+     */
+    addState(widgets) {
+        // Create a deep copy of the widgets to avoid reference issues
+        const widgetsCopy = JSON.parse(JSON.stringify(widgets));
+        // Create new state
+        const newState = {
+            widgets: widgetsCopy,
+            timestamp: Date.now()
+        };
+        // If we're not at the end of the history, remove all states after the current index
+        if (this.currentIndex < this.history.length - 1) {
+            this.history = this.history.slice(0, this.currentIndex + 1);
+        }
+        // Add the new state
+        this.history.push(newState);
+        // Limit history size
+        if (this.history.length > MAX_HISTORY_SIZE) {
+            this.history.shift();
+        }
+        else {
+            this.currentIndex++;
+        }
+        // Update subjects
+        this.updateSubjects();
+    }
+    /**
+     * Undoes the last change
+     *
+     * @returns The previous state or null if no previous state exists
+     */
+    undo() {
+        if (!this.canUndo) {
+            return null;
+        }
+        this.currentIndex--;
+        const state = this.history[this.currentIndex];
+        // Update subjects
+        this.updateSubjects();
+        return state;
+    }
+    /**
+     * Redoes the last undone change
+     *
+     * @returns The next state or null if no next state exists
+     */
+    redo() {
+        if (!this.canRedo) {
+            return null;
+        }
+        this.currentIndex++;
+        const state = this.history[this.currentIndex];
+        // Update subjects
+        this.updateSubjects();
+        return state;
+    }
+    /**
+     * Clears the history
+     */
+    clearHistory() {
+        this.history = [];
+        this.currentIndex = -1;
+        this.updateSubjects();
+    }
+    /**
+     * Updates the BehaviorSubjects with current state
+     */
+    updateSubjects() {
+        this.canUndoSubject.next(this.canUndo);
+        this.canRedoSubject.next(this.canRedo);
+        const currentState = this.currentIndex >= 0 ? this.history[this.currentIndex] : null;
+        this.currentStateSubject.next(currentState);
+    }
+    static { this.ɵfac = function UndoRedoService_Factory(__ngFactoryType__) { return new (__ngFactoryType__ || UndoRedoService)(); }; }
+    static { this.ɵprov = /*@__PURE__*/ i0.ɵɵdefineInjectable({ token: UndoRedoService, factory: UndoRedoService.ɵfac, providedIn: 'root' }); }
+}
+(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassMetadata(UndoRedoService, [{
+        type: Injectable,
+        args: [{
+                providedIn: 'root'
+            }]
+    }], () => [], null); })();
+
 const _forTrack0 = ($index, $item) => $item.id;
-function DashboardContainerComponent_For_4_Conditional_1_Template(rf, ctx) { if (rf & 1) {
-    const _r3 = i0.ɵɵgetCurrentView();
-    i0.ɵɵelementStart(0, "vis-widget-header", 9);
-    i0.ɵɵlistener("onUpdateWidget", function DashboardContainerComponent_For_4_Conditional_1_Template_vis_widget_header_onUpdateWidget_0_listener($event) { i0.ɵɵrestoreView(_r3); const ctx_r1 = i0.ɵɵnextContext(2); return i0.ɵɵresetView(ctx_r1.onUpdateWidget($event)); })("onDeleteWidget", function DashboardContainerComponent_For_4_Conditional_1_Template_vis_widget_header_onDeleteWidget_0_listener($event) { i0.ɵɵrestoreView(_r3); const ctx_r1 = i0.ɵɵnextContext(2); return i0.ɵɵresetView(ctx_r1.onDeleteWidget($event)); });
+function DashboardContainerComponent_div_1_Template(rf, ctx) { if (rf & 1) {
+    const _r1 = i0.ɵɵgetCurrentView();
+    i0.ɵɵelementStart(0, "div", 8)(1, "div", 9)(2, "p-button", 10);
+    i0.ɵɵlistener("onClick", function DashboardContainerComponent_div_1_Template_p_button_onClick_2_listener() { i0.ɵɵrestoreView(_r1); const ctx_r1 = i0.ɵɵnextContext(); return i0.ɵɵresetView(ctx_r1.undo()); });
+    i0.ɵɵelementEnd();
+    i0.ɵɵelementStart(3, "p-button", 11);
+    i0.ɵɵlistener("onClick", function DashboardContainerComponent_div_1_Template_p_button_onClick_3_listener() { i0.ɵɵrestoreView(_r1); const ctx_r1 = i0.ɵɵnextContext(); return i0.ɵɵresetView(ctx_r1.redo()); });
+    i0.ɵɵelementEnd();
+    i0.ɵɵelementStart(4, "span", 12);
+    i0.ɵɵtext(5);
+    i0.ɵɵelementEnd()()();
+} if (rf & 2) {
+    const ctx_r1 = i0.ɵɵnextContext();
+    i0.ɵɵadvance(2);
+    i0.ɵɵproperty("disabled", !ctx_r1.canUndo);
+    i0.ɵɵattribute("aria-label", "Undo last change" + (!ctx_r1.canUndo ? " (not available)" : ""))("aria-disabled", !ctx_r1.canUndo);
+    i0.ɵɵadvance();
+    i0.ɵɵproperty("disabled", !ctx_r1.canRedo);
+    i0.ɵɵattribute("aria-label", "Redo last change" + (!ctx_r1.canRedo ? " (not available)" : ""))("aria-disabled", !ctx_r1.canRedo);
+    i0.ɵɵadvance(2);
+    i0.ɵɵtextInterpolate(ctx_r1.editModeString);
+} }
+function DashboardContainerComponent_For_6_Conditional_1_Template(rf, ctx) { if (rf & 1) {
+    const _r4 = i0.ɵɵgetCurrentView();
+    i0.ɵɵelementStart(0, "vis-widget-header", 16);
+    i0.ɵɵlistener("onUpdateWidget", function DashboardContainerComponent_For_6_Conditional_1_Template_vis_widget_header_onUpdateWidget_0_listener($event) { i0.ɵɵrestoreView(_r4); const ctx_r1 = i0.ɵɵnextContext(2); return i0.ɵɵresetView(ctx_r1.onUpdateWidget($event)); })("onDeleteWidget", function DashboardContainerComponent_For_6_Conditional_1_Template_vis_widget_header_onDeleteWidget_0_listener($event) { i0.ɵɵrestoreView(_r4); const ctx_r1 = i0.ɵɵnextContext(2); return i0.ɵɵresetView(ctx_r1.onDeleteWidget($event)); });
     i0.ɵɵelementEnd();
 } if (rf & 2) {
-    const item_r4 = i0.ɵɵnextContext().$implicit;
+    const item_r5 = i0.ɵɵnextContext().$implicit;
     const ctx_r1 = i0.ɵɵnextContext();
-    i0.ɵɵproperty("dashboardId", ctx_r1.dashboardId)("widget", item_r4)("onEditMode", ctx_r1.isEditMode);
+    i0.ɵɵproperty("dashboardId", ctx_r1.dashboardId)("widget", item_r5)("onEditMode", ctx_r1.isEditMode);
 } }
-function DashboardContainerComponent_For_4_Template(rf, ctx) { if (rf & 1) {
-    const _r1 = i0.ɵɵgetCurrentView();
-    i0.ɵɵelementStart(0, "gridster-item", 6);
-    i0.ɵɵlistener("itemResize", function DashboardContainerComponent_For_4_Template_gridster_item_itemResize_0_listener() { i0.ɵɵrestoreView(_r1); const ctx_r1 = i0.ɵɵnextContext(); return i0.ɵɵresetView(ctx_r1.updateString("[Edit Mode - Pending Changes]")); })("itemChange", function DashboardContainerComponent_For_4_Template_gridster_item_itemChange_0_listener() { i0.ɵɵrestoreView(_r1); const ctx_r1 = i0.ɵɵnextContext(); return i0.ɵɵresetView(ctx_r1.updateString("[Edit Mode - Pending Changes]")); });
-    i0.ɵɵconditionalCreate(1, DashboardContainerComponent_For_4_Conditional_1_Template, 1, 3, "vis-widget-header", 7);
-    i0.ɵɵelementStart(2, "vis-widget", 8);
-    i0.ɵɵlistener("onDataLoad", function DashboardContainerComponent_For_4_Template_vis_widget_onDataLoad_2_listener($event) { i0.ɵɵrestoreView(_r1); const ctx_r1 = i0.ɵɵnextContext(); return i0.ɵɵresetView(ctx_r1.onDataLoad($event)); })("onUpdateFilter", function DashboardContainerComponent_For_4_Template_vis_widget_onUpdateFilter_2_listener($event) { i0.ɵɵrestoreView(_r1); const ctx_r1 = i0.ɵɵnextContext(); return i0.ɵɵresetView(ctx_r1.onUpdateFilter($event)); });
+function DashboardContainerComponent_For_6_Template(rf, ctx) { if (rf & 1) {
+    const _r3 = i0.ɵɵgetCurrentView();
+    i0.ɵɵelementStart(0, "gridster-item", 13);
+    i0.ɵɵlistener("itemResize", function DashboardContainerComponent_For_6_Template_gridster_item_itemResize_0_listener() { i0.ɵɵrestoreView(_r3); const ctx_r1 = i0.ɵɵnextContext(); return i0.ɵɵresetView(ctx_r1.updateString("[Edit Mode - Pending Changes]")); })("itemChange", function DashboardContainerComponent_For_6_Template_gridster_item_itemChange_0_listener() { i0.ɵɵrestoreView(_r3); const ctx_r1 = i0.ɵɵnextContext(); return i0.ɵɵresetView(ctx_r1.updateString("[Edit Mode - Pending Changes]")); });
+    i0.ɵɵconditionalCreate(1, DashboardContainerComponent_For_6_Conditional_1_Template, 1, 3, "vis-widget-header", 14);
+    i0.ɵɵelementStart(2, "vis-widget", 15);
+    i0.ɵɵlistener("onDataLoad", function DashboardContainerComponent_For_6_Template_vis_widget_onDataLoad_2_listener($event) { i0.ɵɵrestoreView(_r3); const ctx_r1 = i0.ɵɵnextContext(); return i0.ɵɵresetView(ctx_r1.onDataLoad($event)); })("onUpdateFilter", function DashboardContainerComponent_For_6_Template_vis_widget_onUpdateFilter_2_listener($event) { i0.ɵɵrestoreView(_r3); const ctx_r1 = i0.ɵɵnextContext(); return i0.ɵɵresetView(ctx_r1.onUpdateFilter($event)); });
     i0.ɵɵelementEnd()();
 } if (rf & 2) {
-    const item_r4 = ctx.$implicit;
-    i0.ɵɵproperty("item", item_r4.position);
+    const item_r5 = ctx.$implicit;
+    const ɵ$index_22_r6 = ctx.$index;
+    i0.ɵɵproperty("item", item_r5.position);
+    i0.ɵɵattribute("aria-label", (item_r5.config == null ? null : item_r5.config.header == null ? null : item_r5.config.header.title) || "Widget " + (ɵ$index_22_r6 + 1));
     i0.ɵɵadvance();
-    i0.ɵɵconditional(item_r4.config.header ? 1 : -1);
+    i0.ɵɵconditional(item_r5.config.header ? 1 : -1);
     i0.ɵɵadvance();
-    i0.ɵɵproperty("widget", item_r4);
+    i0.ɵɵproperty("widget", item_r5);
 } }
-function DashboardContainerComponent_div_5_Template(rf, ctx) { if (rf & 1) {
-    i0.ɵɵelementStart(0, "div", 10);
+function DashboardContainerComponent_div_7_Template(rf, ctx) { if (rf & 1) {
+    i0.ɵɵelementStart(0, "div", 17);
     i0.ɵɵtext(1);
     i0.ɵɵelementEnd();
 } if (rf & 2) {
     const ctx_r1 = i0.ɵɵnextContext();
     i0.ɵɵadvance();
-    i0.ɵɵtextInterpolate2(" Showing ", ctx_r1.visibleWidgets.length, " of ", ctx_r1.widgets.length, " widgets\n");
+    i0.ɵɵtextInterpolate2(" Showing ", ctx_r1.visibleWidgets.length, " of ", ctx_r1.widgets.length, " widgets ");
 } }
 /**
  * A container component for dashboard widgets.
@@ -1354,12 +2136,13 @@ function DashboardContainerComponent_div_5_Template(rf, ctx) { if (rf & 1) {
  * It handles widget positioning, resizing, data loading, and filtering.
  */
 class DashboardContainerComponent {
-    constructor(calculationService, filterService, eventBus, widgetDataCache, virtualScrollService) {
+    constructor(calculationService, filterService, eventBus, widgetDataCache, virtualScrollService, undoRedoService) {
         this.calculationService = calculationService;
         this.filterService = filterService;
         this.eventBus = eventBus;
         this.widgetDataCache = widgetDataCache;
         this.virtualScrollService = virtualScrollService;
+        this.undoRedoService = undoRedoService;
         /** Current filter values applied to the dashboard */
         this.filterValues = [];
         /** Current chart height in pixels */
@@ -1368,6 +2151,10 @@ class DashboardContainerComponent {
         this.currentScrollPosition = 0;
         this.visibleWidgets = [];
         this.totalDashboardHeight = 0;
+        // Undo/Redo properties
+        this.canUndo = false;
+        this.canRedo = false;
+        this.destroy$ = new Subject();
         /** Event emitted when the container is touched/modified */
         this.containerTouchChanged = new EventEmitter();
         /** Event emitted when the edit mode string changes */
@@ -1404,6 +2191,31 @@ class DashboardContainerComponent {
             resizable: {
                 enabled: false,
             },
+            mobileBreakpoint: 768, // Width threshold for mobile view
+            // Responsive configuration for different screen sizes
+            responsiveOptions: [
+                {
+                    breakpoint: 'sm', // Small devices
+                    minCols: 1,
+                    maxCols: 2,
+                    margin: 2,
+                    rowHeightRatio: 0.2
+                },
+                {
+                    breakpoint: 'md', // Medium devices
+                    minCols: 6,
+                    maxCols: 6,
+                    margin: 3,
+                    rowHeightRatio: 0.15
+                },
+                {
+                    breakpoint: 'lg', // Large devices
+                    minCols: 12,
+                    maxCols: 12,
+                    margin: 4,
+                    rowHeightRatio: 0.15
+                }
+            ],
             itemResizeCallback: (item, itemComponent) => this.onWidgetResize(item, itemComponent),
             itemChangeCallback: (item, itemComponent) => this.onWidgetChange(item, itemComponent)
         };
@@ -1416,6 +2228,121 @@ class DashboardContainerComponent {
     ngOnInit() {
         // Initialize virtual scrolling
         this.initVirtualScrolling();
+        // Initialize undo/redo service
+        this.initUndoRedo();
+    }
+    /**
+     * Lifecycle hook that is called when the component is destroyed
+     */
+    ngOnDestroy() {
+        // Complete the destroy subject to unsubscribe from all observables
+        this.destroy$.next();
+        this.destroy$.complete();
+        // Clear any pending timers
+        if (this.stateChangeDebounceTimer) {
+            clearTimeout(this.stateChangeDebounceTimer);
+        }
+    }
+    /**
+     * Initializes the undo/redo functionality
+     */
+    initUndoRedo() {
+        // Subscribe to undo/redo state changes
+        this.undoRedoService.canUndo$
+            .pipe(takeUntil(this.destroy$))
+            .subscribe(canUndo => {
+            this.canUndo = canUndo;
+        });
+        this.undoRedoService.canRedo$
+            .pipe(takeUntil(this.destroy$))
+            .subscribe(canRedo => {
+            this.canRedo = canRedo;
+        });
+        // Add initial state to history
+        if (this.widgets && this.widgets.length > 0) {
+            this.undoRedoService.addState(this.widgets);
+        }
+        // Add keyboard shortcuts for undo/redo
+        this.setupKeyboardShortcuts();
+    }
+    /**
+     * Sets up keyboard shortcuts for accessibility
+     */
+    setupKeyboardShortcuts() {
+        // Use fromEvent to listen for keydown events
+        fromEvent(document, 'keydown')
+            .pipe(takeUntil(this.destroy$))
+            .subscribe(event => {
+            // Only handle keyboard shortcuts in edit mode
+            if (!this.isEditMode)
+                return;
+            // Check for Ctrl+Z (Undo)
+            if (event.ctrlKey && event.key === 'z' && !event.shiftKey) {
+                event.preventDefault();
+                if (this.canUndo) {
+                    this.undo();
+                }
+            }
+            // Check for Ctrl+Y or Ctrl+Shift+Z (Redo)
+            if ((event.ctrlKey && event.key === 'y') ||
+                (event.ctrlKey && event.shiftKey && event.key === 'z')) {
+                event.preventDefault();
+                if (this.canRedo) {
+                    this.redo();
+                }
+            }
+        });
+    }
+    /**
+     * Tracks state changes in the dashboard
+     * Debounces the state tracking to avoid too many history entries
+     */
+    trackStateChange() {
+        // Clear any existing timer
+        if (this.stateChangeDebounceTimer) {
+            clearTimeout(this.stateChangeDebounceTimer);
+        }
+        // Set a new timer to add the state after a delay
+        this.stateChangeDebounceTimer = setTimeout(() => {
+            if (this.widgets && this.widgets.length > 0) {
+                this.undoRedoService.addState(this.widgets);
+            }
+        }, 500); // 500ms debounce time
+    }
+    /**
+     * Undoes the last change
+     */
+    undo() {
+        const previousState = this.undoRedoService.undo();
+        if (previousState) {
+            this.applyState(previousState);
+        }
+    }
+    /**
+     * Redoes the last undone change
+     */
+    redo() {
+        const nextState = this.undoRedoService.redo();
+        if (nextState) {
+            this.applyState(nextState);
+        }
+    }
+    /**
+     * Applies a dashboard state
+     *
+     * @param state - The state to apply
+     */
+    applyState(state) {
+        // Update widgets
+        this.widgets = state.widgets;
+        // Update visible widgets for virtual scrolling
+        this.updateVisibleWidgets();
+        // Reload data for all widgets
+        this.widgets.forEach(widget => {
+            if (widget) {
+                this.onDataLoad(widget);
+            }
+        });
     }
     /**
      * Initializes virtual scrolling for the dashboard
@@ -1610,6 +2537,8 @@ class DashboardContainerComponent {
                     this.onDataLoad(widget);
                 }
             });
+            // Track state change for undo/redo
+            this.trackStateChange();
         }
         catch (error) {
             console.error(`Error updating widget ${widget.id}:`, error);
@@ -1627,6 +2556,8 @@ class DashboardContainerComponent {
         this.editModeString = '[Edit Mode - Pending Changes]';
         this.editModeStringChange.emit(this.editModeString);
         this.containerTouchChanged.emit(this.containerTouched);
+        // Track state change for undo/redo
+        this.trackStateChange();
     }
     /**
      * Callback when a widget is moved or changed
@@ -1639,6 +2570,8 @@ class DashboardContainerComponent {
         this.editModeString = '[Edit Mode - Pending Changes]';
         this.editModeStringChange.emit(this.editModeString);
         this.containerTouchChanged.emit(this.containerTouched);
+        // Track state change for undo/redo
+        this.trackStateChange();
     }
     /**
      * Updates the edit mode string and emits the change
@@ -1742,6 +2675,8 @@ class DashboardContainerComponent {
                 this.updateVisibleWidgets();
                 // Clear the widget from cache
                 this.widgetDataCache.clearWidgetCache(widget);
+                // Track state change for undo/redo
+                this.trackStateChange();
             }
             else {
                 console.warn(`Widget with id ${widget.id} not found in dashboard`);
@@ -1784,17 +2719,22 @@ class DashboardContainerComponent {
     calculateMapZoom(cols, rows) {
         return this.calculationService.calculateMapZoom(cols, rows);
     }
-    static { this.ɵfac = function DashboardContainerComponent_Factory(__ngFactoryType__) { return new (__ngFactoryType__ || DashboardContainerComponent)(i0.ɵɵdirectiveInject(CalculationService), i0.ɵɵdirectiveInject(FilterService), i0.ɵɵdirectiveInject(EventBusService), i0.ɵɵdirectiveInject(WidgetDataCacheService), i0.ɵɵdirectiveInject(VirtualScrollService)); }; }
-    static { this.ɵcmp = /*@__PURE__*/ i0.ɵɵdefineComponent({ type: DashboardContainerComponent, selectors: [["vis-dashboard-container"]], inputs: { widgets: "widgets", filterValues: "filterValues", dashboardId: "dashboardId", isEditMode: "isEditMode", options: "options" }, outputs: { containerTouchChanged: "containerTouchChanged", editModeStringChange: "editModeStringChange", changesMade: "changesMade" }, decls: 7, vars: 4, consts: [[1, "gridster-container", 3, "scroll"], [1, "mt-2", "dashboard-gridster", 3, "options"], ["id", "dashboard", 1, "print-body"], [3, "item"], ["class", "virtual-scroll-status", 4, "ngIf"], ["position", "bottom-right", "key", "br"], [3, "itemResize", "itemChange", "item"], [3, "dashboardId", "widget", "onEditMode"], [3, "onDataLoad", "onUpdateFilter", "widget"], [3, "onUpdateWidget", "onDeleteWidget", "dashboardId", "widget", "onEditMode"], [1, "virtual-scroll-status"]], template: function DashboardContainerComponent_Template(rf, ctx) { if (rf & 1) {
+    static { this.ɵfac = function DashboardContainerComponent_Factory(__ngFactoryType__) { return new (__ngFactoryType__ || DashboardContainerComponent)(i0.ɵɵdirectiveInject(CalculationService), i0.ɵɵdirectiveInject(FilterService), i0.ɵɵdirectiveInject(EventBusService), i0.ɵɵdirectiveInject(WidgetDataCacheService), i0.ɵɵdirectiveInject(VirtualScrollService), i0.ɵɵdirectiveInject(UndoRedoService)); }; }
+    static { this.ɵcmp = /*@__PURE__*/ i0.ɵɵdefineComponent({ type: DashboardContainerComponent, selectors: [["vis-dashboard-container"]], inputs: { widgets: "widgets", filterValues: "filterValues", dashboardId: "dashboardId", isEditMode: "isEditMode", options: "options" }, outputs: { containerTouchChanged: "containerTouchChanged", editModeStringChange: "editModeStringChange", changesMade: "changesMade" }, decls: 9, vars: 5, consts: [["role", "application", "aria-label", "Dashboard", 1, "dashboard-container"], ["class", "dashboard-toolbar", "role", "toolbar", "aria-label", "Dashboard editing tools", 4, "ngIf"], ["role", "region", "aria-label", "Dashboard widgets", 1, "gridster-container", 3, "scroll"], [1, "mt-2", "dashboard-gridster", 3, "options"], ["id", "dashboard", 1, "print-body"], ["role", "region", 3, "item"], ["class", "virtual-scroll-status", "aria-live", "polite", "role", "status", 4, "ngIf"], ["position", "bottom-right", "key", "br"], ["role", "toolbar", "aria-label", "Dashboard editing tools", 1, "dashboard-toolbar"], [1, "toolbar-actions"], ["icon", "pi pi-undo", "styleClass", "p-button-rounded p-button-text", "pTooltip", "Undo (Ctrl+Z)", "tooltipPosition", "bottom", 3, "onClick", "disabled"], ["icon", "pi pi-redo", "styleClass", "p-button-rounded p-button-text", "pTooltip", "Redo (Ctrl+Y)", "tooltipPosition", "bottom", 3, "onClick", "disabled"], ["aria-live", "polite", 1, "edit-mode-indicator"], ["role", "region", 3, "itemResize", "itemChange", "item"], [3, "dashboardId", "widget", "onEditMode"], [3, "onDataLoad", "onUpdateFilter", "widget"], [3, "onUpdateWidget", "onDeleteWidget", "dashboardId", "widget", "onEditMode"], ["aria-live", "polite", "role", "status", 1, "virtual-scroll-status"]], template: function DashboardContainerComponent_Template(rf, ctx) { if (rf & 1) {
             i0.ɵɵelementStart(0, "div", 0);
-            i0.ɵɵlistener("scroll", function DashboardContainerComponent_Template_div_scroll_0_listener($event) { return ctx.onDashboardScroll($event); });
-            i0.ɵɵelementStart(1, "gridster", 1)(2, "div", 2);
-            i0.ɵɵrepeaterCreate(3, DashboardContainerComponent_For_4_Template, 3, 3, "gridster-item", 3, _forTrack0);
+            i0.ɵɵtemplate(1, DashboardContainerComponent_div_1_Template, 6, 7, "div", 1);
+            i0.ɵɵelementStart(2, "div", 2);
+            i0.ɵɵlistener("scroll", function DashboardContainerComponent_Template_div_scroll_2_listener($event) { return ctx.onDashboardScroll($event); });
+            i0.ɵɵelementStart(3, "gridster", 3)(4, "div", 4);
+            i0.ɵɵrepeaterCreate(5, DashboardContainerComponent_For_6_Template, 3, 4, "gridster-item", 5, _forTrack0);
             i0.ɵɵelementEnd()()();
-            i0.ɵɵtemplate(5, DashboardContainerComponent_div_5_Template, 2, 2, "div", 4);
-            i0.ɵɵelement(6, "p-toast", 5);
+            i0.ɵɵtemplate(7, DashboardContainerComponent_div_7_Template, 2, 2, "div", 6);
+            i0.ɵɵelementEnd();
+            i0.ɵɵelement(8, "p-toast", 7);
         } if (rf & 2) {
             i0.ɵɵadvance();
+            i0.ɵɵproperty("ngIf", ctx.isEditMode);
+            i0.ɵɵadvance(2);
             i0.ɵɵproperty("options", ctx.options);
             i0.ɵɵadvance();
             i0.ɵɵstyleProp("height", ctx.totalDashboardHeight * 50, "px");
@@ -1802,13 +2742,14 @@ class DashboardContainerComponent {
             i0.ɵɵrepeater(ctx.visibleWidgets);
             i0.ɵɵadvance(2);
             i0.ɵɵproperty("ngIf", ctx.widgets.length > ctx.visibleWidgets.length);
-        } }, dependencies: [CommonModule, i6.NgIf, FormsModule,
+        } }, dependencies: [CommonModule, i4.NgIf, FormsModule,
             GridsterComponent,
             GridsterItemComponent,
             WidgetComponent,
             WidgetHeaderComponent,
             NgxPrintModule,
-            Toast], styles: [".vis-chart-container[_ngcontent-%COMP%]{background-color:#fff;min-height:2000px;width:100%;margin:0;padding:0}.gridster-container[_ngcontent-%COMP%]{width:100%;height:120vh}.editMode[_ngcontent-%COMP%]{color:red}.print-body[_ngcontent-%COMP%]{width:95%}@media print{#dashboard[_ngcontent-%COMP%]{width:95%;overflow-y:visible!important;position:relative}@page{size:landscape}}.vis-filter-component[_ngcontent-%COMP%]{font-size:.8rem!important;width:100%;height:40px}  .p-dropdown-custom{width:100%!important}  .p-dropdown-custom.p-dropdown .p-component{width:100%!important}[_nghost-%COMP%]     .p-dialog .p-dialog-content{padding:1rem 1.5rem}[_nghost-%COMP%]     .p-dialog .p-dialog-header, [_nghost-%COMP%]     .p-dialog .p-dialog-footer{background:#f8f9fa}.dashboard-gridster[_ngcontent-%COMP%]{background-color:var(--surface-100)}[_nghost-%COMP%]     .no-border .p-panel-content{border:none!important;background:transparent!important}[_nghost-%COMP%]     .hide-panel-header .p-panel-header{display:none!important}", ".gridster-container[_ngcontent-%COMP%]{height:100%;overflow-y:auto;overflow-x:hidden}.virtual-scroll-status[_ngcontent-%COMP%]{position:fixed;bottom:10px;left:10px;background-color:#000000b3;color:#fff;padding:5px 10px;border-radius:4px;font-size:12px;z-index:1000;opacity:.7;transition:opacity .3s}.virtual-scroll-status[_ngcontent-%COMP%]:hover{opacity:1}"], changeDetection: 0 }); }
+            Toast,
+            ButtonModule, i7.Button, TooltipModule, i9$1.Tooltip], styles: [".vis-chart-container[_ngcontent-%COMP%]{background-color:#fff;min-height:2000px;width:100%;margin:0;padding:0}@media (forced-colors: active){[_ngcontent-%COMP%]:root{--dashboard-bg: Canvas;--dashboard-text: CanvasText;--dashboard-border: CanvasText;--dashboard-toolbar-bg: Canvas;--dashboard-toolbar-border: CanvasText;--dashboard-widget-bg: Canvas;--dashboard-widget-border: CanvasText;--dashboard-widget-header-bg: Canvas;--dashboard-widget-header-text: CanvasText;--dashboard-primary: Highlight;--dashboard-primary-text: HighlightText}}[_ngcontent-%COMP%]:root{--dashboard-bg: var(--surface-100, #f8f9fa);--dashboard-text: var(--text-color, #212529);--dashboard-border: var(--surface-300, #dee2e6);--dashboard-toolbar-bg: var(--surface-200, #e9ecef);--dashboard-toolbar-border: var(--surface-300, #dee2e6);--dashboard-widget-bg: var(--surface-0, #ffffff);--dashboard-widget-border: var(--surface-200, #e9ecef);--dashboard-widget-header-bg: var(--surface-100, #f8f9fa);--dashboard-widget-header-text: var(--text-color, #212529);--dashboard-primary: var(--primary-color, #007bff);--dashboard-primary-text: var(--primary-color-text, #ffffff)}.dashboard-container[_ngcontent-%COMP%]{display:flex;flex-direction:column;width:100%;height:100%;background-color:var(--dashboard-bg);color:var(--dashboard-text)}.dashboard-toolbar[_ngcontent-%COMP%]{display:flex;justify-content:space-between;align-items:center;padding:.5rem 1rem;background-color:var(--dashboard-toolbar-bg);border-bottom:1px solid var(--dashboard-toolbar-border);box-shadow:0 1px 3px #0000001a;z-index:10}.toolbar-actions[_ngcontent-%COMP%]{display:flex;align-items:center;gap:.5rem}.edit-mode-indicator[_ngcontent-%COMP%]{margin-left:1rem;font-size:.9rem;font-weight:500;color:var(--dashboard-primary)}[_ngcontent-%COMP%]:focus-visible{outline:2px solid var(--dashboard-primary);outline-offset:2px}.gridster-container[_ngcontent-%COMP%]{width:100%;height:120vh;flex:1;overflow:auto}@media (max-width: 768px){.dashboard-toolbar[_ngcontent-%COMP%]{flex-direction:column;padding:.5rem}.toolbar-actions[_ngcontent-%COMP%]{width:100%;justify-content:space-between;margin-bottom:.5rem}.edit-mode-indicator[_ngcontent-%COMP%]{margin-left:0;text-align:center;width:100%}.gridster-container[_ngcontent-%COMP%]{height:calc(100vh - 60px)}  gridster-item{overflow-x:auto!important}  .echart-container{min-height:200px;height:100%!important;width:100%!important}  .p-button{min-width:44px;min-height:44px}}@media (max-width: 480px){.dashboard-toolbar[_ngcontent-%COMP%]{padding:.25rem}  gridster{grid-template-columns:repeat(1,1fr)!important}  gridster-item{min-height:200px!important}}.editMode[_ngcontent-%COMP%]{color:red}.print-body[_ngcontent-%COMP%]{width:95%}@media print{#dashboard[_ngcontent-%COMP%]{width:95%;overflow-y:visible!important;position:relative}@page{size:landscape}}.vis-filter-component[_ngcontent-%COMP%]{font-size:.8rem!important;width:100%;height:40px}  .p-dropdown-custom{width:100%!important}  .p-dropdown-custom.p-dropdown .p-component{width:100%!important}[_nghost-%COMP%]     .p-dialog .p-dialog-content{padding:1rem 1.5rem}[_nghost-%COMP%]     .p-dialog .p-dialog-header, [_nghost-%COMP%]     .p-dialog .p-dialog-footer{background:#f8f9fa}.dashboard-gridster[_ngcontent-%COMP%]{background-color:var(--surface-100)}[_nghost-%COMP%]     .no-border .p-panel-content{border:none!important;background:transparent!important}[_nghost-%COMP%]     .hide-panel-header .p-panel-header{display:none!important}"], changeDetection: 0 }); }
 }
 (() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassMetadata(DashboardContainerComponent, [{
         type: Component,
@@ -1820,9 +2761,11 @@ class DashboardContainerComponent {
                     WidgetComponent,
                     WidgetHeaderComponent,
                     NgxPrintModule,
-                    Toast
-                ], changeDetection: ChangeDetectionStrategy.OnPush, template: "<div class=\"gridster-container\" (scroll)=\"onDashboardScroll($event)\">\r\n  <gridster class=\"mt-2 dashboard-gridster\" [options]=\"options\">\r\n    <div id=\"dashboard\" class=\"print-body\" [style.height.px]=\"totalDashboardHeight * 50\">\r\n      @for (item of visibleWidgets; track item.id; let i = $index) {\r\n\r\n        <gridster-item \r\n            [item]=\"item.position\" \r\n            (itemResize)=\"updateString('[Edit Mode - Pending Changes]')\"\r\n            (itemChange)=\"updateString('[Edit Mode - Pending Changes]')\">\r\n\r\n            @if (item.config.header) {\r\n              <vis-widget-header \r\n                  [dashboardId]=\"dashboardId\" \r\n                  [widget]=\"item\" \r\n                  (onUpdateWidget)=\"onUpdateWidget($event)\"\r\n                  (onDeleteWidget)=\"onDeleteWidget($event)\" \r\n                  [onEditMode]=\"isEditMode\"/>\r\n            }\r\n\r\n            <vis-widget \r\n                [widget]=\"item\" \r\n                (onDataLoad)=\"onDataLoad($event)\" \r\n                (onUpdateFilter)=\"onUpdateFilter($event)\"/>\r\n\r\n        </gridster-item>\r\n\r\n      }\r\n    </div>\r\n  </gridster>\r\n</div>\r\n\r\n<!-- Virtual Scrolling Status -->\r\n<div class=\"virtual-scroll-status\" *ngIf=\"widgets.length > visibleWidgets.length\">\r\n  Showing {{ visibleWidgets.length }} of {{ widgets.length }} widgets\r\n</div>\r\n\r\n<!-- Toast Message -->\r\n<p-toast position=\"bottom-right\" key=\"br\" />\r\n", styles: [".vis-chart-container{background-color:#fff;min-height:2000px;width:100%;margin:0;padding:0}.gridster-container{width:100%;height:120vh}.editMode{color:red}.print-body{width:95%}@media print{#dashboard{width:95%;overflow-y:visible!important;position:relative}@page{size:landscape}}.vis-filter-component{font-size:.8rem!important;width:100%;height:40px}::ng-deep .p-dropdown-custom{width:100%!important}::ng-deep .p-dropdown-custom.p-dropdown .p-component{width:100%!important}:host ::ng-deep .p-dialog .p-dialog-content{padding:1rem 1.5rem}:host ::ng-deep .p-dialog .p-dialog-header,:host ::ng-deep .p-dialog .p-dialog-footer{background:#f8f9fa}.dashboard-gridster{background-color:var(--surface-100)}:host ::ng-deep .no-border .p-panel-content{border:none!important;background:transparent!important}:host ::ng-deep .hide-panel-header .p-panel-header{display:none!important}\n", ".gridster-container{height:100%;overflow-y:auto;overflow-x:hidden}.virtual-scroll-status{position:fixed;bottom:10px;left:10px;background-color:#000000b3;color:#fff;padding:5px 10px;border-radius:4px;font-size:12px;z-index:1000;opacity:.7;transition:opacity .3s}.virtual-scroll-status:hover{opacity:1}\n"] }]
-    }], () => [{ type: CalculationService }, { type: FilterService }, { type: EventBusService }, { type: WidgetDataCacheService }, { type: VirtualScrollService }], { widgets: [{
+                    Toast,
+                    ButtonModule,
+                    TooltipModule
+                ], changeDetection: ChangeDetectionStrategy.OnPush, template: "<div class=\"dashboard-container\" role=\"application\" aria-label=\"Dashboard\">\r\n  <!-- Dashboard Toolbar -->\r\n  <div class=\"dashboard-toolbar\" *ngIf=\"isEditMode\" role=\"toolbar\" aria-label=\"Dashboard editing tools\">\r\n    <div class=\"toolbar-actions\">\r\n      <p-button \r\n        icon=\"pi pi-undo\" \r\n        styleClass=\"p-button-rounded p-button-text\" \r\n        [disabled]=\"!canUndo\" \r\n        (onClick)=\"undo()\" \r\n        pTooltip=\"Undo (Ctrl+Z)\" \r\n        tooltipPosition=\"bottom\"\r\n        [attr.aria-label]=\"'Undo last change' + (!canUndo ? ' (not available)' : '')\"\r\n        [attr.aria-disabled]=\"!canUndo\">\r\n      </p-button>\r\n      <p-button \r\n        icon=\"pi pi-redo\" \r\n        styleClass=\"p-button-rounded p-button-text\" \r\n        [disabled]=\"!canRedo\" \r\n        (onClick)=\"redo()\" \r\n        pTooltip=\"Redo (Ctrl+Y)\" \r\n        tooltipPosition=\"bottom\"\r\n        [attr.aria-label]=\"'Redo last change' + (!canRedo ? ' (not available)' : '')\"\r\n        [attr.aria-disabled]=\"!canRedo\">\r\n      </p-button>\r\n      <span class=\"edit-mode-indicator\" aria-live=\"polite\">{{ editModeString }}</span>\r\n    </div>\r\n  </div>\r\n\r\n  <div class=\"gridster-container\" (scroll)=\"onDashboardScroll($event)\" role=\"region\" aria-label=\"Dashboard widgets\">\r\n    <gridster class=\"mt-2 dashboard-gridster\" [options]=\"options\">\r\n      <div id=\"dashboard\" class=\"print-body\" [style.height.px]=\"totalDashboardHeight * 50\">\r\n        @for (item of visibleWidgets; track item.id; let i = $index) {\r\n\r\n          <gridster-item \r\n              [item]=\"item.position\" \r\n              (itemResize)=\"updateString('[Edit Mode - Pending Changes]')\"\r\n              (itemChange)=\"updateString('[Edit Mode - Pending Changes]')\"\r\n              [attr.aria-label]=\"item.config?.header?.title || 'Widget ' + (i + 1)\"\r\n              role=\"region\">\r\n\r\n              @if (item.config.header) {\r\n                <vis-widget-header \r\n                    [dashboardId]=\"dashboardId\" \r\n                    [widget]=\"item\" \r\n                    (onUpdateWidget)=\"onUpdateWidget($event)\"\r\n                    (onDeleteWidget)=\"onDeleteWidget($event)\" \r\n                    [onEditMode]=\"isEditMode\"/>\r\n              }\r\n\r\n              <vis-widget \r\n                  [widget]=\"item\" \r\n                  (onDataLoad)=\"onDataLoad($event)\" \r\n                  (onUpdateFilter)=\"onUpdateFilter($event)\"/>\r\n\r\n          </gridster-item>\r\n\r\n        }\r\n      </div>\r\n    </gridster>\r\n  </div>\r\n\r\n  <!-- Virtual Scrolling Status -->\r\n  <div class=\"virtual-scroll-status\" *ngIf=\"widgets.length > visibleWidgets.length\" \r\n       aria-live=\"polite\" role=\"status\">\r\n    Showing {{ visibleWidgets.length }} of {{ widgets.length }} widgets\r\n  </div>\r\n</div>\r\n\r\n<!-- Toast Message -->\r\n<p-toast position=\"bottom-right\" key=\"br\" />\r\n", styles: [".vis-chart-container{background-color:#fff;min-height:2000px;width:100%;margin:0;padding:0}@media (forced-colors: active){:root{--dashboard-bg: Canvas;--dashboard-text: CanvasText;--dashboard-border: CanvasText;--dashboard-toolbar-bg: Canvas;--dashboard-toolbar-border: CanvasText;--dashboard-widget-bg: Canvas;--dashboard-widget-border: CanvasText;--dashboard-widget-header-bg: Canvas;--dashboard-widget-header-text: CanvasText;--dashboard-primary: Highlight;--dashboard-primary-text: HighlightText}}:root{--dashboard-bg: var(--surface-100, #f8f9fa);--dashboard-text: var(--text-color, #212529);--dashboard-border: var(--surface-300, #dee2e6);--dashboard-toolbar-bg: var(--surface-200, #e9ecef);--dashboard-toolbar-border: var(--surface-300, #dee2e6);--dashboard-widget-bg: var(--surface-0, #ffffff);--dashboard-widget-border: var(--surface-200, #e9ecef);--dashboard-widget-header-bg: var(--surface-100, #f8f9fa);--dashboard-widget-header-text: var(--text-color, #212529);--dashboard-primary: var(--primary-color, #007bff);--dashboard-primary-text: var(--primary-color-text, #ffffff)}.dashboard-container{display:flex;flex-direction:column;width:100%;height:100%;background-color:var(--dashboard-bg);color:var(--dashboard-text)}.dashboard-toolbar{display:flex;justify-content:space-between;align-items:center;padding:.5rem 1rem;background-color:var(--dashboard-toolbar-bg);border-bottom:1px solid var(--dashboard-toolbar-border);box-shadow:0 1px 3px #0000001a;z-index:10}.toolbar-actions{display:flex;align-items:center;gap:.5rem}.edit-mode-indicator{margin-left:1rem;font-size:.9rem;font-weight:500;color:var(--dashboard-primary)}:focus-visible{outline:2px solid var(--dashboard-primary);outline-offset:2px}.gridster-container{width:100%;height:120vh;flex:1;overflow:auto}@media (max-width: 768px){.dashboard-toolbar{flex-direction:column;padding:.5rem}.toolbar-actions{width:100%;justify-content:space-between;margin-bottom:.5rem}.edit-mode-indicator{margin-left:0;text-align:center;width:100%}.gridster-container{height:calc(100vh - 60px)}::ng-deep gridster-item{overflow-x:auto!important}::ng-deep .echart-container{min-height:200px;height:100%!important;width:100%!important}::ng-deep .p-button{min-width:44px;min-height:44px}}@media (max-width: 480px){.dashboard-toolbar{padding:.25rem}::ng-deep gridster{grid-template-columns:repeat(1,1fr)!important}::ng-deep gridster-item{min-height:200px!important}}.editMode{color:red}.print-body{width:95%}@media print{#dashboard{width:95%;overflow-y:visible!important;position:relative}@page{size:landscape}}.vis-filter-component{font-size:.8rem!important;width:100%;height:40px}::ng-deep .p-dropdown-custom{width:100%!important}::ng-deep .p-dropdown-custom.p-dropdown .p-component{width:100%!important}:host ::ng-deep .p-dialog .p-dialog-content{padding:1rem 1.5rem}:host ::ng-deep .p-dialog .p-dialog-header,:host ::ng-deep .p-dialog .p-dialog-footer{background:#f8f9fa}.dashboard-gridster{background-color:var(--surface-100)}:host ::ng-deep .no-border .p-panel-content{border:none!important;background:transparent!important}:host ::ng-deep .hide-panel-header .p-panel-header{display:none!important}\n"] }]
+    }], () => [{ type: CalculationService }, { type: FilterService }, { type: EventBusService }, { type: WidgetDataCacheService }, { type: VirtualScrollService }, { type: UndoRedoService }], { widgets: [{
             type: Input
         }], filterValues: [{
             type: Input
@@ -1839,7 +2782,7 @@ class DashboardContainerComponent {
         }], options: [{
             type: Input
         }] }); })();
-(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassDebugInfo(DashboardContainerComponent, { className: "DashboardContainerComponent", filePath: "lib/dashboard-container/dashboard-container.component.ts", lineNumber: 80 }); })();
+(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassDebugInfo(DashboardContainerComponent, { className: "DashboardContainerComponent", filePath: "lib/dashboard-container/dashboard-container.component.ts", lineNumber: 63 }); })();
 
 /**
  * Base component for all widget types
@@ -1877,7 +2820,7 @@ class BaseWidgetComponent {
     subscribeToEvents() {
         // Subscribe to widget update events for this widget
         this.eventBus.onWidgetUpdate()
-            .pipe(takeUntil(this.destroy$))
+            .pipe(takeUntil$1(this.destroy$))
             .subscribe(updatedWidget => {
             if (updatedWidget.id === this.widget.id) {
                 this.widget = updatedWidget;
@@ -1886,7 +2829,7 @@ class BaseWidgetComponent {
         });
         // Subscribe to filter update events
         this.eventBus.onFilterUpdate()
-            .pipe(takeUntil(this.destroy$))
+            .pipe(takeUntil$1(this.destroy$))
             .subscribe(filterData => {
             this.onFilterUpdated(filterData);
         });
@@ -4279,7 +5222,7 @@ class EchartComponent extends BaseWidgetComponent {
         this.setupResizeHandling();
         // Set up window resize listener
         fromEvent(window, 'resize')
-            .pipe(debounceTime(200), takeUntil(this.destroy$))
+            .pipe(debounceTime(200), takeUntil$1(this.destroy$))
             .subscribe(() => {
             this.resizeChart();
         });
@@ -4313,7 +5256,7 @@ class EchartComponent extends BaseWidgetComponent {
             }
             // Debounce resize events
             this.resizeSubject
-                .pipe(debounceTime(100), takeUntil(this.destroy$))
+                .pipe(debounceTime(100), takeUntil$1(this.destroy$))
                 .subscribe(() => {
                 this.resizeChart();
             });
@@ -4539,7 +5482,7 @@ class FilterComponent {
             i0.ɵɵconditionalCreate(0, FilterComponent_Conditional_0_Template, 8, 0, "div", 0)(1, FilterComponent_Conditional_1_Template, 2, 0, "div", 1);
         } if (rf & 2) {
             i0.ɵɵconditional(ctx.filterValues && ctx.filterValues.length > 0 ? 0 : 1);
-        } }, dependencies: [CommonModule, i6.UpperCasePipe], styles: [".chip[_ngcontent-%COMP%]{border-radius:50px;font-size:10px;font-weight:700!important;border:1px dashed #a6a6a6}.filter-component[_ngcontent-%COMP%]{display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;vertical-align:middle;margin:.2rem;padding-left:1rem;font-size:.9rem;font-weight:600}.close-icon[_ngcontent-%COMP%]{vertical-align:middle;margin-left:3px}"] }); }
+        } }, dependencies: [CommonModule, i4.UpperCasePipe], styles: [".chip[_ngcontent-%COMP%]{border-radius:50px;font-size:10px;font-weight:700!important;border:1px dashed #a6a6a6}.filter-component[_ngcontent-%COMP%]{display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;vertical-align:middle;margin:.2rem;padding-left:1rem;font-size:.9rem;font-weight:600}.close-icon[_ngcontent-%COMP%]{vertical-align:middle;margin-left:3px}"] }); }
 }
 (() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassMetadata(FilterComponent, [{
         type: Component,

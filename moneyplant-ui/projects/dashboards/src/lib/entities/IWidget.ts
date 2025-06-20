@@ -18,6 +18,9 @@ export interface IWidget {
   /** Position and size configuration for the gridster layout */
   position: GridsterItem;
 
+  /** Number of rows the widget occupies in the grid */
+  rows?: number;
+
   /** Widget configuration object */
   config: {
     /** Component type identifier */
@@ -39,6 +42,9 @@ export interface IWidget {
 
     /** Size configuration [width, height] */
     size?: number[];
+
+    /** Height of the widget in pixels */
+    height?: number;
 
     /** Widget-specific options based on the component type */
     options: echarts.EChartsOption | IFilterOptions | ITileOptions | IMarkdownCellOptions | ICodeCellOptions | ITableOptions;

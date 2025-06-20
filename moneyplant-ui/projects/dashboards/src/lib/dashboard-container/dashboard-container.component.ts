@@ -3,7 +3,9 @@ import {
   EventEmitter,
   Input,
   Output,
-  ChangeDetectionStrategy
+  ChangeDetectionStrategy,
+  OnInit,
+  OnDestroy
 } from '@angular/core';
 import {
   GridType,
@@ -23,11 +25,15 @@ import {IFilterOptions} from '../entities/IFilterOptions';
 import {IFilterValues} from '../entities/IFilterValues';
 import {NgxPrintModule} from 'ngx-print';
 import {Toast} from 'primeng/toast';
+import {ButtonModule} from 'primeng/button';
+import {TooltipModule} from 'primeng/tooltip';
 import {CalculationService} from '../services/calculation.service';
 import {FilterService} from '../services/filter.service';
 import {EventBusService, EventType} from '../services/event-bus.service';
 import {WidgetDataCacheService} from '../services/widget-data-cache.service';
 import {VirtualScrollService} from '../services/virtual-scroll.service';
+import {UndoRedoService, DashboardState} from '../services/undo-redo.service';
+import {Subject, takeUntil, fromEvent} from 'rxjs';
 
 /**
  * A container component for dashboard widgets.
@@ -48,11 +54,13 @@ import {VirtualScrollService} from '../services/virtual-scroll.service';
     WidgetComponent,
     WidgetHeaderComponent,
     NgxPrintModule,
-    Toast
+    Toast,
+    ButtonModule,
+    TooltipModule
   ],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class DashboardContainerComponent {
+export class DashboardContainerComponent implements OnInit, OnDestroy {
 
   /** Array of widgets to display in the dashboard */
   @Input() widgets!: IWidget[];
@@ -68,12 +76,19 @@ export class DashboardContainerComponent {
   visibleWidgets: IWidget[] = [];
   totalDashboardHeight = 0;
 
+  // Undo/Redo properties
+  canUndo: boolean = false;
+  canRedo: boolean = false;
+  private destroy$ = new Subject<void>();
+  private stateChangeDebounceTimer: any;
+
   constructor(
     private calculationService: CalculationService,
     private filterService: FilterService,
     private eventBus: EventBusService,
     private widgetDataCache: WidgetDataCacheService,
-    private virtualScrollService: VirtualScrollService
+    private virtualScrollService: VirtualScrollService,
+    private undoRedoService: UndoRedoService
   ) {
     // Subscribe to events from the event bus
     this.subscribeToEvents();
@@ -85,6 +100,137 @@ export class DashboardContainerComponent {
   ngOnInit(): void {
     // Initialize virtual scrolling
     this.initVirtualScrolling();
+
+    // Initialize undo/redo service
+    this.initUndoRedo();
+  }
+
+  /**
+   * Lifecycle hook that is called when the component is destroyed
+   */
+  ngOnDestroy(): void {
+    // Complete the destroy subject to unsubscribe from all observables
+    this.destroy$.next();
+    this.destroy$.complete();
+
+    // Clear any pending timers
+    if (this.stateChangeDebounceTimer) {
+      clearTimeout(this.stateChangeDebounceTimer);
+    }
+  }
+
+  /**
+   * Initializes the undo/redo functionality
+   */
+  private initUndoRedo(): void {
+    // Subscribe to undo/redo state changes
+    this.undoRedoService.canUndo$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(canUndo => {
+        this.canUndo = canUndo;
+      });
+
+    this.undoRedoService.canRedo$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(canRedo => {
+        this.canRedo = canRedo;
+      });
+
+    // Add initial state to history
+    if (this.widgets && this.widgets.length > 0) {
+      this.undoRedoService.addState(this.widgets);
+    }
+
+    // Add keyboard shortcuts for undo/redo
+    this.setupKeyboardShortcuts();
+  }
+
+  /**
+   * Sets up keyboard shortcuts for accessibility
+   */
+  private setupKeyboardShortcuts(): void {
+    // Use fromEvent to listen for keydown events
+    fromEvent<KeyboardEvent>(document, 'keydown')
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(event => {
+        // Only handle keyboard shortcuts in edit mode
+        if (!this.isEditMode) return;
+
+        // Check for Ctrl+Z (Undo)
+        if (event.ctrlKey && event.key === 'z' && !event.shiftKey) {
+          event.preventDefault();
+          if (this.canUndo) {
+            this.undo();
+          }
+        }
+
+        // Check for Ctrl+Y or Ctrl+Shift+Z (Redo)
+        if ((event.ctrlKey && event.key === 'y') || 
+            (event.ctrlKey && event.shiftKey && event.key === 'z')) {
+          event.preventDefault();
+          if (this.canRedo) {
+            this.redo();
+          }
+        }
+      });
+  }
+
+  /**
+   * Tracks state changes in the dashboard
+   * Debounces the state tracking to avoid too many history entries
+   */
+  private trackStateChange(): void {
+    // Clear any existing timer
+    if (this.stateChangeDebounceTimer) {
+      clearTimeout(this.stateChangeDebounceTimer);
+    }
+
+    // Set a new timer to add the state after a delay
+    this.stateChangeDebounceTimer = setTimeout(() => {
+      if (this.widgets && this.widgets.length > 0) {
+        this.undoRedoService.addState(this.widgets);
+      }
+    }, 500); // 500ms debounce time
+  }
+
+  /**
+   * Undoes the last change
+   */
+  undo(): void {
+    const previousState = this.undoRedoService.undo();
+    if (previousState) {
+      this.applyState(previousState);
+    }
+  }
+
+  /**
+   * Redoes the last undone change
+   */
+  redo(): void {
+    const nextState = this.undoRedoService.redo();
+    if (nextState) {
+      this.applyState(nextState);
+    }
+  }
+
+  /**
+   * Applies a dashboard state
+   * 
+   * @param state - The state to apply
+   */
+  private applyState(state: DashboardState): void {
+    // Update widgets
+    this.widgets = state.widgets;
+
+    // Update visible widgets for virtual scrolling
+    this.updateVisibleWidgets();
+
+    // Reload data for all widgets
+    this.widgets.forEach(widget => {
+      if (widget) {
+        this.onDataLoad(widget);
+      }
+    });
   }
 
   /**
@@ -217,6 +363,31 @@ export class DashboardContainerComponent {
     resizable: {
       enabled: false,
     },
+    mobileBreakpoint: 768, // Width threshold for mobile view
+    // Responsive configuration for different screen sizes
+    responsiveOptions: [
+      {
+        breakpoint: 'sm', // Small devices
+        minCols: 1,
+        maxCols: 2,
+        margin: 2,
+        rowHeightRatio: 0.2
+      },
+      {
+        breakpoint: 'md', // Medium devices
+        minCols: 6,
+        maxCols: 6,
+        margin: 3,
+        rowHeightRatio: 0.15
+      },
+      {
+        breakpoint: 'lg', // Large devices
+        minCols: 12,
+        maxCols: 12,
+        margin: 4,
+        rowHeightRatio: 0.15
+      }
+    ],
     itemResizeCallback: (item, itemComponent) => this.onWidgetResize(item, itemComponent),
     itemChangeCallback: (item, itemComponent) => this.onWidgetChange(item, itemComponent)
   };
@@ -375,6 +546,9 @@ export class DashboardContainerComponent {
           this.onDataLoad(widget);
         }
       });
+
+      // Track state change for undo/redo
+      this.trackStateChange();
     } catch (error) {
       console.error(`Error updating widget ${widget.id}:`, error);
       this.eventBus.publishError(error, 'dashboard-container');
@@ -395,6 +569,9 @@ export class DashboardContainerComponent {
     this.editModeString = '[Edit Mode - Pending Changes]';
     this.editModeStringChange.emit(this.editModeString);
     this.containerTouchChanged.emit(this.containerTouched);
+
+    // Track state change for undo/redo
+    this.trackStateChange();
   }
 
   /**
@@ -411,6 +588,9 @@ export class DashboardContainerComponent {
     this.editModeString = '[Edit Mode - Pending Changes]';
     this.editModeStringChange.emit(this.editModeString);
     this.containerTouchChanged.emit(this.containerTouched);
+
+    // Track state change for undo/redo
+    this.trackStateChange();
   }
 
   /**
@@ -531,6 +711,9 @@ export class DashboardContainerComponent {
 
         // Clear the widget from cache
         this.widgetDataCache.clearWidgetCache(widget);
+
+        // Track state change for undo/redo
+        this.trackStateChange();
       } else {
         console.warn(`Widget with id ${widget.id} not found in dashboard`);
       }

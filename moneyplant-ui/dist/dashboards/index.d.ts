@@ -2,10 +2,10 @@ import * as echarts from 'echarts';
 import { EChartsOption, ECharts } from 'echarts';
 import { GridsterItem, GridsterConfig, GridsterItemComponentInterface } from 'angular-gridster2';
 import * as i0 from '@angular/core';
-import { EventEmitter, OnInit, OnDestroy, AfterViewInit, ElementRef } from '@angular/core';
-import { FormGroup } from '@angular/forms';
+import { OnInit, OnDestroy, EventEmitter, AfterViewInit, ElementRef } from '@angular/core';
+import { FormGroup, FormBuilder } from '@angular/forms';
 import { Observable, Subject } from 'rxjs';
-import { MenuItem } from 'primeng/api';
+import { MenuItem, MessageService } from 'primeng/api';
 
 interface IState {
     accessor: string;
@@ -48,6 +48,8 @@ interface IWidget {
     id?: string;
     /** Position and size configuration for the gridster layout */
     position: GridsterItem;
+    /** Number of rows the widget occupies in the grid */
+    rows?: number;
     /** Widget configuration object */
     config: {
         /** Component type identifier */
@@ -65,6 +67,8 @@ interface IWidget {
         };
         /** Size configuration [width, height] */
         size?: number[];
+        /** Height of the widget in pixels */
+        height?: number;
         /** Widget-specific options based on the component type */
         options: echarts.EChartsOption | IFilterOptions | ITileOptions | IMarkdownCellOptions | ICodeCellOptions | ITableOptions;
         /** Event handlers */
@@ -420,17 +424,100 @@ declare class VirtualScrollService {
 }
 
 /**
+ * Interface for dashboard state
+ */
+interface DashboardState {
+    widgets: IWidget[];
+    timestamp: number;
+}
+/**
+ * Service for managing undo/redo functionality in the dashboard
+ */
+declare class UndoRedoService {
+    /**
+     * History of dashboard states
+     */
+    private history;
+    /**
+     * Current position in history
+     */
+    private currentIndex;
+    /**
+     * Subject for tracking can undo state
+     */
+    private canUndoSubject;
+    /**
+     * Subject for tracking can redo state
+     */
+    private canRedoSubject;
+    /**
+     * Subject for current state
+     */
+    private currentStateSubject;
+    constructor();
+    /**
+     * Observable for can undo state
+     */
+    get canUndo$(): Observable<boolean>;
+    /**
+     * Observable for can redo state
+     */
+    get canRedo$(): Observable<boolean>;
+    /**
+     * Observable for current state
+     */
+    get currentState$(): Observable<DashboardState | null>;
+    /**
+     * Whether undo is available
+     */
+    get canUndo(): boolean;
+    /**
+     * Whether redo is available
+     */
+    get canRedo(): boolean;
+    /**
+     * Adds a new state to the history
+     *
+     * @param widgets - The current widgets array
+     */
+    addState(widgets: IWidget[]): void;
+    /**
+     * Undoes the last change
+     *
+     * @returns The previous state or null if no previous state exists
+     */
+    undo(): DashboardState | null;
+    /**
+     * Redoes the last undone change
+     *
+     * @returns The next state or null if no next state exists
+     */
+    redo(): DashboardState | null;
+    /**
+     * Clears the history
+     */
+    clearHistory(): void;
+    /**
+     * Updates the BehaviorSubjects with current state
+     */
+    private updateSubjects;
+    static ɵfac: i0.ɵɵFactoryDeclaration<UndoRedoService, never>;
+    static ɵprov: i0.ɵɵInjectableDeclaration<UndoRedoService>;
+}
+
+/**
  * A container component for dashboard widgets.
  *
  * This component provides a grid-based layout for dashboard widgets using angular-gridster2.
  * It handles widget positioning, resizing, data loading, and filtering.
  */
-declare class DashboardContainerComponent {
+declare class DashboardContainerComponent implements OnInit, OnDestroy {
     private calculationService;
     private filterService;
     private eventBus;
     private widgetDataCache;
     private virtualScrollService;
+    private undoRedoService;
     /** Array of widgets to display in the dashboard */
     widgets: IWidget[];
     /** Current filter values applied to the dashboard */
@@ -440,11 +527,46 @@ declare class DashboardContainerComponent {
     private currentScrollPosition;
     visibleWidgets: IWidget[];
     totalDashboardHeight: number;
-    constructor(calculationService: CalculationService, filterService: FilterService, eventBus: EventBusService, widgetDataCache: WidgetDataCacheService, virtualScrollService: VirtualScrollService);
+    canUndo: boolean;
+    canRedo: boolean;
+    private destroy$;
+    private stateChangeDebounceTimer;
+    constructor(calculationService: CalculationService, filterService: FilterService, eventBus: EventBusService, widgetDataCache: WidgetDataCacheService, virtualScrollService: VirtualScrollService, undoRedoService: UndoRedoService);
     /**
      * Lifecycle hook that is called after the component is initialized
      */
     ngOnInit(): void;
+    /**
+     * Lifecycle hook that is called when the component is destroyed
+     */
+    ngOnDestroy(): void;
+    /**
+     * Initializes the undo/redo functionality
+     */
+    private initUndoRedo;
+    /**
+     * Sets up keyboard shortcuts for accessibility
+     */
+    private setupKeyboardShortcuts;
+    /**
+     * Tracks state changes in the dashboard
+     * Debounces the state tracking to avoid too many history entries
+     */
+    private trackStateChange;
+    /**
+     * Undoes the last change
+     */
+    undo(): void;
+    /**
+     * Redoes the last undone change
+     */
+    redo(): void;
+    /**
+     * Applies a dashboard state
+     *
+     * @param state - The state to apply
+     */
+    private applyState;
     /**
      * Initializes virtual scrolling for the dashboard
      */
@@ -606,91 +728,6 @@ declare class WidgetHeaderComponent {
     static ɵcmp: i0.ɵɵComponentDeclaration<WidgetHeaderComponent, "vis-widget-header", never, { "widget": { "alias": "widget"; "required": false; }; "onEditMode": { "alias": "onEditMode"; "required": false; }; "dashboardId": { "alias": "dashboardId"; "required": false; }; }, { "onUpdateWidget": "onUpdateWidget"; "onDeleteWidget": "onDeleteWidget"; }, never, never, true, never>;
 }
 
-declare class WidgetConfigComponent {
-    sidebarVisible: boolean;
-    private _widget;
-    onUpdate: EventEmitter<IWidget>;
-    selectedDashboardId: any;
-    set widget(value: IWidget | undefined);
-    formModel: any;
-    items: MenuItem[];
-    get title(): string | undefined;
-    activeItem: MenuItem;
-    formWidgetOptions: FormGroup<{}>;
-    form: FormGroup<{}>;
-    formSeriesOptions: FormGroup<{}>;
-    ngOnInit(): void;
-    onActiveTabItemChange(event: MenuItem): void;
-    onWidgetSave(): void;
-    static ɵfac: i0.ɵɵFactoryDeclaration<WidgetConfigComponent, never>;
-    static ɵcmp: i0.ɵɵComponentDeclaration<WidgetConfigComponent, "vis-widget-config", never, { "selectedDashboardId": { "alias": "selectedDashboardId"; "required": false; }; "widget": { "alias": "widget"; "required": false; }; }, { "onUpdate": "onUpdate"; }, never, never, true, never>;
-}
-
-/**
- * Base component for all widget types
- *
- * This component provides common functionality for all widget types,
- * reducing code duplication and improving maintainability.
- */
-declare abstract class BaseWidgetComponent implements OnInit, OnDestroy {
-    protected eventBus: EventBusService;
-    /** The widget configuration */
-    widget: IWidget;
-    /** Event emitted when data needs to be loaded for the widget */
-    onDataLoad: EventEmitter<IWidget>;
-    /** Event emitted when filter values are updated */
-    onUpdateFilter: EventEmitter<any>;
-    /** Subject for handling component destruction */
-    protected destroy$: Subject<void>;
-    /** Loading state of the widget */
-    protected loading: boolean;
-    /** Error state of the widget */
-    protected error: any;
-    constructor(eventBus: EventBusService);
-    /**
-     * Initializes the component
-     */
-    ngOnInit(): void;
-    /**
-     * Cleans up resources when the component is destroyed
-     */
-    ngOnDestroy(): void;
-    /**
-     * Subscribes to relevant events from the event bus
-     */
-    protected subscribeToEvents(): void;
-    /**
-     * Loads data for the widget
-     */
-    protected loadData(): void;
-    /**
-     * Handles errors that occur during data loading
-     *
-     * @param error - The error that occurred
-     */
-    protected handleError(error: any): void;
-    /**
-     * Called when the widget is updated
-     * Override in derived classes to handle widget updates
-     */
-    protected onWidgetUpdated(): void;
-    /**
-     * Called when filters are updated
-     * Override in derived classes to handle filter updates
-     *
-     * @param filterData - The updated filter data
-     */
-    protected onFilterUpdated(filterData: any): void;
-    /**
-     * Updates a filter value
-     *
-     * @param value - The new filter value
-     */
-    protected updateFilter(value: any): void;
-    static ɵfac: i0.ɵɵFactoryDeclaration<BaseWidgetComponent, never>;
-    static ɵcmp: i0.ɵɵComponentDeclaration<BaseWidgetComponent, "ng-component", never, { "widget": { "alias": "widget"; "required": false; }; "onDataLoad": { "alias": "onDataLoad"; "required": false; }; "onUpdateFilter": { "alias": "onUpdateFilter"; "required": false; }; }, {}, never, never, true, never>;
-}
-
 /**
  * Interface for widget plugins in the dashboard framework
  *
@@ -795,6 +832,161 @@ declare class WidgetPluginService {
     private registerDefaultPlugins;
     static ɵfac: i0.ɵɵFactoryDeclaration<WidgetPluginService, never>;
     static ɵprov: i0.ɵɵInjectableDeclaration<WidgetPluginService>;
+}
+
+declare class WidgetConfigComponent implements OnInit {
+    private fb;
+    private messageService;
+    private widgetPluginService;
+    sidebarVisible: boolean;
+    private _widget;
+    private originalWidget;
+    onUpdate: EventEmitter<IWidget>;
+    onCancel: EventEmitter<void>;
+    selectedDashboardId: any;
+    set widget(value: IWidget | undefined);
+    get widget(): IWidget | undefined;
+    items: MenuItem[];
+    activeItem: MenuItem;
+    generalForm: FormGroup;
+    positionForm: FormGroup;
+    optionsForm: FormGroup;
+    filterForm: FormGroup;
+    advancedForm: FormGroup;
+    availableComponents: any[];
+    chartTypes: any[];
+    chartThemes: any[];
+    filterTypes: any[];
+    isJsonInvalid: boolean;
+    constructor(fb: FormBuilder, messageService: MessageService, widgetPluginService: WidgetPluginService);
+    ngOnInit(): void;
+    /**
+     * Initializes all form groups with widget data
+     */
+    private initForms;
+    /**
+     * Gets the widget title
+     */
+    get title(): string;
+    /**
+     * Gets the widget type name for display
+     */
+    getWidgetTypeName(): string;
+    /**
+     * Checks if the widget is a new widget
+     */
+    get isNewWidget(): boolean;
+    /**
+     * Checks if the widget is an EChart widget
+     */
+    isEchartWidget(): boolean;
+    /**
+     * Checks if the widget is a filter widget
+     */
+    isFilterWidget(): boolean;
+    /**
+     * Gets the chart type from ECharts options
+     */
+    private getChartType;
+    /**
+     * Validates JSON input
+     */
+    private validateJson;
+    /**
+     * Checks if a field is invalid
+     */
+    isFieldInvalid(formName: string, fieldName: string): boolean;
+    /**
+     * Formats the JSON in the advanced tab
+     */
+    formatJson(): void;
+    /**
+     * Checks if all forms are valid
+     */
+    isFormValid(): boolean;
+    /**
+     * Handles tab change
+     */
+    onActiveTabItemChange(event: MenuItem): void;
+    /**
+     * Resets the form to the original widget state
+     */
+    onReset(): void;
+    /**
+     * Cancels editing and emits cancel event
+     */
+    handleCancel(): void;
+    /**
+     * Saves the widget configuration
+     */
+    onWidgetSave(): void;
+    static ɵfac: i0.ɵɵFactoryDeclaration<WidgetConfigComponent, never>;
+    static ɵcmp: i0.ɵɵComponentDeclaration<WidgetConfigComponent, "vis-widget-config", never, { "selectedDashboardId": { "alias": "selectedDashboardId"; "required": false; }; "widget": { "alias": "widget"; "required": false; }; }, { "onUpdate": "onUpdate"; "onCancel": "onCancel"; }, never, never, true, never>;
+}
+
+/**
+ * Base component for all widget types
+ *
+ * This component provides common functionality for all widget types,
+ * reducing code duplication and improving maintainability.
+ */
+declare abstract class BaseWidgetComponent implements OnInit, OnDestroy {
+    protected eventBus: EventBusService;
+    /** The widget configuration */
+    widget: IWidget;
+    /** Event emitted when data needs to be loaded for the widget */
+    onDataLoad: EventEmitter<IWidget>;
+    /** Event emitted when filter values are updated */
+    onUpdateFilter: EventEmitter<any>;
+    /** Subject for handling component destruction */
+    protected destroy$: Subject<void>;
+    /** Loading state of the widget */
+    protected loading: boolean;
+    /** Error state of the widget */
+    protected error: any;
+    constructor(eventBus: EventBusService);
+    /**
+     * Initializes the component
+     */
+    ngOnInit(): void;
+    /**
+     * Cleans up resources when the component is destroyed
+     */
+    ngOnDestroy(): void;
+    /**
+     * Subscribes to relevant events from the event bus
+     */
+    protected subscribeToEvents(): void;
+    /**
+     * Loads data for the widget
+     */
+    protected loadData(): void;
+    /**
+     * Handles errors that occur during data loading
+     *
+     * @param error - The error that occurred
+     */
+    protected handleError(error: any): void;
+    /**
+     * Called when the widget is updated
+     * Override in derived classes to handle widget updates
+     */
+    protected onWidgetUpdated(): void;
+    /**
+     * Called when filters are updated
+     * Override in derived classes to handle filter updates
+     *
+     * @param filterData - The updated filter data
+     */
+    protected onFilterUpdated(filterData: any): void;
+    /**
+     * Updates a filter value
+     *
+     * @param value - The new filter value
+     */
+    protected updateFilter(value: any): void;
+    static ɵfac: i0.ɵɵFactoryDeclaration<BaseWidgetComponent, never>;
+    static ɵcmp: i0.ɵɵComponentDeclaration<BaseWidgetComponent, "ng-component", never, { "widget": { "alias": "widget"; "required": false; }; "onDataLoad": { "alias": "onDataLoad"; "required": false; }; "onUpdateFilter": { "alias": "onUpdateFilter"; "required": false; }; }, {}, never, never, true, never>;
 }
 
 declare const formOptions: {

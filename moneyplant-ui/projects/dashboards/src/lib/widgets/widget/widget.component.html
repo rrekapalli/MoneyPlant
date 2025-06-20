@@ -1,29 +1,35 @@
 @if(widget?.error) {
-    <div [style]="{ height: '20vh' }" class="widget-error">
-        <div class="error-container">
-            <div class="error-icon">⚠️</div>
+    <div class="widget-error" [style]="getWidgetHeight()">
+        <div class="error-container" role="alert" aria-live="assertive">
+            <div class="error-icon" aria-hidden="true">⚠️</div>
             <div class="error-message">
                 <h3>Error loading widget</h3>
-                <p>{{ widget.error?.message || 'An unknown error occurred' }}</p>
+                <p>{{ getErrorMessage() }}</p>
+                <p class="error-details" *ngIf="showErrorDetails">{{ widget.error?.stack || '' }}</p>
+                <button *ngIf="widget.error?.stack" (click)="toggleErrorDetails()" class="details-button">
+                    {{ showErrorDetails ? 'Hide Details' : 'Show Details' }}
+                </button>
             </div>
-            <button (click)="retryLoad()" class="retry-button">Retry</button>
+            <button (click)="retryLoad()" class="retry-button" aria-label="Retry loading widget">
+                <span class="retry-icon" aria-hidden="true">↻</span> Retry
+            </button>
         </div>
     </div>
 } @else if(widget?.loading) {
-    <div [style]="{ height: '20vh' }" class="widget-loading">
+    <div class="widget-loading" [style]="getWidgetHeight()" role="status" aria-live="polite">
         <div class="loading-container">
-            <div class="loading-spinner"></div>
-            <div class="loading-text">Loading...</div>
+            <div class="loading-spinner" aria-hidden="true"></div>
+            <div class="loading-text">Loading widget data...</div>
         </div>
     </div>
 } @else if(isEchartComponent) {
-    <div [style]="{ height: '20vh' }">
+    <div [style]="getWidgetHeight()">
         <ng-container 
             *ngComponentOutlet="currentWidget.component; inputs: currentWidget.inputs">
         </ng-container>
     </div>
 } @else {
-    <div [style]="{ height: '20vh' }">
+    <div [style]="getWidgetHeight()">
         <ng-container 
             *ngComponentOutlet="currentWidget.component; inputs: currentWidget.inputs">
         </ng-container>
