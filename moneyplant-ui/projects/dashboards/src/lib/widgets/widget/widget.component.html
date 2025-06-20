@@ -1,11 +1,28 @@
-@if(isEchartComponent) {
+@if(widget?.error) {
+    <div [style]="{ height: '20vh' }" class="widget-error">
+        <div class="error-container">
+            <div class="error-icon">⚠️</div>
+            <div class="error-message">
+                <h3>Error loading widget</h3>
+                <p>{{ widget.error?.message || 'An unknown error occurred' }}</p>
+            </div>
+            <button (click)="retryLoad()" class="retry-button">Retry</button>
+        </div>
+    </div>
+} @else if(widget?.loading) {
+    <div [style]="{ height: '20vh' }" class="widget-loading">
+        <div class="loading-container">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">Loading...</div>
+        </div>
+    </div>
+} @else if(isEchartComponent) {
     <div [style]="{ height: '20vh' }">
         <ng-container 
             *ngComponentOutlet="currentWidget.component; inputs: currentWidget.inputs">
         </ng-container>
     </div>
-}
-@else {
+} @else {
     <div [style]="{ height: '20vh' }">
         <ng-container 
             *ngComponentOutlet="currentWidget.component; inputs: currentWidget.inputs">

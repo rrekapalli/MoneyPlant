@@ -838,38 +838,69 @@ class WidgetPluginService {
     }], () => [], null); })();
 
 const _c0$1 = () => ({ height: "20vh" });
-function WidgetComponent_Conditional_0_ng_container_1_Template(rf, ctx) { if (rf & 1) {
-    i0.ɵɵelementContainer(0);
-} }
 function WidgetComponent_Conditional_0_Template(rf, ctx) { if (rf & 1) {
-    i0.ɵɵelementStart(0, "div");
-    i0.ɵɵtemplate(1, WidgetComponent_Conditional_0_ng_container_1_Template, 1, 0, "ng-container", 1);
+    const _r1 = i0.ɵɵgetCurrentView();
+    i0.ɵɵelementStart(0, "div", 3)(1, "div", 4)(2, "div", 5);
+    i0.ɵɵtext(3, "\u26A0\uFE0F");
     i0.ɵɵelementEnd();
+    i0.ɵɵelementStart(4, "div", 6)(5, "h3");
+    i0.ɵɵtext(6, "Error loading widget");
+    i0.ɵɵelementEnd();
+    i0.ɵɵelementStart(7, "p");
+    i0.ɵɵtext(8);
+    i0.ɵɵelementEnd()();
+    i0.ɵɵelementStart(9, "button", 7);
+    i0.ɵɵlistener("click", function WidgetComponent_Conditional_0_Template_button_click_9_listener() { i0.ɵɵrestoreView(_r1); const ctx_r1 = i0.ɵɵnextContext(); return i0.ɵɵresetView(ctx_r1.retryLoad()); });
+    i0.ɵɵtext(10, "Retry");
+    i0.ɵɵelementEnd()()();
 } if (rf & 2) {
-    const ctx_r0 = i0.ɵɵnextContext();
-    i0.ɵɵstyleMap(i0.ɵɵpureFunction0(4, _c0$1));
-    i0.ɵɵadvance();
-    i0.ɵɵproperty("ngComponentOutlet", ctx_r0.currentWidget.component)("ngComponentOutletInputs", ctx_r0.currentWidget.inputs);
-} }
-function WidgetComponent_Conditional_1_ng_container_1_Template(rf, ctx) { if (rf & 1) {
-    i0.ɵɵelementContainer(0);
+    const ctx_r1 = i0.ɵɵnextContext();
+    i0.ɵɵstyleMap(i0.ɵɵpureFunction0(3, _c0$1));
+    i0.ɵɵadvance(8);
+    i0.ɵɵtextInterpolate((ctx_r1.widget.error == null ? null : ctx_r1.widget.error.message) || "An unknown error occurred");
 } }
 function WidgetComponent_Conditional_1_Template(rf, ctx) { if (rf & 1) {
+    i0.ɵɵelementStart(0, "div", 8)(1, "div", 9);
+    i0.ɵɵelement(2, "div", 10);
+    i0.ɵɵelementStart(3, "div", 11);
+    i0.ɵɵtext(4, "Loading...");
+    i0.ɵɵelementEnd()()();
+} if (rf & 2) {
+    i0.ɵɵstyleMap(i0.ɵɵpureFunction0(2, _c0$1));
+} }
+function WidgetComponent_Conditional_2_ng_container_1_Template(rf, ctx) { if (rf & 1) {
+    i0.ɵɵelementContainer(0);
+} }
+function WidgetComponent_Conditional_2_Template(rf, ctx) { if (rf & 1) {
     i0.ɵɵelementStart(0, "div");
-    i0.ɵɵtemplate(1, WidgetComponent_Conditional_1_ng_container_1_Template, 1, 0, "ng-container", 1);
+    i0.ɵɵtemplate(1, WidgetComponent_Conditional_2_ng_container_1_Template, 1, 0, "ng-container", 12);
     i0.ɵɵelementEnd();
 } if (rf & 2) {
-    const ctx_r0 = i0.ɵɵnextContext();
+    const ctx_r1 = i0.ɵɵnextContext();
     i0.ɵɵstyleMap(i0.ɵɵpureFunction0(4, _c0$1));
     i0.ɵɵadvance();
-    i0.ɵɵproperty("ngComponentOutlet", ctx_r0.currentWidget.component)("ngComponentOutletInputs", ctx_r0.currentWidget.inputs);
+    i0.ɵɵproperty("ngComponentOutlet", ctx_r1.currentWidget.component)("ngComponentOutletInputs", ctx_r1.currentWidget.inputs);
+} }
+function WidgetComponent_Conditional_3_ng_container_1_Template(rf, ctx) { if (rf & 1) {
+    i0.ɵɵelementContainer(0);
+} }
+function WidgetComponent_Conditional_3_Template(rf, ctx) { if (rf & 1) {
+    i0.ɵɵelementStart(0, "div");
+    i0.ɵɵtemplate(1, WidgetComponent_Conditional_3_ng_container_1_Template, 1, 0, "ng-container", 12);
+    i0.ɵɵelementEnd();
+} if (rf & 2) {
+    const ctx_r1 = i0.ɵɵnextContext();
+    i0.ɵɵstyleMap(i0.ɵɵpureFunction0(4, _c0$1));
+    i0.ɵɵadvance();
+    i0.ɵɵproperty("ngComponentOutlet", ctx_r1.currentWidget.component)("ngComponentOutletInputs", ctx_r1.currentWidget.inputs);
 } }
 /**
  * A dynamic widget component that renders different widget types based on configuration
  */
 class WidgetComponent {
-    constructor(widgetPluginService) {
+    constructor(widgetPluginService, eventBus) {
         this.widgetPluginService = widgetPluginService;
+        this.eventBus = eventBus;
         /** Event emitted when data needs to be loaded for the widget */
         this.onDataLoad = new EventEmitter();
         /** Event emitted when filter values are updated */
@@ -896,24 +927,40 @@ class WidgetComponent {
     get isEchartComponent() {
         return this.widget?.config?.component === 'echart';
     }
-    static { this.ɵfac = function WidgetComponent_Factory(__ngFactoryType__) { return new (__ngFactoryType__ || WidgetComponent)(i0.ɵɵdirectiveInject(WidgetPluginService)); }; }
-    static { this.ɵcmp = /*@__PURE__*/ i0.ɵɵdefineComponent({ type: WidgetComponent, selectors: [["vis-widget"]], inputs: { widget: "widget" }, outputs: { onDataLoad: "onDataLoad", onUpdateFilter: "onUpdateFilter" }, decls: 2, vars: 1, consts: [[3, "style"], [4, "ngComponentOutlet", "ngComponentOutletInputs"]], template: function WidgetComponent_Template(rf, ctx) { if (rf & 1) {
-            i0.ɵɵconditionalCreate(0, WidgetComponent_Conditional_0_Template, 2, 5, "div", 0)(1, WidgetComponent_Conditional_1_Template, 2, 5, "div", 0);
+    /**
+     * Retries loading the widget data after an error
+     */
+    retryLoad() {
+        if (!this.widget) {
+            return;
+        }
+        // Clear the error state
+        this.widget.error = null;
+        // Set loading state
+        this.widget.loading = true;
+        // Emit the data load event
+        this.onDataLoad.emit(this.widget);
+        // Also publish through the event bus
+        this.eventBus.publishDataLoad(this.widget, this.widget.id);
+    }
+    static { this.ɵfac = function WidgetComponent_Factory(__ngFactoryType__) { return new (__ngFactoryType__ || WidgetComponent)(i0.ɵɵdirectiveInject(WidgetPluginService), i0.ɵɵdirectiveInject(EventBusService)); }; }
+    static { this.ɵcmp = /*@__PURE__*/ i0.ɵɵdefineComponent({ type: WidgetComponent, selectors: [["vis-widget"]], inputs: { widget: "widget" }, outputs: { onDataLoad: "onDataLoad", onUpdateFilter: "onUpdateFilter" }, decls: 4, vars: 1, consts: [[1, "widget-error", 3, "style"], [1, "widget-loading", 3, "style"], [3, "style"], [1, "widget-error"], [1, "error-container"], [1, "error-icon"], [1, "error-message"], [1, "retry-button", 3, "click"], [1, "widget-loading"], [1, "loading-container"], [1, "loading-spinner"], [1, "loading-text"], [4, "ngComponentOutlet", "ngComponentOutletInputs"]], template: function WidgetComponent_Template(rf, ctx) { if (rf & 1) {
+            i0.ɵɵconditionalCreate(0, WidgetComponent_Conditional_0_Template, 11, 4, "div", 0)(1, WidgetComponent_Conditional_1_Template, 5, 3, "div", 1)(2, WidgetComponent_Conditional_2_Template, 2, 5, "div", 2)(3, WidgetComponent_Conditional_3_Template, 2, 5, "div", 2);
         } if (rf & 2) {
-            i0.ɵɵconditional(ctx.isEchartComponent ? 0 : 1);
-        } }, dependencies: [NgComponentOutlet], encapsulation: 2 }); }
+            i0.ɵɵconditional((ctx.widget == null ? null : ctx.widget.error) ? 0 : (ctx.widget == null ? null : ctx.widget.loading) ? 1 : ctx.isEchartComponent ? 2 : 3);
+        } }, dependencies: [NgComponentOutlet], styles: [".widget-error[_ngcontent-%COMP%]{display:flex;justify-content:center;align-items:center;height:100%;background-color:#ff00000d;border:1px solid rgba(255,0,0,.2);border-radius:4px}.error-container[_ngcontent-%COMP%]{display:flex;flex-direction:column;align-items:center;padding:16px;text-align:center}.error-icon[_ngcontent-%COMP%]{font-size:24px;margin-bottom:8px}.error-message[_ngcontent-%COMP%]   h3[_ngcontent-%COMP%]{margin:0 0 8px;color:#d32f2f}.error-message[_ngcontent-%COMP%]   p[_ngcontent-%COMP%]{margin:0 0 16px;color:#666}.retry-button[_ngcontent-%COMP%]{padding:8px 16px;background-color:#f44336;color:#fff;border:none;border-radius:4px;cursor:pointer}.retry-button[_ngcontent-%COMP%]:hover{background-color:#d32f2f}.widget-loading[_ngcontent-%COMP%]{display:flex;justify-content:center;align-items:center;height:100%;background-color:#00000005}.loading-container[_ngcontent-%COMP%]{display:flex;flex-direction:column;align-items:center}.loading-spinner[_ngcontent-%COMP%]{width:32px;height:32px;border:3px solid rgba(0,0,0,.1);border-radius:50%;border-top-color:#3498db;animation:_ngcontent-%COMP%_spin 1s ease-in-out infinite;margin-bottom:8px}@keyframes _ngcontent-%COMP%_spin{to{transform:rotate(360deg)}}.loading-text[_ngcontent-%COMP%]{color:#666}"] }); }
 }
 (() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassMetadata(WidgetComponent, [{
         type: Component,
-        args: [{ selector: 'vis-widget', standalone: true, imports: [NgComponentOutlet], template: "@if(isEchartComponent) {\r\n    <div [style]=\"{ height: '20vh' }\">\r\n        <ng-container \r\n            *ngComponentOutlet=\"currentWidget.component; inputs: currentWidget.inputs\">\r\n        </ng-container>\r\n    </div>\r\n}\r\n@else {\r\n    <div [style]=\"{ height: '20vh' }\">\r\n        <ng-container \r\n            *ngComponentOutlet=\"currentWidget.component; inputs: currentWidget.inputs\">\r\n        </ng-container>\r\n    </div>\r\n}" }]
-    }], () => [{ type: WidgetPluginService }], { widget: [{
+        args: [{ selector: 'vis-widget', standalone: true, imports: [NgComponentOutlet], template: "@if(widget?.error) {\r\n    <div [style]=\"{ height: '20vh' }\" class=\"widget-error\">\r\n        <div class=\"error-container\">\r\n            <div class=\"error-icon\">\u26A0\uFE0F</div>\r\n            <div class=\"error-message\">\r\n                <h3>Error loading widget</h3>\r\n                <p>{{ widget.error?.message || 'An unknown error occurred' }}</p>\r\n            </div>\r\n            <button (click)=\"retryLoad()\" class=\"retry-button\">Retry</button>\r\n        </div>\r\n    </div>\r\n} @else if(widget?.loading) {\r\n    <div [style]=\"{ height: '20vh' }\" class=\"widget-loading\">\r\n        <div class=\"loading-container\">\r\n            <div class=\"loading-spinner\"></div>\r\n            <div class=\"loading-text\">Loading...</div>\r\n        </div>\r\n    </div>\r\n} @else if(isEchartComponent) {\r\n    <div [style]=\"{ height: '20vh' }\">\r\n        <ng-container \r\n            *ngComponentOutlet=\"currentWidget.component; inputs: currentWidget.inputs\">\r\n        </ng-container>\r\n    </div>\r\n} @else {\r\n    <div [style]=\"{ height: '20vh' }\">\r\n        <ng-container \r\n            *ngComponentOutlet=\"currentWidget.component; inputs: currentWidget.inputs\">\r\n        </ng-container>\r\n    </div>\r\n}\r\n", styles: [".widget-error{display:flex;justify-content:center;align-items:center;height:100%;background-color:#ff00000d;border:1px solid rgba(255,0,0,.2);border-radius:4px}.error-container{display:flex;flex-direction:column;align-items:center;padding:16px;text-align:center}.error-icon{font-size:24px;margin-bottom:8px}.error-message h3{margin:0 0 8px;color:#d32f2f}.error-message p{margin:0 0 16px;color:#666}.retry-button{padding:8px 16px;background-color:#f44336;color:#fff;border:none;border-radius:4px;cursor:pointer}.retry-button:hover{background-color:#d32f2f}.widget-loading{display:flex;justify-content:center;align-items:center;height:100%;background-color:#00000005}.loading-container{display:flex;flex-direction:column;align-items:center}.loading-spinner{width:32px;height:32px;border:3px solid rgba(0,0,0,.1);border-radius:50%;border-top-color:#3498db;animation:spin 1s ease-in-out infinite;margin-bottom:8px}@keyframes spin{to{transform:rotate(360deg)}}.loading-text{color:#666}\n"] }]
+    }], () => [{ type: WidgetPluginService }, { type: EventBusService }], { widget: [{
             type: Input
         }], onDataLoad: [{
             type: Output
         }], onUpdateFilter: [{
             type: Output
         }] }); })();
-(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassDebugInfo(WidgetComponent, { className: "WidgetComponent", filePath: "lib/widgets/widget/widget.component.ts", lineNumber: 15 }); })();
+(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassDebugInfo(WidgetComponent, { className: "WidgetComponent", filePath: "lib/widgets/widget/widget.component.ts", lineNumber: 95 }); })();
 
 class WidgetConfigComponent {
     constructor() {
@@ -1436,57 +1483,81 @@ class DashboardContainerComponent {
      * @param widget - The widget to load data for
      */
     async onDataLoad(widget) {
+        if (!widget) {
+            console.error('Cannot load data for undefined widget');
+            this.eventBus.publishError(new Error('Cannot load data for undefined widget'), 'dashboard-container');
+            return;
+        }
         try {
+            // Set widget to loading state if possible
+            widget.loading = true;
+            widget.error = null;
             // Get the filter widget and update filter values
             const filterWidget = this.filterService.findFilterWidget(this.widgets);
             this.filterValues = this.filterService.getFilterValues(this.widgets);
             // Process widget data if available
-            let widgetData = widget.config.options.series;
-            if (widgetData) {
-                if (widgetData.series) {
-                    widgetData.map((item) => {
-                        return {
-                            x: {
-                                table: {
-                                    id: item.encode?.x?.split('.')[0],
-                                    name: item.encode?.x?.split('.')[1],
+            if (widget.config?.options) {
+                let widgetData = widget.config.options.series;
+                if (widgetData) {
+                    if (widgetData.series) {
+                        widgetData.map((item) => {
+                            if (!item || !item.encode)
+                                return {};
+                            return {
+                                x: {
+                                    table: {
+                                        id: item.encode?.x?.split('.')?.[0] ?? '',
+                                        name: item.encode?.x?.split('.')?.[1] ?? '',
+                                    },
+                                    column: {
+                                        id: item.encode?.x?.split('.')?.[2] ?? '',
+                                        name: item.encode?.x?.split('.')?.[3] ?? '',
+                                    },
                                 },
-                                column: {
-                                    id: item.encode?.x?.split('.')[2],
-                                    name: item.encode?.x?.split('.')[3],
+                                y: {
+                                    table: {
+                                        id: item.encode?.y?.split('.')?.[0] ?? '',
+                                        name: item.encode?.y?.split('.')?.[1] ?? '',
+                                    },
+                                    column: {
+                                        id: item.encode?.y?.split('.')?.[2] ?? '',
+                                        name: item.encode?.y?.split('.')?.[3] ?? '',
+                                    },
                                 },
-                            },
-                            y: {
-                                table: {
-                                    id: item.encode?.y?.split('.')[0],
-                                    name: item.encode?.y?.split('.')[1],
-                                },
-                                column: {
-                                    id: item.encode?.y?.split('.')[2],
-                                    name: item.encode?.y?.split('.')[3],
-                                },
-                            },
-                        };
-                    });
-                }
-                else {
-                    widgetData.seriesData = {};
+                            };
+                        });
+                    }
+                    else {
+                        widgetData.seriesData = {};
+                    }
                 }
             }
             // Show loading indicator
-            widget.chartInstance?.showLoading();
+            if (widget.chartInstance) {
+                widget.chartInstance.showLoading();
+            }
             // Call onChartOptions event handler if available
-            if (widget.config.events?.onChartOptions) {
+            if (widget.config?.events?.onChartOptions) {
                 const filter = widget.config.state?.isOdataQuery === true
                     ? this.getFilterParams()
                     : this.filterValues;
-                widget?.config?.events?.onChartOptions(widget, widget.chartInstance ?? undefined, filter);
+                widget.config.events.onChartOptions(widget, widget.chartInstance ?? undefined, filter);
             }
             // Publish widget update event
             this.eventBus.publishWidgetUpdate(widget, 'dashboard-container');
+            // Set widget to not loading state
+            widget.loading = false;
         }
         catch (error) {
             console.error(`Error loading data for widget ${widget.id}:`, error);
+            // Set error state on widget
+            widget.loading = false;
+            widget.error = error;
+            // Hide loading indicator if it was shown
+            if (widget.chartInstance) {
+                widget.chartInstance.hideLoading();
+            }
+            // Publish error event
             this.eventBus.publishError(error, 'dashboard-container');
         }
     }
@@ -1504,9 +1575,26 @@ class DashboardContainerComponent {
      * @param widget - The updated widget
      */
     onUpdateWidget(widget) {
-        const widgetsWithNewOptions = this.widgets.map((item) => item.id === widget.id ? { ...widget } : item);
-        this.widgets = widgetsWithNewOptions;
-        this.widgets.forEach(widget => this.onDataLoad(widget));
+        if (!widget) {
+            console.error('Cannot update undefined widget');
+            this.eventBus.publishError(new Error('Cannot update undefined widget'), 'dashboard-container');
+            return;
+        }
+        try {
+            // Update the widget in the widgets array
+            const widgetsWithNewOptions = this.widgets.map((item) => item.id === widget.id ? { ...widget } : item);
+            this.widgets = widgetsWithNewOptions;
+            // Reload data for all widgets
+            this.widgets.forEach(widget => {
+                if (widget) {
+                    this.onDataLoad(widget);
+                }
+            });
+        }
+        catch (error) {
+            console.error(`Error updating widget ${widget.id}:`, error);
+            this.eventBus.publishError(error, 'dashboard-container');
+        }
     }
     /**
      * Callback when a widget is resized
@@ -1587,7 +1675,24 @@ class DashboardContainerComponent {
      * @param widget - The widget to delete
      */
     onDeleteWidget(widget) {
-        this.widgets.splice(this.widgets.indexOf(widget), 1);
+        if (!widget) {
+            console.error('Cannot delete undefined widget');
+            this.eventBus.publishError(new Error('Cannot delete undefined widget'), 'dashboard-container');
+            return;
+        }
+        try {
+            const index = this.widgets.indexOf(widget);
+            if (index !== -1) {
+                this.widgets.splice(index, 1);
+            }
+            else {
+                console.warn(`Widget with id ${widget.id} not found in dashboard`);
+            }
+        }
+        catch (error) {
+            console.error(`Error deleting widget ${widget.id}:`, error);
+            this.eventBus.publishError(error, 'dashboard-container');
+        }
     }
     /**
      * Calculates the appropriate chart height based on grid dimensions

@@ -160,59 +160,89 @@ export class DashboardContainerComponent {
    * @param widget - The widget to load data for
    */
   async onDataLoad(widget: IWidget) {
+    if (!widget) {
+      console.error('Cannot load data for undefined widget');
+      this.eventBus.publishError(new Error('Cannot load data for undefined widget'), 'dashboard-container');
+      return;
+    }
+
     try {
+      // Set widget to loading state if possible
+      widget.loading = true;
+      widget.error = null;
+
       // Get the filter widget and update filter values
       const filterWidget = this.filterService.findFilterWidget(this.widgets);
       this.filterValues = this.filterService.getFilterValues(this.widgets);
 
       // Process widget data if available
-      let widgetData: any = (widget.config.options as echarts.EChartsOption).series;
-      if (widgetData) {
-        if(widgetData.series) {
-          widgetData.map((item: any) => {
-            return {
-              x: {
-                table: {
-                  id: item.encode?.x?.split('.')[0],
-                  name: item.encode?.x?.split('.')[1],
+      if (widget.config?.options) {
+        let widgetData: any = (widget.config.options as echarts.EChartsOption).series;
+        if (widgetData) {
+          if (widgetData.series) {
+            widgetData.map((item: any) => {
+              if (!item || !item.encode) return {};
+
+              return {
+                x: {
+                  table: {
+                    id: item.encode?.x?.split('.')?.[0] ?? '',
+                    name: item.encode?.x?.split('.')?.[1] ?? '',
+                  },
+                  column: {
+                    id: item.encode?.x?.split('.')?.[2] ?? '',
+                    name: item.encode?.x?.split('.')?.[3] ?? '',
+                  },
                 },
-                column: {
-                  id: item.encode?.x?.split('.')[2],
-                  name: item.encode?.x?.split('.')[3],
+                y: {
+                  table: {
+                    id: item.encode?.y?.split('.')?.[0] ?? '',
+                    name: item.encode?.y?.split('.')?.[1] ?? '',
+                  },
+                  column: {
+                    id: item.encode?.y?.split('.')?.[2] ?? '',
+                    name: item.encode?.y?.split('.')?.[3] ?? '',
+                  },
                 },
-              },
-              y: {
-                table: {
-                  id: item.encode?.y?.split('.')[0],
-                  name: item.encode?.y?.split('.')[1],
-                },
-                column: {
-                  id: item.encode?.y?.split('.')[2],
-                  name: item.encode?.y?.split('.')[3],
-                },
-              },
-            };
-          });
-        } else {
-          widgetData.seriesData = {};
+              };
+            });
+          } else {
+            widgetData.seriesData = {};
+          }
         }
       }
 
       // Show loading indicator
-      widget.chartInstance?.showLoading();
+      if (widget.chartInstance) {
+        widget.chartInstance.showLoading();
+      }
 
       // Call onChartOptions event handler if available
-      if(widget.config.events?.onChartOptions) {
+      if (widget.config?.events?.onChartOptions) {
         const filter = widget.config.state?.isOdataQuery === true 
           ? this.getFilterParams() 
           : this.filterValues;
-        widget?.config?.events?.onChartOptions(widget, widget.chartInstance ?? undefined, filter);
+        widget.config.events.onChartOptions(widget, widget.chartInstance ?? undefined, filter);
       }
 
       // Publish widget update event
       this.eventBus.publishWidgetUpdate(widget, 'dashboard-container');
+
+      // Set widget to not loading state
+      widget.loading = false;
     } catch (error) {
       console.error(`Error loading data for widget ${widget.id}:`, error);
+
+      // Set error state on widget
+      widget.loading = false;
+      widget.error = error;
+
+      // Hide loading indicator if it was shown
+      if (widget.chartInstance) {
+        widget.chartInstance.hideLoading();
+      }
+
+      // Publish error event
       this.eventBus.publishError(error, 'dashboard-container');
     }
   }
@@ -232,11 +262,29 @@ export class DashboardContainerComponent {
    * @param widget - The updated widget
    */
   onUpdateWidget(widget: IWidget) {
-    const widgetsWithNewOptions = this.widgets.map((item) =>
-      item.id === widget.id ? {...widget} : item
-    );
-    this.widgets = widgetsWithNewOptions;
-    this.widgets.forEach(widget => this.onDataLoad(widget))
+    if (!widget) {
+      console.error('Cannot update undefined widget');
+      this.eventBus.publishError(new Error('Cannot update undefined widget'), 'dashboard-container');
+      return;
+    }
+
+    try {
+      // Update the widget in the widgets array
+      const widgetsWithNewOptions = this.widgets.map((item) =>
+        item.id === widget.id ? {...widget} : item
+      );
+      this.widgets = widgetsWithNewOptions;
+
+      // Reload data for all widgets
+      this.widgets.forEach(widget => {
+        if (widget) {
+          this.onDataLoad(widget);
+        }
+      });
+    } catch (error) {
+      console.error(`Error updating widget ${widget.id}:`, error);
+      this.eventBus.publishError(error, 'dashboard-container');
+    }
   }
 
   /**
@@ -332,7 +380,23 @@ export class DashboardContainerComponent {
    * @param widget - The widget to delete
    */
   onDeleteWidget(widget: IWidget) {
-    this.widgets.splice(this.widgets.indexOf(widget), 1);
+    if (!widget) {
+      console.error('Cannot delete undefined widget');
+      this.eventBus.publishError(new Error('Cannot delete undefined widget'), 'dashboard-container');
+      return;
+    }
+
+    try {
+      const index = this.widgets.indexOf(widget);
+      if (index !== -1) {
+        this.widgets.splice(index, 1);
+      } else {
+        console.warn(`Widget with id ${widget.id} not found in dashboard`);
+      }
+    } catch (error) {
+      console.error(`Error deleting widget ${widget.id}:`, error);
+      this.eventBus.publishError(error, 'dashboard-container');
+    }
   }
 
   /**

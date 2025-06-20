@@ -12,11 +12,11 @@ This document contains a detailed checklist of actionable improvement tasks for 
 [x] 2. Remove `@ts-ignore` comments and fix the underlying issues
    - Fix type casting in echart.component.ts
 
-[ ] 3. Add proper error handling to async methods
+[x] 3. Add proper error handling to async methods
    - Add try/catch blocks to onDataLoad method in dashboard-container.component.ts
    - Implement error states for widgets
 
-[ ] 4. Implement proper null checking throughout the codebase
+[x] 4. Implement proper null checking throughout the codebase
    - Add null checks before accessing properties
    - Use optional chaining and nullish coalescing operators
 

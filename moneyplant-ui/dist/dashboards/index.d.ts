@@ -80,6 +80,10 @@ interface IWidget {
     series?: [{}];
     /** Reference to the ECharts instance if applicable */
     chartInstance?: echarts.ECharts | null;
+    /** Whether the widget is currently loading data */
+    loading?: boolean;
+    /** Error that occurred during data loading, if any */
+    error?: any;
 }
 
 declare class WidgetBuilder {
