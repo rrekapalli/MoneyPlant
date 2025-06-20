@@ -14,6 +14,7 @@ import {InputNumberModule} from 'primeng/inputnumber';
 import {InputSwitchModule} from 'primeng/inputswitch';
 import {InputTextarea} from 'primeng/inputtextarea';
 import {WidgetPluginService} from '../services/widget-plugin.service';
+import * as echarts from 'echarts';
 
 /**
  * Component for configuring dashboard widgets
@@ -204,7 +205,7 @@ export class WidgetConfigComponent implements OnInit {
         chartType: this.getChartType(options),
         chartTheme: 'default',
         showLegend: options.legend !== undefined,
-        enableDataZoom: options.dataZoom !== undefined,
+        enableDataZoom: options['dataZoom'] !== undefined,
         chartTitle: options.title ? (typeof options.title === 'object' ? (Array.isArray(options.title) ? (options.title[0]?.text || '') : options.title.text || '') : '') : ''
       });
     }
@@ -465,9 +466,9 @@ export class WidgetConfigComponent implements OnInit {
 
         // Update dataZoom
         if (this.optionsForm.value.enableDataZoom) {
-          options.dataZoom = options.dataZoom || [{ type: 'inside' }];
+          options['dataZoom'] = options['dataZoom'] || [{ type: 'inside' }];
         } else {
-          delete options.dataZoom;
+          delete options['dataZoom'];
         }
 
         // Update title

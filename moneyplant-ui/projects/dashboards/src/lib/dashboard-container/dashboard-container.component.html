@@ -44,7 +44,7 @@
               [item]="item.position" 
               (itemResize)="updateString('[Edit Mode - Pending Changes]')"
               (itemChange)="updateString('[Edit Mode - Pending Changes]')"
-              [attr.aria-label]="item.config?.header?.title || 'Widget ' + (i + 1)"
+              [attr.aria-label]="item.config.header?.title || 'Widget ' + (i + 1)"
               role="region">
 
               @if (item.config.header) {

@@ -1,15 +1,17 @@
 {
-  "name": "dashboards",
+  "name": "superset-integration",
   "version": "0.0.1",
   "peerDependencies": {
     "@angular/common": "^20.0.0",
-    "@angular/core": "^20.0.0"
+    "@angular/core": "^20.0.0",
+    "@superset-ui/embedded-sdk": "^0.1.0",
+    "dashboards": "^0.0.1"
   },
   "dependencies": {
     "tslib": "^2.3.0"
   },
   "sideEffects": false,
-  "module": "fesm2022/dashboards.mjs",
+  "module": "fesm2022/superset-integration.mjs",
   "typings": "index.d.ts",
   "exports": {
     "./package.json": {
@@ -17,7 +19,7 @@
     },
     ".": {
       "types": "./index.d.ts",
-      "default": "./fesm2022/dashboards.mjs"
+      "default": "./fesm2022/superset-integration.mjs"
     }
   },
   "scripts": {

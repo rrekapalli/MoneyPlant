@@ -11,14 +11,14 @@ import { GridsterConfig, DisplayGrid, GridType } from 'angular-gridster2';
 // Import dashboard modules
 // Import from the library's public API
 import { 
-  DashboardContainerComponent,
   IWidget,
   EventBusService,
   EchartComponent,
   TableComponent,
   TileComponent,
-  MarkdownCellComponent
-} from 'dashboards';
+  MarkdownCellComponent,
+  DashboardContainerComponent
+} from '@dashboards/public-api';
 
 // Import components not in the public API directly
 import { WidgetComponent } from '@dashboards/widgets/widget/widget.component';
