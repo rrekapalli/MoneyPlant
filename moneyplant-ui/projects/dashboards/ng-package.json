@@ -3,5 +3,6 @@
   "dest": "../../dist/dashboards",
   "lib": {
     "entryFile": "src/public-api.ts"
-  }
+  },
+  "allowedNonPeerDependencies": ["echarts", "ngx-echarts"]
 }
