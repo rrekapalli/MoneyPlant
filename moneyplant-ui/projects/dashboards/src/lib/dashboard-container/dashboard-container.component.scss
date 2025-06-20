@@ -71,6 +71,12 @@
   color: var(--dashboard-primary);
 }
 
+.template-manager-container {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+}
+
 /* Focus styles for better keyboard navigation */
 :focus-visible {
   outline: 2px solid var(--dashboard-primary);
@@ -105,11 +111,14 @@
 
   .gridster-container {
     height: calc(100vh - 60px);
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
   }
 
   /* Adjust widget styles for mobile */
   ::ng-deep gridster-item {
     overflow-x: auto !important;
+    touch-action: pan-y; /* Enable vertical touch scrolling */
+    -webkit-tap-highlight-color: rgba(0,0,0,0); /* Remove tap highlight on iOS */
   }
 
   /* Make sure charts are responsive */
@@ -123,6 +132,24 @@
   ::ng-deep .p-button {
     min-width: 44px;
     min-height: 44px;
+    padding: 0.75rem !important; /* Larger padding for better touch targets */
+  }
+
+  /* Improve widget headers for touch */
+  ::ng-deep .widget-header {
+    padding: 0.75rem !important;
+  }
+
+  /* Add spacing between widgets */
+  ::ng-deep gridster-item {
+    margin-bottom: 1rem !important;
+  }
+
+  /* Improve scrolling performance */
+  ::ng-deep gridster {
+    will-change: transform;
+    transform: translateZ(0);
+    backface-visibility: hidden;
   }
 }
 
@@ -140,6 +167,29 @@
   /* Ensure minimum height for widgets */
   ::ng-deep gridster-item {
     min-height: 200px !important;
+  }
+}
+
+/* Portrait orientation */
+@media (max-width: 768px) and (orientation: portrait) {
+  ::ng-deep gridster-item {
+    min-height: 250px !important; /* Taller widgets in portrait mode */
+  }
+
+  /* Adjust filter widgets to be more compact in portrait */
+  ::ng-deep gridster-item[data-component="filter"] {
+    min-height: 100px !important;
+  }
+}
+
+/* Landscape orientation */
+@media (max-width: 768px) and (orientation: landscape) {
+  .gridster-container {
+    height: calc(100vh - 50px); /* Slightly smaller in landscape to avoid scrolling */
+  }
+
+  ::ng-deep gridster-item {
+    min-height: 180px !important; /* Shorter widgets in landscape mode */
   }
 }
 

@@ -5,6 +5,7 @@ import * as i0 from '@angular/core';
 import { OnInit, OnDestroy, EventEmitter, AfterViewInit, ElementRef } from '@angular/core';
 import { FormGroup, FormBuilder } from '@angular/forms';
 import { Observable, Subject } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
 import { MenuItem, MessageService } from 'primeng/api';
 
 interface IState {
@@ -41,6 +42,113 @@ interface ITableOptions {
 }
 
 /**
+ * Interface for data grid widget options
+ */
+interface IDataGridOptions {
+    /** Columns to display in the grid */
+    columns?: string[];
+    /** Initial sort field */
+    sortField?: string;
+    /** Initial sort order (1 for ascending, -1 for descending) */
+    sortOrder?: number;
+    /** Whether to enable pagination */
+    pagination?: boolean;
+    /** Default rows per page */
+    rows?: number;
+    /** Available rows per page options */
+    rowsPerPageOptions?: number[];
+    /** Whether to enable global filtering */
+    globalFilter?: boolean;
+    /** Whether to enable column filtering */
+    columnFilters?: boolean;
+    /** Whether to enable column resizing */
+    resizableColumns?: boolean;
+    /** Whether to enable column reordering */
+    reorderableColumns?: boolean;
+    /** Whether to enable row selection */
+    selectionMode?: 'single' | 'multiple' | 'checkbox' | null;
+    /** Whether to enable responsive mode */
+    responsive?: boolean;
+    /** Custom style class for the table */
+    styleClass?: string;
+    /** Data accessor function or path */
+    accessor?: string;
+}
+
+/**
+ * Interface for heatmap chart widget options
+ */
+interface IHeatmapOptions {
+    /** Data for the heatmap */
+    data?: Array<[number, number, number]>;
+    /** X-axis data */
+    xAxis?: string[];
+    /** Y-axis data */
+    yAxis?: string[];
+    /** Minimum value for the color scale */
+    min?: number;
+    /** Maximum value for the color scale */
+    max?: number;
+    /** Color range for the heatmap */
+    colors?: string[];
+    /** Whether to show the color legend */
+    showLegend?: boolean;
+    /** Position of the legend */
+    legendPosition?: 'top' | 'bottom' | 'left' | 'right';
+    /** Whether to enable visual map */
+    visualMap?: boolean;
+    /** Whether to enable tooltip */
+    tooltip?: boolean;
+    /** Whether to enable label */
+    label?: boolean;
+    /** Whether to enable emphasis on hover */
+    emphasis?: boolean;
+    /** Data accessor function or path */
+    accessor?: string;
+}
+
+/**
+ * Interface for gauge chart widget options
+ */
+interface IGaugeOptions {
+    /** Value for the gauge */
+    value?: number;
+    /** Minimum value for the gauge */
+    min?: number;
+    /** Maximum value for the gauge */
+    max?: number;
+    /** Title of the gauge */
+    title?: string;
+    /** Detail text format */
+    detailFormat?: string;
+    /** Whether to show the pointer */
+    showPointer?: boolean;
+    /** Whether to show progress */
+    showProgress?: boolean;
+    /** Whether to show the axis tick */
+    showAxisTick?: boolean;
+    /** Whether to show the axis label */
+    showAxisLabel?: boolean;
+    /** Color ranges for the gauge */
+    ranges?: Array<{
+        /** Minimum value for this range */
+        min: number;
+        /** Maximum value for this range */
+        max: number;
+        /** Color for this range */
+        color: string;
+    }>;
+    /** Color of the gauge */
+    color?: string | string[];
+    /** Whether to enable animation */
+    animation?: boolean;
+    /** Whether to enable tooltip */
+    tooltip?: boolean;
+    /** Data accessor function or path */
+    accessor?: string;
+}
+
+/**
  * Interface representing a widget in the dashboard
  */
 interface IWidget {
@@ -48,6 +156,8 @@ interface IWidget {
     id?: string;
     /** Position and size configuration for the gridster layout */
     position: GridsterItem;
+    /** Original position and size before responsive adjustments */
+    originalPosition?: GridsterItem;
     /** Number of rows the widget occupies in the grid */
     rows?: number;
     /** Widget configuration object */
@@ -70,7 +180,7 @@ interface IWidget {
         /** Height of the widget in pixels */
         height?: number;
         /** Widget-specific options based on the component type */
-        options: echarts.EChartsOption | IFilterOptions | ITileOptions | IMarkdownCellOptions | ICodeCellOptions | ITableOptions;
+        options: echarts.EChartsOption | IFilterOptions | ITileOptions | IMarkdownCellOptions | ICodeCellOptions | ITableOptions | IDataGridOptions | IHeatmapOptions | IGaugeOptions;
         /** Event handlers */
         events?: {
             /** Callback function when chart options change
@@ -543,6 +653,79 @@ declare class UndoRedoService {
 }
 
 /**
+ * Interface for dashboard templates
+ */
+interface IDashboardTemplate {
+    /** Unique identifier for the template */
+    id: string;
+    /** Name of the template */
+    name: string;
+    /** Description of the template */
+    description?: string;
+    /** Category or tags for the template */
+    category?: string[];
+    /** Thumbnail image URL */
+    thumbnailUrl?: string;
+    /** Whether this is a pre-built template */
+    isPreBuilt?: boolean;
+    /** User ID of the creator (for user-created templates) */
+    createdBy?: string;
+    /** Creation date */
+    createdAt?: Date;
+    /** Last modified date */
+    updatedAt?: Date;
+    /** The actual dashboard configuration */
+    dashboardConfig: {
+        /** Layout settings */
+        layout?: any;
+        /** Widgets in the dashboard */
+        widgets: any[];
+        /** Global dashboard settings */
+        settings?: any;
+    };
+}
+
+/**
+ * Service for managing dashboard templates
+ */
+declare class DashboardTemplateService {
+    private http;
+    private preBuiltTemplates;
+    private readonly USER_TEMPLATES_KEY;
+    constructor(http: HttpClient);
+    /**
+     * Gets all available templates (both pre-built and user-created)
+     */
+    getAllTemplates(): Observable<IDashboardTemplate[]>;
+    /**
+     * Gets all pre-built templates
+     */
+    getPreBuiltTemplates(): Observable<IDashboardTemplate[]>;
+    /**
+     * Gets user-created templates from local storage
+     */
+    getUserTemplates(): Observable<IDashboardTemplate[]>;
+    /**
+     * Gets a template by ID
+     */
+    getTemplateById(id: string): Observable<IDashboardTemplate>;
+    /**
+     * Saves a user template
+     */
+    saveTemplate(template: IDashboardTemplate): Observable<IDashboardTemplate>;
+    /**
+     * Deletes a user template
+     */
+    deleteTemplate(id: string): Observable<boolean>;
+    /**
+     * Generates a unique ID for a template
+     */
+    private generateId;
+    static ɵfac: i0.ɵɵFactoryDeclaration<DashboardTemplateService, never>;
+    static ɵprov: i0.ɵɵInjectableDeclaration<DashboardTemplateService>;
+}
+
+/**
  * A container component for dashboard widgets.
  *
  * This component provides a grid-based layout for dashboard widgets using angular-gridster2.
@@ -555,6 +738,7 @@ declare class DashboardContainerComponent implements OnInit, OnDestroy {
     private widgetDataCache;
     private virtualScrollService;
     private undoRedoService;
+    private templateService;
     /** Array of widgets to display in the dashboard */
     widgets: IWidget[];
     /** Current filter values applied to the dashboard */
@@ -567,8 +751,10 @@ declare class DashboardContainerComponent implements OnInit, OnDestroy {
     canUndo: boolean;
     canRedo: boolean;
     private destroy$;
+    private resizeTimeout;
+    private currentBreakpoint;
     private stateChangeDebounceTimer;
-    constructor(calculationService: CalculationService, filterService: FilterService, eventBus: EventBusService, widgetDataCache: WidgetDataCacheService, virtualScrollService: VirtualScrollService, undoRedoService: UndoRedoService);
+    constructor(calculationService: CalculationService, filterService: FilterService, eventBus: EventBusService, widgetDataCache: WidgetDataCacheService, virtualScrollService: VirtualScrollService, undoRedoService: UndoRedoService, templateService: DashboardTemplateService);
     /**
      * Lifecycle hook that is called after the component is initialized
      */
@@ -746,6 +932,47 @@ declare class DashboardContainerComponent implements OnInit, OnDestroy {
      * @returns The calculated zoom level for the map
      */
     calculateMapZoom(cols: number, rows: number): number;
+    /**
+     * Applies responsive layout based on screen size
+     *
+     * This method detects the current screen size and applies the appropriate
+     * responsive layout configuration. It also updates widget positions and sizes
+     * to ensure they fit properly on the current screen.
+     */
+    applyResponsiveLayout(): void;
+    /**
+     * Gets the responsive row height for a widget based on its type
+     *
+     * @param widget - The widget to calculate height for
+     * @returns The number of rows the widget should occupy
+     */
+    private getResponsiveRowHeight;
+    /**
+     * Gets the current dashboard configuration for saving as a template
+     *
+     * @returns The dashboard configuration
+     */
+    getDashboardConfig(): any;
+    /**
+     * Loads a dashboard template
+     *
+     * @param template - The template to load
+     */
+    loadTemplate(template: IDashboardTemplate): void;
+    /**
+     * Handles when a template is saved
+     *
+     * @param template - The saved template
+     */
+    onTemplateSaved(template: IDashboardTemplate): void;
+    /**
+     * Shows a toast message
+     *
+     * @param severity - The severity of the message (success, info, warn, error)
+     * @param summary - The summary of the message
+     * @param detail - The detail of the message
+     */
+    private showToast;
     static ɵfac: i0.ɵɵFactoryDeclaration<DashboardContainerComponent, never>;
     static ɵcmp: i0.ɵɵComponentDeclaration<DashboardContainerComponent, "vis-dashboard-container", never, { "widgets": { "alias": "widgets"; "required": false; }; "filterValues": { "alias": "filterValues"; "required": false; }; "dashboardId": { "alias": "dashboardId"; "required": false; }; "isEditMode": { "alias": "isEditMode"; "required": false; }; "options": { "alias": "options"; "required": false; }; }, { "containerTouchChanged": "containerTouchChanged"; "editModeStringChange": "editModeStringChange"; "changesMade": "changesMade"; }, never, never, true, never>;
 }
@@ -1722,11 +1949,19 @@ declare class EchartComponent extends BaseWidgetComponent implements AfterViewIn
      */
     private convertPieChartToDataset;
     /**
-     * Converts multiple series data to use the dataset API
+     * Converts heatmap chart data to use the dataset API
      *
      * @param options - The ECharts options to convert
      * @param seriesArray - The array of series
      */
+    private convertHeatmapToDataset;
+    /**
+     * Converts gauge chart data to use the dataset API
+     *
+     * @param options - The ECharts options to convert
+     * @param seriesArray - The array of series
+     */
+    private convertGaugeToDataset;
     private convertMultiSeriesToDataset;
     /**
      * Lifecycle hook that is called after the component's view has been initialized

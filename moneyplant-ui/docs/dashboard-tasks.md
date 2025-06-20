@@ -114,16 +114,16 @@ This document contains a detailed checklist of actionable improvement tasks for 
 
 ## New Features
 
-[ ] 26. Add more widget types
+[x] 26. Add more widget types
     - Implement a heatmap widget
     - Add a gauge chart widget
     - Create a data grid widget with sorting and filtering
 
-[ ] 27. Implement dashboard templates
+[x] 27. Implement dashboard templates
     - Allow users to save and load dashboard templates
     - Provide pre-built templates for common use cases
 
-[ ] 28. Add export functionality
+[x] 28. Add export functionality
     - Allow exporting dashboards as images or PDFs
     - Implement data export to CSV or Excel
 

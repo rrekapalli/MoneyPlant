@@ -34,6 +34,9 @@ import {WidgetDataCacheService} from '../services/widget-data-cache.service';
 import {VirtualScrollService} from '../services/virtual-scroll.service';
 import {UndoRedoService, DashboardState} from '../services/undo-redo.service';
 import {Subject, takeUntil, fromEvent} from 'rxjs';
+import {TemplateManagerComponent} from '../dashboard-templates/template-manager/template-manager.component';
+import {DashboardTemplateService} from '../services/dashboard-template.service';
+import {IDashboardTemplate} from '../entities/IDashboardTemplate';
 
 /**
  * A container component for dashboard widgets.
@@ -56,7 +59,8 @@ import {Subject, takeUntil, fromEvent} from 'rxjs';
     NgxPrintModule,
     Toast,
     ButtonModule,
-    TooltipModule
+    TooltipModule,
+    TemplateManagerComponent
   ],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
@@ -80,6 +84,8 @@ export class DashboardContainerComponent implements OnInit, OnDestroy {
   canUndo: boolean = false;
   canRedo: boolean = false;
   private destroy$ = new Subject<void>();
+  private resizeTimeout: any;
+  private currentBreakpoint: string = 'lg';
   private stateChangeDebounceTimer: any;
 
   constructor(
@@ -88,7 +94,8 @@ export class DashboardContainerComponent implements OnInit, OnDestroy {
     private eventBus: EventBusService,
     private widgetDataCache: WidgetDataCacheService,
     private virtualScrollService: VirtualScrollService,
-    private undoRedoService: UndoRedoService
+    private undoRedoService: UndoRedoService,
+    private templateService: DashboardTemplateService
   ) {
     // Subscribe to events from the event bus
     this.subscribeToEvents();
@@ -370,27 +377,62 @@ export class DashboardContainerComponent implements OnInit, OnDestroy {
     // Responsive configuration for different screen sizes
     responsiveOptions: [
       {
-        breakpoint: 'sm', // Small devices
+        breakpoint: 'xs', // Extra small devices (phones)
         minCols: 1,
-        maxCols: 2,
+        maxCols: 1,
         margin: 2,
-        rowHeightRatio: 0.2
+        rowHeightRatio: 0.25,
+        fixedRowHeight: 150,
+        outerMargin: true,
+        outerMarginTop: 10,
+        outerMarginBottom: 10
       },
       {
-        breakpoint: 'md', // Medium devices
+        breakpoint: 'sm', // Small devices (tablets portrait)
+        minCols: 2,
+        maxCols: 2,
+        margin: 2,
+        rowHeightRatio: 0.2,
+        fixedRowHeight: 120,
+        outerMargin: true
+      },
+      {
+        breakpoint: 'md', // Medium devices (tablets landscape)
         minCols: 6,
         maxCols: 6,
         margin: 3,
-        rowHeightRatio: 0.15
+        rowHeightRatio: 0.15,
+        fixedRowHeight: 100
       },
       {
-        breakpoint: 'lg', // Large devices
+        breakpoint: 'lg', // Large devices (desktops)
         minCols: 12,
         maxCols: 12,
         margin: 4,
         rowHeightRatio: 0.15
       }
     ],
+    // Detect screen size changes and apply responsive layout
+    initCallback: (gridsterInstance) => {
+      // Initialize with the correct responsive layout
+      this.applyResponsiveLayout();
+
+      // Listen for orientation changes
+      window.addEventListener('orientationchange', () => {
+        setTimeout(() => this.applyResponsiveLayout(), 100);
+      });
+
+      // Listen for resize events
+      window.addEventListener('resize', () => {
+        // Debounce resize events
+        if (this.resizeTimeout) {
+          clearTimeout(this.resizeTimeout);
+        }
+        this.resizeTimeout = setTimeout(() => {
+          this.applyResponsiveLayout();
+        }, 200);
+      });
+    },
     itemResizeCallback: (item, itemComponent) => this.onWidgetResize(item, itemComponent),
     itemChangeCallback: (item, itemComponent) => this.onWidgetChange(item, itemComponent)
   };
@@ -759,5 +801,187 @@ export class DashboardContainerComponent implements OnInit, OnDestroy {
    */
   public calculateMapZoom(cols: number, rows: number): number {
     return this.calculationService.calculateMapZoom(cols, rows);
+  }
+
+  /**
+   * Applies responsive layout based on screen size
+   * 
+   * This method detects the current screen size and applies the appropriate
+   * responsive layout configuration. It also updates widget positions and sizes
+   * to ensure they fit properly on the current screen.
+   */
+  applyResponsiveLayout(): void {
+    const width = window.innerWidth;
+    let newBreakpoint = 'lg';
+
+    // Determine the current breakpoint based on screen width
+    if (width < 576) {
+      newBreakpoint = 'xs';
+    } else if (width < 768) {
+      newBreakpoint = 'sm';
+    } else if (width < 992) {
+      newBreakpoint = 'md';
+    }
+
+    // Only update if the breakpoint has changed
+    if (newBreakpoint !== this.currentBreakpoint) {
+      this.currentBreakpoint = newBreakpoint;
+      console.log(`Applying responsive layout for breakpoint: ${newBreakpoint}`);
+
+      // Adjust widget positions and sizes for the new breakpoint
+      if (this.widgets && this.widgets.length > 0) {
+        this.widgets.forEach(widget => {
+          // Save original position if not already saved
+          if (!widget.originalPosition) {
+            widget.originalPosition = { ...widget.position };
+          }
+
+          // Apply breakpoint-specific adjustments
+          switch (newBreakpoint) {
+            case 'xs':
+              // For extra small screens, stack widgets vertically
+              widget.position.x = 0;
+              widget.position.cols = 1;
+              // Adjust height based on content type
+              widget.position.rows = this.getResponsiveRowHeight(widget);
+              break;
+
+            case 'sm':
+              // For small screens, use 2 columns layout
+              widget.position.x = widget.position.x % 2;
+              widget.position.cols = Math.min(2, widget.originalPosition?.cols || 2);
+              widget.position.rows = this.getResponsiveRowHeight(widget);
+              break;
+
+            case 'md':
+              // For medium screens, use 6 columns layout
+              widget.position.x = widget.position.x % 6;
+              widget.position.cols = Math.min(6, widget.originalPosition?.cols || 3);
+              break;
+
+            case 'lg':
+              // For large screens, restore original position
+              if (widget.originalPosition) {
+                widget.position = { ...widget.originalPosition };
+              }
+              break;
+          }
+        });
+
+        // Update visible widgets
+        this.updateVisibleWidgets();
+      }
+    }
+  }
+
+  /**
+   * Gets the responsive row height for a widget based on its type
+   * 
+   * @param widget - The widget to calculate height for
+   * @returns The number of rows the widget should occupy
+   */
+  private getResponsiveRowHeight(widget: IWidget): number {
+    // Default height
+    let rows = widget.originalPosition?.rows || 4;
+
+    // Adjust height based on widget type
+    if (widget.config?.component === 'echart') {
+      // Charts need more height on mobile
+      rows = Math.max(rows, 6);
+    } else if (widget.config?.component === 'table') {
+      // Tables need more height on mobile
+      rows = Math.max(rows, 8);
+    } else if (widget.config?.component === 'filter') {
+      // Filters need less height
+      rows = 2;
+    }
+
+    return rows;
+  }
+
+  /**
+   * Gets the current dashboard configuration for saving as a template
+   * 
+   * @returns The dashboard configuration
+   */
+  getDashboardConfig(): any {
+    return {
+      layout: this.options,
+      widgets: this.widgets.map(widget => ({
+        ...widget,
+        chartInstance: null // Remove the chart instance to avoid circular references
+      })),
+      settings: {
+        // Add any dashboard-level settings here
+      }
+    };
+  }
+
+  /**
+   * Loads a dashboard template
+   * 
+   * @param template - The template to load
+   */
+  loadTemplate(template: IDashboardTemplate): void {
+    if (!template || !template.dashboardConfig) {
+      console.error('Invalid template or missing configuration');
+      return;
+    }
+
+    try {
+      // Apply the template configuration
+      if (template.dashboardConfig.layout) {
+        // Merge layout options
+        this.options = {
+          ...this.options,
+          ...template.dashboardConfig.layout
+        };
+      }
+
+      if (template.dashboardConfig.widgets && Array.isArray(template.dashboardConfig.widgets)) {
+        // Replace the current widgets with the template widgets
+        this.widgets = template.dashboardConfig.widgets.map(widget => ({
+          ...widget,
+          chartInstance: null, // Reset chart instance
+          loading: false,
+          error: null
+        }));
+
+        // Update visible widgets
+        this.updateVisibleWidgets();
+
+        // Add the new state to the undo/redo history
+        this.undoRedoService.addState(this.widgets);
+      }
+
+      // Show success message
+      this.showToast('success', 'Template Loaded', `Template "${template.name}" has been loaded successfully.`);
+    } catch (error) {
+      console.error('Error loading template:', error);
+      this.showToast('error', 'Error', 'Failed to load the template. Please try again.');
+    }
+  }
+
+  /**
+   * Handles when a template is saved
+   * 
+   * @param template - The saved template
+   */
+  onTemplateSaved(template: IDashboardTemplate): void {
+    this.showToast('success', 'Template Saved', `Template "${template.name}" has been saved successfully.`);
+  }
+
+  /**
+   * Shows a toast message
+   * 
+   * @param severity - The severity of the message (success, info, warn, error)
+   * @param summary - The summary of the message
+   * @param detail - The detail of the message
+   */
+  private showToast(severity: string, summary: string, detail: string): void {
+    // This assumes you have a toast service or component
+    // If not, you'll need to implement this method
+    // For PrimeNG Toast:
+    // this.messageService.add({ severity, summary, detail });
   }
 }

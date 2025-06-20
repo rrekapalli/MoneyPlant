@@ -97,6 +97,18 @@ export class EchartComponent extends BaseWidgetComponent implements AfterViewIni
         return;
       }
 
+      // For heatmap charts, we need a special approach
+      if (seriesArray[0].type === 'heatmap') {
+        this.convertHeatmapToDataset(options, seriesArray);
+        return;
+      }
+
+      // For gauge charts, we need a special approach
+      if (seriesArray[0].type === 'gauge') {
+        this.convertGaugeToDataset(options, seriesArray);
+        return;
+      }
+
       // For bar and line charts with multiple series
       if (['bar', 'line'].includes(seriesArray[0].type) && seriesArray.length > 1) {
         this.convertMultiSeriesToDataset(options, seriesArray);
@@ -165,11 +177,74 @@ export class EchartComponent extends BaseWidgetComponent implements AfterViewIni
   }
 
   /**
-   * Converts multiple series data to use the dataset API
+   * Converts heatmap chart data to use the dataset API
    * 
    * @param options - The ECharts options to convert
    * @param seriesArray - The array of series
    */
+  private convertHeatmapToDataset(options: echarts.EChartsOption, seriesArray: any[]): void {
+    const firstSeries = seriesArray[0];
+    if (!firstSeries.data || !Array.isArray(firstSeries.data)) {
+      return;
+    }
+
+    // For heatmap, we keep the original data format as it's already optimized
+    // But we can still use dataset for better performance
+    options.dataset = {
+      source: firstSeries.data
+    };
+
+    // Update series to use the dataset
+    options.series = seriesArray.map((series: any) => {
+      const newSeries = { ...series };
+      delete newSeries.data;
+
+      // Add encode property to tell ECharts how to map dataset fields
+      newSeries.encode = {
+        x: 0,
+        y: 1,
+        value: 2
+      };
+
+      return newSeries;
+    });
+  }
+
+  /**
+   * Converts gauge chart data to use the dataset API
+   * 
+   * @param options - The ECharts options to convert
+   * @param seriesArray - The array of series
+   */
+  private convertGaugeToDataset(options: echarts.EChartsOption, seriesArray: any[]): void {
+    const firstSeries = seriesArray[0];
+    if (!firstSeries.data || !Array.isArray(firstSeries.data)) {
+      return;
+    }
+
+    // For gauge charts, we need to keep the name and value properties
+    options.dataset = {
+      source: firstSeries.data.map((item: any) => ({
+        name: item.name,
+        value: item.value
+      }))
+    };
+
+    // Update series to use the dataset
+    options.series = seriesArray.map((series: any) => {
+      const newSeries = { ...series };
+      delete newSeries.data;
+
+      // Add encode property to tell ECharts how to map dataset fields
+      newSeries.encode = {
+        itemName: 'name',
+        value: 'value'
+      };
+
+      return newSeries;
+    });
+  }
+
   private convertMultiSeriesToDataset(options: echarts.EChartsOption, seriesArray: any[]): void {
     // Extract all unique x-axis values
     const xAxisValues = new Set<string>();

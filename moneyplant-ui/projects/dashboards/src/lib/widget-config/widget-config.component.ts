@@ -138,6 +138,7 @@ export class WidgetConfigComponent implements OnInit {
       { label: 'Chart', value: 'echart' },
       { label: 'Filter', value: 'filter' },
       { label: 'Table', value: 'table' },
+      { label: 'Data Grid', value: 'data-grid' },
       { label: 'Markdown', value: 'markdown' },
       { label: 'Code', value: 'code' }
     ];
@@ -148,7 +149,9 @@ export class WidgetConfigComponent implements OnInit {
       { label: 'Line Chart', value: 'line' },
       { label: 'Pie Chart', value: 'pie' },
       { label: 'Scatter Chart', value: 'scatter' },
-      { label: 'Radar Chart', value: 'radar' }
+      { label: 'Radar Chart', value: 'radar' },
+      { label: 'Heatmap Chart', value: 'heatmap' },
+      { label: 'Gauge Chart', value: 'gauge' }
     ];
 
     // Initialize chart themes

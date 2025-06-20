@@ -6,6 +6,9 @@ import {ITileOptions} from './ITileOptions';
 import {IMarkdownCellOptions} from './IMarkdownCellOptions';
 import {ICodeCellOptions} from './ICodeCellOptions';
 import {ITableOptions} from './ITableOptions';
+import {IDataGridOptions} from './IDataGridOptions';
+import {IHeatmapOptions} from './IHeatmapOptions';
+import {IGaugeOptions} from './IGaugeOptions';
 import {IFilterValues} from './IFilterValues';
 
 /**
@@ -17,6 +20,9 @@ export interface IWidget {
 
   /** Position and size configuration for the gridster layout */
   position: GridsterItem;
+
+  /** Original position and size before responsive adjustments */
+  originalPosition?: GridsterItem;
 
   /** Number of rows the widget occupies in the grid */
   rows?: number;
@@ -47,7 +53,7 @@ export interface IWidget {
     height?: number;
 
     /** Widget-specific options based on the component type */
-    options: echarts.EChartsOption | IFilterOptions | ITileOptions | IMarkdownCellOptions | ICodeCellOptions | ITableOptions;
+    options: echarts.EChartsOption | IFilterOptions | ITileOptions | IMarkdownCellOptions | ICodeCellOptions | ITableOptions | IDataGridOptions | IHeatmapOptions | IGaugeOptions;
 
     /** Event handlers */
     events?: {

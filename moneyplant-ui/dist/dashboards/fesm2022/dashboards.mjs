@@ -1,15 +1,15 @@
 import * as i0 from '@angular/core';
 import { Component, Input, Injectable, EventEmitter, Output, ChangeDetectionStrategy } from '@angular/core';
 import { GridType, GridsterComponent, GridsterItemComponent } from 'angular-gridster2';
-import * as i4 from '@angular/common';
+import * as i2$1 from '@angular/common';
 import { NgComponentOutlet, NgIf, CommonModule } from '@angular/common';
-import * as i1 from '@angular/forms';
+import * as i3 from '@angular/forms';
 import { Validators, FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { Subject, BehaviorSubject, takeUntil, fromEvent } from 'rxjs';
-import { filter, map, takeUntil as takeUntil$1, debounceTime } from 'rxjs/operators';
-import * as i3 from 'primeng/panel';
+import { Subject, of, throwError, BehaviorSubject, takeUntil, fromEvent } from 'rxjs';
+import { filter, map, catchError, takeUntil as takeUntil$1, debounceTime } from 'rxjs/operators';
+import * as i3$1 from 'primeng/panel';
 import { PanelModule } from 'primeng/panel';
-import * as i1$1 from 'primeng/sidebar';
+import * as i1 from 'primeng/sidebar';
 import { SidebarModule } from 'primeng/sidebar';
 import * as i5 from 'primeng/tabmenu';
 import { TabMenuModule } from 'primeng/tabmenu';
@@ -31,8 +31,9 @@ import * as i12 from 'primeng/inputswitch';
 import { InputSwitchModule } from 'primeng/inputswitch';
 import { InputTextarea } from 'primeng/inputtextarea';
 import { NgxPrintModule } from 'ngx-print';
-import * as i9$1 from 'primeng/tooltip';
+import * as i10$1 from 'primeng/tooltip';
 import { TooltipModule } from 'primeng/tooltip';
+import * as i1$1 from '@angular/common/http';
 import buildQuery from 'odata-query';
 import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
 import * as echarts from 'echarts';
@@ -1022,6 +1023,7 @@ class WidgetConfigComponent {
             { label: 'Chart', value: 'echart' },
             { label: 'Filter', value: 'filter' },
             { label: 'Table', value: 'table' },
+            { label: 'Data Grid', value: 'data-grid' },
             { label: 'Markdown', value: 'markdown' },
             { label: 'Code', value: 'code' }
         ];
@@ -1031,7 +1033,9 @@ class WidgetConfigComponent {
             { label: 'Line Chart', value: 'line' },
             { label: 'Pie Chart', value: 'pie' },
             { label: 'Scatter Chart', value: 'scatter' },
-            { label: 'Radar Chart', value: 'radar' }
+            { label: 'Radar Chart', value: 'radar' },
+            { label: 'Heatmap Chart', value: 'heatmap' },
+            { label: 'Gauge Chart', value: 'gauge' }
         ];
         // Initialize chart themes
         this.chartThemes = [
@@ -1378,7 +1382,7 @@ class WidgetConfigComponent {
             });
         }
     }
-    static { this.ɵfac = function WidgetConfigComponent_Factory(__ngFactoryType__) { return new (__ngFactoryType__ || WidgetConfigComponent)(i0.ɵɵdirectiveInject(i1.FormBuilder), i0.ɵɵdirectiveInject(i2.MessageService), i0.ɵɵdirectiveInject(WidgetPluginService)); }; }
+    static { this.ɵfac = function WidgetConfigComponent_Factory(__ngFactoryType__) { return new (__ngFactoryType__ || WidgetConfigComponent)(i0.ɵɵdirectiveInject(i3.FormBuilder), i0.ɵɵdirectiveInject(i2.MessageService), i0.ɵɵdirectiveInject(WidgetPluginService)); }; }
     static { this.ɵcmp = /*@__PURE__*/ i0.ɵɵdefineComponent({ type: WidgetConfigComponent, selectors: [["vis-widget-config"]], inputs: { selectedDashboardId: "selectedDashboardId", widget: "widget" }, outputs: { onUpdate: "onUpdate", onCancel: "onCancel" }, features: [i0.ɵɵProvidersFeature([MessageService])], decls: 18, vars: 12, consts: [["id", "panelId", 1, "widget-config-panel"], [1, "widget-config-header"], [1, "widget-type"], [3, "activeItemChange", "model", "activeItem"], [1, "widget-config-content"], ["class", "config-section", 4, "ngIf"], [1, "widget-config-footer"], ["icon", "pi pi-times", "label", "Cancel", "styleClass", "p-button-outlined p-button-secondary", 3, "click"], ["icon", "pi pi-refresh", "label", "Reset", "styleClass", "p-button-outlined p-button-warning", 3, "click"], ["icon", "pi pi-check", "label", "Save", 3, "click", "disabled"], ["position", "bottom-right", "key", "br"], [1, "config-section"], [3, "formGroup"], [1, "form-field"], ["for", "widgetTitle"], [1, "required"], ["id", "widgetTitle", "type", "text", "pInputText", "", "formControlName", "title", "aria-describedby", "titleError"], ["id", "titleError", "class", "error-message", 4, "ngIf"], ["for", "widgetComponent"], ["id", "widgetComponent", "formControlName", "component", "optionLabel", "label", "optionValue", "value", "aria-describedby", "componentError", 3, "options", "disabled"], ["id", "componentError", "class", "error-message", 4, "ngIf"], ["id", "titleError", 1, "error-message"], ["id", "componentError", 1, "error-message"], [1, "form-row"], ["for", "widgetX"], ["id", "widgetX", "formControlName", "x", "buttonLayout", "horizontal", "decrementButtonClass", "p-button-secondary", "incrementButtonClass", "p-button-secondary", "incrementButtonIcon", "pi pi-plus", "decrementButtonIcon", "pi pi-minus", 3, "showButtons", "min"], ["for", "widgetY"], ["id", "widgetY", "formControlName", "y", "buttonLayout", "horizontal", "decrementButtonClass", "p-button-secondary", "incrementButtonClass", "p-button-secondary", "incrementButtonIcon", "pi pi-plus", "decrementButtonIcon", "pi pi-minus", 3, "showButtons", "min"], ["for", "widgetCols"], ["id", "widgetCols", "formControlName", "cols", "buttonLayout", "horizontal", "decrementButtonClass", "p-button-secondary", "incrementButtonClass", "p-button-secondary", "incrementButtonIcon", "pi pi-plus", "decrementButtonIcon", "pi pi-minus", 3, "showButtons", "min", "max"], ["for", "widgetRows"], ["id", "widgetRows", "formControlName", "rows", "buttonLayout", "horizontal", "decrementButtonClass", "p-button-secondary", "incrementButtonClass", "p-button-secondary", "incrementButtonIcon", "pi pi-plus", "decrementButtonIcon", "pi pi-minus", 3, "showButtons", "min"], ["class", "empty-state", 4, "ngIf"], ["for", "chartType"], ["id", "chartType", "formControlName", "chartType", "optionLabel", "label", "optionValue", "value", 3, "options"], ["for", "chartTheme"], ["id", "chartTheme", "formControlName", "chartTheme", "optionLabel", "label", "optionValue", "value", 3, "options"], ["formControlName", "showLegend"], ["formControlName", "enableDataZoom"], ["for", "chartTitle"], ["id", "chartTitle", "type", "text", "pInputText", "", "formControlName", "chartTitle"], ["for", "filterType"], ["id", "filterType", "formControlName", "filterType", "optionLabel", "label", "optionValue", "value", 3, "options"], ["formControlName", "multiSelect"], ["for", "placeholder"], ["id", "placeholder", "type", "text", "pInputText", "", "formControlName", "placeholder"], [1, "empty-state"], ["for", "jsonConfig"], ["id", "jsonConfig", "pInputTextarea", "", "formControlName", "jsonConfig", 1, "json-editor", 3, "rows", "cols"], ["class", "error-message", 4, "ngIf"], [1, "form-actions"], ["label", "Format JSON", "icon", "pi pi-code", 3, "click", "disabled"], [1, "error-message"]], template: function WidgetConfigComponent_Template(rf, ctx) { if (rf & 1) {
             i0.ɵɵelementStart(0, "div", 0)(1, "div", 1)(2, "h2");
             i0.ɵɵtext(3);
@@ -1421,7 +1425,7 @@ class WidgetConfigComponent {
             i0.ɵɵproperty("ngIf", ctx.activeItem["value"] === 3);
             i0.ɵɵadvance(4);
             i0.ɵɵproperty("disabled", !ctx.isFormValid());
-        } }, dependencies: [CommonModule, i4.NgIf, FormsModule, i1.ɵNgNoValidate, i1.DefaultValueAccessor, i1.NgControlStatus, i1.NgControlStatusGroup, ReactiveFormsModule, i1.FormGroupDirective, i1.FormControlName, TabMenuModule, i5.TabMenu, ScrollPanelModule, i6.ScrollPanel, ButtonModule, i7.Button, ToastModule, i8.Toast, InputTextModule, i9.InputText, DropdownModule, i10.Dropdown, InputNumberModule, i11.InputNumber, InputSwitchModule, i12.InputSwitch, InputTextarea], styles: [".form-buttons[_ngcontent-%COMP%]{display:flex;justify-content:end;margin-top:2rem;padding:1.2rem;align-items:end;position:absolute;bottom:0;right:0}  .p-sidebar .p-sidebar-header .p-sidebar-close, .p-sidebar[_ngcontent-%COMP%]   .p-sidebar-header[_ngcontent-%COMP%]   .p-sidebar-icon[_ngcontent-%COMP%]   button[_ngcontent-%COMP%]{border-top-left-radius:5px;border-bottom-left-radius:5px;background:#fff;position:absolute;top:.625rem;padding:.4166666667rem!important;box-shadow:0 .125rem .25rem #00000014;z-index:20;left:-39px;height:3rem;width:3.25rem;color:red}  .form-alignment{margin-left:1rem;margin-right:1rem;width:86.2%}"] }); }
+        } }, dependencies: [CommonModule, i2$1.NgIf, FormsModule, i3.ɵNgNoValidate, i3.DefaultValueAccessor, i3.NgControlStatus, i3.NgControlStatusGroup, ReactiveFormsModule, i3.FormGroupDirective, i3.FormControlName, TabMenuModule, i5.TabMenu, ScrollPanelModule, i6.ScrollPanel, ButtonModule, i7.Button, ToastModule, i8.Toast, InputTextModule, i9.InputText, DropdownModule, i10.Dropdown, InputNumberModule, i11.InputNumber, InputSwitchModule, i12.InputSwitch, InputTextarea], styles: [".form-buttons[_ngcontent-%COMP%]{display:flex;justify-content:end;margin-top:2rem;padding:1.2rem;align-items:end;position:absolute;bottom:0;right:0}  .p-sidebar .p-sidebar-header .p-sidebar-close, .p-sidebar[_ngcontent-%COMP%]   .p-sidebar-header[_ngcontent-%COMP%]   .p-sidebar-icon[_ngcontent-%COMP%]   button[_ngcontent-%COMP%]{border-top-left-radius:5px;border-bottom-left-radius:5px;background:#fff;position:absolute;top:.625rem;padding:.4166666667rem!important;box-shadow:0 .125rem .25rem #00000014;z-index:20;left:-39px;height:3rem;width:3.25rem;color:red}  .form-alignment{margin-left:1rem;margin-right:1rem;width:86.2%}"] }); }
 }
 (() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassMetadata(WidgetConfigComponent, [{
         type: Component,
@@ -1439,7 +1443,7 @@ class WidgetConfigComponent {
                     InputSwitchModule,
                     InputTextarea
                 ], providers: [MessageService], template: "<div id=\"panelId\" class=\"widget-config-panel\">\r\n  <div class=\"widget-config-header\">\r\n    <h2>{{ title || 'Configure Widget' }}</h2>\r\n    <p class=\"widget-type\">{{ getWidgetTypeName() }}</p>\r\n  </div>\r\n\r\n  <p-tabMenu [model]=\"items\" [activeItem]=\"activeItem\" (activeItemChange)=\"onActiveTabItemChange($event)\"></p-tabMenu>\r\n\r\n  <div class=\"widget-config-content\">\r\n    <p-scrollPanel [style]=\"{width: '100%', height: '400px'}\">\r\n      <!-- General Settings Tab -->\r\n      <div *ngIf=\"activeItem['value'] === 0\" class=\"config-section\">\r\n        <form [formGroup]=\"generalForm\">\r\n          <div class=\"form-field\">\r\n            <label for=\"widgetTitle\">Widget Title <span class=\"required\">*</span></label>\r\n            <input id=\"widgetTitle\" type=\"text\" pInputText formControlName=\"title\" \r\n                  [attr.aria-invalid]=\"isFieldInvalid('generalForm', 'title')\" \r\n                  aria-describedby=\"titleError\">\r\n            <small id=\"titleError\" class=\"error-message\" *ngIf=\"isFieldInvalid('generalForm', 'title')\">\r\n              Title is required\r\n            </small>\r\n          </div>\r\n\r\n          <div class=\"form-field\">\r\n            <label for=\"widgetComponent\">Widget Type <span class=\"required\">*</span></label>\r\n            <p-dropdown id=\"widgetComponent\" [options]=\"availableComponents\" formControlName=\"component\" \r\n                      optionLabel=\"label\" optionValue=\"value\" [disabled]=\"!isNewWidget\"\r\n                      [attr.aria-invalid]=\"isFieldInvalid('generalForm', 'component')\"\r\n                      aria-describedby=\"componentError\"></p-dropdown>\r\n            <small id=\"componentError\" class=\"error-message\" *ngIf=\"isFieldInvalid('generalForm', 'component')\">\r\n              Widget type is required\r\n            </small>\r\n          </div>\r\n        </form>\r\n      </div>\r\n\r\n      <!-- Position Tab -->\r\n      <div *ngIf=\"activeItem['value'] === 1\" class=\"config-section\">\r\n        <form [formGroup]=\"positionForm\">\r\n          <div class=\"form-row\">\r\n            <div class=\"form-field\">\r\n              <label for=\"widgetX\">X Position</label>\r\n              <p-inputNumber id=\"widgetX\" formControlName=\"x\" [showButtons]=\"true\" [min]=\"0\" buttonLayout=\"horizontal\"\r\n                          decrementButtonClass=\"p-button-secondary\" incrementButtonClass=\"p-button-secondary\"\r\n                          incrementButtonIcon=\"pi pi-plus\" decrementButtonIcon=\"pi pi-minus\"></p-inputNumber>\r\n            </div>\r\n\r\n            <div class=\"form-field\">\r\n              <label for=\"widgetY\">Y Position</label>\r\n              <p-inputNumber id=\"widgetY\" formControlName=\"y\" [showButtons]=\"true\" [min]=\"0\" buttonLayout=\"horizontal\"\r\n                          decrementButtonClass=\"p-button-secondary\" incrementButtonClass=\"p-button-secondary\"\r\n                          incrementButtonIcon=\"pi pi-plus\" decrementButtonIcon=\"pi pi-minus\"></p-inputNumber>\r\n            </div>\r\n          </div>\r\n\r\n          <div class=\"form-row\">\r\n            <div class=\"form-field\">\r\n              <label for=\"widgetCols\">Width (Columns)</label>\r\n              <p-inputNumber id=\"widgetCols\" formControlName=\"cols\" [showButtons]=\"true\" [min]=\"1\" [max]=\"12\" buttonLayout=\"horizontal\"\r\n                          decrementButtonClass=\"p-button-secondary\" incrementButtonClass=\"p-button-secondary\"\r\n                          incrementButtonIcon=\"pi pi-plus\" decrementButtonIcon=\"pi pi-minus\"></p-inputNumber>\r\n            </div>\r\n\r\n            <div class=\"form-field\">\r\n              <label for=\"widgetRows\">Height (Rows)</label>\r\n              <p-inputNumber id=\"widgetRows\" formControlName=\"rows\" [showButtons]=\"true\" [min]=\"1\" buttonLayout=\"horizontal\"\r\n                          decrementButtonClass=\"p-button-secondary\" incrementButtonClass=\"p-button-secondary\"\r\n                          incrementButtonIcon=\"pi pi-plus\" decrementButtonIcon=\"pi pi-minus\"></p-inputNumber>\r\n            </div>\r\n          </div>\r\n        </form>\r\n      </div>\r\n\r\n      <!-- Widget Options Tab -->\r\n      <div *ngIf=\"activeItem['value'] === 2\" class=\"config-section\">\r\n        <div *ngIf=\"isEchartWidget()\" class=\"config-section\">\r\n          <form [formGroup]=\"optionsForm\">\r\n            <div class=\"form-field\">\r\n              <label for=\"chartType\">Chart Type</label>\r\n              <p-dropdown id=\"chartType\" [options]=\"chartTypes\" formControlName=\"chartType\" \r\n                        optionLabel=\"label\" optionValue=\"value\"></p-dropdown>\r\n            </div>\r\n\r\n            <div class=\"form-field\">\r\n              <label for=\"chartTheme\">Chart Theme</label>\r\n              <p-dropdown id=\"chartTheme\" [options]=\"chartThemes\" formControlName=\"chartTheme\" \r\n                        optionLabel=\"label\" optionValue=\"value\"></p-dropdown>\r\n            </div>\r\n\r\n            <div class=\"form-field\">\r\n              <label>Show Legend</label>\r\n              <p-inputSwitch formControlName=\"showLegend\"></p-inputSwitch>\r\n            </div>\r\n\r\n            <div class=\"form-field\">\r\n              <label>Enable Data Zoom</label>\r\n              <p-inputSwitch formControlName=\"enableDataZoom\"></p-inputSwitch>\r\n            </div>\r\n\r\n            <div class=\"form-field\">\r\n              <label for=\"chartTitle\">Chart Title</label>\r\n              <input id=\"chartTitle\" type=\"text\" pInputText formControlName=\"chartTitle\">\r\n            </div>\r\n          </form>\r\n        </div>\r\n\r\n        <div *ngIf=\"isFilterWidget()\" class=\"config-section\">\r\n          <form [formGroup]=\"filterForm\">\r\n            <div class=\"form-field\">\r\n              <label for=\"filterType\">Filter Type</label>\r\n              <p-dropdown id=\"filterType\" [options]=\"filterTypes\" formControlName=\"filterType\" \r\n                        optionLabel=\"label\" optionValue=\"value\"></p-dropdown>\r\n            </div>\r\n\r\n            <div class=\"form-field\">\r\n              <label>Multi-select</label>\r\n              <p-inputSwitch formControlName=\"multiSelect\"></p-inputSwitch>\r\n            </div>\r\n\r\n            <div class=\"form-field\">\r\n              <label for=\"placeholder\">Placeholder Text</label>\r\n              <input id=\"placeholder\" type=\"text\" pInputText formControlName=\"placeholder\">\r\n            </div>\r\n          </form>\r\n        </div>\r\n\r\n        <div *ngIf=\"!isEchartWidget() && !isFilterWidget()\" class=\"empty-state\">\r\n          <p>Options for this widget type are not available in the configuration panel.</p>\r\n          <p>Please use the JSON editor for advanced configuration.</p>\r\n        </div>\r\n      </div>\r\n\r\n      <!-- Advanced Tab -->\r\n      <div *ngIf=\"activeItem['value'] === 3\" class=\"config-section\">\r\n        <div class=\"form-field\">\r\n          <label for=\"jsonConfig\">JSON Configuration</label>\r\n          <textarea id=\"jsonConfig\" pInputTextarea [rows]=\"10\" [cols]=\"30\" formControlName=\"jsonConfig\" \r\n                  class=\"json-editor\" [attr.aria-invalid]=\"isJsonInvalid\"></textarea>\r\n          <small class=\"error-message\" *ngIf=\"isJsonInvalid\">\r\n            Invalid JSON format\r\n          </small>\r\n        </div>\r\n        <div class=\"form-actions\">\r\n          <p-button label=\"Format JSON\" icon=\"pi pi-code\" (click)=\"formatJson()\" [disabled]=\"isJsonInvalid\"></p-button>\r\n        </div>\r\n      </div>\r\n    </p-scrollPanel>\r\n  </div>\r\n\r\n  <div class=\"widget-config-footer\">\r\n    <p-button icon=\"pi pi-times\" label=\"Cancel\" styleClass=\"p-button-outlined p-button-secondary\" (click)=\"handleCancel()\"></p-button>\r\n    <p-button icon=\"pi pi-refresh\" label=\"Reset\" styleClass=\"p-button-outlined p-button-warning\" (click)=\"onReset()\"></p-button>\r\n    <p-button icon=\"pi pi-check\" label=\"Save\" [disabled]=\"!isFormValid()\" (click)=\"onWidgetSave()\"></p-button>\r\n  </div>\r\n</div>\r\n\r\n<!-- Toast Message -->\r\n<p-toast position=\"bottom-right\" key=\"br\" />\r\n", styles: [".form-buttons{display:flex;justify-content:end;margin-top:2rem;padding:1.2rem;align-items:end;position:absolute;bottom:0;right:0}::ng-deep .p-sidebar .p-sidebar-header .p-sidebar-close,.p-sidebar .p-sidebar-header .p-sidebar-icon button{border-top-left-radius:5px;border-bottom-left-radius:5px;background:#fff;position:absolute;top:.625rem;padding:.4166666667rem!important;box-shadow:0 .125rem .25rem #00000014;z-index:20;left:-39px;height:3rem;width:3.25rem;color:red}::ng-deep .form-alignment{margin-left:1rem;margin-right:1rem;width:86.2%}\n"] }]
-    }], () => [{ type: i1.FormBuilder }, { type: i2.MessageService }, { type: WidgetPluginService }], { onUpdate: [{
+    }], () => [{ type: i3.FormBuilder }, { type: i2.MessageService }, { type: WidgetPluginService }], { onUpdate: [{
             type: Output
         }], onCancel: [{
             type: Output
@@ -1531,7 +1535,7 @@ class WidgetHeaderComponent {
             i0.ɵɵtwoWayProperty("visible", ctx.sidebarVisible);
             i0.ɵɵproperty("appendTo", "body");
         } }, dependencies: [CommonModule,
-            SidebarModule, i1$1.Sidebar, i2.PrimeTemplate, PanelModule, i3.Panel, FormsModule,
+            SidebarModule, i1.Sidebar, i2.PrimeTemplate, PanelModule, i3$1.Panel, FormsModule,
             ReactiveFormsModule,
             WidgetConfigComponent,
             Button], styles: [".panel-button[_ngcontent-%COMP%]{display:flex;flex-direction:row;justify-content:end}[_nghost-%COMP%]     .p-panel .p-panel-content{display:none}"] }); }
@@ -1559,6 +1563,792 @@ class WidgetHeaderComponent {
             type: Input
         }] }); })();
 (() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassDebugInfo(WidgetHeaderComponent, { className: "WidgetHeaderComponent", filePath: "lib/widget-header/widget-header.component.ts", lineNumber: 26 }); })();
+
+/**
+ * Service for managing dashboard templates
+ */
+class DashboardTemplateService {
+    constructor(http) {
+        this.http = http;
+        // In-memory storage for pre-built templates
+        this.preBuiltTemplates = [
+            // Example pre-built template
+            {
+                id: 'analytics-dashboard',
+                name: 'Analytics Dashboard',
+                description: 'A comprehensive analytics dashboard with key metrics and visualizations',
+                category: ['analytics', 'metrics'],
+                thumbnailUrl: 'assets/templates/analytics-dashboard.png',
+                isPreBuilt: true,
+                dashboardConfig: {
+                    layout: {
+                        cols: 12,
+                        rowHeight: 50,
+                        margins: [10, 10]
+                    },
+                    widgets: [
+                    // Example widgets would be defined here
+                    ],
+                    settings: {
+                        theme: 'light',
+                        refreshInterval: 0
+                    }
+                }
+            },
+            // Add more pre-built templates as needed
+        ];
+        // Local storage key for user templates
+        this.USER_TEMPLATES_KEY = 'dashboard_user_templates';
+    }
+    /**
+     * Gets all available templates (both pre-built and user-created)
+     */
+    getAllTemplates() {
+        return this.getUserTemplates().pipe(map(userTemplates => [...this.preBuiltTemplates, ...userTemplates]));
+    }
+    /**
+     * Gets all pre-built templates
+     */
+    getPreBuiltTemplates() {
+        return of(this.preBuiltTemplates);
+    }
+    /**
+     * Gets user-created templates from local storage
+     */
+    getUserTemplates() {
+        try {
+            const templatesJson = localStorage.getItem(this.USER_TEMPLATES_KEY);
+            const templates = templatesJson ? JSON.parse(templatesJson) : [];
+            return of(templates);
+        }
+        catch (error) {
+            console.error('Error loading user templates:', error);
+            return of([]);
+        }
+    }
+    /**
+     * Gets a template by ID
+     */
+    getTemplateById(id) {
+        // First check pre-built templates
+        const preBuiltTemplate = this.preBuiltTemplates.find(t => t.id === id);
+        if (preBuiltTemplate) {
+            return of(preBuiltTemplate);
+        }
+        // Then check user templates
+        return this.getUserTemplates().pipe(map(templates => {
+            const template = templates.find(t => t.id === id);
+            if (!template) {
+                throw new Error(`Template with ID ${id} not found`);
+            }
+            return template;
+        }), catchError(error => throwError(() => error)));
+    }
+    /**
+     * Saves a user template
+     */
+    saveTemplate(template) {
+        return this.getUserTemplates().pipe(map(templates => {
+            // Generate ID if not provided
+            if (!template.id) {
+                template.id = this.generateId();
+            }
+            // Set timestamps
+            const now = new Date();
+            if (!template.createdAt) {
+                template.createdAt = now;
+            }
+            template.updatedAt = now;
+            // Check if template already exists
+            const existingIndex = templates.findIndex(t => t.id === template.id);
+            if (existingIndex >= 0) {
+                // Update existing template
+                templates[existingIndex] = template;
+            }
+            else {
+                // Add new template
+                templates.push(template);
+            }
+            // Save to local storage
+            localStorage.setItem(this.USER_TEMPLATES_KEY, JSON.stringify(templates));
+            return template;
+        }), catchError(error => {
+            console.error('Error saving template:', error);
+            return throwError(() => new Error('Failed to save template'));
+        }));
+    }
+    /**
+     * Deletes a user template
+     */
+    deleteTemplate(id) {
+        return this.getUserTemplates().pipe(map(templates => {
+            const initialLength = templates.length;
+            const filteredTemplates = templates.filter(t => t.id !== id);
+            if (filteredTemplates.length === initialLength) {
+                throw new Error(`Template with ID ${id} not found`);
+            }
+            localStorage.setItem(this.USER_TEMPLATES_KEY, JSON.stringify(filteredTemplates));
+            return true;
+        }), catchError(error => {
+            console.error('Error deleting template:', error);
+            return throwError(() => new Error('Failed to delete template'));
+        }));
+    }
+    /**
+     * Generates a unique ID for a template
+     */
+    generateId() {
+        return 'template_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    }
+    static { this.ɵfac = function DashboardTemplateService_Factory(__ngFactoryType__) { return new (__ngFactoryType__ || DashboardTemplateService)(i0.ɵɵinject(i1$1.HttpClient)); }; }
+    static { this.ɵprov = /*@__PURE__*/ i0.ɵɵdefineInjectable({ token: DashboardTemplateService, factory: DashboardTemplateService.ɵfac, providedIn: 'root' }); }
+}
+(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassMetadata(DashboardTemplateService, [{
+        type: Injectable,
+        args: [{
+                providedIn: 'root'
+            }]
+    }], () => [{ type: i1$1.HttpClient }], null); })();
+
+function TemplateGalleryComponent_option_9_Template(rf, ctx) { if (rf & 1) {
+    i0.ɵɵelementStart(0, "option", 15);
+    i0.ɵɵtext(1);
+    i0.ɵɵelementEnd();
+} if (rf & 2) {
+    const category_r1 = ctx.$implicit;
+    i0.ɵɵproperty("value", category_r1);
+    i0.ɵɵadvance();
+    i0.ɵɵtextInterpolate(category_r1);
+} }
+function TemplateGalleryComponent_div_18_span_11_Template(rf, ctx) { if (rf & 1) {
+    i0.ɵɵelementStart(0, "span", 23);
+    i0.ɵɵtext(1);
+    i0.ɵɵelementEnd();
+} if (rf & 2) {
+    const template_r3 = i0.ɵɵnextContext().$implicit;
+    i0.ɵɵadvance();
+    i0.ɵɵtextInterpolate1(" ", template_r3.category.join(", "), " ");
+} }
+function TemplateGalleryComponent_div_18_Template(rf, ctx) { if (rf & 1) {
+    const _r2 = i0.ɵɵgetCurrentView();
+    i0.ɵɵelementStart(0, "div", 16);
+    i0.ɵɵlistener("click", function TemplateGalleryComponent_div_18_Template_div_click_0_listener() { const template_r3 = i0.ɵɵrestoreView(_r2).$implicit; const ctx_r3 = i0.ɵɵnextContext(); return i0.ɵɵresetView(ctx_r3.selectTemplate(template_r3)); });
+    i0.ɵɵelementStart(1, "div", 17);
+    i0.ɵɵelement(2, "img", 18);
+    i0.ɵɵelementEnd();
+    i0.ɵɵelementStart(3, "div", 19)(4, "h3");
+    i0.ɵɵtext(5);
+    i0.ɵɵelementEnd();
+    i0.ɵɵelementStart(6, "p");
+    i0.ɵɵtext(7);
+    i0.ɵɵelementEnd();
+    i0.ɵɵelementStart(8, "div", 20)(9, "span", 21);
+    i0.ɵɵtext(10);
+    i0.ɵɵelementEnd();
+    i0.ɵɵtemplate(11, TemplateGalleryComponent_div_18_span_11_Template, 2, 1, "span", 22);
+    i0.ɵɵelementEnd()()();
+} if (rf & 2) {
+    const template_r3 = ctx.$implicit;
+    const ctx_r3 = i0.ɵɵnextContext();
+    i0.ɵɵclassProp("selected", (ctx_r3.selectedTemplate == null ? null : ctx_r3.selectedTemplate.id) === template_r3.id);
+    i0.ɵɵadvance(2);
+    i0.ɵɵproperty("alt", i0.ɵɵinterpolate(template_r3.name))("src", template_r3.thumbnailUrl || "assets/templates/default.png", i0.ɵɵsanitizeUrl);
+    i0.ɵɵadvance(3);
+    i0.ɵɵtextInterpolate(template_r3.name);
+    i0.ɵɵadvance(2);
+    i0.ɵɵtextInterpolate(template_r3.description);
+    i0.ɵɵadvance(2);
+    i0.ɵɵclassProp("pre-built", template_r3.isPreBuilt);
+    i0.ɵɵadvance();
+    i0.ɵɵtextInterpolate1(" ", template_r3.isPreBuilt ? "Pre-built" : "Custom", " ");
+    i0.ɵɵadvance();
+    i0.ɵɵproperty("ngIf", template_r3.category && template_r3.category.length > 0);
+} }
+function TemplateGalleryComponent_div_19_Template(rf, ctx) { if (rf & 1) {
+    i0.ɵɵelementStart(0, "div", 24)(1, "p");
+    i0.ɵɵtext(2, "No templates found matching your criteria.");
+    i0.ɵɵelementEnd()();
+} }
+class TemplateGalleryComponent {
+    constructor(templateService) {
+        this.templateService = templateService;
+        this.templateSelected = new EventEmitter();
+        this.cancel = new EventEmitter();
+        this.templates = [];
+        this.filteredTemplates = [];
+        this.selectedTemplate = null;
+        this.searchTerm = '';
+        this.selectedCategory = '';
+        this.showPreBuilt = true;
+        this.showUserCreated = true;
+        this.categories = [];
+    }
+    ngOnInit() {
+        this.loadTemplates();
+    }
+    loadTemplates() {
+        this.templateService.getAllTemplates().subscribe(templates => {
+            this.templates = templates;
+            this.filteredTemplates = templates;
+            this.extractCategories();
+        });
+    }
+    extractCategories() {
+        const categorySet = new Set();
+        this.templates.forEach(template => {
+            if (template.category && template.category.length > 0) {
+                template.category.forEach(cat => categorySet.add(cat));
+            }
+        });
+        this.categories = Array.from(categorySet).sort();
+    }
+    filterTemplates() {
+        this.filteredTemplates = this.templates.filter(template => {
+            // Filter by search term
+            const matchesSearch = !this.searchTerm ||
+                template.name.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+                (template.description && template.description.toLowerCase().includes(this.searchTerm.toLowerCase()));
+            // Filter by category
+            const matchesCategory = !this.selectedCategory ||
+                (template.category && template.category.includes(this.selectedCategory));
+            // Filter by type
+            const matchesType = (template.isPreBuilt && this.showPreBuilt) ||
+                (!template.isPreBuilt && this.showUserCreated);
+            return matchesSearch && matchesCategory && matchesType;
+        });
+    }
+    selectTemplate(template) {
+        this.selectedTemplate = template;
+    }
+    applyTemplate() {
+        if (this.selectedTemplate) {
+            this.templateSelected.emit(this.selectedTemplate);
+        }
+    }
+    cancelSelection() {
+        this.cancel.emit();
+    }
+    static { this.ɵfac = function TemplateGalleryComponent_Factory(__ngFactoryType__) { return new (__ngFactoryType__ || TemplateGalleryComponent)(i0.ɵɵdirectiveInject(DashboardTemplateService)); }; }
+    static { this.ɵcmp = /*@__PURE__*/ i0.ɵɵdefineComponent({ type: TemplateGalleryComponent, selectors: [["vis-template-gallery"]], outputs: { templateSelected: "templateSelected", cancel: "cancel" }, decls: 25, vars: 8, consts: [[1, "template-gallery"], [1, "template-gallery-header"], [1, "template-filters"], ["type", "text", "placeholder", "Search templates...", 3, "ngModelChange", "input", "ngModel"], [3, "ngModelChange", "change", "ngModel"], ["value", ""], [3, "value", 4, "ngFor", "ngForOf"], [1, "template-type-filter"], ["type", "checkbox", 3, "ngModelChange", "change", "ngModel"], [1, "template-grid"], ["class", "template-card", 3, "selected", "click", 4, "ngFor", "ngForOf"], ["class", "no-templates", 4, "ngIf"], [1, "template-actions"], [1, "btn-cancel", 3, "click"], [1, "btn-apply", 3, "click", "disabled"], [3, "value"], [1, "template-card", 3, "click"], [1, "template-thumbnail"], [3, "src", "alt"], [1, "template-info"], [1, "template-meta"], [1, "template-type"], ["class", "template-categories", 4, "ngIf"], [1, "template-categories"], [1, "no-templates"]], template: function TemplateGalleryComponent_Template(rf, ctx) { if (rf & 1) {
+            i0.ɵɵelementStart(0, "div", 0)(1, "div", 1)(2, "h2");
+            i0.ɵɵtext(3, "Dashboard Templates");
+            i0.ɵɵelementEnd();
+            i0.ɵɵelementStart(4, "div", 2)(5, "input", 3);
+            i0.ɵɵtwoWayListener("ngModelChange", function TemplateGalleryComponent_Template_input_ngModelChange_5_listener($event) { i0.ɵɵtwoWayBindingSet(ctx.searchTerm, $event) || (ctx.searchTerm = $event); return $event; });
+            i0.ɵɵlistener("input", function TemplateGalleryComponent_Template_input_input_5_listener() { return ctx.filterTemplates(); });
+            i0.ɵɵelementEnd();
+            i0.ɵɵelementStart(6, "select", 4);
+            i0.ɵɵtwoWayListener("ngModelChange", function TemplateGalleryComponent_Template_select_ngModelChange_6_listener($event) { i0.ɵɵtwoWayBindingSet(ctx.selectedCategory, $event) || (ctx.selectedCategory = $event); return $event; });
+            i0.ɵɵlistener("change", function TemplateGalleryComponent_Template_select_change_6_listener() { return ctx.filterTemplates(); });
+            i0.ɵɵelementStart(7, "option", 5);
+            i0.ɵɵtext(8, "All Categories");
+            i0.ɵɵelementEnd();
+            i0.ɵɵtemplate(9, TemplateGalleryComponent_option_9_Template, 2, 2, "option", 6);
+            i0.ɵɵelementEnd();
+            i0.ɵɵelementStart(10, "div", 7)(11, "label")(12, "input", 8);
+            i0.ɵɵtwoWayListener("ngModelChange", function TemplateGalleryComponent_Template_input_ngModelChange_12_listener($event) { i0.ɵɵtwoWayBindingSet(ctx.showPreBuilt, $event) || (ctx.showPreBuilt = $event); return $event; });
+            i0.ɵɵlistener("change", function TemplateGalleryComponent_Template_input_change_12_listener() { return ctx.filterTemplates(); });
+            i0.ɵɵelementEnd();
+            i0.ɵɵtext(13, " Pre-built ");
+            i0.ɵɵelementEnd();
+            i0.ɵɵelementStart(14, "label")(15, "input", 8);
+            i0.ɵɵtwoWayListener("ngModelChange", function TemplateGalleryComponent_Template_input_ngModelChange_15_listener($event) { i0.ɵɵtwoWayBindingSet(ctx.showUserCreated, $event) || (ctx.showUserCreated = $event); return $event; });
+            i0.ɵɵlistener("change", function TemplateGalleryComponent_Template_input_change_15_listener() { return ctx.filterTemplates(); });
+            i0.ɵɵelementEnd();
+            i0.ɵɵtext(16, " My Templates ");
+            i0.ɵɵelementEnd()()()();
+            i0.ɵɵelementStart(17, "div", 9);
+            i0.ɵɵtemplate(18, TemplateGalleryComponent_div_18_Template, 12, 11, "div", 10)(19, TemplateGalleryComponent_div_19_Template, 3, 0, "div", 11);
+            i0.ɵɵelementEnd();
+            i0.ɵɵelementStart(20, "div", 12)(21, "button", 13);
+            i0.ɵɵlistener("click", function TemplateGalleryComponent_Template_button_click_21_listener() { return ctx.cancelSelection(); });
+            i0.ɵɵtext(22, " Cancel ");
+            i0.ɵɵelementEnd();
+            i0.ɵɵelementStart(23, "button", 14);
+            i0.ɵɵlistener("click", function TemplateGalleryComponent_Template_button_click_23_listener() { return ctx.applyTemplate(); });
+            i0.ɵɵtext(24, " Apply Template ");
+            i0.ɵɵelementEnd()()();
+        } if (rf & 2) {
+            i0.ɵɵadvance(5);
+            i0.ɵɵtwoWayProperty("ngModel", ctx.searchTerm);
+            i0.ɵɵadvance();
+            i0.ɵɵtwoWayProperty("ngModel", ctx.selectedCategory);
+            i0.ɵɵadvance(3);
+            i0.ɵɵproperty("ngForOf", ctx.categories);
+            i0.ɵɵadvance(3);
+            i0.ɵɵtwoWayProperty("ngModel", ctx.showPreBuilt);
+            i0.ɵɵadvance(3);
+            i0.ɵɵtwoWayProperty("ngModel", ctx.showUserCreated);
+            i0.ɵɵadvance(3);
+            i0.ɵɵproperty("ngForOf", ctx.filteredTemplates);
+            i0.ɵɵadvance();
+            i0.ɵɵproperty("ngIf", ctx.filteredTemplates.length === 0);
+            i0.ɵɵadvance(4);
+            i0.ɵɵproperty("disabled", !ctx.selectedTemplate);
+        } }, dependencies: [CommonModule, i2$1.NgForOf, i2$1.NgIf, FormsModule, i3.NgSelectOption, i3.ɵNgSelectMultipleOption, i3.DefaultValueAccessor, i3.CheckboxControlValueAccessor, i3.SelectControlValueAccessor, i3.NgControlStatus, i3.NgModel], styles: [".template-gallery[_ngcontent-%COMP%]{display:flex;flex-direction:column;height:100%;padding:1rem}.template-gallery-header[_ngcontent-%COMP%]{margin-bottom:1rem}.template-filters[_ngcontent-%COMP%]{display:flex;gap:.5rem;margin-bottom:1rem;flex-wrap:wrap}.template-filters[_ngcontent-%COMP%]   input[_ngcontent-%COMP%], .template-filters[_ngcontent-%COMP%]   select[_ngcontent-%COMP%]{padding:.5rem;border:1px solid #ccc;border-radius:4px}.template-type-filter[_ngcontent-%COMP%]{display:flex;gap:1rem}.template-grid[_ngcontent-%COMP%]{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem;overflow-y:auto;flex-grow:1}.template-card[_ngcontent-%COMP%]{border:1px solid #ddd;border-radius:4px;overflow:hidden;cursor:pointer;transition:all .2s ease}.template-card[_ngcontent-%COMP%]:hover{transform:translateY(-2px);box-shadow:0 4px 8px #0000001a}.template-card.selected[_ngcontent-%COMP%]{border-color:#007bff;box-shadow:0 0 0 2px #007bff40}.template-thumbnail[_ngcontent-%COMP%]{height:160px;overflow:hidden}.template-thumbnail[_ngcontent-%COMP%]   img[_ngcontent-%COMP%]{width:100%;height:100%;object-fit:cover}.template-info[_ngcontent-%COMP%]{padding:1rem}.template-info[_ngcontent-%COMP%]   h3[_ngcontent-%COMP%]{margin:0 0 .5rem}.template-info[_ngcontent-%COMP%]   p[_ngcontent-%COMP%]{margin:0 0 .5rem;color:#666;font-size:.9rem}.template-meta[_ngcontent-%COMP%]{display:flex;justify-content:space-between;font-size:.8rem;color:#888}.template-type[_ngcontent-%COMP%]{padding:.2rem .5rem;border-radius:4px;background-color:#eee}.template-type.pre-built[_ngcontent-%COMP%]{background-color:#e3f2fd;color:#0d47a1}.no-templates[_ngcontent-%COMP%]{grid-column:1 / -1;text-align:center;padding:2rem;color:#666}.template-actions[_ngcontent-%COMP%]{display:flex;justify-content:flex-end;gap:1rem;margin-top:1rem;padding-top:1rem;border-top:1px solid #eee}button[_ngcontent-%COMP%]{padding:.5rem 1rem;border:none;border-radius:4px;cursor:pointer}.btn-cancel[_ngcontent-%COMP%]{background-color:#f8f9fa;border:1px solid #ddd}.btn-apply[_ngcontent-%COMP%]{background-color:#007bff;color:#fff}.btn-apply[_ngcontent-%COMP%]:disabled{background-color:#b3d7ff;cursor:not-allowed}"] }); }
+}
+(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassMetadata(TemplateGalleryComponent, [{
+        type: Component,
+        args: [{ selector: 'vis-template-gallery', standalone: true, imports: [CommonModule, FormsModule], template: `
+    <div class="template-gallery">
+      <div class="template-gallery-header">
+        <h2>Dashboard Templates</h2>
+        <div class="template-filters">
+          <input 
+            type="text" 
+            placeholder="Search templates..." 
+            [(ngModel)]="searchTerm"
+            (input)="filterTemplates()"
+          />
+          <select [(ngModel)]="selectedCategory" (change)="filterTemplates()">
+            <option value="">All Categories</option>
+            <option *ngFor="let category of categories" [value]="category">{{ category }}</option>
+          </select>
+          <div class="template-type-filter">
+            <label>
+              <input type="checkbox" [(ngModel)]="showPreBuilt" (change)="filterTemplates()">
+              Pre-built
+            </label>
+            <label>
+              <input type="checkbox" [(ngModel)]="showUserCreated" (change)="filterTemplates()">
+              My Templates
+            </label>
+          </div>
+        </div>
+      </div>
+      
+      <div class="template-grid">
+        <div 
+          *ngFor="let template of filteredTemplates" 
+          class="template-card"
+          [class.selected]="selectedTemplate?.id === template.id"
+          (click)="selectTemplate(template)"
+        >
+          <div class="template-thumbnail">
+            <img [src]="template.thumbnailUrl || 'assets/templates/default.png'" alt="{{ template.name }}">
+          </div>
+          <div class="template-info">
+            <h3>{{ template.name }}</h3>
+            <p>{{ template.description }}</p>
+            <div class="template-meta">
+              <span class="template-type" [class.pre-built]="template.isPreBuilt">
+                {{ template.isPreBuilt ? 'Pre-built' : 'Custom' }}
+              </span>
+              <span *ngIf="template.category && template.category.length > 0" class="template-categories">
+                {{ template.category.join(', ') }}
+              </span>
+            </div>
+          </div>
+        </div>
+        
+        <div *ngIf="filteredTemplates.length === 0" class="no-templates">
+          <p>No templates found matching your criteria.</p>
+        </div>
+      </div>
+      
+      <div class="template-actions">
+        <button 
+          (click)="cancelSelection()" 
+          class="btn-cancel"
+        >
+          Cancel
+        </button>
+        <button 
+          (click)="applyTemplate()" 
+          class="btn-apply" 
+          [disabled]="!selectedTemplate"
+        >
+          Apply Template
+        </button>
+      </div>
+    </div>
+  `, styles: [".template-gallery{display:flex;flex-direction:column;height:100%;padding:1rem}.template-gallery-header{margin-bottom:1rem}.template-filters{display:flex;gap:.5rem;margin-bottom:1rem;flex-wrap:wrap}.template-filters input,.template-filters select{padding:.5rem;border:1px solid #ccc;border-radius:4px}.template-type-filter{display:flex;gap:1rem}.template-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem;overflow-y:auto;flex-grow:1}.template-card{border:1px solid #ddd;border-radius:4px;overflow:hidden;cursor:pointer;transition:all .2s ease}.template-card:hover{transform:translateY(-2px);box-shadow:0 4px 8px #0000001a}.template-card.selected{border-color:#007bff;box-shadow:0 0 0 2px #007bff40}.template-thumbnail{height:160px;overflow:hidden}.template-thumbnail img{width:100%;height:100%;object-fit:cover}.template-info{padding:1rem}.template-info h3{margin:0 0 .5rem}.template-info p{margin:0 0 .5rem;color:#666;font-size:.9rem}.template-meta{display:flex;justify-content:space-between;font-size:.8rem;color:#888}.template-type{padding:.2rem .5rem;border-radius:4px;background-color:#eee}.template-type.pre-built{background-color:#e3f2fd;color:#0d47a1}.no-templates{grid-column:1 / -1;text-align:center;padding:2rem;color:#666}.template-actions{display:flex;justify-content:flex-end;gap:1rem;margin-top:1rem;padding-top:1rem;border-top:1px solid #eee}button{padding:.5rem 1rem;border:none;border-radius:4px;cursor:pointer}.btn-cancel{background-color:#f8f9fa;border:1px solid #ddd}.btn-apply{background-color:#007bff;color:#fff}.btn-apply:disabled{background-color:#b3d7ff;cursor:not-allowed}\n"] }]
+    }], () => [{ type: DashboardTemplateService }], { templateSelected: [{
+            type: Output
+        }], cancel: [{
+            type: Output
+        }] }); })();
+(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassDebugInfo(TemplateGalleryComponent, { className: "TemplateGalleryComponent", filePath: "lib/dashboard-templates/template-gallery/template-gallery.component.ts", lineNumber: 224 }); })();
+
+function SaveTemplateComponent_div_18_span_1_Template(rf, ctx) { if (rf & 1) {
+    const _r1 = i0.ɵɵgetCurrentView();
+    i0.ɵɵelementStart(0, "span", 19);
+    i0.ɵɵtext(1);
+    i0.ɵɵelementStart(2, "button", 20);
+    i0.ɵɵlistener("click", function SaveTemplateComponent_div_18_span_1_Template_button_click_2_listener() { const category_r2 = i0.ɵɵrestoreView(_r1).$implicit; const ctx_r2 = i0.ɵɵnextContext(2); return i0.ɵɵresetView(ctx_r2.removeCategory(category_r2)); });
+    i0.ɵɵtext(3, " \u00D7 ");
+    i0.ɵɵelementEnd()();
+} if (rf & 2) {
+    const category_r2 = ctx.$implicit;
+    i0.ɵɵadvance();
+    i0.ɵɵtextInterpolate1(" ", category_r2, " ");
+} }
+function SaveTemplateComponent_div_18_Template(rf, ctx) { if (rf & 1) {
+    i0.ɵɵelementStart(0, "div", 17);
+    i0.ɵɵtemplate(1, SaveTemplateComponent_div_18_span_1_Template, 4, 1, "span", 18);
+    i0.ɵɵelementEnd();
+} if (rf & 2) {
+    const ctx_r2 = i0.ɵɵnextContext();
+    i0.ɵɵadvance();
+    i0.ɵɵproperty("ngForOf", ctx_r2.categories);
+} }
+function SaveTemplateComponent_div_23_Template(rf, ctx) { if (rf & 1) {
+    const _r4 = i0.ɵɵgetCurrentView();
+    i0.ɵɵelementStart(0, "div", 21)(1, "img", 22);
+    i0.ɵɵlistener("error", function SaveTemplateComponent_div_23_Template_img_error_1_listener($event) { i0.ɵɵrestoreView(_r4); const ctx_r2 = i0.ɵɵnextContext(); return i0.ɵɵresetView(ctx_r2.handleImageError($event)); });
+    i0.ɵɵelementEnd()();
+} if (rf & 2) {
+    const ctx_r2 = i0.ɵɵnextContext();
+    i0.ɵɵadvance();
+    i0.ɵɵproperty("src", ctx_r2.thumbnailUrl, i0.ɵɵsanitizeUrl);
+} }
+class SaveTemplateComponent {
+    constructor(templateService) {
+        this.templateService = templateService;
+        this.saved = new EventEmitter();
+        this.cancel = new EventEmitter();
+        this.templateName = '';
+        this.templateDescription = '';
+        this.categories = [];
+        this.categoryInput = '';
+        this.thumbnailUrl = '';
+    }
+    ngOnInit() {
+        // Generate a default name based on current date
+        this.templateName = `Dashboard Template - ${new Date().toLocaleDateString()}`;
+    }
+    addCategory() {
+        if (this.categoryInput.trim()) {
+            // Split by commas and add each category
+            const newCategories = this.categoryInput
+                .split(',')
+                .map(cat => cat.trim())
+                .filter(cat => cat && !this.categories.includes(cat));
+            this.categories = [...this.categories, ...newCategories];
+            this.categoryInput = '';
+        }
+    }
+    removeCategory(category) {
+        this.categories = this.categories.filter(cat => cat !== category);
+    }
+    handleImageError(event) {
+        event.target.src = 'assets/templates/default.png';
+    }
+    cancelForm() {
+        this.cancel.emit();
+    }
+    saveTemplate() {
+        if (!this.templateName.trim()) {
+            return;
+        }
+        const template = {
+            id: '', // Will be generated by the service
+            name: this.templateName.trim(),
+            description: this.templateDescription.trim() || undefined,
+            category: this.categories.length > 0 ? this.categories : undefined,
+            thumbnailUrl: this.thumbnailUrl.trim() || undefined,
+            isPreBuilt: false,
+            dashboardConfig: this.dashboardConfig
+        };
+        this.templateService.saveTemplate(template).subscribe(savedTemplate => {
+            this.saved.emit(savedTemplate);
+        }, error => {
+            console.error('Error saving template:', error);
+            // Could add error handling UI here
+        });
+    }
+    static { this.ɵfac = function SaveTemplateComponent_Factory(__ngFactoryType__) { return new (__ngFactoryType__ || SaveTemplateComponent)(i0.ɵɵdirectiveInject(DashboardTemplateService)); }; }
+    static { this.ɵcmp = /*@__PURE__*/ i0.ɵɵdefineComponent({ type: SaveTemplateComponent, selectors: [["vis-save-template"]], inputs: { dashboardConfig: "dashboardConfig" }, outputs: { saved: "saved", cancel: "cancel" }, decls: 29, vars: 8, consts: [[1, "save-template-container"], [1, "form-group"], ["for", "templateName"], ["type", "text", "id", "templateName", "placeholder", "Enter a name for your template", "required", "", 3, "ngModelChange", "ngModel"], ["for", "templateDescription"], ["id", "templateDescription", "placeholder", "Enter a description for your template", "rows", "3", 3, "ngModelChange", "ngModel"], ["for", "templateCategories"], [1, "categories-input"], ["type", "text", "id", "templateCategories", "placeholder", "Add categories (comma separated)", 3, "ngModelChange", "ngModel"], ["type", "button", 1, "btn-add-category", 3, "click", "disabled"], ["class", "categories-list", 4, "ngIf"], ["for", "templateThumbnail"], ["type", "text", "id", "templateThumbnail", "placeholder", "Enter a URL for the template thumbnail", 3, "ngModelChange", "ngModel"], ["class", "thumbnail-preview", 4, "ngIf"], [1, "template-actions"], ["type", "button", 1, "btn-cancel", 3, "click"], ["type", "button", 1, "btn-save", 3, "click", "disabled"], [1, "categories-list"], ["class", "category-tag", 4, "ngFor", "ngForOf"], [1, "category-tag"], ["type", "button", 1, "btn-remove-category", 3, "click"], [1, "thumbnail-preview"], ["alt", "Template thumbnail preview", 3, "error", "src"]], template: function SaveTemplateComponent_Template(rf, ctx) { if (rf & 1) {
+            i0.ɵɵelementStart(0, "div", 0)(1, "h2");
+            i0.ɵɵtext(2, "Save Dashboard as Template");
+            i0.ɵɵelementEnd();
+            i0.ɵɵelementStart(3, "div", 1)(4, "label", 2);
+            i0.ɵɵtext(5, "Template Name *");
+            i0.ɵɵelementEnd();
+            i0.ɵɵelementStart(6, "input", 3);
+            i0.ɵɵtwoWayListener("ngModelChange", function SaveTemplateComponent_Template_input_ngModelChange_6_listener($event) { i0.ɵɵtwoWayBindingSet(ctx.templateName, $event) || (ctx.templateName = $event); return $event; });
+            i0.ɵɵelementEnd()();
+            i0.ɵɵelementStart(7, "div", 1)(8, "label", 4);
+            i0.ɵɵtext(9, "Description");
+            i0.ɵɵelementEnd();
+            i0.ɵɵelementStart(10, "textarea", 5);
+            i0.ɵɵtwoWayListener("ngModelChange", function SaveTemplateComponent_Template_textarea_ngModelChange_10_listener($event) { i0.ɵɵtwoWayBindingSet(ctx.templateDescription, $event) || (ctx.templateDescription = $event); return $event; });
+            i0.ɵɵelementEnd()();
+            i0.ɵɵelementStart(11, "div", 1)(12, "label", 6);
+            i0.ɵɵtext(13, "Categories");
+            i0.ɵɵelementEnd();
+            i0.ɵɵelementStart(14, "div", 7)(15, "input", 8);
+            i0.ɵɵtwoWayListener("ngModelChange", function SaveTemplateComponent_Template_input_ngModelChange_15_listener($event) { i0.ɵɵtwoWayBindingSet(ctx.categoryInput, $event) || (ctx.categoryInput = $event); return $event; });
+            i0.ɵɵelementEnd();
+            i0.ɵɵelementStart(16, "button", 9);
+            i0.ɵɵlistener("click", function SaveTemplateComponent_Template_button_click_16_listener() { return ctx.addCategory(); });
+            i0.ɵɵtext(17, " Add ");
+            i0.ɵɵelementEnd()();
+            i0.ɵɵtemplate(18, SaveTemplateComponent_div_18_Template, 2, 1, "div", 10);
+            i0.ɵɵelementEnd();
+            i0.ɵɵelementStart(19, "div", 1)(20, "label", 11);
+            i0.ɵɵtext(21, "Thumbnail URL");
+            i0.ɵɵelementEnd();
+            i0.ɵɵelementStart(22, "input", 12);
+            i0.ɵɵtwoWayListener("ngModelChange", function SaveTemplateComponent_Template_input_ngModelChange_22_listener($event) { i0.ɵɵtwoWayBindingSet(ctx.thumbnailUrl, $event) || (ctx.thumbnailUrl = $event); return $event; });
+            i0.ɵɵelementEnd();
+            i0.ɵɵtemplate(23, SaveTemplateComponent_div_23_Template, 2, 1, "div", 13);
+            i0.ɵɵelementEnd();
+            i0.ɵɵelementStart(24, "div", 14)(25, "button", 15);
+            i0.ɵɵlistener("click", function SaveTemplateComponent_Template_button_click_25_listener() { return ctx.cancelForm(); });
+            i0.ɵɵtext(26, " Cancel ");
+            i0.ɵɵelementEnd();
+            i0.ɵɵelementStart(27, "button", 16);
+            i0.ɵɵlistener("click", function SaveTemplateComponent_Template_button_click_27_listener() { return ctx.saveTemplate(); });
+            i0.ɵɵtext(28, " Save Template ");
+            i0.ɵɵelementEnd()()();
+        } if (rf & 2) {
+            i0.ɵɵadvance(6);
+            i0.ɵɵtwoWayProperty("ngModel", ctx.templateName);
+            i0.ɵɵadvance(4);
+            i0.ɵɵtwoWayProperty("ngModel", ctx.templateDescription);
+            i0.ɵɵadvance(5);
+            i0.ɵɵtwoWayProperty("ngModel", ctx.categoryInput);
+            i0.ɵɵadvance();
+            i0.ɵɵproperty("disabled", !ctx.categoryInput.trim());
+            i0.ɵɵadvance(2);
+            i0.ɵɵproperty("ngIf", ctx.categories.length > 0);
+            i0.ɵɵadvance(4);
+            i0.ɵɵtwoWayProperty("ngModel", ctx.thumbnailUrl);
+            i0.ɵɵadvance();
+            i0.ɵɵproperty("ngIf", ctx.thumbnailUrl);
+            i0.ɵɵadvance(4);
+            i0.ɵɵproperty("disabled", !ctx.templateName.trim());
+        } }, dependencies: [CommonModule, i2$1.NgForOf, i2$1.NgIf, FormsModule, i3.DefaultValueAccessor, i3.NgControlStatus, i3.RequiredValidator, i3.NgModel], styles: [".save-template-container[_ngcontent-%COMP%]{padding:1rem;max-width:600px;margin:0 auto}h2[_ngcontent-%COMP%], .form-group[_ngcontent-%COMP%]{margin-bottom:1.5rem}label[_ngcontent-%COMP%]{display:block;margin-bottom:.5rem;font-weight:500}input[_ngcontent-%COMP%], textarea[_ngcontent-%COMP%]{width:100%;padding:.5rem;border:1px solid #ccc;border-radius:4px;font-size:1rem}.categories-input[_ngcontent-%COMP%]{display:flex;gap:.5rem}.btn-add-category[_ngcontent-%COMP%]{padding:.5rem 1rem;background-color:#f0f0f0;border:1px solid #ccc;border-radius:4px;cursor:pointer}.btn-add-category[_ngcontent-%COMP%]:disabled{opacity:.5;cursor:not-allowed}.categories-list[_ngcontent-%COMP%]{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.5rem}.category-tag[_ngcontent-%COMP%]{display:inline-flex;align-items:center;background-color:#e3f2fd;color:#0d47a1;padding:.25rem .5rem;border-radius:4px;font-size:.875rem}.btn-remove-category[_ngcontent-%COMP%]{background:none;border:none;color:#0d47a1;font-size:1.25rem;line-height:1;padding:0 0 0 .25rem;cursor:pointer}.thumbnail-preview[_ngcontent-%COMP%]{margin-top:.5rem;border:1px solid #ddd;border-radius:4px;overflow:hidden;max-width:300px}.thumbnail-preview[_ngcontent-%COMP%]   img[_ngcontent-%COMP%]{width:100%;height:auto;display:block}.template-actions[_ngcontent-%COMP%]{display:flex;justify-content:flex-end;gap:1rem;margin-top:2rem}button[_ngcontent-%COMP%]{padding:.5rem 1rem;border:none;border-radius:4px;cursor:pointer;font-size:1rem}.btn-cancel[_ngcontent-%COMP%]{background-color:#f8f9fa;border:1px solid #ddd}.btn-save[_ngcontent-%COMP%]{background-color:#007bff;color:#fff}.btn-save[_ngcontent-%COMP%]:disabled{background-color:#b3d7ff;cursor:not-allowed}"] }); }
+}
+(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassMetadata(SaveTemplateComponent, [{
+        type: Component,
+        args: [{ selector: 'vis-save-template', standalone: true, imports: [CommonModule, FormsModule], template: `
+    <div class="save-template-container">
+      <h2>Save Dashboard as Template</h2>
+
+      <div class="form-group">
+        <label for="templateName">Template Name *</label>
+        <input 
+          type="text" 
+          id="templateName" 
+          [(ngModel)]="templateName" 
+          placeholder="Enter a name for your template"
+          required
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="templateDescription">Description</label>
+        <textarea 
+          id="templateDescription" 
+          [(ngModel)]="templateDescription" 
+          placeholder="Enter a description for your template"
+          rows="3"
+        ></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="templateCategories">Categories</label>
+        <div class="categories-input">
+          <input 
+            type="text" 
+            id="templateCategories" 
+            [(ngModel)]="categoryInput" 
+            placeholder="Add categories (comma separated)"
+          >
+          <button 
+            type="button" 
+            class="btn-add-category" 
+            (click)="addCategory()"
+            [disabled]="!categoryInput.trim()"
+          >
+            Add
+          </button>
+        </div>
+        <div class="categories-list" *ngIf="categories.length > 0">
+          <span 
+            *ngFor="let category of categories" 
+            class="category-tag"
+          >
+            {{ category }}
+            <button 
+              type="button" 
+              class="btn-remove-category" 
+              (click)="removeCategory(category)"
+            >
+              ×
+            </button>
+          </span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="templateThumbnail">Thumbnail URL</label>
+        <input 
+          type="text" 
+          id="templateThumbnail" 
+          [(ngModel)]="thumbnailUrl" 
+          placeholder="Enter a URL for the template thumbnail"
+        >
+        <div class="thumbnail-preview" *ngIf="thumbnailUrl">
+          <img [src]="thumbnailUrl" alt="Template thumbnail preview" (error)="handleImageError($event)">
+        </div>
+      </div>
+
+      <div class="template-actions">
+        <button 
+          type="button" 
+          class="btn-cancel" 
+          (click)="cancelForm()"
+        >
+          Cancel
+        </button>
+        <button 
+          type="button" 
+          class="btn-save" 
+          [disabled]="!templateName.trim()"
+          (click)="saveTemplate()"
+        >
+          Save Template
+        </button>
+      </div>
+    </div>
+  `, styles: [".save-template-container{padding:1rem;max-width:600px;margin:0 auto}h2,.form-group{margin-bottom:1.5rem}label{display:block;margin-bottom:.5rem;font-weight:500}input,textarea{width:100%;padding:.5rem;border:1px solid #ccc;border-radius:4px;font-size:1rem}.categories-input{display:flex;gap:.5rem}.btn-add-category{padding:.5rem 1rem;background-color:#f0f0f0;border:1px solid #ccc;border-radius:4px;cursor:pointer}.btn-add-category:disabled{opacity:.5;cursor:not-allowed}.categories-list{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.5rem}.category-tag{display:inline-flex;align-items:center;background-color:#e3f2fd;color:#0d47a1;padding:.25rem .5rem;border-radius:4px;font-size:.875rem}.btn-remove-category{background:none;border:none;color:#0d47a1;font-size:1.25rem;line-height:1;padding:0 0 0 .25rem;cursor:pointer}.thumbnail-preview{margin-top:.5rem;border:1px solid #ddd;border-radius:4px;overflow:hidden;max-width:300px}.thumbnail-preview img{width:100%;height:auto;display:block}.template-actions{display:flex;justify-content:flex-end;gap:1rem;margin-top:2rem}button{padding:.5rem 1rem;border:none;border-radius:4px;cursor:pointer;font-size:1rem}.btn-cancel{background-color:#f8f9fa;border:1px solid #ddd}.btn-save{background-color:#007bff;color:#fff}.btn-save:disabled{background-color:#b3d7ff;cursor:not-allowed}\n"] }]
+    }], () => [{ type: DashboardTemplateService }], { dashboardConfig: [{
+            type: Input
+        }], saved: [{
+            type: Output
+        }], cancel: [{
+            type: Output
+        }] }); })();
+(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassDebugInfo(SaveTemplateComponent, { className: "SaveTemplateComponent", filePath: "lib/dashboard-templates/save-template/save-template.component.ts", lineNumber: 222 }); })();
+
+function TemplateManagerComponent_div_1_Template(rf, ctx) { if (rf & 1) {
+    const _r1 = i0.ɵɵgetCurrentView();
+    i0.ɵɵelementStart(0, "div", 3)(1, "button", 4);
+    i0.ɵɵlistener("click", function TemplateManagerComponent_div_1_Template_button_click_1_listener() { i0.ɵɵrestoreView(_r1); const ctx_r1 = i0.ɵɵnextContext(); return i0.ɵɵresetView(ctx_r1.openGallery()); });
+    i0.ɵɵelement(2, "i", 5);
+    i0.ɵɵtext(3, " Load Template ");
+    i0.ɵɵelementEnd();
+    i0.ɵɵelementStart(4, "button", 6);
+    i0.ɵɵlistener("click", function TemplateManagerComponent_div_1_Template_button_click_4_listener() { i0.ɵɵrestoreView(_r1); const ctx_r1 = i0.ɵɵnextContext(); return i0.ɵɵresetView(ctx_r1.openSaveForm()); });
+    i0.ɵɵelement(5, "i", 7);
+    i0.ɵɵtext(6, " Save as Template ");
+    i0.ɵɵelementEnd()();
+} }
+function TemplateManagerComponent_div_2_vis_template_gallery_2_Template(rf, ctx) { if (rf & 1) {
+    const _r3 = i0.ɵɵgetCurrentView();
+    i0.ɵɵelementStart(0, "vis-template-gallery", 12);
+    i0.ɵɵlistener("templateSelected", function TemplateManagerComponent_div_2_vis_template_gallery_2_Template_vis_template_gallery_templateSelected_0_listener($event) { i0.ɵɵrestoreView(_r3); const ctx_r1 = i0.ɵɵnextContext(2); return i0.ɵɵresetView(ctx_r1.onTemplateSelected($event)); })("cancel", function TemplateManagerComponent_div_2_vis_template_gallery_2_Template_vis_template_gallery_cancel_0_listener() { i0.ɵɵrestoreView(_r3); const ctx_r1 = i0.ɵɵnextContext(2); return i0.ɵɵresetView(ctx_r1.closeAll()); });
+    i0.ɵɵelementEnd();
+} }
+function TemplateManagerComponent_div_2_vis_save_template_3_Template(rf, ctx) { if (rf & 1) {
+    const _r4 = i0.ɵɵgetCurrentView();
+    i0.ɵɵelementStart(0, "vis-save-template", 13);
+    i0.ɵɵlistener("saved", function TemplateManagerComponent_div_2_vis_save_template_3_Template_vis_save_template_saved_0_listener($event) { i0.ɵɵrestoreView(_r4); const ctx_r1 = i0.ɵɵnextContext(2); return i0.ɵɵresetView(ctx_r1.onTemplateSaved($event)); })("cancel", function TemplateManagerComponent_div_2_vis_save_template_3_Template_vis_save_template_cancel_0_listener() { i0.ɵɵrestoreView(_r4); const ctx_r1 = i0.ɵɵnextContext(2); return i0.ɵɵresetView(ctx_r1.closeAll()); });
+    i0.ɵɵelementEnd();
+} if (rf & 2) {
+    const ctx_r1 = i0.ɵɵnextContext(2);
+    i0.ɵɵproperty("dashboardConfig", ctx_r1.dashboardConfig);
+} }
+function TemplateManagerComponent_div_2_Template(rf, ctx) { if (rf & 1) {
+    i0.ɵɵelementStart(0, "div", 8)(1, "div", 9);
+    i0.ɵɵtemplate(2, TemplateManagerComponent_div_2_vis_template_gallery_2_Template, 1, 0, "vis-template-gallery", 10)(3, TemplateManagerComponent_div_2_vis_save_template_3_Template, 1, 1, "vis-save-template", 11);
+    i0.ɵɵelementEnd()();
+} if (rf & 2) {
+    const ctx_r1 = i0.ɵɵnextContext();
+    i0.ɵɵadvance(2);
+    i0.ɵɵproperty("ngIf", ctx_r1.showGallery);
+    i0.ɵɵadvance();
+    i0.ɵɵproperty("ngIf", ctx_r1.showSaveForm);
+} }
+class TemplateManagerComponent {
+    constructor() {
+        this.templateLoaded = new EventEmitter();
+        this.templateSaved = new EventEmitter();
+        this.showGallery = false;
+        this.showSaveForm = false;
+    }
+    openGallery() {
+        this.showGallery = true;
+        this.showSaveForm = false;
+    }
+    openSaveForm() {
+        this.showSaveForm = true;
+        this.showGallery = false;
+    }
+    closeAll() {
+        this.showGallery = false;
+        this.showSaveForm = false;
+    }
+    onTemplateSelected(template) {
+        this.templateLoaded.emit(template);
+        this.closeAll();
+    }
+    onTemplateSaved(template) {
+        this.templateSaved.emit(template);
+        this.closeAll();
+    }
+    static { this.ɵfac = function TemplateManagerComponent_Factory(__ngFactoryType__) { return new (__ngFactoryType__ || TemplateManagerComponent)(); }; }
+    static { this.ɵcmp = /*@__PURE__*/ i0.ɵɵdefineComponent({ type: TemplateManagerComponent, selectors: [["vis-template-manager"]], inputs: { dashboardConfig: "dashboardConfig" }, outputs: { templateLoaded: "templateLoaded", templateSaved: "templateSaved" }, decls: 3, vars: 2, consts: [[1, "template-manager"], ["class", "template-buttons", 4, "ngIf"], ["class", "template-modal", 4, "ngIf"], [1, "template-buttons"], ["title", "Load a dashboard template", 1, "btn-template", 3, "click"], [1, "pi", "pi-folder-open"], ["title", "Save current dashboard as a template", 1, "btn-template", 3, "click"], [1, "pi", "pi-save"], [1, "template-modal"], [1, "template-modal-content"], [3, "templateSelected", "cancel", 4, "ngIf"], [3, "dashboardConfig", "saved", "cancel", 4, "ngIf"], [3, "templateSelected", "cancel"], [3, "saved", "cancel", "dashboardConfig"]], template: function TemplateManagerComponent_Template(rf, ctx) { if (rf & 1) {
+            i0.ɵɵelementStart(0, "div", 0);
+            i0.ɵɵtemplate(1, TemplateManagerComponent_div_1_Template, 7, 0, "div", 1)(2, TemplateManagerComponent_div_2_Template, 4, 2, "div", 2);
+            i0.ɵɵelementEnd();
+        } if (rf & 2) {
+            i0.ɵɵadvance();
+            i0.ɵɵproperty("ngIf", !ctx.showGallery && !ctx.showSaveForm);
+            i0.ɵɵadvance();
+            i0.ɵɵproperty("ngIf", ctx.showGallery || ctx.showSaveForm);
+        } }, dependencies: [CommonModule, i2$1.NgIf, TemplateGalleryComponent, SaveTemplateComponent], styles: [".template-manager[_ngcontent-%COMP%]{position:relative}.template-buttons[_ngcontent-%COMP%]{display:flex;gap:.5rem}.btn-template[_ngcontent-%COMP%]{display:flex;align-items:center;gap:.5rem;padding:.5rem 1rem;background-color:#f8f9fa;border:1px solid #ddd;border-radius:4px;cursor:pointer;font-size:.875rem;transition:all .2s ease}.btn-template[_ngcontent-%COMP%]:hover{background-color:#e9ecef}.template-modal[_ngcontent-%COMP%]{position:fixed;inset:0;background-color:#00000080;display:flex;justify-content:center;align-items:center;z-index:1000}.template-modal-content[_ngcontent-%COMP%]{background-color:#fff;border-radius:4px;box-shadow:0 4px 8px #0000001a;width:90%;max-width:1200px;max-height:90vh;overflow-y:auto}"] }); }
+}
+(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassMetadata(TemplateManagerComponent, [{
+        type: Component,
+        args: [{ selector: 'vis-template-manager', standalone: true, imports: [CommonModule, TemplateGalleryComponent, SaveTemplateComponent], template: `
+    <div class="template-manager">
+      <div class="template-buttons" *ngIf="!showGallery && !showSaveForm">
+        <button 
+          class="btn-template" 
+          (click)="openGallery()"
+          title="Load a dashboard template"
+        >
+          <i class="pi pi-folder-open"></i> Load Template
+        </button>
+        <button 
+          class="btn-template" 
+          (click)="openSaveForm()"
+          title="Save current dashboard as a template"
+        >
+          <i class="pi pi-save"></i> Save as Template
+        </button>
+      </div>
+      
+      <div class="template-modal" *ngIf="showGallery || showSaveForm">
+        <div class="template-modal-content">
+          <vis-template-gallery 
+            *ngIf="showGallery"
+            (templateSelected)="onTemplateSelected($event)"
+            (cancel)="closeAll()"
+          ></vis-template-gallery>
+          
+          <vis-save-template
+            *ngIf="showSaveForm"
+            [dashboardConfig]="dashboardConfig"
+            (saved)="onTemplateSaved($event)"
+            (cancel)="closeAll()"
+          ></vis-save-template>
+        </div>
+      </div>
+    </div>
+  `, styles: [".template-manager{position:relative}.template-buttons{display:flex;gap:.5rem}.btn-template{display:flex;align-items:center;gap:.5rem;padding:.5rem 1rem;background-color:#f8f9fa;border:1px solid #ddd;border-radius:4px;cursor:pointer;font-size:.875rem;transition:all .2s ease}.btn-template:hover{background-color:#e9ecef}.template-modal{position:fixed;inset:0;background-color:#00000080;display:flex;justify-content:center;align-items:center;z-index:1000}.template-modal-content{background-color:#fff;border-radius:4px;box-shadow:0 4px 8px #0000001a;width:90%;max-width:1200px;max-height:90vh;overflow-y:auto}\n"] }]
+    }], null, { dashboardConfig: [{
+            type: Input
+        }], templateLoaded: [{
+            type: Output
+        }], templateSaved: [{
+            type: Output
+        }] }); })();
+(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassDebugInfo(TemplateManagerComponent, { className: "TemplateManagerComponent", filePath: "lib/dashboard-templates/template-manager/template-manager.component.ts", lineNumber: 99 }); })();
 
 /**
  * Service for handling complex calculations related to dashboard widgets
@@ -2243,7 +3033,10 @@ function DashboardContainerComponent_div_1_Template(rf, ctx) { if (rf & 1) {
     i0.ɵɵelementEnd();
     i0.ɵɵelementStart(4, "span", 12);
     i0.ɵɵtext(5);
-    i0.ɵɵelementEnd()()();
+    i0.ɵɵelementEnd();
+    i0.ɵɵelementStart(6, "div", 13)(7, "vis-template-manager", 14);
+    i0.ɵɵlistener("templateLoaded", function DashboardContainerComponent_div_1_Template_vis_template_manager_templateLoaded_7_listener($event) { i0.ɵɵrestoreView(_r1); const ctx_r1 = i0.ɵɵnextContext(); return i0.ɵɵresetView(ctx_r1.loadTemplate($event)); })("templateSaved", function DashboardContainerComponent_div_1_Template_vis_template_manager_templateSaved_7_listener($event) { i0.ɵɵrestoreView(_r1); const ctx_r1 = i0.ɵɵnextContext(); return i0.ɵɵresetView(ctx_r1.onTemplateSaved($event)); });
+    i0.ɵɵelementEnd()()()();
 } if (rf & 2) {
     const ctx_r1 = i0.ɵɵnextContext();
     i0.ɵɵadvance(2);
@@ -2254,10 +3047,12 @@ function DashboardContainerComponent_div_1_Template(rf, ctx) { if (rf & 1) {
     i0.ɵɵattribute("aria-label", "Redo last change" + (!ctx_r1.canRedo ? " (not available)" : ""))("aria-disabled", !ctx_r1.canRedo);
     i0.ɵɵadvance(2);
     i0.ɵɵtextInterpolate(ctx_r1.editModeString);
+    i0.ɵɵadvance(2);
+    i0.ɵɵproperty("dashboardConfig", ctx_r1.getDashboardConfig());
 } }
 function DashboardContainerComponent_For_6_Conditional_1_Template(rf, ctx) { if (rf & 1) {
     const _r4 = i0.ɵɵgetCurrentView();
-    i0.ɵɵelementStart(0, "vis-widget-header", 16);
+    i0.ɵɵelementStart(0, "vis-widget-header", 18);
     i0.ɵɵlistener("onUpdateWidget", function DashboardContainerComponent_For_6_Conditional_1_Template_vis_widget_header_onUpdateWidget_0_listener($event) { i0.ɵɵrestoreView(_r4); const ctx_r1 = i0.ɵɵnextContext(2); return i0.ɵɵresetView(ctx_r1.onUpdateWidget($event)); })("onDeleteWidget", function DashboardContainerComponent_For_6_Conditional_1_Template_vis_widget_header_onDeleteWidget_0_listener($event) { i0.ɵɵrestoreView(_r4); const ctx_r1 = i0.ɵɵnextContext(2); return i0.ɵɵresetView(ctx_r1.onDeleteWidget($event)); });
     i0.ɵɵelementEnd();
 } if (rf & 2) {
@@ -2267,24 +3062,24 @@ function DashboardContainerComponent_For_6_Conditional_1_Template(rf, ctx) { if 
 } }
 function DashboardContainerComponent_For_6_Template(rf, ctx) { if (rf & 1) {
     const _r3 = i0.ɵɵgetCurrentView();
-    i0.ɵɵelementStart(0, "gridster-item", 13);
+    i0.ɵɵelementStart(0, "gridster-item", 15);
     i0.ɵɵlistener("itemResize", function DashboardContainerComponent_For_6_Template_gridster_item_itemResize_0_listener() { i0.ɵɵrestoreView(_r3); const ctx_r1 = i0.ɵɵnextContext(); return i0.ɵɵresetView(ctx_r1.updateString("[Edit Mode - Pending Changes]")); })("itemChange", function DashboardContainerComponent_For_6_Template_gridster_item_itemChange_0_listener() { i0.ɵɵrestoreView(_r3); const ctx_r1 = i0.ɵɵnextContext(); return i0.ɵɵresetView(ctx_r1.updateString("[Edit Mode - Pending Changes]")); });
-    i0.ɵɵconditionalCreate(1, DashboardContainerComponent_For_6_Conditional_1_Template, 1, 3, "vis-widget-header", 14);
-    i0.ɵɵelementStart(2, "vis-widget", 15);
+    i0.ɵɵconditionalCreate(1, DashboardContainerComponent_For_6_Conditional_1_Template, 1, 3, "vis-widget-header", 16);
+    i0.ɵɵelementStart(2, "vis-widget", 17);
     i0.ɵɵlistener("onDataLoad", function DashboardContainerComponent_For_6_Template_vis_widget_onDataLoad_2_listener($event) { i0.ɵɵrestoreView(_r3); const ctx_r1 = i0.ɵɵnextContext(); return i0.ɵɵresetView(ctx_r1.onDataLoad($event)); })("onUpdateFilter", function DashboardContainerComponent_For_6_Template_vis_widget_onUpdateFilter_2_listener($event) { i0.ɵɵrestoreView(_r3); const ctx_r1 = i0.ɵɵnextContext(); return i0.ɵɵresetView(ctx_r1.onUpdateFilter($event)); });
     i0.ɵɵelementEnd()();
 } if (rf & 2) {
     const item_r5 = ctx.$implicit;
-    const ɵ$index_22_r6 = ctx.$index;
+    const ɵ$index_26_r6 = ctx.$index;
     i0.ɵɵproperty("item", item_r5.position);
-    i0.ɵɵattribute("aria-label", (item_r5.config == null ? null : item_r5.config.header == null ? null : item_r5.config.header.title) || "Widget " + (ɵ$index_22_r6 + 1));
+    i0.ɵɵattribute("aria-label", (item_r5.config == null ? null : item_r5.config.header == null ? null : item_r5.config.header.title) || "Widget " + (ɵ$index_26_r6 + 1));
     i0.ɵɵadvance();
     i0.ɵɵconditional(item_r5.config.header ? 1 : -1);
     i0.ɵɵadvance();
     i0.ɵɵproperty("widget", item_r5);
 } }
 function DashboardContainerComponent_div_7_Template(rf, ctx) { if (rf & 1) {
-    i0.ɵɵelementStart(0, "div", 17);
+    i0.ɵɵelementStart(0, "div", 19);
     i0.ɵɵtext(1);
     i0.ɵɵelementEnd();
 } if (rf & 2) {
@@ -2299,13 +3094,14 @@ function DashboardContainerComponent_div_7_Template(rf, ctx) { if (rf & 1) {
  * It handles widget positioning, resizing, data loading, and filtering.
  */
 class DashboardContainerComponent {
-    constructor(calculationService, filterService, eventBus, widgetDataCache, virtualScrollService, undoRedoService) {
+    constructor(calculationService, filterService, eventBus, widgetDataCache, virtualScrollService, undoRedoService, templateService) {
         this.calculationService = calculationService;
         this.filterService = filterService;
         this.eventBus = eventBus;
         this.widgetDataCache = widgetDataCache;
         this.virtualScrollService = virtualScrollService;
         this.undoRedoService = undoRedoService;
+        this.templateService = templateService;
         /** Current filter values applied to the dashboard */
         this.filterValues = [];
         /** Current chart height in pixels */
@@ -2318,6 +3114,7 @@ class DashboardContainerComponent {
         this.canUndo = false;
         this.canRedo = false;
         this.destroy$ = new Subject();
+        this.currentBreakpoint = 'lg';
         /** Event emitted when the container is touched/modified */
         this.containerTouchChanged = new EventEmitter();
         /** Event emitted when the edit mode string changes */
@@ -2358,27 +3155,60 @@ class DashboardContainerComponent {
             // Responsive configuration for different screen sizes
             responsiveOptions: [
                 {
-                    breakpoint: 'sm', // Small devices
+                    breakpoint: 'xs', // Extra small devices (phones)
                     minCols: 1,
-                    maxCols: 2,
+                    maxCols: 1,
                     margin: 2,
-                    rowHeightRatio: 0.2
+                    rowHeightRatio: 0.25,
+                    fixedRowHeight: 150,
+                    outerMargin: true,
+                    outerMarginTop: 10,
+                    outerMarginBottom: 10
                 },
                 {
-                    breakpoint: 'md', // Medium devices
+                    breakpoint: 'sm', // Small devices (tablets portrait)
+                    minCols: 2,
+                    maxCols: 2,
+                    margin: 2,
+                    rowHeightRatio: 0.2,
+                    fixedRowHeight: 120,
+                    outerMargin: true
+                },
+                {
+                    breakpoint: 'md', // Medium devices (tablets landscape)
                     minCols: 6,
                     maxCols: 6,
                     margin: 3,
-                    rowHeightRatio: 0.15
+                    rowHeightRatio: 0.15,
+                    fixedRowHeight: 100
                 },
                 {
-                    breakpoint: 'lg', // Large devices
+                    breakpoint: 'lg', // Large devices (desktops)
                     minCols: 12,
                     maxCols: 12,
                     margin: 4,
                     rowHeightRatio: 0.15
                 }
             ],
+            // Detect screen size changes and apply responsive layout
+            initCallback: (gridsterInstance) => {
+                // Initialize with the correct responsive layout
+                this.applyResponsiveLayout();
+                // Listen for orientation changes
+                window.addEventListener('orientationchange', () => {
+                    setTimeout(() => this.applyResponsiveLayout(), 100);
+                });
+                // Listen for resize events
+                window.addEventListener('resize', () => {
+                    // Debounce resize events
+                    if (this.resizeTimeout) {
+                        clearTimeout(this.resizeTimeout);
+                    }
+                    this.resizeTimeout = setTimeout(() => {
+                        this.applyResponsiveLayout();
+                    }, 200);
+                });
+            },
             itemResizeCallback: (item, itemComponent) => this.onWidgetResize(item, itemComponent),
             itemChangeCallback: (item, itemComponent) => this.onWidgetChange(item, itemComponent)
         };
@@ -2884,10 +3714,176 @@ class DashboardContainerComponent {
     calculateMapZoom(cols, rows) {
         return this.calculationService.calculateMapZoom(cols, rows);
     }
-    static { this.ɵfac = function DashboardContainerComponent_Factory(__ngFactoryType__) { return new (__ngFactoryType__ || DashboardContainerComponent)(i0.ɵɵdirectiveInject(CalculationService), i0.ɵɵdirectiveInject(FilterService), i0.ɵɵdirectiveInject(EventBusService), i0.ɵɵdirectiveInject(WidgetDataCacheService), i0.ɵɵdirectiveInject(VirtualScrollService), i0.ɵɵdirectiveInject(UndoRedoService)); }; }
-    static { this.ɵcmp = /*@__PURE__*/ i0.ɵɵdefineComponent({ type: DashboardContainerComponent, selectors: [["vis-dashboard-container"]], inputs: { widgets: "widgets", filterValues: "filterValues", dashboardId: "dashboardId", isEditMode: "isEditMode", options: "options" }, outputs: { containerTouchChanged: "containerTouchChanged", editModeStringChange: "editModeStringChange", changesMade: "changesMade" }, decls: 9, vars: 5, consts: [["role", "application", "aria-label", "Dashboard", 1, "dashboard-container"], ["class", "dashboard-toolbar", "role", "toolbar", "aria-label", "Dashboard editing tools", 4, "ngIf"], ["role", "region", "aria-label", "Dashboard widgets", 1, "gridster-container", 3, "scroll"], [1, "mt-2", "dashboard-gridster", 3, "options"], ["id", "dashboard", 1, "print-body"], ["role", "region", 3, "item"], ["class", "virtual-scroll-status", "aria-live", "polite", "role", "status", 4, "ngIf"], ["position", "bottom-right", "key", "br"], ["role", "toolbar", "aria-label", "Dashboard editing tools", 1, "dashboard-toolbar"], [1, "toolbar-actions"], ["icon", "pi pi-undo", "styleClass", "p-button-rounded p-button-text", "pTooltip", "Undo (Ctrl+Z)", "tooltipPosition", "bottom", 3, "onClick", "disabled"], ["icon", "pi pi-redo", "styleClass", "p-button-rounded p-button-text", "pTooltip", "Redo (Ctrl+Y)", "tooltipPosition", "bottom", 3, "onClick", "disabled"], ["aria-live", "polite", 1, "edit-mode-indicator"], ["role", "region", 3, "itemResize", "itemChange", "item"], [3, "dashboardId", "widget", "onEditMode"], [3, "onDataLoad", "onUpdateFilter", "widget"], [3, "onUpdateWidget", "onDeleteWidget", "dashboardId", "widget", "onEditMode"], ["aria-live", "polite", "role", "status", 1, "virtual-scroll-status"]], template: function DashboardContainerComponent_Template(rf, ctx) { if (rf & 1) {
+    /**
+     * Applies responsive layout based on screen size
+     *
+     * This method detects the current screen size and applies the appropriate
+     * responsive layout configuration. It also updates widget positions and sizes
+     * to ensure they fit properly on the current screen.
+     */
+    applyResponsiveLayout() {
+        const width = window.innerWidth;
+        let newBreakpoint = 'lg';
+        // Determine the current breakpoint based on screen width
+        if (width < 576) {
+            newBreakpoint = 'xs';
+        }
+        else if (width < 768) {
+            newBreakpoint = 'sm';
+        }
+        else if (width < 992) {
+            newBreakpoint = 'md';
+        }
+        // Only update if the breakpoint has changed
+        if (newBreakpoint !== this.currentBreakpoint) {
+            this.currentBreakpoint = newBreakpoint;
+            console.log(`Applying responsive layout for breakpoint: ${newBreakpoint}`);
+            // Adjust widget positions and sizes for the new breakpoint
+            if (this.widgets && this.widgets.length > 0) {
+                this.widgets.forEach(widget => {
+                    // Save original position if not already saved
+                    if (!widget.originalPosition) {
+                        widget.originalPosition = { ...widget.position };
+                    }
+                    // Apply breakpoint-specific adjustments
+                    switch (newBreakpoint) {
+                        case 'xs':
+                            // For extra small screens, stack widgets vertically
+                            widget.position.x = 0;
+                            widget.position.cols = 1;
+                            // Adjust height based on content type
+                            widget.position.rows = this.getResponsiveRowHeight(widget);
+                            break;
+                        case 'sm':
+                            // For small screens, use 2 columns layout
+                            widget.position.x = widget.position.x % 2;
+                            widget.position.cols = Math.min(2, widget.originalPosition?.cols || 2);
+                            widget.position.rows = this.getResponsiveRowHeight(widget);
+                            break;
+                        case 'md':
+                            // For medium screens, use 6 columns layout
+                            widget.position.x = widget.position.x % 6;
+                            widget.position.cols = Math.min(6, widget.originalPosition?.cols || 3);
+                            break;
+                        case 'lg':
+                            // For large screens, restore original position
+                            if (widget.originalPosition) {
+                                widget.position = { ...widget.originalPosition };
+                            }
+                            break;
+                    }
+                });
+                // Update visible widgets
+                this.updateVisibleWidgets();
+            }
+        }
+    }
+    /**
+     * Gets the responsive row height for a widget based on its type
+     *
+     * @param widget - The widget to calculate height for
+     * @returns The number of rows the widget should occupy
+     */
+    getResponsiveRowHeight(widget) {
+        // Default height
+        let rows = widget.originalPosition?.rows || 4;
+        // Adjust height based on widget type
+        if (widget.config?.component === 'echart') {
+            // Charts need more height on mobile
+            rows = Math.max(rows, 6);
+        }
+        else if (widget.config?.component === 'table') {
+            // Tables need more height on mobile
+            rows = Math.max(rows, 8);
+        }
+        else if (widget.config?.component === 'filter') {
+            // Filters need less height
+            rows = 2;
+        }
+        return rows;
+    }
+    /**
+     * Gets the current dashboard configuration for saving as a template
+     *
+     * @returns The dashboard configuration
+     */
+    getDashboardConfig() {
+        return {
+            layout: this.options,
+            widgets: this.widgets.map(widget => ({
+                ...widget,
+                chartInstance: null // Remove the chart instance to avoid circular references
+            })),
+            settings: {
+            // Add any dashboard-level settings here
+            }
+        };
+    }
+    /**
+     * Loads a dashboard template
+     *
+     * @param template - The template to load
+     */
+    loadTemplate(template) {
+        if (!template || !template.dashboardConfig) {
+            console.error('Invalid template or missing configuration');
+            return;
+        }
+        try {
+            // Apply the template configuration
+            if (template.dashboardConfig.layout) {
+                // Merge layout options
+                this.options = {
+                    ...this.options,
+                    ...template.dashboardConfig.layout
+                };
+            }
+            if (template.dashboardConfig.widgets && Array.isArray(template.dashboardConfig.widgets)) {
+                // Replace the current widgets with the template widgets
+                this.widgets = template.dashboardConfig.widgets.map(widget => ({
+                    ...widget,
+                    chartInstance: null, // Reset chart instance
+                    loading: false,
+                    error: null
+                }));
+                // Update visible widgets
+                this.updateVisibleWidgets();
+                // Add the new state to the undo/redo history
+                this.undoRedoService.addState(this.widgets);
+            }
+            // Show success message
+            this.showToast('success', 'Template Loaded', `Template "${template.name}" has been loaded successfully.`);
+        }
+        catch (error) {
+            console.error('Error loading template:', error);
+            this.showToast('error', 'Error', 'Failed to load the template. Please try again.');
+        }
+    }
+    /**
+     * Handles when a template is saved
+     *
+     * @param template - The saved template
+     */
+    onTemplateSaved(template) {
+        this.showToast('success', 'Template Saved', `Template "${template.name}" has been saved successfully.`);
+    }
+    /**
+     * Shows a toast message
+     *
+     * @param severity - The severity of the message (success, info, warn, error)
+     * @param summary - The summary of the message
+     * @param detail - The detail of the message
+     */
+    showToast(severity, summary, detail) {
+        // This assumes you have a toast service or component
+        // If not, you'll need to implement this method
+        // For PrimeNG Toast:
+        // this.messageService.add({ severity, summary, detail });
+    }
+    static { this.ɵfac = function DashboardContainerComponent_Factory(__ngFactoryType__) { return new (__ngFactoryType__ || DashboardContainerComponent)(i0.ɵɵdirectiveInject(CalculationService), i0.ɵɵdirectiveInject(FilterService), i0.ɵɵdirectiveInject(EventBusService), i0.ɵɵdirectiveInject(WidgetDataCacheService), i0.ɵɵdirectiveInject(VirtualScrollService), i0.ɵɵdirectiveInject(UndoRedoService), i0.ɵɵdirectiveInject(DashboardTemplateService)); }; }
+    static { this.ɵcmp = /*@__PURE__*/ i0.ɵɵdefineComponent({ type: DashboardContainerComponent, selectors: [["vis-dashboard-container"]], inputs: { widgets: "widgets", filterValues: "filterValues", dashboardId: "dashboardId", isEditMode: "isEditMode", options: "options" }, outputs: { containerTouchChanged: "containerTouchChanged", editModeStringChange: "editModeStringChange", changesMade: "changesMade" }, decls: 9, vars: 5, consts: [["role", "application", "aria-label", "Dashboard", 1, "dashboard-container"], ["class", "dashboard-toolbar", "role", "toolbar", "aria-label", "Dashboard editing tools", 4, "ngIf"], ["role", "region", "aria-label", "Dashboard widgets", 1, "gridster-container", 3, "scroll"], [1, "mt-2", "dashboard-gridster", 3, "options"], ["id", "dashboard", 1, "print-body"], ["role", "region", 3, "item"], ["class", "virtual-scroll-status", "aria-live", "polite", "role", "status", 4, "ngIf"], ["position", "bottom-right", "key", "br"], ["role", "toolbar", "aria-label", "Dashboard editing tools", 1, "dashboard-toolbar"], [1, "toolbar-actions"], ["icon", "pi pi-undo", "styleClass", "p-button-rounded p-button-text", "pTooltip", "Undo (Ctrl+Z)", "tooltipPosition", "bottom", 3, "onClick", "disabled"], ["icon", "pi pi-redo", "styleClass", "p-button-rounded p-button-text", "pTooltip", "Redo (Ctrl+Y)", "tooltipPosition", "bottom", 3, "onClick", "disabled"], ["aria-live", "polite", 1, "edit-mode-indicator"], [1, "template-manager-container"], [3, "templateLoaded", "templateSaved", "dashboardConfig"], ["role", "region", 3, "itemResize", "itemChange", "item"], [3, "dashboardId", "widget", "onEditMode"], [3, "onDataLoad", "onUpdateFilter", "widget"], [3, "onUpdateWidget", "onDeleteWidget", "dashboardId", "widget", "onEditMode"], ["aria-live", "polite", "role", "status", 1, "virtual-scroll-status"]], template: function DashboardContainerComponent_Template(rf, ctx) { if (rf & 1) {
             i0.ɵɵelementStart(0, "div", 0);
-            i0.ɵɵtemplate(1, DashboardContainerComponent_div_1_Template, 6, 7, "div", 1);
+            i0.ɵɵtemplate(1, DashboardContainerComponent_div_1_Template, 8, 8, "div", 1);
             i0.ɵɵelementStart(2, "div", 2);
             i0.ɵɵlistener("scroll", function DashboardContainerComponent_Template_div_scroll_2_listener($event) { return ctx.onDashboardScroll($event); });
             i0.ɵɵelementStart(3, "gridster", 3)(4, "div", 4);
@@ -2907,14 +3903,14 @@ class DashboardContainerComponent {
             i0.ɵɵrepeater(ctx.visibleWidgets);
             i0.ɵɵadvance(2);
             i0.ɵɵproperty("ngIf", ctx.widgets.length > ctx.visibleWidgets.length);
-        } }, dependencies: [CommonModule, i4.NgIf, FormsModule,
+        } }, dependencies: [CommonModule, i2$1.NgIf, FormsModule,
             GridsterComponent,
             GridsterItemComponent,
             WidgetComponent,
             WidgetHeaderComponent,
             NgxPrintModule,
             Toast,
-            ButtonModule, i7.Button, TooltipModule, i9$1.Tooltip], styles: [".vis-chart-container[_ngcontent-%COMP%]{background-color:#fff;min-height:2000px;width:100%;margin:0;padding:0}@media (forced-colors: active){[_ngcontent-%COMP%]:root{--dashboard-bg: Canvas;--dashboard-text: CanvasText;--dashboard-border: CanvasText;--dashboard-toolbar-bg: Canvas;--dashboard-toolbar-border: CanvasText;--dashboard-widget-bg: Canvas;--dashboard-widget-border: CanvasText;--dashboard-widget-header-bg: Canvas;--dashboard-widget-header-text: CanvasText;--dashboard-primary: Highlight;--dashboard-primary-text: HighlightText}}[_ngcontent-%COMP%]:root{--dashboard-bg: var(--surface-100, #f8f9fa);--dashboard-text: var(--text-color, #212529);--dashboard-border: var(--surface-300, #dee2e6);--dashboard-toolbar-bg: var(--surface-200, #e9ecef);--dashboard-toolbar-border: var(--surface-300, #dee2e6);--dashboard-widget-bg: var(--surface-0, #ffffff);--dashboard-widget-border: var(--surface-200, #e9ecef);--dashboard-widget-header-bg: var(--surface-100, #f8f9fa);--dashboard-widget-header-text: var(--text-color, #212529);--dashboard-primary: var(--primary-color, #007bff);--dashboard-primary-text: var(--primary-color-text, #ffffff)}.dashboard-container[_ngcontent-%COMP%]{display:flex;flex-direction:column;width:100%;height:100%;background-color:var(--dashboard-bg);color:var(--dashboard-text)}.dashboard-toolbar[_ngcontent-%COMP%]{display:flex;justify-content:space-between;align-items:center;padding:.5rem 1rem;background-color:var(--dashboard-toolbar-bg);border-bottom:1px solid var(--dashboard-toolbar-border);box-shadow:0 1px 3px #0000001a;z-index:10}.toolbar-actions[_ngcontent-%COMP%]{display:flex;align-items:center;gap:.5rem}.edit-mode-indicator[_ngcontent-%COMP%]{margin-left:1rem;font-size:.9rem;font-weight:500;color:var(--dashboard-primary)}[_ngcontent-%COMP%]:focus-visible{outline:2px solid var(--dashboard-primary);outline-offset:2px}.gridster-container[_ngcontent-%COMP%]{width:100%;height:120vh;flex:1;overflow:auto}@media (max-width: 768px){.dashboard-toolbar[_ngcontent-%COMP%]{flex-direction:column;padding:.5rem}.toolbar-actions[_ngcontent-%COMP%]{width:100%;justify-content:space-between;margin-bottom:.5rem}.edit-mode-indicator[_ngcontent-%COMP%]{margin-left:0;text-align:center;width:100%}.gridster-container[_ngcontent-%COMP%]{height:calc(100vh - 60px)}  gridster-item{overflow-x:auto!important}  .echart-container{min-height:200px;height:100%!important;width:100%!important}  .p-button{min-width:44px;min-height:44px}}@media (max-width: 480px){.dashboard-toolbar[_ngcontent-%COMP%]{padding:.25rem}  gridster{grid-template-columns:repeat(1,1fr)!important}  gridster-item{min-height:200px!important}}.editMode[_ngcontent-%COMP%]{color:red}.print-body[_ngcontent-%COMP%]{width:95%}@media print{#dashboard[_ngcontent-%COMP%]{width:95%;overflow-y:visible!important;position:relative}@page{size:landscape}}.vis-filter-component[_ngcontent-%COMP%]{font-size:.8rem!important;width:100%;height:40px}  .p-dropdown-custom{width:100%!important}  .p-dropdown-custom.p-dropdown .p-component{width:100%!important}[_nghost-%COMP%]     .p-dialog .p-dialog-content{padding:1rem 1.5rem}[_nghost-%COMP%]     .p-dialog .p-dialog-header, [_nghost-%COMP%]     .p-dialog .p-dialog-footer{background:#f8f9fa}.dashboard-gridster[_ngcontent-%COMP%]{background-color:var(--surface-100)}[_nghost-%COMP%]     .no-border .p-panel-content{border:none!important;background:transparent!important}[_nghost-%COMP%]     .hide-panel-header .p-panel-header{display:none!important}"], changeDetection: 0 }); }
+            ButtonModule, i7.Button, TooltipModule, i10$1.Tooltip, TemplateManagerComponent], styles: [".vis-chart-container[_ngcontent-%COMP%]{background-color:#fff;min-height:2000px;width:100%;margin:0;padding:0}@media (forced-colors: active){[_ngcontent-%COMP%]:root{--dashboard-bg: Canvas;--dashboard-text: CanvasText;--dashboard-border: CanvasText;--dashboard-toolbar-bg: Canvas;--dashboard-toolbar-border: CanvasText;--dashboard-widget-bg: Canvas;--dashboard-widget-border: CanvasText;--dashboard-widget-header-bg: Canvas;--dashboard-widget-header-text: CanvasText;--dashboard-primary: Highlight;--dashboard-primary-text: HighlightText}}[_ngcontent-%COMP%]:root{--dashboard-bg: var(--surface-100, #f8f9fa);--dashboard-text: var(--text-color, #212529);--dashboard-border: var(--surface-300, #dee2e6);--dashboard-toolbar-bg: var(--surface-200, #e9ecef);--dashboard-toolbar-border: var(--surface-300, #dee2e6);--dashboard-widget-bg: var(--surface-0, #ffffff);--dashboard-widget-border: var(--surface-200, #e9ecef);--dashboard-widget-header-bg: var(--surface-100, #f8f9fa);--dashboard-widget-header-text: var(--text-color, #212529);--dashboard-primary: var(--primary-color, #007bff);--dashboard-primary-text: var(--primary-color-text, #ffffff)}.dashboard-container[_ngcontent-%COMP%]{display:flex;flex-direction:column;width:100%;height:100%;background-color:var(--dashboard-bg);color:var(--dashboard-text)}.dashboard-toolbar[_ngcontent-%COMP%]{display:flex;justify-content:space-between;align-items:center;padding:.5rem 1rem;background-color:var(--dashboard-toolbar-bg);border-bottom:1px solid var(--dashboard-toolbar-border);box-shadow:0 1px 3px #0000001a;z-index:10}.toolbar-actions[_ngcontent-%COMP%]{display:flex;align-items:center;gap:.5rem}.edit-mode-indicator[_ngcontent-%COMP%]{margin-left:1rem;font-size:.9rem;font-weight:500;color:var(--dashboard-primary)}.template-manager-container[_ngcontent-%COMP%]{margin-left:auto;display:flex;align-items:center}[_ngcontent-%COMP%]:focus-visible{outline:2px solid var(--dashboard-primary);outline-offset:2px}.gridster-container[_ngcontent-%COMP%]{width:100%;height:120vh;flex:1;overflow:auto}@media (max-width: 768px){.dashboard-toolbar[_ngcontent-%COMP%]{flex-direction:column;padding:.5rem}.toolbar-actions[_ngcontent-%COMP%]{width:100%;justify-content:space-between;margin-bottom:.5rem}.edit-mode-indicator[_ngcontent-%COMP%]{margin-left:0;text-align:center;width:100%}.gridster-container[_ngcontent-%COMP%]{height:calc(100vh - 60px);-webkit-overflow-scrolling:touch}  gridster-item{overflow-x:auto!important;touch-action:pan-y;-webkit-tap-highlight-color:rgba(0,0,0,0)}  .echart-container{min-height:200px;height:100%!important;width:100%!important}  .p-button{min-width:44px;min-height:44px;padding:.75rem!important}  .widget-header{padding:.75rem!important}  gridster-item{margin-bottom:1rem!important}  gridster{will-change:transform;transform:translateZ(0);backface-visibility:hidden}}@media (max-width: 480px){.dashboard-toolbar[_ngcontent-%COMP%]{padding:.25rem}  gridster{grid-template-columns:repeat(1,1fr)!important}  gridster-item{min-height:200px!important}}@media (max-width: 768px) and (orientation: portrait){  gridster-item{min-height:250px!important}  gridster-item[data-component=filter]{min-height:100px!important}}@media (max-width: 768px) and (orientation: landscape){.gridster-container[_ngcontent-%COMP%]{height:calc(100vh - 50px)}  gridster-item{min-height:180px!important}}.editMode[_ngcontent-%COMP%]{color:red}.print-body[_ngcontent-%COMP%]{width:95%}@media print{#dashboard[_ngcontent-%COMP%]{width:95%;overflow-y:visible!important;position:relative}@page{size:landscape}}.vis-filter-component[_ngcontent-%COMP%]{font-size:.8rem!important;width:100%;height:40px}  .p-dropdown-custom{width:100%!important}  .p-dropdown-custom.p-dropdown .p-component{width:100%!important}[_nghost-%COMP%]     .p-dialog .p-dialog-content{padding:1rem 1.5rem}[_nghost-%COMP%]     .p-dialog .p-dialog-header, [_nghost-%COMP%]     .p-dialog .p-dialog-footer{background:#f8f9fa}.dashboard-gridster[_ngcontent-%COMP%]{background-color:var(--surface-100)}[_nghost-%COMP%]     .no-border .p-panel-content{border:none!important;background:transparent!important}[_nghost-%COMP%]     .hide-panel-header .p-panel-header{display:none!important}"], changeDetection: 0 }); }
 }
 (() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassMetadata(DashboardContainerComponent, [{
         type: Component,
@@ -2928,9 +3924,10 @@ class DashboardContainerComponent {
                     NgxPrintModule,
                     Toast,
                     ButtonModule,
-                    TooltipModule
-                ], changeDetection: ChangeDetectionStrategy.OnPush, template: "<div class=\"dashboard-container\" role=\"application\" aria-label=\"Dashboard\">\r\n  <!-- Dashboard Toolbar -->\r\n  <div class=\"dashboard-toolbar\" *ngIf=\"isEditMode\" role=\"toolbar\" aria-label=\"Dashboard editing tools\">\r\n    <div class=\"toolbar-actions\">\r\n      <p-button \r\n        icon=\"pi pi-undo\" \r\n        styleClass=\"p-button-rounded p-button-text\" \r\n        [disabled]=\"!canUndo\" \r\n        (onClick)=\"undo()\" \r\n        pTooltip=\"Undo (Ctrl+Z)\" \r\n        tooltipPosition=\"bottom\"\r\n        [attr.aria-label]=\"'Undo last change' + (!canUndo ? ' (not available)' : '')\"\r\n        [attr.aria-disabled]=\"!canUndo\">\r\n      </p-button>\r\n      <p-button \r\n        icon=\"pi pi-redo\" \r\n        styleClass=\"p-button-rounded p-button-text\" \r\n        [disabled]=\"!canRedo\" \r\n        (onClick)=\"redo()\" \r\n        pTooltip=\"Redo (Ctrl+Y)\" \r\n        tooltipPosition=\"bottom\"\r\n        [attr.aria-label]=\"'Redo last change' + (!canRedo ? ' (not available)' : '')\"\r\n        [attr.aria-disabled]=\"!canRedo\">\r\n      </p-button>\r\n      <span class=\"edit-mode-indicator\" aria-live=\"polite\">{{ editModeString }}</span>\r\n    </div>\r\n  </div>\r\n\r\n  <div class=\"gridster-container\" (scroll)=\"onDashboardScroll($event)\" role=\"region\" aria-label=\"Dashboard widgets\">\r\n    <gridster class=\"mt-2 dashboard-gridster\" [options]=\"options\">\r\n      <div id=\"dashboard\" class=\"print-body\" [style.height.px]=\"totalDashboardHeight * 50\">\r\n        @for (item of visibleWidgets; track item.id; let i = $index) {\r\n\r\n          <gridster-item \r\n              [item]=\"item.position\" \r\n              (itemResize)=\"updateString('[Edit Mode - Pending Changes]')\"\r\n              (itemChange)=\"updateString('[Edit Mode - Pending Changes]')\"\r\n              [attr.aria-label]=\"item.config?.header?.title || 'Widget ' + (i + 1)\"\r\n              role=\"region\">\r\n\r\n              @if (item.config.header) {\r\n                <vis-widget-header \r\n                    [dashboardId]=\"dashboardId\" \r\n                    [widget]=\"item\" \r\n                    (onUpdateWidget)=\"onUpdateWidget($event)\"\r\n                    (onDeleteWidget)=\"onDeleteWidget($event)\" \r\n                    [onEditMode]=\"isEditMode\"/>\r\n              }\r\n\r\n              <vis-widget \r\n                  [widget]=\"item\" \r\n                  (onDataLoad)=\"onDataLoad($event)\" \r\n                  (onUpdateFilter)=\"onUpdateFilter($event)\"/>\r\n\r\n          </gridster-item>\r\n\r\n        }\r\n      </div>\r\n    </gridster>\r\n  </div>\r\n\r\n  <!-- Virtual Scrolling Status -->\r\n  <div class=\"virtual-scroll-status\" *ngIf=\"widgets.length > visibleWidgets.length\" \r\n       aria-live=\"polite\" role=\"status\">\r\n    Showing {{ visibleWidgets.length }} of {{ widgets.length }} widgets\r\n  </div>\r\n</div>\r\n\r\n<!-- Toast Message -->\r\n<p-toast position=\"bottom-right\" key=\"br\" />\r\n", styles: [".vis-chart-container{background-color:#fff;min-height:2000px;width:100%;margin:0;padding:0}@media (forced-colors: active){:root{--dashboard-bg: Canvas;--dashboard-text: CanvasText;--dashboard-border: CanvasText;--dashboard-toolbar-bg: Canvas;--dashboard-toolbar-border: CanvasText;--dashboard-widget-bg: Canvas;--dashboard-widget-border: CanvasText;--dashboard-widget-header-bg: Canvas;--dashboard-widget-header-text: CanvasText;--dashboard-primary: Highlight;--dashboard-primary-text: HighlightText}}:root{--dashboard-bg: var(--surface-100, #f8f9fa);--dashboard-text: var(--text-color, #212529);--dashboard-border: var(--surface-300, #dee2e6);--dashboard-toolbar-bg: var(--surface-200, #e9ecef);--dashboard-toolbar-border: var(--surface-300, #dee2e6);--dashboard-widget-bg: var(--surface-0, #ffffff);--dashboard-widget-border: var(--surface-200, #e9ecef);--dashboard-widget-header-bg: var(--surface-100, #f8f9fa);--dashboard-widget-header-text: var(--text-color, #212529);--dashboard-primary: var(--primary-color, #007bff);--dashboard-primary-text: var(--primary-color-text, #ffffff)}.dashboard-container{display:flex;flex-direction:column;width:100%;height:100%;background-color:var(--dashboard-bg);color:var(--dashboard-text)}.dashboard-toolbar{display:flex;justify-content:space-between;align-items:center;padding:.5rem 1rem;background-color:var(--dashboard-toolbar-bg);border-bottom:1px solid var(--dashboard-toolbar-border);box-shadow:0 1px 3px #0000001a;z-index:10}.toolbar-actions{display:flex;align-items:center;gap:.5rem}.edit-mode-indicator{margin-left:1rem;font-size:.9rem;font-weight:500;color:var(--dashboard-primary)}:focus-visible{outline:2px solid var(--dashboard-primary);outline-offset:2px}.gridster-container{width:100%;height:120vh;flex:1;overflow:auto}@media (max-width: 768px){.dashboard-toolbar{flex-direction:column;padding:.5rem}.toolbar-actions{width:100%;justify-content:space-between;margin-bottom:.5rem}.edit-mode-indicator{margin-left:0;text-align:center;width:100%}.gridster-container{height:calc(100vh - 60px)}::ng-deep gridster-item{overflow-x:auto!important}::ng-deep .echart-container{min-height:200px;height:100%!important;width:100%!important}::ng-deep .p-button{min-width:44px;min-height:44px}}@media (max-width: 480px){.dashboard-toolbar{padding:.25rem}::ng-deep gridster{grid-template-columns:repeat(1,1fr)!important}::ng-deep gridster-item{min-height:200px!important}}.editMode{color:red}.print-body{width:95%}@media print{#dashboard{width:95%;overflow-y:visible!important;position:relative}@page{size:landscape}}.vis-filter-component{font-size:.8rem!important;width:100%;height:40px}::ng-deep .p-dropdown-custom{width:100%!important}::ng-deep .p-dropdown-custom.p-dropdown .p-component{width:100%!important}:host ::ng-deep .p-dialog .p-dialog-content{padding:1rem 1.5rem}:host ::ng-deep .p-dialog .p-dialog-header,:host ::ng-deep .p-dialog .p-dialog-footer{background:#f8f9fa}.dashboard-gridster{background-color:var(--surface-100)}:host ::ng-deep .no-border .p-panel-content{border:none!important;background:transparent!important}:host ::ng-deep .hide-panel-header .p-panel-header{display:none!important}\n"] }]
-    }], () => [{ type: CalculationService }, { type: FilterService }, { type: EventBusService }, { type: WidgetDataCacheService }, { type: VirtualScrollService }, { type: UndoRedoService }], { widgets: [{
+                    TooltipModule,
+                    TemplateManagerComponent
+                ], changeDetection: ChangeDetectionStrategy.OnPush, template: "<div class=\"dashboard-container\" role=\"application\" aria-label=\"Dashboard\">\r\n  <!-- Dashboard Toolbar -->\r\n  <div class=\"dashboard-toolbar\" *ngIf=\"isEditMode\" role=\"toolbar\" aria-label=\"Dashboard editing tools\">\r\n    <div class=\"toolbar-actions\">\r\n      <p-button \r\n        icon=\"pi pi-undo\" \r\n        styleClass=\"p-button-rounded p-button-text\" \r\n        [disabled]=\"!canUndo\" \r\n        (onClick)=\"undo()\" \r\n        pTooltip=\"Undo (Ctrl+Z)\" \r\n        tooltipPosition=\"bottom\"\r\n        [attr.aria-label]=\"'Undo last change' + (!canUndo ? ' (not available)' : '')\"\r\n        [attr.aria-disabled]=\"!canUndo\">\r\n      </p-button>\r\n      <p-button \r\n        icon=\"pi pi-redo\" \r\n        styleClass=\"p-button-rounded p-button-text\" \r\n        [disabled]=\"!canRedo\" \r\n        (onClick)=\"redo()\" \r\n        pTooltip=\"Redo (Ctrl+Y)\" \r\n        tooltipPosition=\"bottom\"\r\n        [attr.aria-label]=\"'Redo last change' + (!canRedo ? ' (not available)' : '')\"\r\n        [attr.aria-disabled]=\"!canRedo\">\r\n      </p-button>\r\n      <span class=\"edit-mode-indicator\" aria-live=\"polite\">{{ editModeString }}</span>\r\n\r\n      <!-- Template Manager -->\r\n      <div class=\"template-manager-container\">\r\n        <vis-template-manager\r\n          [dashboardConfig]=\"getDashboardConfig()\"\r\n          (templateLoaded)=\"loadTemplate($event)\"\r\n          (templateSaved)=\"onTemplateSaved($event)\">\r\n        </vis-template-manager>\r\n      </div>\r\n    </div>\r\n  </div>\r\n\r\n  <div class=\"gridster-container\" (scroll)=\"onDashboardScroll($event)\" role=\"region\" aria-label=\"Dashboard widgets\">\r\n    <gridster class=\"mt-2 dashboard-gridster\" [options]=\"options\">\r\n      <div id=\"dashboard\" class=\"print-body\" [style.height.px]=\"totalDashboardHeight * 50\">\r\n        @for (item of visibleWidgets; track item.id; let i = $index) {\r\n\r\n          <gridster-item \r\n              [item]=\"item.position\" \r\n              (itemResize)=\"updateString('[Edit Mode - Pending Changes]')\"\r\n              (itemChange)=\"updateString('[Edit Mode - Pending Changes]')\"\r\n              [attr.aria-label]=\"item.config?.header?.title || 'Widget ' + (i + 1)\"\r\n              role=\"region\">\r\n\r\n              @if (item.config.header) {\r\n                <vis-widget-header \r\n                    [dashboardId]=\"dashboardId\" \r\n                    [widget]=\"item\" \r\n                    (onUpdateWidget)=\"onUpdateWidget($event)\"\r\n                    (onDeleteWidget)=\"onDeleteWidget($event)\" \r\n                    [onEditMode]=\"isEditMode\"/>\r\n              }\r\n\r\n              <vis-widget \r\n                  [widget]=\"item\" \r\n                  (onDataLoad)=\"onDataLoad($event)\" \r\n                  (onUpdateFilter)=\"onUpdateFilter($event)\"/>\r\n\r\n          </gridster-item>\r\n\r\n        }\r\n      </div>\r\n    </gridster>\r\n  </div>\r\n\r\n  <!-- Virtual Scrolling Status -->\r\n  <div class=\"virtual-scroll-status\" *ngIf=\"widgets.length > visibleWidgets.length\" \r\n       aria-live=\"polite\" role=\"status\">\r\n    Showing {{ visibleWidgets.length }} of {{ widgets.length }} widgets\r\n  </div>\r\n</div>\r\n\r\n<!-- Toast Message -->\r\n<p-toast position=\"bottom-right\" key=\"br\" />\r\n", styles: [".vis-chart-container{background-color:#fff;min-height:2000px;width:100%;margin:0;padding:0}@media (forced-colors: active){:root{--dashboard-bg: Canvas;--dashboard-text: CanvasText;--dashboard-border: CanvasText;--dashboard-toolbar-bg: Canvas;--dashboard-toolbar-border: CanvasText;--dashboard-widget-bg: Canvas;--dashboard-widget-border: CanvasText;--dashboard-widget-header-bg: Canvas;--dashboard-widget-header-text: CanvasText;--dashboard-primary: Highlight;--dashboard-primary-text: HighlightText}}:root{--dashboard-bg: var(--surface-100, #f8f9fa);--dashboard-text: var(--text-color, #212529);--dashboard-border: var(--surface-300, #dee2e6);--dashboard-toolbar-bg: var(--surface-200, #e9ecef);--dashboard-toolbar-border: var(--surface-300, #dee2e6);--dashboard-widget-bg: var(--surface-0, #ffffff);--dashboard-widget-border: var(--surface-200, #e9ecef);--dashboard-widget-header-bg: var(--surface-100, #f8f9fa);--dashboard-widget-header-text: var(--text-color, #212529);--dashboard-primary: var(--primary-color, #007bff);--dashboard-primary-text: var(--primary-color-text, #ffffff)}.dashboard-container{display:flex;flex-direction:column;width:100%;height:100%;background-color:var(--dashboard-bg);color:var(--dashboard-text)}.dashboard-toolbar{display:flex;justify-content:space-between;align-items:center;padding:.5rem 1rem;background-color:var(--dashboard-toolbar-bg);border-bottom:1px solid var(--dashboard-toolbar-border);box-shadow:0 1px 3px #0000001a;z-index:10}.toolbar-actions{display:flex;align-items:center;gap:.5rem}.edit-mode-indicator{margin-left:1rem;font-size:.9rem;font-weight:500;color:var(--dashboard-primary)}.template-manager-container{margin-left:auto;display:flex;align-items:center}:focus-visible{outline:2px solid var(--dashboard-primary);outline-offset:2px}.gridster-container{width:100%;height:120vh;flex:1;overflow:auto}@media (max-width: 768px){.dashboard-toolbar{flex-direction:column;padding:.5rem}.toolbar-actions{width:100%;justify-content:space-between;margin-bottom:.5rem}.edit-mode-indicator{margin-left:0;text-align:center;width:100%}.gridster-container{height:calc(100vh - 60px);-webkit-overflow-scrolling:touch}::ng-deep gridster-item{overflow-x:auto!important;touch-action:pan-y;-webkit-tap-highlight-color:rgba(0,0,0,0)}::ng-deep .echart-container{min-height:200px;height:100%!important;width:100%!important}::ng-deep .p-button{min-width:44px;min-height:44px;padding:.75rem!important}::ng-deep .widget-header{padding:.75rem!important}::ng-deep gridster-item{margin-bottom:1rem!important}::ng-deep gridster{will-change:transform;transform:translateZ(0);backface-visibility:hidden}}@media (max-width: 480px){.dashboard-toolbar{padding:.25rem}::ng-deep gridster{grid-template-columns:repeat(1,1fr)!important}::ng-deep gridster-item{min-height:200px!important}}@media (max-width: 768px) and (orientation: portrait){::ng-deep gridster-item{min-height:250px!important}::ng-deep gridster-item[data-component=filter]{min-height:100px!important}}@media (max-width: 768px) and (orientation: landscape){.gridster-container{height:calc(100vh - 50px)}::ng-deep gridster-item{min-height:180px!important}}.editMode{color:red}.print-body{width:95%}@media print{#dashboard{width:95%;overflow-y:visible!important;position:relative}@page{size:landscape}}.vis-filter-component{font-size:.8rem!important;width:100%;height:40px}::ng-deep .p-dropdown-custom{width:100%!important}::ng-deep .p-dropdown-custom.p-dropdown .p-component{width:100%!important}:host ::ng-deep .p-dialog .p-dialog-content{padding:1rem 1.5rem}:host ::ng-deep .p-dialog .p-dialog-header,:host ::ng-deep .p-dialog .p-dialog-footer{background:#f8f9fa}.dashboard-gridster{background-color:var(--surface-100)}:host ::ng-deep .no-border .p-panel-content{border:none!important;background:transparent!important}:host ::ng-deep .hide-panel-header .p-panel-header{display:none!important}\n"] }]
+    }], () => [{ type: CalculationService }, { type: FilterService }, { type: EventBusService }, { type: WidgetDataCacheService }, { type: VirtualScrollService }, { type: UndoRedoService }, { type: DashboardTemplateService }], { widgets: [{
             type: Input
         }], filterValues: [{
             type: Input
@@ -2947,7 +3944,7 @@ class DashboardContainerComponent {
         }], options: [{
             type: Input
         }] }); })();
-(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassDebugInfo(DashboardContainerComponent, { className: "DashboardContainerComponent", filePath: "lib/dashboard-container/dashboard-container.component.ts", lineNumber: 63 }); })();
+(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassDebugInfo(DashboardContainerComponent, { className: "DashboardContainerComponent", filePath: "lib/dashboard-container/dashboard-container.component.ts", lineNumber: 67 }); })();
 
 /**
  * Base component for all widget types
@@ -5378,6 +6375,16 @@ class EchartComponent extends BaseWidgetComponent {
                 this.convertPieChartToDataset(options, seriesArray);
                 return;
             }
+            // For heatmap charts, we need a special approach
+            if (seriesArray[0].type === 'heatmap') {
+                this.convertHeatmapToDataset(options, seriesArray);
+                return;
+            }
+            // For gauge charts, we need a special approach
+            if (seriesArray[0].type === 'gauge') {
+                this.convertGaugeToDataset(options, seriesArray);
+                return;
+            }
             // For bar and line charts with multiple series
             if (['bar', 'line'].includes(seriesArray[0].type) && seriesArray.length > 1) {
                 this.convertMultiSeriesToDataset(options, seriesArray);
@@ -5435,11 +6442,64 @@ class EchartComponent extends BaseWidgetComponent {
         });
     }
     /**
-     * Converts multiple series data to use the dataset API
+     * Converts heatmap chart data to use the dataset API
      *
      * @param options - The ECharts options to convert
      * @param seriesArray - The array of series
      */
+    convertHeatmapToDataset(options, seriesArray) {
+        const firstSeries = seriesArray[0];
+        if (!firstSeries.data || !Array.isArray(firstSeries.data)) {
+            return;
+        }
+        // For heatmap, we keep the original data format as it's already optimized
+        // But we can still use dataset for better performance
+        options.dataset = {
+            source: firstSeries.data
+        };
+        // Update series to use the dataset
+        options.series = seriesArray.map((series) => {
+            const newSeries = { ...series };
+            delete newSeries.data;
+            // Add encode property to tell ECharts how to map dataset fields
+            newSeries.encode = {
+                x: 0,
+                y: 1,
+                value: 2
+            };
+            return newSeries;
+        });
+    }
+    /**
+     * Converts gauge chart data to use the dataset API
+     *
+     * @param options - The ECharts options to convert
+     * @param seriesArray - The array of series
+     */
+    convertGaugeToDataset(options, seriesArray) {
+        const firstSeries = seriesArray[0];
+        if (!firstSeries.data || !Array.isArray(firstSeries.data)) {
+            return;
+        }
+        // For gauge charts, we need to keep the name and value properties
+        options.dataset = {
+            source: firstSeries.data.map((item) => ({
+                name: item.name,
+                value: item.value
+            }))
+        };
+        // Update series to use the dataset
+        options.series = seriesArray.map((series) => {
+            const newSeries = { ...series };
+            delete newSeries.data;
+            // Add encode property to tell ECharts how to map dataset fields
+            newSeries.encode = {
+                itemName: 'name',
+                value: 'value'
+            };
+            return newSeries;
+        });
+    }
     convertMultiSeriesToDataset(options, seriesArray) {
         // Extract all unique x-axis values
         const xAxisValues = new Set();
@@ -5784,7 +6844,7 @@ class FilterComponent {
             i0.ɵɵconditionalCreate(0, FilterComponent_Conditional_0_Template, 8, 0, "div", 0)(1, FilterComponent_Conditional_1_Template, 2, 0, "div", 1);
         } if (rf & 2) {
             i0.ɵɵconditional(ctx.filterValues && ctx.filterValues.length > 0 ? 0 : 1);
-        } }, dependencies: [CommonModule, i4.UpperCasePipe], styles: [".chip[_ngcontent-%COMP%]{border-radius:50px;font-size:10px;font-weight:700!important;border:1px dashed #a6a6a6}.filter-component[_ngcontent-%COMP%]{display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;vertical-align:middle;margin:.2rem;padding-left:1rem;font-size:.9rem;font-weight:600}.close-icon[_ngcontent-%COMP%]{vertical-align:middle;margin-left:3px}"] }); }
+        } }, dependencies: [CommonModule, i2$1.UpperCasePipe], styles: [".chip[_ngcontent-%COMP%]{border-radius:50px;font-size:10px;font-weight:700!important;border:1px dashed #a6a6a6}.filter-component[_ngcontent-%COMP%]{display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;vertical-align:middle;margin:.2rem;padding-left:1rem;font-size:.9rem;font-weight:600}.close-icon[_ngcontent-%COMP%]{vertical-align:middle;margin-left:3px}"] }); }
 }
 (() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassMetadata(FilterComponent, [{
         type: Component,

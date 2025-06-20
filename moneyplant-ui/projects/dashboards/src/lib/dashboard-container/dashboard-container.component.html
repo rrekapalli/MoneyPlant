@@ -23,6 +23,15 @@
         [attr.aria-disabled]="!canRedo">
       </p-button>
       <span class="edit-mode-indicator" aria-live="polite">{{ editModeString }}</span>
+
+      <!-- Template Manager -->
+      <div class="template-manager-container">
+        <vis-template-manager
+          [dashboardConfig]="getDashboardConfig()"
+          (templateLoaded)="loadTemplate($event)"
+          (templateSaved)="onTemplateSaved($event)">
+        </vis-template-manager>
+      </div>
     </div>
   </div>
 
