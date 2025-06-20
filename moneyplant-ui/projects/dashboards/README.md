@@ -31,7 +31,7 @@ import { AppComponent } from './app.component';
 export class AppModule { }
 ```
 
-For standalone components, import the components directly:
+All components in this library are standalone components. Import them directly:
 
 ```typescript
 import { Component } from '@angular/core';
@@ -46,7 +46,18 @@ import { DashboardContainerComponent } from 'dashboards';
   `
 })
 export class AppComponent {
-  widgets = []; // Your widget configurations
+  // Using signals for reactive state management
+  private widgetsSignal = signal<IWidget[]>([]);
+
+  // Expose as computed property
+  widgets = computed(() => this.widgetsSignal());
+
+  constructor() {
+    // Initialize widgets
+    this.widgetsSignal.set([
+      // Your widget configurations
+    ]);
+  }
 }
 ```
 
@@ -151,6 +162,95 @@ A widget for displaying markdown content.
 
 A widget for displaying code snippets.
 
+## Services
+
+The library provides several services to help manage dashboards and widgets:
+
+### EventBusService
+
+A service for handling events in the dashboard framework using a publish-subscribe pattern.
+
+```typescript
+import { EventBusService, EventType } from 'dashboards';
+
+// In your component or service
+class MyComponent {
+  constructor(private eventBus: EventBusService) {
+    // Subscribe to data load events
+    this.eventBus.onDataLoad().subscribe(widget => {
+      // Handle data loading
+    });
+
+    // Subscribe to filter update events
+    this.eventBus.onFilterUpdate().subscribe(filterData => {
+      // Handle filter updates
+    });
+  }
+
+  // Publish events
+  publishDataLoad(widget: IWidget): void {
+    this.eventBus.publishDataLoad(widget);
+  }
+
+  publishFilterUpdate(filterData: any): void {
+    this.eventBus.publishFilterUpdate(filterData);
+  }
+}
+```
+
+### WidgetPluginService
+
+A service for managing widget plugins, making it easier to add new widget types.
+
+```typescript
+import { WidgetPluginService } from 'dashboards';
+
+// In your component or service
+class MyComponent {
+  constructor(private widgetPluginService: WidgetPluginService) {
+    // Get all available widget plugins
+    const plugins = this.widgetPluginService.getAllPlugins();
+
+    // Get a specific plugin
+    const chartPlugin = this.widgetPluginService.getPlugin('echart');
+
+    // Register a custom plugin
+    this.widgetPluginService.registerPlugin({
+      type: 'custom',
+      displayName: 'Custom Widget',
+      description: 'A custom widget type',
+      icon: 'custom-icon',
+      component: CustomWidgetComponent,
+      defaultConfig: {
+        options: {}
+      },
+      supportsFiltering: true,
+      canBeFilterSource: true
+    });
+  }
+}
+```
+
+### CalculationService
+
+A service for performing calculations related to widget sizing and positioning.
+
+### FilterService
+
+A service for handling filter logic and operations.
+
+### WidgetDataCacheService
+
+A service for caching widget data to improve performance.
+
+### VirtualScrollService
+
+A service for implementing virtual scrolling for large dashboards.
+
+### UndoRedoService
+
+A service for implementing undo/redo functionality for dashboard editing.
+
 ## Interfaces
 
 The library defines several interfaces for widget configuration:
@@ -163,6 +263,7 @@ The library defines several interfaces for widget configuration:
 - `IMarkdownCellOptions`: Configuration options for markdown widgets
 - `ICodeCellOptions`: Configuration options for code widgets
 - `IState`: Widget state interface
+- `IWidgetPlugin`: Interface for widget plugins
 
 ## Development
 

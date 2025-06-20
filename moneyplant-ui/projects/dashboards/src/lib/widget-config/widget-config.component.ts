@@ -15,6 +15,13 @@ import {InputSwitchModule} from 'primeng/inputswitch';
 import {InputTextarea} from 'primeng/inputtextarea';
 import {WidgetPluginService} from '../services/widget-plugin.service';
 
+/**
+ * Component for configuring dashboard widgets
+ * 
+ * This component provides a user interface for creating and editing widget configurations.
+ * It supports different widget types (charts, filters, tables, etc.) and provides
+ * appropriate configuration options for each type.
+ */
 @Component({
   selector: 'vis-widget-config',
   standalone: true,
@@ -165,6 +172,10 @@ export class WidgetConfigComponent implements OnInit {
 
   /**
    * Initializes all form groups with widget data
+   * 
+   * This method populates the form controls with values from the current widget configuration.
+   * It handles different widget types (charts, filters, etc.) and sets appropriate values
+   * for each form group based on the widget type.
    */
   private initForms() {
     if (!this._widget) return;
@@ -267,7 +278,13 @@ export class WidgetConfigComponent implements OnInit {
   }
 
   /**
-   * Validates JSON input
+   * Validates JSON input in the advanced configuration tab
+   * 
+   * This method is used as a validator function for the JSON editor in the advanced tab.
+   * It checks if the provided string is valid JSON and returns a validation error if not.
+   * 
+   * @param control - The form control containing the JSON string to validate
+   * @returns null if the JSON is valid, or an error object if invalid
    */
   private validateJson(control: any) {
     if (!control.value) {
@@ -283,7 +300,15 @@ export class WidgetConfigComponent implements OnInit {
   }
 
   /**
-   * Checks if a field is invalid
+   * Checks if a form field is invalid
+   * 
+   * This method is used to determine if a specific form field has validation errors
+   * and has been touched or modified by the user. It's used to conditionally display
+   * validation error messages in the UI.
+   * 
+   * @param formName - The name of the form group (e.g., 'generalForm', 'positionForm')
+   * @param fieldName - The name of the field within the form group to check
+   * @returns true if the field is invalid and has been touched or modified, false otherwise
    */
   isFieldInvalid(formName: string, fieldName: string): boolean {
     const form = this[formName as keyof this] as FormGroup;
@@ -292,7 +317,14 @@ export class WidgetConfigComponent implements OnInit {
   }
 
   /**
-   * Formats the JSON in the advanced tab
+   * Formats the JSON in the advanced configuration tab
+   * 
+   * This method attempts to parse the JSON string in the advanced editor,
+   * then reformats it with proper indentation for better readability.
+   * If the JSON is invalid, it sets the isJsonInvalid flag to true,
+   * which can be used to display validation errors in the UI.
+   * 
+   * This is typically triggered by a "Format JSON" button in the advanced tab.
    */
   formatJson() {
     try {
@@ -348,6 +380,15 @@ export class WidgetConfigComponent implements OnInit {
 
   /**
    * Saves the widget configuration
+   * 
+   * This method collects values from all form groups, validates them, and creates
+   * an updated widget configuration. It handles different widget types (charts, filters, etc.)
+   * and applies appropriate transformations for each type.
+   * 
+   * If the advanced JSON editor was used, it also merges those changes with the form values.
+   * 
+   * On success, it emits the updated widget through the onUpdate EventEmitter.
+   * On failure, it displays an error message.
    */
   onWidgetSave() {
     if (!this.isFormValid()) {

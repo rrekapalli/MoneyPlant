@@ -948,6 +948,13 @@ function WidgetConfigComponent_div_12_Template(rf, ctx) { if (rf & 1) {
     i0.ɵɵadvance(2);
     i0.ɵɵproperty("disabled", ctx_r0.isJsonInvalid);
 } }
+/**
+ * Component for configuring dashboard widgets
+ *
+ * This component provides a user interface for creating and editing widget configurations.
+ * It supports different widget types (charts, filters, tables, etc.) and provides
+ * appropriate configuration options for each type.
+ */
 class WidgetConfigComponent {
     set widget(value) {
         this._widget = value;
@@ -1044,6 +1051,10 @@ class WidgetConfigComponent {
     }
     /**
      * Initializes all form groups with widget data
+     *
+     * This method populates the form controls with values from the current widget configuration.
+     * It handles different widget types (charts, filters, etc.) and sets appropriate values
+     * for each form group based on the widget type.
      */
     initForms() {
         if (!this._widget)
@@ -1135,7 +1146,13 @@ class WidgetConfigComponent {
         return series.type || 'bar';
     }
     /**
-     * Validates JSON input
+     * Validates JSON input in the advanced configuration tab
+     *
+     * This method is used as a validator function for the JSON editor in the advanced tab.
+     * It checks if the provided string is valid JSON and returns a validation error if not.
+     *
+     * @param control - The form control containing the JSON string to validate
+     * @returns null if the JSON is valid, or an error object if invalid
      */
     validateJson(control) {
         if (!control.value) {
@@ -1150,7 +1167,15 @@ class WidgetConfigComponent {
         }
     }
     /**
-     * Checks if a field is invalid
+     * Checks if a form field is invalid
+     *
+     * This method is used to determine if a specific form field has validation errors
+     * and has been touched or modified by the user. It's used to conditionally display
+     * validation error messages in the UI.
+     *
+     * @param formName - The name of the form group (e.g., 'generalForm', 'positionForm')
+     * @param fieldName - The name of the field within the form group to check
+     * @returns true if the field is invalid and has been touched or modified, false otherwise
      */
     isFieldInvalid(formName, fieldName) {
         const form = this[formName];
@@ -1158,7 +1183,14 @@ class WidgetConfigComponent {
         return field ? (field.invalid && (field.dirty || field.touched)) : false;
     }
     /**
-     * Formats the JSON in the advanced tab
+     * Formats the JSON in the advanced configuration tab
+     *
+     * This method attempts to parse the JSON string in the advanced editor,
+     * then reformats it with proper indentation for better readability.
+     * If the JSON is invalid, it sets the isJsonInvalid flag to true,
+     * which can be used to display validation errors in the UI.
+     *
+     * This is typically triggered by a "Format JSON" button in the advanced tab.
      */
     formatJson() {
         try {
@@ -1210,6 +1242,15 @@ class WidgetConfigComponent {
     }
     /**
      * Saves the widget configuration
+     *
+     * This method collects values from all form groups, validates them, and creates
+     * an updated widget configuration. It handles different widget types (charts, filters, etc.)
+     * and applies appropriate transformations for each type.
+     *
+     * If the advanced JSON editor was used, it also merges those changes with the form values.
+     *
+     * On success, it emits the updated widget through the onUpdate EventEmitter.
+     * On failure, it displays an error message.
      */
     onWidgetSave() {
         if (!this.isFormValid()) {
@@ -1407,7 +1448,7 @@ class WidgetConfigComponent {
         }], widget: [{
             type: Input
         }] }); })();
-(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassDebugInfo(WidgetConfigComponent, { className: "WidgetConfigComponent", filePath: "lib/widget-config/widget-config.component.ts", lineNumber: 39 }); })();
+(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassDebugInfo(WidgetConfigComponent, { className: "WidgetConfigComponent", filePath: "lib/widget-config/widget-config.component.ts", lineNumber: 46 }); })();
 
 const _c0 = () => ({ "width": "30%", height: "100%", padding: "0px", "padding-right": "2px" });
 const _c1 = () => ["PROJECT_WRITE", "PROJECT_UPDATE", "PROJECTUSERS_DELETE"];
