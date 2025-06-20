@@ -1,15 +1,17 @@
+import * as echarts from 'echarts';
 import { EChartsOption, ECharts } from 'echarts';
 import { GridsterItem, GridsterConfig, GridsterItemComponentInterface } from 'angular-gridster2';
 import * as i0 from '@angular/core';
-import { EventEmitter, OnInit } from '@angular/core';
+import { EventEmitter, OnInit, OnDestroy } from '@angular/core';
 import { FormGroup } from '@angular/forms';
+import { Observable, Subject } from 'rxjs';
 import { MenuItem } from 'primeng/api';
-import { ECharts as ECharts$1 } from 'echarts/core';
 
 interface IState {
     accessor: string;
     column: string;
     isOdataQuery: boolean;
+    supportsFiltering?: boolean;
 }
 
 interface IFilterValues {
@@ -63,7 +65,7 @@ interface IWidget {
         /** Size configuration [width, height] */
         size?: number[];
         /** Widget-specific options based on the component type */
-        options: EChartsOption | IFilterOptions | ITileOptions | IMarkdownCellOptions | ICodeCellOptions | ITableOptions;
+        options: echarts.EChartsOption | IFilterOptions | ITileOptions | IMarkdownCellOptions | ICodeCellOptions | ITableOptions;
         /** Event handlers */
         events?: {
             /** Callback function when chart options change
@@ -71,13 +73,13 @@ interface IWidget {
              * @param chart - Optional ECharts instance
              * @param filters - Optional filter values
              */
-            onChartOptions?: (widget: IWidget, chart?: ECharts, filters?: string | IFilterValues[]) => void;
+            onChartOptions?: (widget: IWidget, chart?: echarts.ECharts, filters?: string | IFilterValues[]) => void;
         };
     };
     /** Data series for the widget */
     series?: [{}];
     /** Reference to the ECharts instance if applicable */
-    chartInstance?: ECharts | null;
+    chartInstance?: echarts.ECharts | null;
 }
 
 declare class WidgetBuilder {
@@ -110,20 +112,211 @@ declare class WidgetBuilder {
 }
 
 /**
+ * Service for handling complex calculations related to dashboard widgets
+ *
+ * This service extracts calculation logic from components to improve maintainability
+ * and reusability across the application.
+ */
+declare class CalculationService {
+    /** Default chart height in pixels */
+    readonly defaultChartHeight: number;
+    /**
+     * Calculates the appropriate chart height based on grid dimensions
+     *
+     * @param cols - Number of columns in the grid
+     * @param rows - Number of rows in the grid
+     * @param flag - Optional flag to adjust height calculation
+     * @param baseHeight - Base height to use for calculation (defaults to defaultChartHeight)
+     * @returns The calculated chart height in pixels
+     */
+    calculateChartHeight(cols: number, rows: number, flag?: boolean, baseHeight?: number): number;
+    /**
+     * Calculates the appropriate map center coordinates based on grid dimensions
+     *
+     * @param cols - Number of columns in the grid
+     * @param rows - Number of rows in the grid
+     * @returns An array of [longitude, latitude] for the map center
+     */
+    calculateMapCenter(cols: number, rows: number): number[];
+    /**
+     * Calculates the appropriate map zoom level based on grid dimensions
+     *
+     * @param cols - Number of columns in the grid
+     * @param rows - Number of rows in the grid
+     * @returns The calculated zoom level for the map
+     */
+    calculateMapZoom(cols: number, rows: number): number;
+    static ɵfac: i0.ɵɵFactoryDeclaration<CalculationService, never>;
+    static ɵprov: i0.ɵɵInjectableDeclaration<CalculationService>;
+}
+
+/**
+ * Service for handling filter-related operations in dashboards
+ *
+ * This service extracts filter logic from components to improve maintainability
+ * and reusability across the application.
+ */
+declare class FilterService {
+    /**
+     * Builds OData query parameters from the current filter values
+     *
+     * @param filterValues - The current filter values to convert to OData parameters
+     * @returns A string containing the OData query parameters
+     */
+    getFilterParams(filterValues: IFilterValues[]): string;
+    /**
+     * Finds the filter widget in the dashboard
+     *
+     * @param widgets - Array of all widgets in the dashboard
+     * @returns The filter widget if found, undefined otherwise
+     */
+    findFilterWidget(widgets: IWidget[]): IWidget | undefined;
+    /**
+     * Gets the current filter values from the filter widget
+     *
+     * @param widgets - Array of all widgets in the dashboard
+     * @returns Array of filter values if filter widget exists, empty array otherwise
+     */
+    getFilterValues(widgets: IWidget[]): IFilterValues[];
+    /**
+     * Updates a filter widget with new filter values
+     *
+     * @param filterWidget - The filter widget to update
+     * @param filterEvent - The filter event containing the new filter values
+     * @returns The updated filter widget
+     */
+    updateFilterWidget(filterWidget: IWidget, filterEvent: any): IWidget;
+    static ɵfac: i0.ɵɵFactoryDeclaration<FilterService, never>;
+    static ɵprov: i0.ɵɵInjectableDeclaration<FilterService>;
+}
+
+/**
+ * Event types supported by the event bus
+ */
+declare enum EventType {
+    DATA_LOAD = "DATA_LOAD",
+    FILTER_UPDATE = "FILTER_UPDATE",
+    WIDGET_UPDATE = "WIDGET_UPDATE",
+    DASHBOARD_CHANGE = "DASHBOARD_CHANGE",
+    WIDGET_RESIZE = "WIDGET_RESIZE",
+    WIDGET_MOVE = "WIDGET_MOVE",
+    ERROR = "ERROR"
+}
+/**
+ * Interface for events published through the event bus
+ */
+interface Event {
+    type: EventType;
+    payload: any;
+    source?: string;
+    timestamp?: number;
+}
+/**
+ * Service for handling events in the dashboard framework
+ *
+ * This service provides a decoupled approach for communication between components
+ * using a publish-subscribe pattern.
+ */
+declare class EventBusService {
+    private eventSubject;
+    /**
+     * Publishes an event to the event bus
+     *
+     * @param type - The type of event
+     * @param payload - The event payload
+     * @param source - Optional source identifier
+     */
+    publish(type: EventType, payload: any, source?: string): void;
+    /**
+     * Subscribes to events of a specific type
+     *
+     * @param type - The type of events to subscribe to
+     * @returns An observable of events of the specified type
+     */
+    on(type: EventType): Observable<Event>;
+    /**
+     * Subscribes to all events
+     *
+     * @returns An observable of all events
+     */
+    onAll(): Observable<Event>;
+    /**
+     * Publishes a data load event
+     *
+     * @param widget - The widget that needs data
+     * @param source - Optional source identifier
+     */
+    publishDataLoad(widget: IWidget, source?: string): void;
+    /**
+     * Subscribes to data load events
+     *
+     * @returns An observable of data load events
+     */
+    onDataLoad(): Observable<IWidget>;
+    /**
+     * Publishes a filter update event
+     *
+     * @param filterData - The updated filter data
+     * @param source - Optional source identifier
+     */
+    publishFilterUpdate(filterData: any, source?: string): void;
+    /**
+     * Subscribes to filter update events
+     *
+     * @returns An observable of filter update events
+     */
+    onFilterUpdate(): Observable<any>;
+    /**
+     * Publishes a widget update event
+     *
+     * @param widget - The updated widget
+     * @param source - Optional source identifier
+     */
+    publishWidgetUpdate(widget: IWidget, source?: string): void;
+    /**
+     * Subscribes to widget update events
+     *
+     * @returns An observable of widget update events
+     */
+    onWidgetUpdate(): Observable<IWidget>;
+    /**
+     * Publishes an error event
+     *
+     * @param error - The error that occurred
+     * @param source - Optional source identifier
+     */
+    publishError(error: any, source?: string): void;
+    /**
+     * Subscribes to error events
+     *
+     * @returns An observable of error events
+     */
+    onError(): Observable<any>;
+    static ɵfac: i0.ɵɵFactoryDeclaration<EventBusService, never>;
+    static ɵprov: i0.ɵɵInjectableDeclaration<EventBusService>;
+}
+
+/**
  * A container component for dashboard widgets.
  *
  * This component provides a grid-based layout for dashboard widgets using angular-gridster2.
  * It handles widget positioning, resizing, data loading, and filtering.
  */
 declare class DashboardContainerComponent {
+    private calculationService;
+    private filterService;
+    private eventBus;
     /** Array of widgets to display in the dashboard */
     widgets: IWidget[];
     /** Current filter values applied to the dashboard */
     filterValues: IFilterValues[];
     /** Current chart height in pixels */
     chartHeight: number;
-    /** Default chart height in pixels */
-    readonly defaultChartHeight: number;
+    constructor(calculationService: CalculationService, filterService: FilterService, eventBus: EventBusService);
+    /**
+     * Subscribes to events from the event bus
+     */
+    private subscribeToEvents;
     /** Event emitted when the container is touched/modified */
     containerTouchChanged: EventEmitter<any>;
     /** Event emitted when the edit mode string changes */
@@ -222,7 +415,7 @@ declare class DashboardContainerComponent {
      * @param cols - Number of columns in the grid
      * @param rows - Number of rows in the grid
      * @param flag - Optional flag to adjust height calculation
-     * @param baseHeight - Base height to use for calculation (defaults to defaultChartHeight)
+     * @param baseHeight - Base height to use for calculation
      * @returns The calculated chart height in pixels
      */
     calculateChartHeight(cols: number, rows: number, flag?: boolean, baseHeight?: number): number;
@@ -279,6 +472,155 @@ declare class WidgetConfigComponent {
     onWidgetSave(): void;
     static ɵfac: i0.ɵɵFactoryDeclaration<WidgetConfigComponent, never>;
     static ɵcmp: i0.ɵɵComponentDeclaration<WidgetConfigComponent, "vis-widget-config", never, { "selectedDashboardId": { "alias": "selectedDashboardId"; "required": false; }; "widget": { "alias": "widget"; "required": false; }; }, { "onUpdate": "onUpdate"; }, never, never, true, never>;
+}
+
+/**
+ * Base component for all widget types
+ *
+ * This component provides common functionality for all widget types,
+ * reducing code duplication and improving maintainability.
+ */
+declare abstract class BaseWidgetComponent implements OnInit, OnDestroy {
+    protected eventBus: EventBusService;
+    /** The widget configuration */
+    widget: IWidget;
+    /** Event emitted when data needs to be loaded for the widget */
+    onDataLoad: EventEmitter<IWidget>;
+    /** Event emitted when filter values are updated */
+    onUpdateFilter: EventEmitter<any>;
+    /** Subject for handling component destruction */
+    protected destroy$: Subject<void>;
+    /** Loading state of the widget */
+    protected loading: boolean;
+    /** Error state of the widget */
+    protected error: any;
+    constructor(eventBus: EventBusService);
+    /**
+     * Initializes the component
+     */
+    ngOnInit(): void;
+    /**
+     * Cleans up resources when the component is destroyed
+     */
+    ngOnDestroy(): void;
+    /**
+     * Subscribes to relevant events from the event bus
+     */
+    protected subscribeToEvents(): void;
+    /**
+     * Loads data for the widget
+     */
+    protected loadData(): void;
+    /**
+     * Handles errors that occur during data loading
+     *
+     * @param error - The error that occurred
+     */
+    protected handleError(error: any): void;
+    /**
+     * Called when the widget is updated
+     * Override in derived classes to handle widget updates
+     */
+    protected onWidgetUpdated(): void;
+    /**
+     * Called when filters are updated
+     * Override in derived classes to handle filter updates
+     *
+     * @param filterData - The updated filter data
+     */
+    protected onFilterUpdated(filterData: any): void;
+    /**
+     * Updates a filter value
+     *
+     * @param value - The new filter value
+     */
+    protected updateFilter(value: any): void;
+    static ɵfac: i0.ɵɵFactoryDeclaration<BaseWidgetComponent, never>;
+    static ɵcmp: i0.ɵɵComponentDeclaration<BaseWidgetComponent, "ng-component", never, { "widget": { "alias": "widget"; "required": false; }; "onDataLoad": { "alias": "onDataLoad"; "required": false; }; "onUpdateFilter": { "alias": "onUpdateFilter"; "required": false; }; }, {}, never, never, true, never>;
+}
+
+/**
+ * Interface for widget plugins in the dashboard framework
+ *
+ * This interface defines the contract that all widget plugins must implement
+ * to be compatible with the dashboard system.
+ */
+interface IWidgetPlugin {
+    /**
+     * Unique identifier for the widget type
+     */
+    type: string;
+    /**
+     * Display name for the widget type (used in UI)
+     */
+    displayName: string;
+    /**
+     * Description of the widget's purpose and functionality
+     */
+    description: string;
+    /**
+     * Icon to represent this widget type in the UI
+     */
+    icon?: string;
+    /**
+     * Component type to be instantiated for this widget
+     */
+    component: any;
+    /**
+     * Default configuration for this widget type
+     */
+    defaultConfig: any;
+    /**
+     * Whether this widget type supports filtering
+     */
+    supportsFiltering?: boolean;
+    /**
+     * Whether this widget type can be a source of filter values
+     */
+    canBeFilterSource?: boolean;
+}
+
+/**
+ * Service for managing widget plugins in the dashboard framework
+ *
+ * This service provides methods for registering, retrieving, and managing
+ * widget plugins, making it easier to add new widget types.
+ */
+declare class WidgetPluginService {
+    private plugins;
+    constructor();
+    /**
+     * Registers a new widget plugin
+     *
+     * @param plugin - The widget plugin to register
+     */
+    registerPlugin(plugin: IWidgetPlugin): void;
+    /**
+     * Gets a widget plugin by type
+     *
+     * @param type - The type of the widget plugin to retrieve
+     * @returns The widget plugin if found, undefined otherwise
+     */
+    getPlugin(type: string): IWidgetPlugin | undefined;
+    /**
+     * Gets all registered widget plugins
+     *
+     * @returns Array of all registered widget plugins
+     */
+    getAllPlugins(): IWidgetPlugin[];
+    /**
+     * Gets the component for a widget type
+     *
+     * @param type - The type of the widget
+     * @returns The component for the widget type, or a default component if not found
+     */
+    getComponentForType(type: string): any;
+    /**
+     * Registers the default widget plugins
+     */
+    private registerDefaultPlugins;
+    static ɵfac: i0.ɵɵFactoryDeclaration<WidgetPluginService, never>;
+    static ɵprov: i0.ɵɵInjectableDeclaration<WidgetPluginService>;
 }
 
 declare const formOptions: {
@@ -910,18 +1252,44 @@ declare const dataOptions: {
     };
 }[];
 
-declare class EchartComponent {
-    widget: IWidget;
-    onDataLoad: EventEmitter<IWidget>;
-    onUpdateFilter: EventEmitter<any>;
+declare class EchartComponent extends BaseWidgetComponent {
+    protected eventBus: EventBusService;
     isSingleClick: boolean;
     initOpts: any;
-    get chartOptions(): EChartsOption;
-    onChartInit(instance: ECharts$1): void;
+    constructor(eventBus: EventBusService);
+    get chartOptions(): echarts.EChartsOption;
+    /**
+     * Initializes the chart instance
+     *
+     * @param instance - The ECharts instance
+     */
+    onChartInit(instance: any): void;
+    /**
+     * Handles double-click events on the chart
+     *
+     * @param e - The double-click event
+     */
     onChartDblClick(e: any): void;
+    /**
+     * Handles click events on the chart
+     *
+     * @param e - The click event
+     */
     onClick(e: any): void;
+    /**
+     * Called when the widget is updated
+     * Reloads data if necessary
+     */
+    protected onWidgetUpdated(): void;
+    /**
+     * Called when filters are updated
+     * Reloads data if the widget supports filtering
+     *
+     * @param filterData - The updated filter data
+     */
+    protected onFilterUpdated(filterData: any): void;
     static ɵfac: i0.ɵɵFactoryDeclaration<EchartComponent, never>;
-    static ɵcmp: i0.ɵɵComponentDeclaration<EchartComponent, "vis-echart", never, { "widget": { "alias": "widget"; "required": false; }; "onDataLoad": { "alias": "onDataLoad"; "required": false; }; "onUpdateFilter": { "alias": "onUpdateFilter"; "required": false; }; }, {}, never, never, true, never>;
+    static ɵcmp: i0.ɵɵComponentDeclaration<EchartComponent, "vis-echart", never, {}, {}, never, never, true, never>;
 }
 
 /**
@@ -982,5 +1350,11 @@ declare class MarkdownCellComponent {
     static ɵcmp: i0.ɵɵComponentDeclaration<MarkdownCellComponent, "vis-markdown-cell", never, { "widget": { "alias": "widget"; "required": false; }; }, {}, never, never, true, never>;
 }
 
-export { DashboardContainerComponent, EchartComponent, FilterComponent, MarkdownCellComponent, TableComponent, TileComponent, WidgetBuilder, WidgetConfigComponent, WidgetHeaderComponent, dataOptions, formOptions };
-export type { ICodeCellOptions, IFilterOptions, IFilterValues, IMarkdownCellOptions, IState, ITableOptions, ITileOptions, IWidget };
+declare class CodeCellComponent {
+    widget: IWidget;
+    static ɵfac: i0.ɵɵFactoryDeclaration<CodeCellComponent, never>;
+    static ɵcmp: i0.ɵɵComponentDeclaration<CodeCellComponent, "vis-code-cell", never, { "widget": { "alias": "widget"; "required": false; }; }, {}, never, never, true, never>;
+}
+
+export { BaseWidgetComponent, CalculationService, CodeCellComponent, DashboardContainerComponent, EchartComponent, EventBusService, EventType, FilterComponent, FilterService, MarkdownCellComponent, TableComponent, TileComponent, WidgetBuilder, WidgetConfigComponent, WidgetHeaderComponent, WidgetPluginService, dataOptions, formOptions };
+export type { Event, ICodeCellOptions, IFilterOptions, IFilterValues, IMarkdownCellOptions, IState, ITableOptions, ITileOptions, IWidget, IWidgetPlugin };

@@ -1,13 +1,10 @@
-import {Component, Input, EventEmitter} from '@angular/core';
-import {IWidget} from '../../entities/IWidget';
+import {Component} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {NgxEchartsDirective, provideEchartsCore} from 'ngx-echarts';
-// Import echarts using dynamic import to avoid module format issues
-import {EChartsOption, EChartsType} from 'echarts';
-import type {ECharts} from 'echarts/core';
-
-// Use require for echarts to avoid the module format conflict
-const echarts = require('echarts');
+// Import echarts using ES module import
+import * as echarts from 'echarts';
+import { BaseWidgetComponent } from '../base-widget/base-widget.component';
+import { EventBusService } from '../../services/event-bus.service';
 
 @Component({
   selector: 'vis-echart',
@@ -23,11 +20,7 @@ const echarts = require('echarts');
   imports: [CommonModule, NgxEchartsDirective],
   providers: [provideEchartsCore({ echarts })],
 })
-export class EchartComponent {
-  @Input() widget!: IWidget;
-  @Input() onDataLoad!: EventEmitter<IWidget>;
-  @Input() onUpdateFilter!: EventEmitter<any>;
-
+export class EchartComponent extends BaseWidgetComponent {
   isSingleClick: boolean = true;
   initOpts: any = {
     height: 300,
@@ -37,29 +30,47 @@ export class EchartComponent {
     locale: 'en',
   };
 
-  get chartOptions(): EChartsOption {
-    return (this.widget?.config?.options || {}) as EChartsOption;
+  constructor(protected override eventBus: EventBusService) {
+    super(eventBus);
   }
 
-  onChartInit(instance: ECharts) {
-    if (this.widget) {
-      if (instance) {
-        // @ts-ignore
-        this.widget.chartInstance = instance as EChartsType;
-        setTimeout(() => {
-          this.onDataLoad?.emit(this.widget);
-        });
-      }
+  get chartOptions(): echarts.EChartsOption {
+    return (this.widget?.config?.options || {}) as echarts.EChartsOption;
+  }
+
+  /**
+   * Initializes the chart instance
+   * 
+   * @param instance - The ECharts instance
+   */
+  onChartInit(instance: any) {
+    if (this.widget && instance) {
+      this.widget.chartInstance = instance as echarts.ECharts;
+      setTimeout(() => {
+        this.loadData();
+      });
     }
   }
 
+  /**
+   * Handles double-click events on the chart
+   * 
+   * @param e - The double-click event
+   */
   onChartDblClick(e: any): void {
     this.isSingleClick = false;
   }
 
+  /**
+   * Handles click events on the chart
+   * 
+   * @param e - The click event
+   */
   onClick(e: any) {
     this.isSingleClick = true;
     setTimeout(() => {
+      if (!this.isSingleClick) return; // Ignore if it was part of a double-click
+
       let selectedPoint = e.data;
       if(e.seriesType === "scatter" && Array.isArray(e.data) && this.widget.config.state?.accessor) {
         const scatterChartData = e.data.find(this.widget.config.state.accessor);
@@ -70,10 +81,31 @@ export class EchartComponent {
           };
         }
       }
-      this.onUpdateFilter?.emit({
-        value: selectedPoint,
-        widget: this.widget,
-      });
+
+      // Use the base class method to update the filter
+      this.updateFilter(selectedPoint);
     }, 250);
+  }
+
+  /**
+   * Called when the widget is updated
+   * Reloads data if necessary
+   */
+  protected override onWidgetUpdated(): void {
+    // Reload data when the widget is updated
+    this.loadData();
+  }
+
+  /**
+   * Called when filters are updated
+   * Reloads data if the widget supports filtering
+   * 
+   * @param filterData - The updated filter data
+   */
+  protected override onFilterUpdated(filterData: any): void {
+    // Only reload data if this widget supports filtering
+    if (this.widget.config.state?.supportsFiltering !== false) {
+      this.loadData();
+    }
   }
 }

@@ -1,38 +1,7 @@
 import {Component, EventEmitter, Input, Output} from '@angular/core';
 import {NgComponentOutlet} from '@angular/common';
 import {IWidget} from '../../entities/IWidget';
-import {EchartComponent} from '../echarts/echart.component';
-import {FilterComponent} from '../filter/filter.component';
-import {TableComponent} from '../table/table.component';
-import {TileComponent} from '../tile/tile.component';
-import {MarkdownCellComponent} from '../markdown-cell/markdown-cell.component';
-import {CodeCellComponent} from '../code-cell/code-cell.component';
-
-/**
- * Determines the appropriate component type based on the widget configuration
- * 
- * @param widget - The widget configuration
- * @returns The component type to render
- */
-const onGetWidget = (widget: IWidget) => {
-  switch (widget?.config?.component) {
-    case 'echart':
-      return EchartComponent;
-    case 'filter':
-      return FilterComponent;
-    case 'table':
-      return TableComponent;
-    case 'tile':
-      return TileComponent;
-    case 'markdownCell':
-      return MarkdownCellComponent;
-    case 'codeCell':
-      return CodeCellComponent;
-    default:
-      break;
-  }
-  return EchartComponent;
-};
+import {WidgetPluginService} from '../../services/widget-plugin.service';
 
 /**
  * A dynamic widget component that renders different widget types based on configuration
@@ -53,13 +22,15 @@ export class WidgetComponent {
   /** Event emitted when filter values are updated */
   @Output() onUpdateFilter: EventEmitter<any> = new EventEmitter();
 
+  constructor(private widgetPluginService: WidgetPluginService) {}
+
   /**
    * Gets the current widget component and its inputs
    * @returns An object containing the component type and inputs
    */
   get currentWidget() {
     return {
-      component: onGetWidget(this.widget),
+      component: this.widgetPluginService.getComponentForType(this.widget?.config?.component || ''),
       inputs: {
         widget: this.widget,
         onDataLoad: this.onDataLoad,
@@ -73,6 +44,6 @@ export class WidgetComponent {
    * @returns True if the current widget is an EChart component
    */
   get isEchartComponent(): boolean {
-    return this.currentWidget.component === EchartComponent;
+    return this.widget?.config?.component === 'echart';
   }
 }

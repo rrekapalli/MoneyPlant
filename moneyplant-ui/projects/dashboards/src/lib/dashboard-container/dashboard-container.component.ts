@@ -12,8 +12,7 @@ import {
   GridsterItemComponent,
   GridsterItemComponentInterface,
 } from 'angular-gridster2';
-import {EChartsOption} from 'echarts';
-import buildQuery from 'odata-query';
+import * as echarts from 'echarts';
 import {CommonModule} from '@angular/common';
 import {FormGroup, FormsModule} from '@angular/forms';
 import {IWidget} from '../entities/IWidget';
@@ -23,6 +22,9 @@ import {IFilterOptions} from '../entities/IFilterOptions';
 import {IFilterValues} from '../entities/IFilterValues';
 import {NgxPrintModule} from 'ngx-print';
 import {Toast} from 'primeng/toast';
+import {CalculationService} from '../services/calculation.service';
+import {FilterService} from '../services/filter.service';
+import {EventBusService, EventType} from '../services/event-bus.service';
 
 /**
  * A container component for dashboard widgets.
@@ -57,8 +59,40 @@ export class DashboardContainerComponent {
   /** Current chart height in pixels */
   chartHeight: number = 300;
 
-  /** Default chart height in pixels */
-  readonly defaultChartHeight: number = 300;
+  constructor(
+    private calculationService: CalculationService,
+    private filterService: FilterService,
+    private eventBus: EventBusService
+  ) {
+    // Subscribe to events from the event bus
+    this.subscribeToEvents();
+  }
+
+  /**
+   * Subscribes to events from the event bus
+   */
+  private subscribeToEvents(): void {
+    // Subscribe to data load events
+    this.eventBus.onDataLoad().subscribe(widget => {
+      this.onDataLoad(widget);
+    });
+
+    // Subscribe to filter update events
+    this.eventBus.onFilterUpdate().subscribe(filterData => {
+      this.onUpdateFilter(filterData);
+    });
+
+    // Subscribe to widget update events
+    this.eventBus.onWidgetUpdate().subscribe(widget => {
+      this.onUpdateWidget(widget);
+    });
+
+    // Subscribe to error events
+    this.eventBus.onError().subscribe(error => {
+      console.error('Dashboard error:', error);
+      // TODO: Add error handling UI
+    });
+  }
 
   /** Event emitted when the container is touched/modified */
   @Output() containerTouchChanged: EventEmitter<any> = new EventEmitter<any>();
@@ -126,47 +160,60 @@ export class DashboardContainerComponent {
    * @param widget - The widget to load data for
    */
   async onDataLoad(widget: IWidget) {
-    const filterWidget = this.widgets.find(
-      (item: IWidget) => item.config.component === 'filter'
-    );
-    let widgetData: any = (widget.config.options as EChartsOption).series;
-    let seriesData: any;
-    this.filterValues = (filterWidget?.config?.options as IFilterOptions)?.values;
-    if (widgetData) {
-      if(widgetData.series) {
-        widgetData.map((item: any) => {
-          return {
-            x: {
-              table: {
-                id: item.encode?.x?.split('.')[0],
-                name: item.encode?.x?.split('.')[1],
-              },
-              column: {
-                id: item.encode?.x?.split('.')[2],
-                name: item.encode?.x?.split('.')[3],
-              },
-            },
-            y: {
-              table: {
-                id: item.encode?.y?.split('.')[0],
-                name: item.encode?.y?.split('.')[1],
-              },
-              column: {
-                id: item.encode?.y?.split('.')[2],
-                name: item.encode?.y?.split('.')[3],
-              },
-            },
-          };
-        });
-      } else {
-        widgetData.seriesData = {};
-      }
-    }
-    widget.chartInstance?.showLoading();
+    try {
+      // Get the filter widget and update filter values
+      const filterWidget = this.filterService.findFilterWidget(this.widgets);
+      this.filterValues = this.filterService.getFilterValues(this.widgets);
 
-    if(widget.config.events?.onChartOptions) {
-      const filter = widget.config.state?.isOdataQuery === true ? this.getFilterParams() : this.filterValues;
-      widget?.config?.events?.onChartOptions(widget, widget.chartInstance ?? undefined, filter);
+      // Process widget data if available
+      let widgetData: any = (widget.config.options as echarts.EChartsOption).series;
+      if (widgetData) {
+        if(widgetData.series) {
+          widgetData.map((item: any) => {
+            return {
+              x: {
+                table: {
+                  id: item.encode?.x?.split('.')[0],
+                  name: item.encode?.x?.split('.')[1],
+                },
+                column: {
+                  id: item.encode?.x?.split('.')[2],
+                  name: item.encode?.x?.split('.')[3],
+                },
+              },
+              y: {
+                table: {
+                  id: item.encode?.y?.split('.')[0],
+                  name: item.encode?.y?.split('.')[1],
+                },
+                column: {
+                  id: item.encode?.y?.split('.')[2],
+                  name: item.encode?.y?.split('.')[3],
+                },
+              },
+            };
+          });
+        } else {
+          widgetData.seriesData = {};
+        }
+      }
+
+      // Show loading indicator
+      widget.chartInstance?.showLoading();
+
+      // Call onChartOptions event handler if available
+      if(widget.config.events?.onChartOptions) {
+        const filter = widget.config.state?.isOdataQuery === true 
+          ? this.getFilterParams() 
+          : this.filterValues;
+        widget?.config?.events?.onChartOptions(widget, widget.chartInstance ?? undefined, filter);
+      }
+
+      // Publish widget update event
+      this.eventBus.publishWidgetUpdate(widget, 'dashboard-container');
+    } catch (error) {
+      console.error(`Error loading data for widget ${widget.id}:`, error);
+      this.eventBus.publishError(error, 'dashboard-container');
     }
   }
 
@@ -176,19 +223,7 @@ export class DashboardContainerComponent {
    * @returns A string containing the OData query parameters
    */
   getFilterParams() {
-    let params = '';
-    if (this.filterValues.length !== 0) {
-      const filtersParams: any = [];
-      this.filterValues.map((item) => {
-        filtersParams.push({
-          [item.accessor]: item[item.accessor]
-        });
-      });
-      const filter = {and: filtersParams};
-      params = buildQuery({filter});
-      params = params.replace('?$', '').replace('=', '') + '/';
-    }
-    return params;
+    return this.filterService.getFilterParams(this.filterValues);
   }
 
   /**
@@ -261,25 +296,23 @@ export class DashboardContainerComponent {
    * @param $event - The filter event containing the new filter values
    */
   onUpdateFilter($event: any) {
-    const filterWidget = this.widgets.find(
-      (item: IWidget) => item.config.component === 'filter'
-    );
-    const newFilterWidget = {...filterWidget};
-    if (newFilterWidget) {
+    try {
+      // Find the filter widget
+      const filterWidget = this.filterService.findFilterWidget(this.widgets);
 
-      if(Array.isArray( $event)) {
-        (newFilterWidget?.config?.options as IFilterOptions).values = $event
+      if (filterWidget) {
+        // Update the filter widget with the new values
+        const newFilterWidget = this.filterService.updateFilterWidget(filterWidget, $event);
+
+        // Update the widget in the dashboard
+        this.onUpdateWidget(newFilterWidget);
+
+        // Publish filter update event
+        this.eventBus.publishFilterUpdate($event, 'dashboard-container');
       }
-      else if ((newFilterWidget?.config?.options as IFilterOptions).values as any) {
-        (newFilterWidget?.config?.options as IFilterOptions).values?.push({
-          accessor: $event.widget.config.state.accessor,
-          // [$event.widget.config.state.accessor]: $event.value,
-          ...$event.value
-        });
-      }
-
-
-      this.onUpdateWidget(newFilterWidget as IWidget);
+    } catch (error) {
+      console.error('Error updating filter:', error);
+      this.eventBus.publishError(error, 'dashboard-container');
     }
   }
 
@@ -308,36 +341,11 @@ export class DashboardContainerComponent {
    * @param cols - Number of columns in the grid
    * @param rows - Number of rows in the grid
    * @param flag - Optional flag to adjust height calculation
-   * @param baseHeight - Base height to use for calculation (defaults to defaultChartHeight)
+   * @param baseHeight - Base height to use for calculation
    * @returns The calculated chart height in pixels
    */
-  public calculateChartHeight(cols: number, rows: number, flag: boolean = false, baseHeight: number = this.defaultChartHeight): number {
-    // Base height for a standard container
-    const baseContainerHeight = baseHeight;
-
-    // Calculate aspect ratio
-    const aspectRatio = cols / rows;
-    const area = cols * rows;
-
-    // Adjust zoom based on area
-    // Larger area = more zoom out (smaller zoom number)
-    const zoomAdjustment = Math.log(area) / Math.log(2); // logarithmic scaling
-
-    // Apply margin reduction (2.5% top and bottom = 5% total)
-    const marginReduction = 0.95; // 100% - 5%
-
-    // Adjust height based on an aspect ratio:
-    // - Taller containers (rows > cols) get proportionally more height
-    // - Wider containers (cols > rows) maintain base height
-    let heightAdjustment = aspectRatio < 1 
-      ? 1 / aspectRatio
-      : 1;
-
-    if(flag) {
-      heightAdjustment = heightAdjustment * aspectRatio;
-    }
-
-    return Math.round(baseContainerHeight * heightAdjustment * marginReduction);
+  public calculateChartHeight(cols: number, rows: number, flag: boolean = false, baseHeight?: number): number {
+    return this.calculationService.calculateChartHeight(cols, rows, flag, baseHeight);
   }
 
   /**
@@ -348,23 +356,7 @@ export class DashboardContainerComponent {
    * @returns An array of [longitude, latitude] for the map center
    */
   public calculateMapCenter(cols: number, rows: number): number[] {
-    // Base center for a USA map
-    const baseLongitude = -95;
-    const baseLatitude = 38;
-
-    // Adjust center based on an aspect ratio
-    const aspectRatio = cols / rows;
-
-    // Adjust longitude more for wider containers
-    const longitudeAdjustment = (aspectRatio > 1) ? (aspectRatio - 1) * 5 : 0;
-
-    // Adjust latitude more for taller containers
-    const latitudeAdjustment = (aspectRatio < 1) ? ((1 / aspectRatio) - 1) * 2 : 0;
-
-    return [
-      baseLongitude + longitudeAdjustment,
-      baseLatitude + latitudeAdjustment
-    ];
+    return this.calculationService.calculateMapCenter(cols, rows);
   }
 
   /**
@@ -375,20 +367,6 @@ export class DashboardContainerComponent {
    * @returns The calculated zoom level for the map
    */
   public calculateMapZoom(cols: number, rows: number): number {
-    // Base zoom level
-    const baseZoom = 4.0;
-
-    // Calculate area of grid
-    const area = cols * rows;
-
-    // Adjust zoom based on area
-    // Larger area = more zoom out (smaller zoom number)
-    const zoomAdjustment = Math.log(area) / Math.log(2); // logarithmic scaling
-
-    // Calculate aspect ratio adjustment
-    const aspectRatio = cols / rows;
-    const aspectAdjustment = Math.abs(1 - aspectRatio) * 0.5;
-
-    return baseZoom - (zoomAdjustment * 0.1) - aspectAdjustment;
+    return this.calculationService.calculateMapZoom(cols, rows);
   }
 }
