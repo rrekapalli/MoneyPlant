@@ -42,6 +42,19 @@ export class ToastService {
   }
 
   /**
+   * Show an error toast message
+   * @param options The toast message options
+   */
+  showError(options: Partial<ToastMessage>): void {
+    this.toastSubject.next({
+      severity: 'error',
+      summary: options.summary || 'Error',
+      detail: options.detail || 'An error occurred',
+      life: options.life || 5000
+    });
+  }
+
+  /**
    * Map a notification type to a toast severity
    * @param type The notification type
    * @returns The toast severity
