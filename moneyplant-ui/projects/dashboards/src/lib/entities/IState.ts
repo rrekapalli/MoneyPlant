@@ -3,4 +3,5 @@ export interface IState {
   column: string
   isOdataQuery: boolean
   supportsFiltering?: boolean
+  filterDependencies?: string[]
 }

@@ -1,7 +1,7 @@
-<div class="gridster-container">
+<div class="gridster-container" (scroll)="onDashboardScroll($event)">
   <gridster class="mt-2 dashboard-gridster" [options]="options">
-    <div id="dashboard" class="print-body">
-      @for (item of widgets; track item; let i = $index) {
+    <div id="dashboard" class="print-body" [style.height.px]="totalDashboardHeight * 50">
+      @for (item of visibleWidgets; track item.id; let i = $index) {
 
         <gridster-item 
             [item]="item.position" 
@@ -27,6 +27,11 @@
       }
     </div>
   </gridster>
+</div>
+
+<!-- Virtual Scrolling Status -->
+<div class="virtual-scroll-status" *ngIf="widgets.length > visibleWidgets.length">
+  Showing {{ visibleWidgets.length }} of {{ widgets.length }} widgets
 </div>
 
 <!-- Toast Message -->

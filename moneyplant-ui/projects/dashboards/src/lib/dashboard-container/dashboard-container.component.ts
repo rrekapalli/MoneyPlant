@@ -2,7 +2,8 @@ import {
   Component,
   EventEmitter,
   Input,
-  Output
+  Output,
+  ChangeDetectionStrategy
 } from '@angular/core';
 import {
   GridType,
@@ -25,6 +26,8 @@ import {Toast} from 'primeng/toast';
 import {CalculationService} from '../services/calculation.service';
 import {FilterService} from '../services/filter.service';
 import {EventBusService, EventType} from '../services/event-bus.service';
+import {WidgetDataCacheService} from '../services/widget-data-cache.service';
+import {VirtualScrollService} from '../services/virtual-scroll.service';
 
 /**
  * A container component for dashboard widgets.
@@ -47,6 +50,7 @@ import {EventBusService, EventType} from '../services/event-bus.service';
     NgxPrintModule,
     Toast
   ],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class DashboardContainerComponent {
 
@@ -59,13 +63,77 @@ export class DashboardContainerComponent {
   /** Current chart height in pixels */
   chartHeight: number = 300;
 
+  // Virtual scrolling properties
+  private currentScrollPosition = 0;
+  visibleWidgets: IWidget[] = [];
+  totalDashboardHeight = 0;
+
   constructor(
     private calculationService: CalculationService,
     private filterService: FilterService,
-    private eventBus: EventBusService
+    private eventBus: EventBusService,
+    private widgetDataCache: WidgetDataCacheService,
+    private virtualScrollService: VirtualScrollService
   ) {
     // Subscribe to events from the event bus
     this.subscribeToEvents();
+  }
+
+  /**
+   * Lifecycle hook that is called after the component is initialized
+   */
+  ngOnInit(): void {
+    // Initialize virtual scrolling
+    this.initVirtualScrolling();
+  }
+
+  /**
+   * Initializes virtual scrolling for the dashboard
+   */
+  private initVirtualScrolling(): void {
+    // Set initial viewport height based on screen size
+    const viewportHeight = Math.floor(window.innerHeight / 50); // Approximate row height
+    this.virtualScrollService.setViewportHeight(viewportHeight);
+
+    // Update visible widgets whenever widgets array changes
+    this.updateVisibleWidgets();
+  }
+
+  /**
+   * Updates the list of visible widgets based on the current scroll position
+   */
+  private updateVisibleWidgets(): void {
+    if (!this.widgets || this.widgets.length === 0) {
+      this.visibleWidgets = [];
+      this.totalDashboardHeight = 0;
+      return;
+    }
+
+    // Calculate total dashboard height
+    this.totalDashboardHeight = this.virtualScrollService.getTotalHeight(this.widgets);
+
+    // Get visible widgets
+    this.visibleWidgets = this.virtualScrollService.getVisibleWidgets(
+      this.widgets,
+      this.currentScrollPosition
+    );
+
+    console.log(`Rendering ${this.visibleWidgets.length} of ${this.widgets.length} widgets`);
+  }
+
+  /**
+   * Handles scroll events in the dashboard
+   * 
+   * @param event - The scroll event
+   */
+  onDashboardScroll(event: any): void {
+    // Calculate current scroll position in rows
+    const scrollTop = event.target.scrollTop;
+    const rowHeight = 50; // Approximate row height in pixels
+    this.currentScrollPosition = Math.floor(scrollTop / rowHeight);
+
+    // Update visible widgets
+    this.updateVisibleWidgets();
   }
 
   /**
@@ -175,6 +243,26 @@ export class DashboardContainerComponent {
       const filterWidget = this.filterService.findFilterWidget(this.widgets);
       this.filterValues = this.filterService.getFilterValues(this.widgets);
 
+      // Determine which filter format to use
+      const filter = widget.config?.state?.isOdataQuery === true 
+        ? this.getFilterParams() 
+        : this.filterValues;
+
+      // Check if we have cached data for this widget and filter combination
+      const cachedData = this.widgetDataCache.getData(widget, filter);
+      if (cachedData) {
+        console.log(`Using cached data for widget ${widget.id}`);
+
+        // Apply cached data to the widget
+        if (widget.chartInstance) {
+          widget.chartInstance.setOption(cachedData);
+        }
+
+        // Set widget to not loading state
+        widget.loading = false;
+        return;
+      }
+
       // Process widget data if available
       if (widget.config?.options) {
         let widgetData: any = (widget.config.options as echarts.EChartsOption).series;
@@ -219,10 +307,13 @@ export class DashboardContainerComponent {
 
       // Call onChartOptions event handler if available
       if (widget.config?.events?.onChartOptions) {
-        const filter = widget.config.state?.isOdataQuery === true 
-          ? this.getFilterParams() 
-          : this.filterValues;
         widget.config.events.onChartOptions(widget, widget.chartInstance ?? undefined, filter);
+
+        // Cache the widget data if available
+        if (widget.chartInstance) {
+          const chartOptions = widget.chartInstance.getOption();
+          this.widgetDataCache.setData(widget, chartOptions, filter);
+        }
       }
 
       // Publish widget update event
@@ -274,6 +365,9 @@ export class DashboardContainerComponent {
         item.id === widget.id ? {...widget} : item
       );
       this.widgets = widgetsWithNewOptions;
+
+      // Update visible widgets for virtual scrolling
+      this.updateVisibleWidgets();
 
       // Reload data for all widgets
       this.widgets.forEach(widget => {
@@ -349,17 +443,58 @@ export class DashboardContainerComponent {
       const filterWidget = this.filterService.findFilterWidget(this.widgets);
 
       if (filterWidget) {
+        // Store the old filter values for comparison
+        const oldFilterValues = [...this.filterValues];
+
         // Update the filter widget with the new values
         const newFilterWidget = this.filterService.updateFilterWidget(filterWidget, $event);
 
         // Update the widget in the dashboard
-        this.onUpdateWidget(newFilterWidget);
+        this.updateWidgetWithoutReload(newFilterWidget);
+
+        // Get the new filter values
+        this.filterValues = this.filterService.getFilterValues(this.widgets);
+
+        // Only reload widgets that are affected by the filter change
+        this.widgets.forEach(widget => {
+          if (widget.id !== filterWidget.id && 
+              this.widgetDataCache.shouldReloadWidget(widget, oldFilterValues, this.filterValues)) {
+            console.log(`Reloading widget ${widget.id} due to filter change`);
+            this.onDataLoad(widget);
+          }
+        });
 
         // Publish filter update event
         this.eventBus.publishFilterUpdate($event, 'dashboard-container');
       }
     } catch (error) {
       console.error('Error updating filter:', error);
+      this.eventBus.publishError(error, 'dashboard-container');
+    }
+  }
+
+  /**
+   * Updates a widget in the dashboard without reloading data
+   * 
+   * @param widget - The updated widget
+   */
+  private updateWidgetWithoutReload(widget: IWidget) {
+    if (!widget) {
+      console.error('Cannot update undefined widget');
+      this.eventBus.publishError(new Error('Cannot update undefined widget'), 'dashboard-container');
+      return;
+    }
+
+    try {
+      // Update the widget in the widgets array
+      this.widgets = this.widgets.map((item) =>
+        item.id === widget.id ? {...widget} : item
+      );
+
+      // Publish widget update event
+      this.eventBus.publishWidgetUpdate(widget, 'dashboard-container');
+    } catch (error) {
+      console.error(`Error updating widget ${widget.id}:`, error);
       this.eventBus.publishError(error, 'dashboard-container');
     }
   }
@@ -390,6 +525,12 @@ export class DashboardContainerComponent {
       const index = this.widgets.indexOf(widget);
       if (index !== -1) {
         this.widgets.splice(index, 1);
+
+        // Update visible widgets for virtual scrolling
+        this.updateVisibleWidgets();
+
+        // Clear the widget from cache
+        this.widgetDataCache.clearWidgetCache(widget);
       } else {
         console.warn(`Widget with id ${widget.id} not found in dashboard`);
       }

@@ -1,11 +1,5 @@
 import { Injectable } from '@angular/core';
 import { IWidgetPlugin } from '../entities/IWidgetPlugin';
-import { EchartComponent } from '../widgets/echarts/echart.component';
-import { FilterComponent } from '../widgets/filter/filter.component';
-import { TableComponent } from '../widgets/table/table.component';
-import { TileComponent } from '../widgets/tile/tile.component';
-import { MarkdownCellComponent } from '../widgets/markdown-cell/markdown-cell.component';
-import { CodeCellComponent } from '../widgets/code-cell/code-cell.component';
 
 /**
  * Service for managing widget plugins in the dashboard framework
@@ -18,6 +12,8 @@ import { CodeCellComponent } from '../widgets/code-cell/code-cell.component';
 })
 export class WidgetPluginService {
   private plugins: Map<string, IWidgetPlugin> = new Map();
+  private componentPromises: Map<string, Promise<any>> = new Map();
+  private loadedComponents: Map<string, any> = new Map();
 
   constructor() {
     this.registerDefaultPlugins();
@@ -58,11 +54,94 @@ export class WidgetPluginService {
    * Gets the component for a widget type
    * 
    * @param type - The type of the widget
-   * @returns The component for the widget type, or a default component if not found
+   * @returns The component for the widget type, or a promise that resolves to the component
    */
   getComponentForType(type: string): any {
-    const plugin = this.plugins.get(type);
-    return plugin ? plugin.component : EchartComponent; // Default to EchartComponent if not found
+    // If the component is already loaded, return it
+    if (this.loadedComponents.has(type)) {
+      return this.loadedComponents.get(type);
+    }
+
+    // If the component is being loaded, return a placeholder component
+    // The actual component will be loaded asynchronously
+    if (!this.componentPromises.has(type)) {
+      this.loadComponentForType(type);
+    }
+
+    // Return a placeholder component that will be replaced when the real component loads
+    return this.getPlaceholderComponent();
+  }
+
+  /**
+   * Loads a component for a widget type
+   * 
+   * @param type - The type of the widget
+   * @returns A promise that resolves to the component
+   */
+  private async loadComponentForType(type: string): Promise<any> {
+    if (!this.componentPromises.has(type)) {
+      const promise = this.importComponentForType(type);
+      this.componentPromises.set(type, promise);
+
+      try {
+        const component = await promise;
+        this.loadedComponents.set(type, component);
+        return component;
+      } catch (error) {
+        console.error(`Error loading component for type ${type}:`, error);
+        this.componentPromises.delete(type);
+        throw error;
+      }
+    }
+
+    return this.componentPromises.get(type);
+  }
+
+  /**
+   * Imports a component for a widget type
+   * 
+   * @param type - The type of the widget
+   * @returns A promise that resolves to the component
+   */
+  private async importComponentForType(type: string): Promise<any> {
+    switch (type) {
+      case 'echart':
+        const echartModule = await import('../widgets/echarts/echart.component');
+        return echartModule.EchartComponent;
+      case 'filter':
+        const filterModule = await import('../widgets/filter/filter.component');
+        return filterModule.FilterComponent;
+      case 'table':
+        const tableModule = await import('../widgets/table/table.component');
+        return tableModule.TableComponent;
+      case 'tile':
+        const tileModule = await import('../widgets/tile/tile.component');
+        return tileModule.TileComponent;
+      case 'markdownCell':
+        const markdownModule = await import('../widgets/markdown-cell/markdown-cell.component');
+        return markdownModule.MarkdownCellComponent;
+      case 'codeCell':
+        const codeModule = await import('../widgets/code-cell/code-cell.component');
+        return codeModule.CodeCellComponent;
+      default:
+        // Default to EChart component
+        const defaultModule = await import('../widgets/echarts/echart.component');
+        return defaultModule.EchartComponent;
+    }
+  }
+
+  /**
+   * Gets a placeholder component to use while the real component is loading
+   * 
+   * @returns A placeholder component
+   */
+  private getPlaceholderComponent(): any {
+    // This could be a simple loading component
+    // For now, we'll just return a dummy object that won't cause errors
+    return { 
+      __isPlaceholder: true,
+      __componentType: 'placeholder'
+    };
   }
 
   /**
@@ -75,7 +154,7 @@ export class WidgetPluginService {
       displayName: 'Chart',
       description: 'Displays data using ECharts visualizations',
       icon: 'chart-bar',
-      component: EchartComponent,
+      component: this.getPlaceholderComponent(), // Will be lazy loaded
       defaultConfig: {
         options: {}
       },
@@ -89,7 +168,7 @@ export class WidgetPluginService {
       displayName: 'Filter',
       description: 'Provides filtering capabilities for the dashboard',
       icon: 'filter',
-      component: FilterComponent,
+      component: this.getPlaceholderComponent(), // Will be lazy loaded
       defaultConfig: {
         options: {
           values: []
@@ -105,7 +184,7 @@ export class WidgetPluginService {
       displayName: 'Table',
       description: 'Displays data in a tabular format',
       icon: 'table',
-      component: TableComponent,
+      component: this.getPlaceholderComponent(), // Will be lazy loaded
       defaultConfig: {
         options: {}
       },
@@ -119,7 +198,7 @@ export class WidgetPluginService {
       displayName: 'Tile',
       description: 'Displays simple metric tiles',
       icon: 'square',
-      component: TileComponent,
+      component: this.getPlaceholderComponent(), // Will be lazy loaded
       defaultConfig: {
         options: {}
       },
@@ -133,7 +212,7 @@ export class WidgetPluginService {
       displayName: 'Markdown',
       description: 'Displays markdown content',
       icon: 'markdown',
-      component: MarkdownCellComponent,
+      component: this.getPlaceholderComponent(), // Will be lazy loaded
       defaultConfig: {
         options: {
           content: ''
@@ -149,7 +228,7 @@ export class WidgetPluginService {
       displayName: 'Code',
       description: 'Displays code snippets',
       icon: 'code',
-      component: CodeCellComponent,
+      component: this.getPlaceholderComponent(), // Will be lazy loaded
       defaultConfig: {
         options: {
           code: '',
@@ -159,5 +238,9 @@ export class WidgetPluginService {
       supportsFiltering: false,
       canBeFilterSource: false
     });
+
+    // Preload commonly used components
+    this.loadComponentForType('echart');
+    this.loadComponentForType('filter');
   }
 }

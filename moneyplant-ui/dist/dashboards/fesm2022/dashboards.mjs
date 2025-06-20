@@ -1,20 +1,18 @@
 import * as i0 from '@angular/core';
-import { Injectable, Component, Input, EventEmitter, Output } from '@angular/core';
+import { Injectable, EventEmitter, Component, Output, Input, ChangeDetectionStrategy } from '@angular/core';
 import { GridType, GridsterComponent, GridsterItemComponent } from 'angular-gridster2';
-import * as i1 from '@angular/common';
-import { CommonModule, NgComponentOutlet } from '@angular/common';
+import * as i6 from '@angular/common';
+import { NgComponentOutlet, CommonModule } from '@angular/common';
 import { FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
-import * as echarts from 'echarts';
-import { Subject } from 'rxjs';
-import { filter, map, takeUntil } from 'rxjs/operators';
+import { Subject, fromEvent } from 'rxjs';
+import { filter, map, takeUntil, debounceTime } from 'rxjs/operators';
 import * as i3 from 'primeng/panel';
 import { PanelModule } from 'primeng/panel';
-import * as i1$2 from 'primeng/sidebar';
+import * as i1$1 from 'primeng/sidebar';
 import { SidebarModule } from 'primeng/sidebar';
 import { TabMenuModule } from 'primeng/tabmenu';
 import { ScrollPanelModule } from 'primeng/scrollpanel';
-import * as i1$1 from 'primeng/button';
+import * as i1 from 'primeng/button';
 import { ButtonModule, Button } from 'primeng/button';
 import * as i2 from 'primeng/toast';
 import { ToastModule, Toast } from 'primeng/toast';
@@ -22,6 +20,8 @@ import * as i2$1 from 'primeng/api';
 import { MessageService } from 'primeng/api';
 import { NgxPrintModule } from 'ngx-print';
 import buildQuery from 'odata-query';
+import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
+import * as echarts from 'echarts';
 
 class WidgetBuilder {
     constructor() {
@@ -155,6 +155,237 @@ class WidgetBuilder {
 }
 
 /**
+ * Service for managing widget plugins in the dashboard framework
+ *
+ * This service provides methods for registering, retrieving, and managing
+ * widget plugins, making it easier to add new widget types.
+ */
+class WidgetPluginService {
+    constructor() {
+        this.plugins = new Map();
+        this.componentPromises = new Map();
+        this.loadedComponents = new Map();
+        this.registerDefaultPlugins();
+    }
+    /**
+     * Registers a new widget plugin
+     *
+     * @param plugin - The widget plugin to register
+     */
+    registerPlugin(plugin) {
+        if (this.plugins.has(plugin.type)) {
+            console.warn(`Plugin with type ${plugin.type} already exists. Overwriting.`);
+        }
+        this.plugins.set(plugin.type, plugin);
+    }
+    /**
+     * Gets a widget plugin by type
+     *
+     * @param type - The type of the widget plugin to retrieve
+     * @returns The widget plugin if found, undefined otherwise
+     */
+    getPlugin(type) {
+        return this.plugins.get(type);
+    }
+    /**
+     * Gets all registered widget plugins
+     *
+     * @returns Array of all registered widget plugins
+     */
+    getAllPlugins() {
+        return Array.from(this.plugins.values());
+    }
+    /**
+     * Gets the component for a widget type
+     *
+     * @param type - The type of the widget
+     * @returns The component for the widget type, or a promise that resolves to the component
+     */
+    getComponentForType(type) {
+        // If the component is already loaded, return it
+        if (this.loadedComponents.has(type)) {
+            return this.loadedComponents.get(type);
+        }
+        // If the component is being loaded, return a placeholder component
+        // The actual component will be loaded asynchronously
+        if (!this.componentPromises.has(type)) {
+            this.loadComponentForType(type);
+        }
+        // Return a placeholder component that will be replaced when the real component loads
+        return this.getPlaceholderComponent();
+    }
+    /**
+     * Loads a component for a widget type
+     *
+     * @param type - The type of the widget
+     * @returns A promise that resolves to the component
+     */
+    async loadComponentForType(type) {
+        if (!this.componentPromises.has(type)) {
+            const promise = this.importComponentForType(type);
+            this.componentPromises.set(type, promise);
+            try {
+                const component = await promise;
+                this.loadedComponents.set(type, component);
+                return component;
+            }
+            catch (error) {
+                console.error(`Error loading component for type ${type}:`, error);
+                this.componentPromises.delete(type);
+                throw error;
+            }
+        }
+        return this.componentPromises.get(type);
+    }
+    /**
+     * Imports a component for a widget type
+     *
+     * @param type - The type of the widget
+     * @returns A promise that resolves to the component
+     */
+    async importComponentForType(type) {
+        switch (type) {
+            case 'echart':
+                const echartModule = await Promise.resolve().then(function () { return echart_component; });
+                return echartModule.EchartComponent;
+            case 'filter':
+                const filterModule = await Promise.resolve().then(function () { return filter_component; });
+                return filterModule.FilterComponent;
+            case 'table':
+                const tableModule = await Promise.resolve().then(function () { return table_component; });
+                return tableModule.TableComponent;
+            case 'tile':
+                const tileModule = await Promise.resolve().then(function () { return tile_component; });
+                return tileModule.TileComponent;
+            case 'markdownCell':
+                const markdownModule = await Promise.resolve().then(function () { return markdownCell_component; });
+                return markdownModule.MarkdownCellComponent;
+            case 'codeCell':
+                const codeModule = await Promise.resolve().then(function () { return codeCell_component; });
+                return codeModule.CodeCellComponent;
+            default:
+                // Default to EChart component
+                const defaultModule = await Promise.resolve().then(function () { return echart_component; });
+                return defaultModule.EchartComponent;
+        }
+    }
+    /**
+     * Gets a placeholder component to use while the real component is loading
+     *
+     * @returns A placeholder component
+     */
+    getPlaceholderComponent() {
+        // This could be a simple loading component
+        // For now, we'll just return a dummy object that won't cause errors
+        return {
+            __isPlaceholder: true,
+            __componentType: 'placeholder'
+        };
+    }
+    /**
+     * Registers the default widget plugins
+     */
+    registerDefaultPlugins() {
+        // Register EChart plugin
+        this.registerPlugin({
+            type: 'echart',
+            displayName: 'Chart',
+            description: 'Displays data using ECharts visualizations',
+            icon: 'chart-bar',
+            component: this.getPlaceholderComponent(), // Will be lazy loaded
+            defaultConfig: {
+                options: {}
+            },
+            supportsFiltering: true,
+            canBeFilterSource: true
+        });
+        // Register Filter plugin
+        this.registerPlugin({
+            type: 'filter',
+            displayName: 'Filter',
+            description: 'Provides filtering capabilities for the dashboard',
+            icon: 'filter',
+            component: this.getPlaceholderComponent(), // Will be lazy loaded
+            defaultConfig: {
+                options: {
+                    values: []
+                }
+            },
+            supportsFiltering: false,
+            canBeFilterSource: false
+        });
+        // Register Table plugin
+        this.registerPlugin({
+            type: 'table',
+            displayName: 'Table',
+            description: 'Displays data in a tabular format',
+            icon: 'table',
+            component: this.getPlaceholderComponent(), // Will be lazy loaded
+            defaultConfig: {
+                options: {}
+            },
+            supportsFiltering: true,
+            canBeFilterSource: true
+        });
+        // Register Tile plugin
+        this.registerPlugin({
+            type: 'tile',
+            displayName: 'Tile',
+            description: 'Displays simple metric tiles',
+            icon: 'square',
+            component: this.getPlaceholderComponent(), // Will be lazy loaded
+            defaultConfig: {
+                options: {}
+            },
+            supportsFiltering: false,
+            canBeFilterSource: false
+        });
+        // Register Markdown Cell plugin
+        this.registerPlugin({
+            type: 'markdownCell',
+            displayName: 'Markdown',
+            description: 'Displays markdown content',
+            icon: 'markdown',
+            component: this.getPlaceholderComponent(), // Will be lazy loaded
+            defaultConfig: {
+                options: {
+                    content: ''
+                }
+            },
+            supportsFiltering: false,
+            canBeFilterSource: false
+        });
+        // Register Code Cell plugin
+        this.registerPlugin({
+            type: 'codeCell',
+            displayName: 'Code',
+            description: 'Displays code snippets',
+            icon: 'code',
+            component: this.getPlaceholderComponent(), // Will be lazy loaded
+            defaultConfig: {
+                options: {
+                    code: '',
+                    language: 'javascript'
+                }
+            },
+            supportsFiltering: false,
+            canBeFilterSource: false
+        });
+        // Preload commonly used components
+        this.loadComponentForType('echart');
+        this.loadComponentForType('filter');
+    }
+    static { this.ɵfac = function WidgetPluginService_Factory(__ngFactoryType__) { return new (__ngFactoryType__ || WidgetPluginService)(); }; }
+    static { this.ɵprov = /*@__PURE__*/ i0.ɵɵdefineInjectable({ token: WidgetPluginService, factory: WidgetPluginService.ɵfac, providedIn: 'root' }); }
+}
+(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassMetadata(WidgetPluginService, [{
+        type: Injectable,
+        args: [{
+                providedIn: 'root'
+            }]
+    }], () => [], null); })();
+
+/**
  * Event types supported by the event bus
  */
 var EventType;
@@ -286,556 +517,6 @@ class EventBusService {
                 providedIn: 'root'
             }]
     }], null, null); })();
-
-/**
- * Base component for all widget types
- *
- * This component provides common functionality for all widget types,
- * reducing code duplication and improving maintainability.
- */
-class BaseWidgetComponent {
-    constructor(eventBus) {
-        this.eventBus = eventBus;
-        /** Subject for handling component destruction */
-        this.destroy$ = new Subject();
-        /** Loading state of the widget */
-        this.loading = false;
-        /** Error state of the widget */
-        this.error = null;
-    }
-    /**
-     * Initializes the component
-     */
-    ngOnInit() {
-        // Subscribe to relevant events
-        this.subscribeToEvents();
-    }
-    /**
-     * Cleans up resources when the component is destroyed
-     */
-    ngOnDestroy() {
-        this.destroy$.next();
-        this.destroy$.complete();
-    }
-    /**
-     * Subscribes to relevant events from the event bus
-     */
-    subscribeToEvents() {
-        // Subscribe to widget update events for this widget
-        this.eventBus.onWidgetUpdate()
-            .pipe(takeUntil(this.destroy$))
-            .subscribe(updatedWidget => {
-            if (updatedWidget.id === this.widget.id) {
-                this.widget = updatedWidget;
-                this.onWidgetUpdated();
-            }
-        });
-        // Subscribe to filter update events
-        this.eventBus.onFilterUpdate()
-            .pipe(takeUntil(this.destroy$))
-            .subscribe(filterData => {
-            this.onFilterUpdated(filterData);
-        });
-    }
-    /**
-     * Loads data for the widget
-     */
-    loadData() {
-        this.loading = true;
-        this.error = null;
-        try {
-            // Use the event bus to publish a data load event
-            this.eventBus.publishDataLoad(this.widget, this.widget.id);
-            // Also emit the legacy event for backward compatibility
-            this.onDataLoad?.emit(this.widget);
-        }
-        catch (err) {
-            this.handleError(err);
-        }
-    }
-    /**
-     * Handles errors that occur during data loading
-     *
-     * @param error - The error that occurred
-     */
-    handleError(error) {
-        this.error = error;
-        this.loading = false;
-        this.eventBus.publishError(error, this.widget.id);
-        console.error(`Error in widget ${this.widget.id}:`, error);
-    }
-    /**
-     * Called when the widget is updated
-     * Override in derived classes to handle widget updates
-     */
-    onWidgetUpdated() {
-        // To be overridden by derived classes
-    }
-    /**
-     * Called when filters are updated
-     * Override in derived classes to handle filter updates
-     *
-     * @param filterData - The updated filter data
-     */
-    onFilterUpdated(filterData) {
-        // To be overridden by derived classes
-    }
-    /**
-     * Updates a filter value
-     *
-     * @param value - The new filter value
-     */
-    updateFilter(value) {
-        const filterData = {
-            value,
-            widget: this.widget,
-        };
-        // Use the event bus to publish a filter update event
-        this.eventBus.publishFilterUpdate(filterData, this.widget.id);
-        // Also emit the legacy event for backward compatibility
-        this.onUpdateFilter?.emit(filterData);
-    }
-    static { this.ɵfac = function BaseWidgetComponent_Factory(__ngFactoryType__) { return new (__ngFactoryType__ || BaseWidgetComponent)(i0.ɵɵdirectiveInject(EventBusService)); }; }
-    static { this.ɵcmp = /*@__PURE__*/ i0.ɵɵdefineComponent({ type: BaseWidgetComponent, selectors: [["ng-component"]], inputs: { widget: "widget", onDataLoad: "onDataLoad", onUpdateFilter: "onUpdateFilter" }, decls: 0, vars: 0, template: function BaseWidgetComponent_Template(rf, ctx) { }, encapsulation: 2 }); }
-}
-(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassMetadata(BaseWidgetComponent, [{
-        type: Component,
-        args: [{
-                template: '',
-            }]
-    }], () => [{ type: EventBusService }], { widget: [{
-            type: Input
-        }], onDataLoad: [{
-            type: Input
-        }], onUpdateFilter: [{
-            type: Input
-        }] }); })();
-(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassDebugInfo(BaseWidgetComponent, { className: "BaseWidgetComponent", filePath: "lib/widgets/base-widget/base-widget.component.ts", lineNumber: 16 }); })();
-
-class EchartComponent extends BaseWidgetComponent {
-    constructor(eventBus) {
-        super(eventBus);
-        this.eventBus = eventBus;
-        this.isSingleClick = true;
-        this.initOpts = {
-            height: 300,
-            rowHeightRatio: 0.25,
-            fixedRowHeight: 30,
-            width: 'auto',
-            locale: 'en',
-        };
-    }
-    get chartOptions() {
-        return (this.widget?.config?.options || {});
-    }
-    /**
-     * Initializes the chart instance
-     *
-     * @param instance - The ECharts instance
-     */
-    onChartInit(instance) {
-        if (this.widget && instance) {
-            this.widget.chartInstance = instance;
-            setTimeout(() => {
-                this.loadData();
-            });
-        }
-    }
-    /**
-     * Handles double-click events on the chart
-     *
-     * @param e - The double-click event
-     */
-    onChartDblClick(e) {
-        this.isSingleClick = false;
-    }
-    /**
-     * Handles click events on the chart
-     *
-     * @param e - The click event
-     */
-    onClick(e) {
-        this.isSingleClick = true;
-        setTimeout(() => {
-            if (!this.isSingleClick)
-                return; // Ignore if it was part of a double-click
-            let selectedPoint = e.data;
-            if (e.seriesType === "scatter" && Array.isArray(e.data) && this.widget.config.state?.accessor) {
-                const scatterChartData = e.data.find(this.widget.config.state.accessor);
-                if (scatterChartData) {
-                    selectedPoint = {
-                        ...selectedPoint,
-                        ...scatterChartData
-                    };
-                }
-            }
-            // Use the base class method to update the filter
-            this.updateFilter(selectedPoint);
-        }, 250);
-    }
-    /**
-     * Called when the widget is updated
-     * Reloads data if necessary
-     */
-    onWidgetUpdated() {
-        // Reload data when the widget is updated
-        this.loadData();
-    }
-    /**
-     * Called when filters are updated
-     * Reloads data if the widget supports filtering
-     *
-     * @param filterData - The updated filter data
-     */
-    onFilterUpdated(filterData) {
-        // Only reload data if this widget supports filtering
-        if (this.widget.config.state?.supportsFiltering !== false) {
-            this.loadData();
-        }
-    }
-    static { this.ɵfac = function EchartComponent_Factory(__ngFactoryType__) { return new (__ngFactoryType__ || EchartComponent)(i0.ɵɵdirectiveInject(EventBusService)); }; }
-    static { this.ɵcmp = /*@__PURE__*/ i0.ɵɵdefineComponent({ type: EchartComponent, selectors: [["vis-echart"]], features: [i0.ɵɵProvidersFeature([provideEchartsCore({ echarts })]), i0.ɵɵInheritDefinitionFeature], decls: 1, vars: 2, consts: [["echarts", "", 3, "chartInit", "chartClick", "chartDblClick", "options", "initOpts"]], template: function EchartComponent_Template(rf, ctx) { if (rf & 1) {
-            i0.ɵɵelementStart(0, "div", 0);
-            i0.ɵɵlistener("chartInit", function EchartComponent_Template_div_chartInit_0_listener($event) { return ctx.onChartInit($event); })("chartClick", function EchartComponent_Template_div_chartClick_0_listener($event) { return ctx.onClick($event); })("chartDblClick", function EchartComponent_Template_div_chartDblClick_0_listener($event) { return ctx.onChartDblClick($event); });
-            i0.ɵɵelementEnd();
-        } if (rf & 2) {
-            i0.ɵɵproperty("options", ctx.chartOptions)("initOpts", ctx.initOpts);
-        } }, dependencies: [CommonModule, NgxEchartsDirective], encapsulation: 2 }); }
-}
-(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassMetadata(EchartComponent, [{
-        type: Component,
-        args: [{
-                selector: 'vis-echart',
-                standalone: true,
-                template: `<div
-    echarts
-    [options]="chartOptions"
-    (chartInit)="onChartInit($event)"
-    (chartClick)="onClick($event)"
-    (chartDblClick)="onChartDblClick($event)"
-    [initOpts]="initOpts"
-  ></div>`,
-                imports: [CommonModule, NgxEchartsDirective],
-                providers: [provideEchartsCore({ echarts })],
-            }]
-    }], () => [{ type: EventBusService }], null); })();
-(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassDebugInfo(EchartComponent, { className: "EchartComponent", filePath: "lib/widgets/echarts/echart.component.ts", lineNumber: 23 }); })();
-
-function FilterComponent_Conditional_0_For_5_Template(rf, ctx) { if (rf & 1) {
-    const _r2 = i0.ɵɵgetCurrentView();
-    i0.ɵɵelementStart(0, "button", 5);
-    i0.ɵɵlistener("click", function FilterComponent_Conditional_0_For_5_Template_button_click_0_listener() { const item_r3 = i0.ɵɵrestoreView(_r2).$implicit; const ctx_r3 = i0.ɵɵnextContext(2); return i0.ɵɵresetView(ctx_r3.clearFilter(item_r3)); });
-    i0.ɵɵtext(1);
-    i0.ɵɵpipe(2, "uppercase");
-    i0.ɵɵpipe(3, "uppercase");
-    i0.ɵɵelement(4, "i", 6);
-    i0.ɵɵelementEnd();
-} if (rf & 2) {
-    const item_r3 = ctx.$implicit;
-    i0.ɵɵadvance();
-    i0.ɵɵtextInterpolate2(" ", i0.ɵɵpipeBind1(2, 2, item_r3.accessor), " = ", i0.ɵɵpipeBind1(3, 4, item_r3[item_r3.accessor]), " ");
-} }
-function FilterComponent_Conditional_0_Template(rf, ctx) { if (rf & 1) {
-    const _r1 = i0.ɵɵgetCurrentView();
-    i0.ɵɵelementStart(0, "div", 0)(1, "span", 2);
-    i0.ɵɵtext(2, "Applied Filter(s):");
-    i0.ɵɵelementEnd();
-    i0.ɵɵelementStart(3, "span");
-    i0.ɵɵrepeaterCreate(4, FilterComponent_Conditional_0_For_5_Template, 5, 6, "button", 3, i0.ɵɵrepeaterTrackByIdentity);
-    i0.ɵɵelementEnd();
-    i0.ɵɵelementStart(6, "button", 4);
-    i0.ɵɵlistener("click", function FilterComponent_Conditional_0_Template_button_click_6_listener() { i0.ɵɵrestoreView(_r1); const ctx_r3 = i0.ɵɵnextContext(); return i0.ɵɵresetView(ctx_r3.clearAllFilters(true)); });
-    i0.ɵɵtext(7, " Clear All ");
-    i0.ɵɵelementEnd()();
-} if (rf & 2) {
-    const ctx_r3 = i0.ɵɵnextContext();
-    i0.ɵɵadvance(4);
-    i0.ɵɵrepeater(ctx_r3.filterValues);
-} }
-function FilterComponent_Conditional_1_Template(rf, ctx) { if (rf & 1) {
-    i0.ɵɵelementStart(0, "div", 1);
-    i0.ɵɵtext(1, " Please click on any chart element to slice and dice data. You can use annotations to save a specific state of dashboard after applying filters. ");
-    i0.ɵɵelementEnd();
-} }
-/**
- * Component for displaying and managing filter values
- */
-class FilterComponent {
-    constructor() {
-        /** Internal storage for filter values to prevent infinite loops */
-        this._filterValues = [];
-    }
-    /**
-     * Initializes the component
-     */
-    ngOnInit() {
-        // Initialize filter values from widget config
-        const filters = this.widget.config.options;
-        if (filters && filters.values && filters.values.length > 0) {
-            this._filterValues = [...filters.values];
-        }
-    }
-    /**
-     * Gets the current filter values
-     * @returns Array of filter values
-     */
-    get filterValues() {
-        return this._filterValues;
-    }
-    /**
-     * Sets the filter values and updates the widget configuration
-     * @param values - The new filter values
-     */
-    set filterValues(values) {
-        if (values && values.length > 0) {
-            this._filterValues = [...values];
-            this.widget.config.options.values = [...this._filterValues];
-        }
-        else {
-            this._filterValues = [];
-            this.widget.config.options.values = [];
-        }
-    }
-    /**
-     * Clears all filter values
-     *
-     * @param item - The item that triggered the clear action
-     */
-    clearAllFilters(item) {
-        if (item) {
-            this._filterValues = [];
-            this.widget.config.options.values = [];
-            this.onUpdateFilter.emit([]);
-        }
-    }
-    /**
-     * Clears a specific filter value
-     *
-     * @param item - The filter value to clear
-     */
-    clearFilter(item) {
-        if (JSON.stringify(item).length > 0) {
-            const index = this._filterValues.indexOf(item);
-            if (index !== -1) {
-                this._filterValues.splice(index, 1);
-                this.widget.config.options.values = [...this._filterValues];
-                this.onUpdateFilter.emit([...this._filterValues]);
-            }
-        }
-    }
-    static { this.ɵfac = function FilterComponent_Factory(__ngFactoryType__) { return new (__ngFactoryType__ || FilterComponent)(); }; }
-    static { this.ɵcmp = /*@__PURE__*/ i0.ɵɵdefineComponent({ type: FilterComponent, selectors: [["vis-filters"]], inputs: { widget: "widget", onUpdateFilter: "onUpdateFilter" }, decls: 2, vars: 1, consts: [[1, "filter-component"], [1, "filter-component", "pt-2", "pb-1"], [1, "ml-1", "mr-1"], [1, "btn-wide", "mt-1", "mb-1", "mr-1", "btn", "btn-outline-primary", "btn-sm", "chip"], [1, "btn-wide", "ml-2", "mt-1", "mb-1", "mr-1", "btn-outline-warning", "btn-sm", "chip", 3, "click"], [1, "btn-wide", "mt-1", "mb-1", "mr-1", "btn", "btn-outline-primary", "btn-sm", "chip", 3, "click"], [1, "pi", "pi-times-circle", "close-icon"]], template: function FilterComponent_Template(rf, ctx) { if (rf & 1) {
-            i0.ɵɵconditionalCreate(0, FilterComponent_Conditional_0_Template, 8, 0, "div", 0)(1, FilterComponent_Conditional_1_Template, 2, 0, "div", 1);
-        } if (rf & 2) {
-            i0.ɵɵconditional(ctx.filterValues && ctx.filterValues.length > 0 ? 0 : 1);
-        } }, dependencies: [CommonModule, i1.UpperCasePipe], styles: [".chip[_ngcontent-%COMP%]{border-radius:50px;font-size:10px;font-weight:700!important;border:1px dashed #a6a6a6}.filter-component[_ngcontent-%COMP%]{display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;vertical-align:middle;margin:.2rem;padding-left:1rem;font-size:.9rem;font-weight:600}.close-icon[_ngcontent-%COMP%]{vertical-align:middle;margin-left:3px}"] }); }
-}
-(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassMetadata(FilterComponent, [{
-        type: Component,
-        args: [{ selector: 'vis-filters', standalone: true, imports: [CommonModule], template: "@if (filterValues && filterValues.length > 0) {\r\n  <div class=\"filter-component\">\r\n    <span class=\"ml-1 mr-1\">Applied Filter(s):</span>\r\n\r\n    <span>\r\n      @for (item of filterValues; track item) {\r\n        <button class=\"btn-wide mt-1 mb-1 mr-1 btn btn-outline-primary btn-sm chip\"\r\n                (click)=\"clearFilter(item)\">\r\n              {{ item.accessor | uppercase }} = {{ item[item.accessor] | uppercase }}\r\n          <i class=\"pi pi-times-circle close-icon\"></i>\r\n          </button>\r\n      }\r\n    </span>\r\n    \r\n    <button class=\"btn-wide ml-2 mt-1 mb-1 mr-1 btn-outline-warning btn-sm chip\" \r\n      (click)=\"clearAllFilters(true)\">\r\n      Clear All\r\n    </button>\r\n    \r\n    <!-- <button class=\"btn-wide ml-1 mt-1 mb-1 mr-1 btn btn-outline-warning btn-sm chip\"\r\n            (click)=\"chartOptions.callBackFunc(filters)\">\r\n      Add Annotation\r\n    </button>\r\n\r\n    <button class=\"btn-wide ml-1 mt-1 mb-1 mr-1 btn btn-outline-warning btn-sm chip\"\r\n            (click)=\"chartOptions.onClickViewOdata(filters)\">\r\n      View Data\r\n    </button> -->\r\n    \r\n  </div>\r\n} @else {\r\n  <div class=\"filter-component pt-2 pb-1\">\r\n    Please click on any chart element to slice and dice data. You can use annotations to save a specific state of\r\n    dashboard after applying filters.\r\n  </div>\r\n}\r\n", styles: [".chip{border-radius:50px;font-size:10px;font-weight:700!important;border:1px dashed #a6a6a6}.filter-component{display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;vertical-align:middle;margin:.2rem;padding-left:1rem;font-size:.9rem;font-weight:600}.close-icon{vertical-align:middle;margin-left:3px}\n"] }]
-    }], null, { widget: [{
-            type: Input
-        }], onUpdateFilter: [{
-            type: Input
-        }] }); })();
-(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassDebugInfo(FilterComponent, { className: "FilterComponent", filePath: "lib/widgets/filter/filter.component.ts", lineNumber: 17 }); })();
-
-class TableComponent {
-    static { this.ɵfac = function TableComponent_Factory(__ngFactoryType__) { return new (__ngFactoryType__ || TableComponent)(); }; }
-    static { this.ɵcmp = /*@__PURE__*/ i0.ɵɵdefineComponent({ type: TableComponent, selectors: [["vis-table"]], inputs: { widget: "widget" }, decls: 0, vars: 0, template: function TableComponent_Template(rf, ctx) { }, dependencies: [CommonModule], encapsulation: 2 }); }
-}
-(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassMetadata(TableComponent, [{
-        type: Component,
-        args: [{ selector: 'vis-table', standalone: true, imports: [CommonModule], template: "" }]
-    }], null, { widget: [{
-            type: Input
-        }] }); })();
-(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassDebugInfo(TableComponent, { className: "TableComponent", filePath: "lib/widgets/table/table.component.ts", lineNumber: 12 }); })();
-
-class TileComponent {
-    static { this.ɵfac = function TileComponent_Factory(__ngFactoryType__) { return new (__ngFactoryType__ || TileComponent)(); }; }
-    static { this.ɵcmp = /*@__PURE__*/ i0.ɵɵdefineComponent({ type: TileComponent, selectors: [["vis-tile"]], inputs: { widget: "widget" }, decls: 0, vars: 0, template: function TileComponent_Template(rf, ctx) { }, dependencies: [CommonModule], encapsulation: 2 }); }
-}
-(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassMetadata(TileComponent, [{
-        type: Component,
-        args: [{ selector: 'vis-tile', standalone: true, imports: [CommonModule], template: "" }]
-    }], null, { widget: [{
-            type: Input
-        }] }); })();
-(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassDebugInfo(TileComponent, { className: "TileComponent", filePath: "lib/widgets/tile/tile.component.ts", lineNumber: 12 }); })();
-
-class MarkdownCellComponent {
-    static { this.ɵfac = function MarkdownCellComponent_Factory(__ngFactoryType__) { return new (__ngFactoryType__ || MarkdownCellComponent)(); }; }
-    static { this.ɵcmp = /*@__PURE__*/ i0.ɵɵdefineComponent({ type: MarkdownCellComponent, selectors: [["vis-markdown-cell"]], inputs: { widget: "widget" }, decls: 0, vars: 0, template: function MarkdownCellComponent_Template(rf, ctx) { }, dependencies: [CommonModule], encapsulation: 2 }); }
-}
-(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassMetadata(MarkdownCellComponent, [{
-        type: Component,
-        args: [{ selector: 'vis-markdown-cell', standalone: true, imports: [CommonModule], template: "" }]
-    }], null, { widget: [{
-            type: Input
-        }] }); })();
-(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassDebugInfo(MarkdownCellComponent, { className: "MarkdownCellComponent", filePath: "lib/widgets/markdown-cell/markdown-cell.component.ts", lineNumber: 12 }); })();
-
-class CodeCellComponent {
-    static { this.ɵfac = function CodeCellComponent_Factory(__ngFactoryType__) { return new (__ngFactoryType__ || CodeCellComponent)(); }; }
-    static { this.ɵcmp = /*@__PURE__*/ i0.ɵɵdefineComponent({ type: CodeCellComponent, selectors: [["vis-code-cell"]], inputs: { widget: "widget" }, decls: 0, vars: 0, template: function CodeCellComponent_Template(rf, ctx) { }, dependencies: [CommonModule], encapsulation: 2 }); }
-}
-(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassMetadata(CodeCellComponent, [{
-        type: Component,
-        args: [{ selector: 'vis-code-cell', standalone: true, imports: [CommonModule], template: "" }]
-    }], null, { widget: [{
-            type: Input
-        }] }); })();
-(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassDebugInfo(CodeCellComponent, { className: "CodeCellComponent", filePath: "lib/widgets/code-cell/code-cell.component.ts", lineNumber: 12 }); })();
-
-/**
- * Service for managing widget plugins in the dashboard framework
- *
- * This service provides methods for registering, retrieving, and managing
- * widget plugins, making it easier to add new widget types.
- */
-class WidgetPluginService {
-    constructor() {
-        this.plugins = new Map();
-        this.registerDefaultPlugins();
-    }
-    /**
-     * Registers a new widget plugin
-     *
-     * @param plugin - The widget plugin to register
-     */
-    registerPlugin(plugin) {
-        if (this.plugins.has(plugin.type)) {
-            console.warn(`Plugin with type ${plugin.type} already exists. Overwriting.`);
-        }
-        this.plugins.set(plugin.type, plugin);
-    }
-    /**
-     * Gets a widget plugin by type
-     *
-     * @param type - The type of the widget plugin to retrieve
-     * @returns The widget plugin if found, undefined otherwise
-     */
-    getPlugin(type) {
-        return this.plugins.get(type);
-    }
-    /**
-     * Gets all registered widget plugins
-     *
-     * @returns Array of all registered widget plugins
-     */
-    getAllPlugins() {
-        return Array.from(this.plugins.values());
-    }
-    /**
-     * Gets the component for a widget type
-     *
-     * @param type - The type of the widget
-     * @returns The component for the widget type, or a default component if not found
-     */
-    getComponentForType(type) {
-        const plugin = this.plugins.get(type);
-        return plugin ? plugin.component : EchartComponent; // Default to EchartComponent if not found
-    }
-    /**
-     * Registers the default widget plugins
-     */
-    registerDefaultPlugins() {
-        // Register EChart plugin
-        this.registerPlugin({
-            type: 'echart',
-            displayName: 'Chart',
-            description: 'Displays data using ECharts visualizations',
-            icon: 'chart-bar',
-            component: EchartComponent,
-            defaultConfig: {
-                options: {}
-            },
-            supportsFiltering: true,
-            canBeFilterSource: true
-        });
-        // Register Filter plugin
-        this.registerPlugin({
-            type: 'filter',
-            displayName: 'Filter',
-            description: 'Provides filtering capabilities for the dashboard',
-            icon: 'filter',
-            component: FilterComponent,
-            defaultConfig: {
-                options: {
-                    values: []
-                }
-            },
-            supportsFiltering: false,
-            canBeFilterSource: false
-        });
-        // Register Table plugin
-        this.registerPlugin({
-            type: 'table',
-            displayName: 'Table',
-            description: 'Displays data in a tabular format',
-            icon: 'table',
-            component: TableComponent,
-            defaultConfig: {
-                options: {}
-            },
-            supportsFiltering: true,
-            canBeFilterSource: true
-        });
-        // Register Tile plugin
-        this.registerPlugin({
-            type: 'tile',
-            displayName: 'Tile',
-            description: 'Displays simple metric tiles',
-            icon: 'square',
-            component: TileComponent,
-            defaultConfig: {
-                options: {}
-            },
-            supportsFiltering: false,
-            canBeFilterSource: false
-        });
-        // Register Markdown Cell plugin
-        this.registerPlugin({
-            type: 'markdownCell',
-            displayName: 'Markdown',
-            description: 'Displays markdown content',
-            icon: 'markdown',
-            component: MarkdownCellComponent,
-            defaultConfig: {
-                options: {
-                    content: ''
-                }
-            },
-            supportsFiltering: false,
-            canBeFilterSource: false
-        });
-        // Register Code Cell plugin
-        this.registerPlugin({
-            type: 'codeCell',
-            displayName: 'Code',
-            description: 'Displays code snippets',
-            icon: 'code',
-            component: CodeCellComponent,
-            defaultConfig: {
-                options: {
-                    code: '',
-                    language: 'javascript'
-                }
-            },
-            supportsFiltering: false,
-            canBeFilterSource: false
-        });
-    }
-    static { this.ɵfac = function WidgetPluginService_Factory(__ngFactoryType__) { return new (__ngFactoryType__ || WidgetPluginService)(); }; }
-    static { this.ɵprov = /*@__PURE__*/ i0.ɵɵdefineInjectable({ token: WidgetPluginService, factory: WidgetPluginService.ɵfac, providedIn: 'root' }); }
-}
-(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassMetadata(WidgetPluginService, [{
-        type: Injectable,
-        args: [{
-                providedIn: 'root'
-            }]
-    }], () => [], null); })();
 
 const _c0$1 = () => ({ height: "20vh" });
 function WidgetComponent_Conditional_0_Template(rf, ctx) { if (rf & 1) {
@@ -1069,7 +750,7 @@ class WidgetConfigComponent {
             ReactiveFormsModule,
             TabMenuModule,
             ScrollPanelModule,
-            ButtonModule, i1$1.Button, ToastModule, i2.Toast], styles: [".form-buttons[_ngcontent-%COMP%]{display:flex;justify-content:end;margin-top:2rem;padding:1.2rem;align-items:end;position:absolute;bottom:0;right:0}  .p-sidebar .p-sidebar-header .p-sidebar-close, .p-sidebar[_ngcontent-%COMP%]   .p-sidebar-header[_ngcontent-%COMP%]   .p-sidebar-icon[_ngcontent-%COMP%]   button[_ngcontent-%COMP%]{border-top-left-radius:5px;border-bottom-left-radius:5px;background:#fff;position:absolute;top:.625rem;padding:.4166666667rem!important;box-shadow:0 .125rem .25rem #00000014;z-index:20;left:-39px;height:3rem;width:3.25rem;color:red}  .form-alignment{margin-left:1rem;margin-right:1rem;width:86.2%}"] }); }
+            ButtonModule, i1.Button, ToastModule, i2.Toast], styles: [".form-buttons[_ngcontent-%COMP%]{display:flex;justify-content:end;margin-top:2rem;padding:1.2rem;align-items:end;position:absolute;bottom:0;right:0}  .p-sidebar .p-sidebar-header .p-sidebar-close, .p-sidebar[_ngcontent-%COMP%]   .p-sidebar-header[_ngcontent-%COMP%]   .p-sidebar-icon[_ngcontent-%COMP%]   button[_ngcontent-%COMP%]{border-top-left-radius:5px;border-bottom-left-radius:5px;background:#fff;position:absolute;top:.625rem;padding:.4166666667rem!important;box-shadow:0 .125rem .25rem #00000014;z-index:20;left:-39px;height:3rem;width:3.25rem;color:red}  .form-alignment{margin-left:1rem;margin-right:1rem;width:86.2%}"] }); }
 }
 (() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassMetadata(WidgetConfigComponent, [{
         type: Component,
@@ -1172,7 +853,7 @@ class WidgetHeaderComponent {
             i0.ɵɵtwoWayProperty("visible", ctx.sidebarVisible);
             i0.ɵɵproperty("appendTo", "body");
         } }, dependencies: [CommonModule,
-            SidebarModule, i1$2.Sidebar, i2$1.PrimeTemplate, PanelModule, i3.Panel, FormsModule,
+            SidebarModule, i1$1.Sidebar, i2$1.PrimeTemplate, PanelModule, i3.Panel, FormsModule,
             ReactiveFormsModule,
             WidgetConfigComponent,
             Button], styles: [".panel-button[_ngcontent-%COMP%]{display:flex;flex-direction:row;justify-content:end}[_nghost-%COMP%]     .p-panel .p-panel-content{display:none}"] }); }
@@ -1372,9 +1053,268 @@ class FilterService {
             }]
     }], null, null); })();
 
+/**
+ * Service for caching widget data to improve performance
+ *
+ * This service provides methods for caching and retrieving widget data,
+ * reducing the need for repeated data fetching.
+ */
+class WidgetDataCacheService {
+    constructor() {
+        this.cache = new Map();
+        // Cache expiration time in milliseconds (default: 5 minutes)
+        this.cacheExpirationTime = 5 * 60 * 1000;
+    }
+    /**
+     * Sets the cache expiration time
+     *
+     * @param timeInMs - The cache expiration time in milliseconds
+     */
+    setCacheExpirationTime(timeInMs) {
+        this.cacheExpirationTime = timeInMs;
+    }
+    /**
+     * Gets the cache key for a widget and optional filters
+     *
+     * @param widget - The widget to get the cache key for
+     * @param filters - Optional filter values
+     * @returns The cache key
+     */
+    getCacheKey(widget, filters) {
+        const widgetId = widget.id || '';
+        const filterString = this.getFilterString(filters);
+        return `${widgetId}:${filterString}`;
+    }
+    /**
+     * Converts filters to a string for use in cache keys
+     *
+     * @param filters - The filters to convert
+     * @returns A string representation of the filters
+     */
+    getFilterString(filters) {
+        if (!filters) {
+            return '';
+        }
+        if (typeof filters === 'string') {
+            return filters;
+        }
+        return JSON.stringify(filters);
+    }
+    /**
+     * Gets data from the cache for a widget and filters
+     *
+     * @param widget - The widget to get data for
+     * @param filters - Optional filter values
+     * @returns The cached data if available and not expired, undefined otherwise
+     */
+    getData(widget, filters) {
+        const key = this.getCacheKey(widget, filters);
+        const cachedItem = this.cache.get(key);
+        if (!cachedItem) {
+            return undefined;
+        }
+        // Check if the cache has expired
+        const now = Date.now();
+        if (now - cachedItem.timestamp > this.cacheExpirationTime) {
+            this.cache.delete(key);
+            return undefined;
+        }
+        return cachedItem.data;
+    }
+    /**
+     * Stores data in the cache for a widget and filters
+     *
+     * @param widget - The widget to store data for
+     * @param data - The data to store
+     * @param filters - Optional filter values
+     */
+    setData(widget, data, filters) {
+        const key = this.getCacheKey(widget, filters);
+        this.cache.set(key, {
+            data,
+            timestamp: Date.now(),
+            filters: this.getFilterString(filters)
+        });
+    }
+    /**
+     * Clears the cache for a specific widget
+     *
+     * @param widget - The widget to clear the cache for
+     */
+    clearWidgetCache(widget) {
+        const widgetId = widget.id || '';
+        // Delete all cache entries for this widget
+        for (const key of this.cache.keys()) {
+            if (key.startsWith(`${widgetId}:`)) {
+                this.cache.delete(key);
+            }
+        }
+    }
+    /**
+     * Clears the entire cache
+     */
+    clearAllCache() {
+        this.cache.clear();
+    }
+    /**
+     * Determines if a widget's data should be reloaded based on filter changes
+     *
+     * @param widget - The widget to check
+     * @param oldFilters - The old filter values
+     * @param newFilters - The new filter values
+     * @returns True if the widget should be reloaded, false otherwise
+     */
+    shouldReloadWidget(widget, oldFilters, newFilters) {
+        // If the widget doesn't support filtering, it doesn't need to be reloaded
+        if (widget.config?.state?.supportsFiltering === false) {
+            return false;
+        }
+        // If the widget has dependencies on specific filters, check if those have changed
+        const dependencies = widget.config?.state?.filterDependencies;
+        if (dependencies && Array.isArray(dependencies) && dependencies.length > 0) {
+            // Check if any of the dependent filters have changed
+            return dependencies.some(dep => {
+                const oldFilter = oldFilters.find(f => f['id'] === dep);
+                const newFilter = newFilters.find(f => f['id'] === dep);
+                if (!oldFilter && !newFilter) {
+                    return false;
+                }
+                if (!oldFilter || !newFilter) {
+                    return true;
+                }
+                return JSON.stringify(oldFilter['value']) !== JSON.stringify(newFilter['value']);
+            });
+        }
+        // By default, reload if any filter has changed
+        if (oldFilters.length !== newFilters.length) {
+            return true;
+        }
+        return JSON.stringify(oldFilters) !== JSON.stringify(newFilters);
+    }
+    static { this.ɵfac = function WidgetDataCacheService_Factory(__ngFactoryType__) { return new (__ngFactoryType__ || WidgetDataCacheService)(); }; }
+    static { this.ɵprov = /*@__PURE__*/ i0.ɵɵdefineInjectable({ token: WidgetDataCacheService, factory: WidgetDataCacheService.ɵfac, providedIn: 'root' }); }
+}
+(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassMetadata(WidgetDataCacheService, [{
+        type: Injectable,
+        args: [{
+                providedIn: 'root'
+            }]
+    }], () => [], null); })();
+
+/**
+ * Service for implementing virtual scrolling for large dashboards
+ *
+ * This service provides methods for determining which widgets should be
+ * rendered based on their position and the current viewport.
+ */
+class VirtualScrollService {
+    constructor() {
+        // Default viewport height in rows
+        this.viewportHeight = 20;
+        // Buffer size in rows (widgets this many rows outside the viewport will still be rendered)
+        this.bufferSize = 5;
+    }
+    /**
+     * Sets the viewport height
+     *
+     * @param rows - The viewport height in rows
+     */
+    setViewportHeight(rows) {
+        this.viewportHeight = rows;
+    }
+    /**
+     * Sets the buffer size
+     *
+     * @param rows - The buffer size in rows
+     */
+    setBufferSize(rows) {
+        this.bufferSize = rows;
+    }
+    /**
+     * Determines which widgets should be rendered based on the current scroll position
+     *
+     * @param widgets - All widgets in the dashboard
+     * @param scrollTop - The current scroll position in rows
+     * @returns The widgets that should be rendered
+     */
+    getVisibleWidgets(widgets, scrollTop) {
+        if (!widgets || widgets.length === 0) {
+            return [];
+        }
+        // Calculate the visible range with buffer
+        const visibleRangeStart = Math.max(0, scrollTop - this.bufferSize);
+        const visibleRangeEnd = scrollTop + this.viewportHeight + this.bufferSize;
+        // Filter widgets to only include those in the visible range
+        return widgets.filter(widget => {
+            if (!widget.position) {
+                return true; // Include widgets without position info
+            }
+            const widgetTop = widget.position.y;
+            const widgetBottom = widget.position.y + widget.position.rows;
+            // Widget is visible if any part of it is in the visible range
+            return ((widgetTop >= visibleRangeStart && widgetTop <= visibleRangeEnd) || // Top edge in range
+                (widgetBottom >= visibleRangeStart && widgetBottom <= visibleRangeEnd) || // Bottom edge in range
+                (widgetTop <= visibleRangeStart && widgetBottom >= visibleRangeEnd) // Widget spans the entire range
+            );
+        });
+    }
+    /**
+     * Calculates the total height of the dashboard in rows
+     *
+     * @param widgets - All widgets in the dashboard
+     * @returns The total height in rows
+     */
+    getTotalHeight(widgets) {
+        if (!widgets || widgets.length === 0) {
+            return 0;
+        }
+        // Find the widget with the highest bottom edge
+        return widgets.reduce((maxBottom, widget) => {
+            if (!widget.position) {
+                return maxBottom;
+            }
+            const bottom = widget.position.y + widget.position.rows;
+            return Math.max(maxBottom, bottom);
+        }, 0);
+    }
+    /**
+     * Creates placeholder widgets for the virtual scroll
+     *
+     * @param totalHeight - The total height of the dashboard in rows
+     * @returns A placeholder widget that takes up the required space
+     */
+    createPlaceholders(totalHeight) {
+        return {
+            id: 'virtual-scroll-placeholder',
+            position: {
+                x: 0,
+                y: 0,
+                cols: 12,
+                rows: totalHeight
+            },
+            config: {
+                component: 'placeholder',
+                header: {
+                    title: 'Virtual Scroll Placeholder'
+                },
+                options: {}
+            }
+        };
+    }
+    static { this.ɵfac = function VirtualScrollService_Factory(__ngFactoryType__) { return new (__ngFactoryType__ || VirtualScrollService)(); }; }
+    static { this.ɵprov = /*@__PURE__*/ i0.ɵɵdefineInjectable({ token: VirtualScrollService, factory: VirtualScrollService.ɵfac, providedIn: 'root' }); }
+}
+(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassMetadata(VirtualScrollService, [{
+        type: Injectable,
+        args: [{
+                providedIn: 'root'
+            }]
+    }], () => [], null); })();
+
+const _forTrack0 = ($index, $item) => $item.id;
 function DashboardContainerComponent_For_4_Conditional_1_Template(rf, ctx) { if (rf & 1) {
     const _r3 = i0.ɵɵgetCurrentView();
-    i0.ɵɵelementStart(0, "vis-widget-header", 8);
+    i0.ɵɵelementStart(0, "vis-widget-header", 9);
     i0.ɵɵlistener("onUpdateWidget", function DashboardContainerComponent_For_4_Conditional_1_Template_vis_widget_header_onUpdateWidget_0_listener($event) { i0.ɵɵrestoreView(_r3); const ctx_r1 = i0.ɵɵnextContext(2); return i0.ɵɵresetView(ctx_r1.onUpdateWidget($event)); })("onDeleteWidget", function DashboardContainerComponent_For_4_Conditional_1_Template_vis_widget_header_onDeleteWidget_0_listener($event) { i0.ɵɵrestoreView(_r3); const ctx_r1 = i0.ɵɵnextContext(2); return i0.ɵɵresetView(ctx_r1.onDeleteWidget($event)); });
     i0.ɵɵelementEnd();
 } if (rf & 2) {
@@ -1384,10 +1324,10 @@ function DashboardContainerComponent_For_4_Conditional_1_Template(rf, ctx) { if 
 } }
 function DashboardContainerComponent_For_4_Template(rf, ctx) { if (rf & 1) {
     const _r1 = i0.ɵɵgetCurrentView();
-    i0.ɵɵelementStart(0, "gridster-item", 5);
+    i0.ɵɵelementStart(0, "gridster-item", 6);
     i0.ɵɵlistener("itemResize", function DashboardContainerComponent_For_4_Template_gridster_item_itemResize_0_listener() { i0.ɵɵrestoreView(_r1); const ctx_r1 = i0.ɵɵnextContext(); return i0.ɵɵresetView(ctx_r1.updateString("[Edit Mode - Pending Changes]")); })("itemChange", function DashboardContainerComponent_For_4_Template_gridster_item_itemChange_0_listener() { i0.ɵɵrestoreView(_r1); const ctx_r1 = i0.ɵɵnextContext(); return i0.ɵɵresetView(ctx_r1.updateString("[Edit Mode - Pending Changes]")); });
-    i0.ɵɵconditionalCreate(1, DashboardContainerComponent_For_4_Conditional_1_Template, 1, 3, "vis-widget-header", 6);
-    i0.ɵɵelementStart(2, "vis-widget", 7);
+    i0.ɵɵconditionalCreate(1, DashboardContainerComponent_For_4_Conditional_1_Template, 1, 3, "vis-widget-header", 7);
+    i0.ɵɵelementStart(2, "vis-widget", 8);
     i0.ɵɵlistener("onDataLoad", function DashboardContainerComponent_For_4_Template_vis_widget_onDataLoad_2_listener($event) { i0.ɵɵrestoreView(_r1); const ctx_r1 = i0.ɵɵnextContext(); return i0.ɵɵresetView(ctx_r1.onDataLoad($event)); })("onUpdateFilter", function DashboardContainerComponent_For_4_Template_vis_widget_onUpdateFilter_2_listener($event) { i0.ɵɵrestoreView(_r1); const ctx_r1 = i0.ɵɵnextContext(); return i0.ɵɵresetView(ctx_r1.onUpdateFilter($event)); });
     i0.ɵɵelementEnd()();
 } if (rf & 2) {
@@ -1398,6 +1338,15 @@ function DashboardContainerComponent_For_4_Template(rf, ctx) { if (rf & 1) {
     i0.ɵɵadvance();
     i0.ɵɵproperty("widget", item_r4);
 } }
+function DashboardContainerComponent_div_5_Template(rf, ctx) { if (rf & 1) {
+    i0.ɵɵelementStart(0, "div", 10);
+    i0.ɵɵtext(1);
+    i0.ɵɵelementEnd();
+} if (rf & 2) {
+    const ctx_r1 = i0.ɵɵnextContext();
+    i0.ɵɵadvance();
+    i0.ɵɵtextInterpolate2(" Showing ", ctx_r1.visibleWidgets.length, " of ", ctx_r1.widgets.length, " widgets\n");
+} }
 /**
  * A container component for dashboard widgets.
  *
@@ -1405,14 +1354,20 @@ function DashboardContainerComponent_For_4_Template(rf, ctx) { if (rf & 1) {
  * It handles widget positioning, resizing, data loading, and filtering.
  */
 class DashboardContainerComponent {
-    constructor(calculationService, filterService, eventBus) {
+    constructor(calculationService, filterService, eventBus, widgetDataCache, virtualScrollService) {
         this.calculationService = calculationService;
         this.filterService = filterService;
         this.eventBus = eventBus;
+        this.widgetDataCache = widgetDataCache;
+        this.virtualScrollService = virtualScrollService;
         /** Current filter values applied to the dashboard */
         this.filterValues = [];
         /** Current chart height in pixels */
         this.chartHeight = 300;
+        // Virtual scrolling properties
+        this.currentScrollPosition = 0;
+        this.visibleWidgets = [];
+        this.totalDashboardHeight = 0;
         /** Event emitted when the container is touched/modified */
         this.containerTouchChanged = new EventEmitter();
         /** Event emitted when the edit mode string changes */
@@ -1456,6 +1411,51 @@ class DashboardContainerComponent {
         this.subscribeToEvents();
     }
     /**
+     * Lifecycle hook that is called after the component is initialized
+     */
+    ngOnInit() {
+        // Initialize virtual scrolling
+        this.initVirtualScrolling();
+    }
+    /**
+     * Initializes virtual scrolling for the dashboard
+     */
+    initVirtualScrolling() {
+        // Set initial viewport height based on screen size
+        const viewportHeight = Math.floor(window.innerHeight / 50); // Approximate row height
+        this.virtualScrollService.setViewportHeight(viewportHeight);
+        // Update visible widgets whenever widgets array changes
+        this.updateVisibleWidgets();
+    }
+    /**
+     * Updates the list of visible widgets based on the current scroll position
+     */
+    updateVisibleWidgets() {
+        if (!this.widgets || this.widgets.length === 0) {
+            this.visibleWidgets = [];
+            this.totalDashboardHeight = 0;
+            return;
+        }
+        // Calculate total dashboard height
+        this.totalDashboardHeight = this.virtualScrollService.getTotalHeight(this.widgets);
+        // Get visible widgets
+        this.visibleWidgets = this.virtualScrollService.getVisibleWidgets(this.widgets, this.currentScrollPosition);
+        console.log(`Rendering ${this.visibleWidgets.length} of ${this.widgets.length} widgets`);
+    }
+    /**
+     * Handles scroll events in the dashboard
+     *
+     * @param event - The scroll event
+     */
+    onDashboardScroll(event) {
+        // Calculate current scroll position in rows
+        const scrollTop = event.target.scrollTop;
+        const rowHeight = 50; // Approximate row height in pixels
+        this.currentScrollPosition = Math.floor(scrollTop / rowHeight);
+        // Update visible widgets
+        this.updateVisibleWidgets();
+    }
+    /**
      * Subscribes to events from the event bus
      */
     subscribeToEvents() {
@@ -1495,6 +1495,22 @@ class DashboardContainerComponent {
             // Get the filter widget and update filter values
             const filterWidget = this.filterService.findFilterWidget(this.widgets);
             this.filterValues = this.filterService.getFilterValues(this.widgets);
+            // Determine which filter format to use
+            const filter = widget.config?.state?.isOdataQuery === true
+                ? this.getFilterParams()
+                : this.filterValues;
+            // Check if we have cached data for this widget and filter combination
+            const cachedData = this.widgetDataCache.getData(widget, filter);
+            if (cachedData) {
+                console.log(`Using cached data for widget ${widget.id}`);
+                // Apply cached data to the widget
+                if (widget.chartInstance) {
+                    widget.chartInstance.setOption(cachedData);
+                }
+                // Set widget to not loading state
+                widget.loading = false;
+                return;
+            }
             // Process widget data if available
             if (widget.config?.options) {
                 let widgetData = widget.config.options.series;
@@ -1538,10 +1554,12 @@ class DashboardContainerComponent {
             }
             // Call onChartOptions event handler if available
             if (widget.config?.events?.onChartOptions) {
-                const filter = widget.config.state?.isOdataQuery === true
-                    ? this.getFilterParams()
-                    : this.filterValues;
                 widget.config.events.onChartOptions(widget, widget.chartInstance ?? undefined, filter);
+                // Cache the widget data if available
+                if (widget.chartInstance) {
+                    const chartOptions = widget.chartInstance.getOption();
+                    this.widgetDataCache.setData(widget, chartOptions, filter);
+                }
             }
             // Publish widget update event
             this.eventBus.publishWidgetUpdate(widget, 'dashboard-container');
@@ -1584,6 +1602,8 @@ class DashboardContainerComponent {
             // Update the widget in the widgets array
             const widgetsWithNewOptions = this.widgets.map((item) => item.id === widget.id ? { ...widget } : item);
             this.widgets = widgetsWithNewOptions;
+            // Update visible widgets for virtual scrolling
+            this.updateVisibleWidgets();
             // Reload data for all widgets
             this.widgets.forEach(widget => {
                 if (widget) {
@@ -1647,16 +1667,50 @@ class DashboardContainerComponent {
             // Find the filter widget
             const filterWidget = this.filterService.findFilterWidget(this.widgets);
             if (filterWidget) {
+                // Store the old filter values for comparison
+                const oldFilterValues = [...this.filterValues];
                 // Update the filter widget with the new values
                 const newFilterWidget = this.filterService.updateFilterWidget(filterWidget, $event);
                 // Update the widget in the dashboard
-                this.onUpdateWidget(newFilterWidget);
+                this.updateWidgetWithoutReload(newFilterWidget);
+                // Get the new filter values
+                this.filterValues = this.filterService.getFilterValues(this.widgets);
+                // Only reload widgets that are affected by the filter change
+                this.widgets.forEach(widget => {
+                    if (widget.id !== filterWidget.id &&
+                        this.widgetDataCache.shouldReloadWidget(widget, oldFilterValues, this.filterValues)) {
+                        console.log(`Reloading widget ${widget.id} due to filter change`);
+                        this.onDataLoad(widget);
+                    }
+                });
                 // Publish filter update event
                 this.eventBus.publishFilterUpdate($event, 'dashboard-container');
             }
         }
         catch (error) {
             console.error('Error updating filter:', error);
+            this.eventBus.publishError(error, 'dashboard-container');
+        }
+    }
+    /**
+     * Updates a widget in the dashboard without reloading data
+     *
+     * @param widget - The updated widget
+     */
+    updateWidgetWithoutReload(widget) {
+        if (!widget) {
+            console.error('Cannot update undefined widget');
+            this.eventBus.publishError(new Error('Cannot update undefined widget'), 'dashboard-container');
+            return;
+        }
+        try {
+            // Update the widget in the widgets array
+            this.widgets = this.widgets.map((item) => item.id === widget.id ? { ...widget } : item);
+            // Publish widget update event
+            this.eventBus.publishWidgetUpdate(widget, 'dashboard-container');
+        }
+        catch (error) {
+            console.error(`Error updating widget ${widget.id}:`, error);
             this.eventBus.publishError(error, 'dashboard-container');
         }
     }
@@ -1684,6 +1738,10 @@ class DashboardContainerComponent {
             const index = this.widgets.indexOf(widget);
             if (index !== -1) {
                 this.widgets.splice(index, 1);
+                // Update visible widgets for virtual scrolling
+                this.updateVisibleWidgets();
+                // Clear the widget from cache
+                this.widgetDataCache.clearWidgetCache(widget);
             }
             else {
                 console.warn(`Widget with id ${widget.id} not found in dashboard`);
@@ -1726,25 +1784,31 @@ class DashboardContainerComponent {
     calculateMapZoom(cols, rows) {
         return this.calculationService.calculateMapZoom(cols, rows);
     }
-    static { this.ɵfac = function DashboardContainerComponent_Factory(__ngFactoryType__) { return new (__ngFactoryType__ || DashboardContainerComponent)(i0.ɵɵdirectiveInject(CalculationService), i0.ɵɵdirectiveInject(FilterService), i0.ɵɵdirectiveInject(EventBusService)); }; }
-    static { this.ɵcmp = /*@__PURE__*/ i0.ɵɵdefineComponent({ type: DashboardContainerComponent, selectors: [["vis-dashboard-container"]], inputs: { widgets: "widgets", filterValues: "filterValues", dashboardId: "dashboardId", isEditMode: "isEditMode", options: "options" }, outputs: { containerTouchChanged: "containerTouchChanged", editModeStringChange: "editModeStringChange", changesMade: "changesMade" }, decls: 6, vars: 1, consts: [[1, "gridster-container"], [1, "mt-2", "dashboard-gridster", 3, "options"], ["id", "dashboard", 1, "print-body"], [3, "item"], ["position", "bottom-right", "key", "br"], [3, "itemResize", "itemChange", "item"], [3, "dashboardId", "widget", "onEditMode"], [3, "onDataLoad", "onUpdateFilter", "widget"], [3, "onUpdateWidget", "onDeleteWidget", "dashboardId", "widget", "onEditMode"]], template: function DashboardContainerComponent_Template(rf, ctx) { if (rf & 1) {
-            i0.ɵɵelementStart(0, "div", 0)(1, "gridster", 1)(2, "div", 2);
-            i0.ɵɵrepeaterCreate(3, DashboardContainerComponent_For_4_Template, 3, 3, "gridster-item", 3, i0.ɵɵrepeaterTrackByIdentity);
+    static { this.ɵfac = function DashboardContainerComponent_Factory(__ngFactoryType__) { return new (__ngFactoryType__ || DashboardContainerComponent)(i0.ɵɵdirectiveInject(CalculationService), i0.ɵɵdirectiveInject(FilterService), i0.ɵɵdirectiveInject(EventBusService), i0.ɵɵdirectiveInject(WidgetDataCacheService), i0.ɵɵdirectiveInject(VirtualScrollService)); }; }
+    static { this.ɵcmp = /*@__PURE__*/ i0.ɵɵdefineComponent({ type: DashboardContainerComponent, selectors: [["vis-dashboard-container"]], inputs: { widgets: "widgets", filterValues: "filterValues", dashboardId: "dashboardId", isEditMode: "isEditMode", options: "options" }, outputs: { containerTouchChanged: "containerTouchChanged", editModeStringChange: "editModeStringChange", changesMade: "changesMade" }, decls: 7, vars: 4, consts: [[1, "gridster-container", 3, "scroll"], [1, "mt-2", "dashboard-gridster", 3, "options"], ["id", "dashboard", 1, "print-body"], [3, "item"], ["class", "virtual-scroll-status", 4, "ngIf"], ["position", "bottom-right", "key", "br"], [3, "itemResize", "itemChange", "item"], [3, "dashboardId", "widget", "onEditMode"], [3, "onDataLoad", "onUpdateFilter", "widget"], [3, "onUpdateWidget", "onDeleteWidget", "dashboardId", "widget", "onEditMode"], [1, "virtual-scroll-status"]], template: function DashboardContainerComponent_Template(rf, ctx) { if (rf & 1) {
+            i0.ɵɵelementStart(0, "div", 0);
+            i0.ɵɵlistener("scroll", function DashboardContainerComponent_Template_div_scroll_0_listener($event) { return ctx.onDashboardScroll($event); });
+            i0.ɵɵelementStart(1, "gridster", 1)(2, "div", 2);
+            i0.ɵɵrepeaterCreate(3, DashboardContainerComponent_For_4_Template, 3, 3, "gridster-item", 3, _forTrack0);
             i0.ɵɵelementEnd()()();
-            i0.ɵɵelement(5, "p-toast", 4);
+            i0.ɵɵtemplate(5, DashboardContainerComponent_div_5_Template, 2, 2, "div", 4);
+            i0.ɵɵelement(6, "p-toast", 5);
         } if (rf & 2) {
             i0.ɵɵadvance();
             i0.ɵɵproperty("options", ctx.options);
+            i0.ɵɵadvance();
+            i0.ɵɵstyleProp("height", ctx.totalDashboardHeight * 50, "px");
+            i0.ɵɵadvance();
+            i0.ɵɵrepeater(ctx.visibleWidgets);
             i0.ɵɵadvance(2);
-            i0.ɵɵrepeater(ctx.widgets);
-        } }, dependencies: [CommonModule,
-            FormsModule,
+            i0.ɵɵproperty("ngIf", ctx.widgets.length > ctx.visibleWidgets.length);
+        } }, dependencies: [CommonModule, i6.NgIf, FormsModule,
             GridsterComponent,
             GridsterItemComponent,
             WidgetComponent,
             WidgetHeaderComponent,
             NgxPrintModule,
-            Toast], styles: [".vis-chart-container[_ngcontent-%COMP%]{background-color:#fff;min-height:2000px;width:100%;margin:0;padding:0}.gridster-container[_ngcontent-%COMP%]{width:100%;height:120vh}.editMode[_ngcontent-%COMP%]{color:red}.print-body[_ngcontent-%COMP%]{width:95%}@media print{#dashboard[_ngcontent-%COMP%]{width:95%;overflow-y:visible!important;position:relative}@page{size:landscape}}.vis-filter-component[_ngcontent-%COMP%]{font-size:.8rem!important;width:100%;height:40px}  .p-dropdown-custom{width:100%!important}  .p-dropdown-custom.p-dropdown .p-component{width:100%!important}[_nghost-%COMP%]     .p-dialog .p-dialog-content{padding:1rem 1.5rem}[_nghost-%COMP%]     .p-dialog .p-dialog-header, [_nghost-%COMP%]     .p-dialog .p-dialog-footer{background:#f8f9fa}.dashboard-gridster[_ngcontent-%COMP%]{background-color:var(--surface-100)}[_nghost-%COMP%]     .no-border .p-panel-content{border:none!important;background:transparent!important}[_nghost-%COMP%]     .hide-panel-header .p-panel-header{display:none!important}"] }); }
+            Toast], styles: [".vis-chart-container[_ngcontent-%COMP%]{background-color:#fff;min-height:2000px;width:100%;margin:0;padding:0}.gridster-container[_ngcontent-%COMP%]{width:100%;height:120vh}.editMode[_ngcontent-%COMP%]{color:red}.print-body[_ngcontent-%COMP%]{width:95%}@media print{#dashboard[_ngcontent-%COMP%]{width:95%;overflow-y:visible!important;position:relative}@page{size:landscape}}.vis-filter-component[_ngcontent-%COMP%]{font-size:.8rem!important;width:100%;height:40px}  .p-dropdown-custom{width:100%!important}  .p-dropdown-custom.p-dropdown .p-component{width:100%!important}[_nghost-%COMP%]     .p-dialog .p-dialog-content{padding:1rem 1.5rem}[_nghost-%COMP%]     .p-dialog .p-dialog-header, [_nghost-%COMP%]     .p-dialog .p-dialog-footer{background:#f8f9fa}.dashboard-gridster[_ngcontent-%COMP%]{background-color:var(--surface-100)}[_nghost-%COMP%]     .no-border .p-panel-content{border:none!important;background:transparent!important}[_nghost-%COMP%]     .hide-panel-header .p-panel-header{display:none!important}", ".gridster-container[_ngcontent-%COMP%]{height:100%;overflow-y:auto;overflow-x:hidden}.virtual-scroll-status[_ngcontent-%COMP%]{position:fixed;bottom:10px;left:10px;background-color:#000000b3;color:#fff;padding:5px 10px;border-radius:4px;font-size:12px;z-index:1000;opacity:.7;transition:opacity .3s}.virtual-scroll-status[_ngcontent-%COMP%]:hover{opacity:1}"], changeDetection: 0 }); }
 }
 (() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassMetadata(DashboardContainerComponent, [{
         type: Component,
@@ -1757,8 +1821,8 @@ class DashboardContainerComponent {
                     WidgetHeaderComponent,
                     NgxPrintModule,
                     Toast
-                ], template: "<div class=\"gridster-container\">\r\n  <gridster class=\"mt-2 dashboard-gridster\" [options]=\"options\">\r\n    <div id=\"dashboard\" class=\"print-body\">\r\n      @for (item of widgets; track item; let i = $index) {\r\n\r\n        <gridster-item \r\n            [item]=\"item.position\" \r\n            (itemResize)=\"updateString('[Edit Mode - Pending Changes]')\"\r\n            (itemChange)=\"updateString('[Edit Mode - Pending Changes]')\">\r\n\r\n            @if (item.config.header) {\r\n              <vis-widget-header \r\n                  [dashboardId]=\"dashboardId\" \r\n                  [widget]=\"item\" \r\n                  (onUpdateWidget)=\"onUpdateWidget($event)\"\r\n                  (onDeleteWidget)=\"onDeleteWidget($event)\" \r\n                  [onEditMode]=\"isEditMode\"/>\r\n            }\r\n\r\n            <vis-widget \r\n                [widget]=\"item\" \r\n                (onDataLoad)=\"onDataLoad($event)\" \r\n                (onUpdateFilter)=\"onUpdateFilter($event)\"/>\r\n\r\n        </gridster-item>\r\n\r\n      }\r\n    </div>\r\n  </gridster>\r\n</div>\r\n\r\n<!-- Toast Message -->\r\n<p-toast position=\"bottom-right\" key=\"br\" />\r\n", styles: [".vis-chart-container{background-color:#fff;min-height:2000px;width:100%;margin:0;padding:0}.gridster-container{width:100%;height:120vh}.editMode{color:red}.print-body{width:95%}@media print{#dashboard{width:95%;overflow-y:visible!important;position:relative}@page{size:landscape}}.vis-filter-component{font-size:.8rem!important;width:100%;height:40px}::ng-deep .p-dropdown-custom{width:100%!important}::ng-deep .p-dropdown-custom.p-dropdown .p-component{width:100%!important}:host ::ng-deep .p-dialog .p-dialog-content{padding:1rem 1.5rem}:host ::ng-deep .p-dialog .p-dialog-header,:host ::ng-deep .p-dialog .p-dialog-footer{background:#f8f9fa}.dashboard-gridster{background-color:var(--surface-100)}:host ::ng-deep .no-border .p-panel-content{border:none!important;background:transparent!important}:host ::ng-deep .hide-panel-header .p-panel-header{display:none!important}\n"] }]
-    }], () => [{ type: CalculationService }, { type: FilterService }, { type: EventBusService }], { widgets: [{
+                ], changeDetection: ChangeDetectionStrategy.OnPush, template: "<div class=\"gridster-container\" (scroll)=\"onDashboardScroll($event)\">\r\n  <gridster class=\"mt-2 dashboard-gridster\" [options]=\"options\">\r\n    <div id=\"dashboard\" class=\"print-body\" [style.height.px]=\"totalDashboardHeight * 50\">\r\n      @for (item of visibleWidgets; track item.id; let i = $index) {\r\n\r\n        <gridster-item \r\n            [item]=\"item.position\" \r\n            (itemResize)=\"updateString('[Edit Mode - Pending Changes]')\"\r\n            (itemChange)=\"updateString('[Edit Mode - Pending Changes]')\">\r\n\r\n            @if (item.config.header) {\r\n              <vis-widget-header \r\n                  [dashboardId]=\"dashboardId\" \r\n                  [widget]=\"item\" \r\n                  (onUpdateWidget)=\"onUpdateWidget($event)\"\r\n                  (onDeleteWidget)=\"onDeleteWidget($event)\" \r\n                  [onEditMode]=\"isEditMode\"/>\r\n            }\r\n\r\n            <vis-widget \r\n                [widget]=\"item\" \r\n                (onDataLoad)=\"onDataLoad($event)\" \r\n                (onUpdateFilter)=\"onUpdateFilter($event)\"/>\r\n\r\n        </gridster-item>\r\n\r\n      }\r\n    </div>\r\n  </gridster>\r\n</div>\r\n\r\n<!-- Virtual Scrolling Status -->\r\n<div class=\"virtual-scroll-status\" *ngIf=\"widgets.length > visibleWidgets.length\">\r\n  Showing {{ visibleWidgets.length }} of {{ widgets.length }} widgets\r\n</div>\r\n\r\n<!-- Toast Message -->\r\n<p-toast position=\"bottom-right\" key=\"br\" />\r\n", styles: [".vis-chart-container{background-color:#fff;min-height:2000px;width:100%;margin:0;padding:0}.gridster-container{width:100%;height:120vh}.editMode{color:red}.print-body{width:95%}@media print{#dashboard{width:95%;overflow-y:visible!important;position:relative}@page{size:landscape}}.vis-filter-component{font-size:.8rem!important;width:100%;height:40px}::ng-deep .p-dropdown-custom{width:100%!important}::ng-deep .p-dropdown-custom.p-dropdown .p-component{width:100%!important}:host ::ng-deep .p-dialog .p-dialog-content{padding:1rem 1.5rem}:host ::ng-deep .p-dialog .p-dialog-header,:host ::ng-deep .p-dialog .p-dialog-footer{background:#f8f9fa}.dashboard-gridster{background-color:var(--surface-100)}:host ::ng-deep .no-border .p-panel-content{border:none!important;background:transparent!important}:host ::ng-deep .hide-panel-header .p-panel-header{display:none!important}\n", ".gridster-container{height:100%;overflow-y:auto;overflow-x:hidden}.virtual-scroll-status{position:fixed;bottom:10px;left:10px;background-color:#000000b3;color:#fff;padding:5px 10px;border-radius:4px;font-size:12px;z-index:1000;opacity:.7;transition:opacity .3s}.virtual-scroll-status:hover{opacity:1}\n"] }]
+    }], () => [{ type: CalculationService }, { type: FilterService }, { type: EventBusService }, { type: WidgetDataCacheService }, { type: VirtualScrollService }], { widgets: [{
             type: Input
         }], filterValues: [{
             type: Input
@@ -1775,7 +1839,132 @@ class DashboardContainerComponent {
         }], options: [{
             type: Input
         }] }); })();
-(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassDebugInfo(DashboardContainerComponent, { className: "DashboardContainerComponent", filePath: "lib/dashboard-container/dashboard-container.component.ts", lineNumber: 51 }); })();
+(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassDebugInfo(DashboardContainerComponent, { className: "DashboardContainerComponent", filePath: "lib/dashboard-container/dashboard-container.component.ts", lineNumber: 80 }); })();
+
+/**
+ * Base component for all widget types
+ *
+ * This component provides common functionality for all widget types,
+ * reducing code duplication and improving maintainability.
+ */
+class BaseWidgetComponent {
+    constructor(eventBus) {
+        this.eventBus = eventBus;
+        /** Subject for handling component destruction */
+        this.destroy$ = new Subject();
+        /** Loading state of the widget */
+        this.loading = false;
+        /** Error state of the widget */
+        this.error = null;
+    }
+    /**
+     * Initializes the component
+     */
+    ngOnInit() {
+        // Subscribe to relevant events
+        this.subscribeToEvents();
+    }
+    /**
+     * Cleans up resources when the component is destroyed
+     */
+    ngOnDestroy() {
+        this.destroy$.next();
+        this.destroy$.complete();
+    }
+    /**
+     * Subscribes to relevant events from the event bus
+     */
+    subscribeToEvents() {
+        // Subscribe to widget update events for this widget
+        this.eventBus.onWidgetUpdate()
+            .pipe(takeUntil(this.destroy$))
+            .subscribe(updatedWidget => {
+            if (updatedWidget.id === this.widget.id) {
+                this.widget = updatedWidget;
+                this.onWidgetUpdated();
+            }
+        });
+        // Subscribe to filter update events
+        this.eventBus.onFilterUpdate()
+            .pipe(takeUntil(this.destroy$))
+            .subscribe(filterData => {
+            this.onFilterUpdated(filterData);
+        });
+    }
+    /**
+     * Loads data for the widget
+     */
+    loadData() {
+        this.loading = true;
+        this.error = null;
+        try {
+            // Use the event bus to publish a data load event
+            this.eventBus.publishDataLoad(this.widget, this.widget.id);
+            // Also emit the legacy event for backward compatibility
+            this.onDataLoad?.emit(this.widget);
+        }
+        catch (err) {
+            this.handleError(err);
+        }
+    }
+    /**
+     * Handles errors that occur during data loading
+     *
+     * @param error - The error that occurred
+     */
+    handleError(error) {
+        this.error = error;
+        this.loading = false;
+        this.eventBus.publishError(error, this.widget.id);
+        console.error(`Error in widget ${this.widget.id}:`, error);
+    }
+    /**
+     * Called when the widget is updated
+     * Override in derived classes to handle widget updates
+     */
+    onWidgetUpdated() {
+        // To be overridden by derived classes
+    }
+    /**
+     * Called when filters are updated
+     * Override in derived classes to handle filter updates
+     *
+     * @param filterData - The updated filter data
+     */
+    onFilterUpdated(filterData) {
+        // To be overridden by derived classes
+    }
+    /**
+     * Updates a filter value
+     *
+     * @param value - The new filter value
+     */
+    updateFilter(value) {
+        const filterData = {
+            value,
+            widget: this.widget,
+        };
+        // Use the event bus to publish a filter update event
+        this.eventBus.publishFilterUpdate(filterData, this.widget.id);
+        // Also emit the legacy event for backward compatibility
+        this.onUpdateFilter?.emit(filterData);
+    }
+    static { this.ɵfac = function BaseWidgetComponent_Factory(__ngFactoryType__) { return new (__ngFactoryType__ || BaseWidgetComponent)(i0.ɵɵdirectiveInject(EventBusService)); }; }
+    static { this.ɵcmp = /*@__PURE__*/ i0.ɵɵdefineComponent({ type: BaseWidgetComponent, selectors: [["ng-component"]], inputs: { widget: "widget", onDataLoad: "onDataLoad", onUpdateFilter: "onUpdateFilter" }, decls: 0, vars: 0, template: function BaseWidgetComponent_Template(rf, ctx) { }, encapsulation: 2 }); }
+}
+(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassMetadata(BaseWidgetComponent, [{
+        type: Component,
+        args: [{
+                template: '',
+            }]
+    }], () => [{ type: EventBusService }], { widget: [{
+            type: Input
+        }], onDataLoad: [{
+            type: Input
+        }], onUpdateFilter: [{
+            type: Input
+        }] }); })();
+(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassDebugInfo(BaseWidgetComponent, { className: "BaseWidgetComponent", filePath: "lib/widgets/base-widget/base-widget.component.ts", lineNumber: 16 }); })();
 
 const formOptions = [
     {
@@ -4027,6 +4216,413 @@ const dataOptions = [
         },
     },
 ];
+
+class EchartComponent extends BaseWidgetComponent {
+    constructor(eventBus, elementRef) {
+        super(eventBus);
+        this.eventBus = eventBus;
+        this.elementRef = elementRef;
+        this.isSingleClick = true;
+        this.resizeSubject = new Subject();
+        this.resizeObserver = null;
+        this.initOpts = {
+            height: 300,
+            rowHeightRatio: 0.25,
+            fixedRowHeight: 30,
+            width: 'auto',
+            locale: 'en',
+            renderer: 'canvas' // Use canvas renderer for better performance
+        };
+    }
+    /**
+     * Gets the chart options with dataset API if available
+     */
+    get chartOptions() {
+        const options = (this.widget?.config?.options || {});
+        // Convert to dataset API if possible
+        if (options.series && Array.isArray(options.series) && !options.dataset) {
+            this.convertToDatasetAPI(options);
+        }
+        return options;
+    }
+    /**
+     * Converts standard ECharts options to use the dataset API for better performance
+     *
+     * @param options - The ECharts options to convert
+     */
+    convertToDatasetAPI(options) {
+        // Only convert if we have series data
+        if (!options.series || !Array.isArray(options.series) || options.series.length === 0) {
+            return;
+        }
+        // Check if the first series has data
+        const firstSeries = options.series[0];
+        if (!firstSeries.data || !Array.isArray(firstSeries.data)) {
+            return;
+        }
+        // Create dataset from the first series data
+        options.dataset = {
+            source: firstSeries.data
+        };
+        // Update series to use the dataset
+        options.series = options.series.map((series) => {
+            const newSeries = { ...series };
+            delete newSeries.data;
+            return newSeries;
+        });
+    }
+    /**
+     * Lifecycle hook that is called after the component's view has been initialized
+     */
+    ngAfterViewInit() {
+        // Set up resize handling
+        this.setupResizeHandling();
+        // Set up window resize listener
+        fromEvent(window, 'resize')
+            .pipe(debounceTime(200), takeUntil(this.destroy$))
+            .subscribe(() => {
+            this.resizeChart();
+        });
+    }
+    /**
+     * Lifecycle hook that is called when the component is destroyed
+     */
+    ngOnDestroy() {
+        // Clean up resize observer
+        if (this.resizeObserver) {
+            this.resizeObserver.disconnect();
+            this.resizeObserver = null;
+        }
+        // Clean up resize subject
+        this.resizeSubject.complete();
+        // Call parent ngOnDestroy
+        super.ngOnDestroy();
+    }
+    /**
+     * Sets up resize handling for the chart
+     */
+    setupResizeHandling() {
+        // Use ResizeObserver if available
+        if (typeof ResizeObserver !== 'undefined') {
+            this.resizeObserver = new ResizeObserver(entries => {
+                this.resizeSubject.next();
+            });
+            const container = this.elementRef.nativeElement.querySelector('.echart-container');
+            if (container) {
+                this.resizeObserver.observe(container);
+            }
+            // Debounce resize events
+            this.resizeSubject
+                .pipe(debounceTime(100), takeUntil(this.destroy$))
+                .subscribe(() => {
+                this.resizeChart();
+            });
+        }
+    }
+    /**
+     * Resizes the chart to fit its container
+     */
+    resizeChart() {
+        if (this.widget?.chartInstance) {
+            this.widget.chartInstance.resize();
+        }
+    }
+    /**
+     * Initializes the chart instance
+     *
+     * @param instance - The ECharts instance
+     */
+    onChartInit(instance) {
+        if (this.widget && instance) {
+            this.widget.chartInstance = instance;
+            // Set chart theme and renderer options
+            instance.setOption({
+                backgroundColor: 'transparent',
+                textStyle: {
+                    fontFamily: 'Arial, sans-serif'
+                }
+            }, false, false);
+            // Load data after a short delay to ensure the chart is ready
+            setTimeout(() => {
+                this.loadData();
+            });
+        }
+    }
+    /**
+     * Handles double-click events on the chart
+     *
+     * @param e - The double-click event
+     */
+    onChartDblClick(e) {
+        this.isSingleClick = false;
+    }
+    /**
+     * Handles click events on the chart
+     *
+     * @param e - The click event
+     */
+    onClick(e) {
+        this.isSingleClick = true;
+        setTimeout(() => {
+            if (!this.isSingleClick)
+                return; // Ignore if it was part of a double-click
+            let selectedPoint = e.data;
+            if (e.seriesType === "scatter" && Array.isArray(e.data) && this.widget.config.state?.accessor) {
+                const scatterChartData = e.data.find(this.widget.config.state.accessor);
+                if (scatterChartData) {
+                    selectedPoint = {
+                        ...selectedPoint,
+                        ...scatterChartData
+                    };
+                }
+            }
+            // Use the base class method to update the filter
+            this.updateFilter(selectedPoint);
+        }, 250);
+    }
+    /**
+     * Called when the widget is updated
+     * Reloads data if necessary
+     */
+    onWidgetUpdated() {
+        // Reload data when the widget is updated
+        this.loadData();
+        // Resize the chart to ensure it fits properly
+        setTimeout(() => {
+            this.resizeChart();
+        }, 0);
+    }
+    /**
+     * Called when filters are updated
+     * Reloads data if the widget supports filtering
+     *
+     * @param filterData - The updated filter data
+     */
+    onFilterUpdated(filterData) {
+        // Only reload data if this widget supports filtering
+        if (this.widget.config.state?.supportsFiltering !== false) {
+            this.loadData();
+        }
+    }
+    static { this.ɵfac = function EchartComponent_Factory(__ngFactoryType__) { return new (__ngFactoryType__ || EchartComponent)(i0.ɵɵdirectiveInject(EventBusService), i0.ɵɵdirectiveInject(i0.ElementRef)); }; }
+    static { this.ɵcmp = /*@__PURE__*/ i0.ɵɵdefineComponent({ type: EchartComponent, selectors: [["vis-echart"]], features: [i0.ɵɵProvidersFeature([provideEchartsCore({ echarts })]), i0.ɵɵInheritDefinitionFeature], decls: 1, vars: 2, consts: [["echarts", "", 1, "echart-container", 3, "chartInit", "chartClick", "chartDblClick", "options", "initOpts"]], template: function EchartComponent_Template(rf, ctx) { if (rf & 1) {
+            i0.ɵɵelementStart(0, "div", 0);
+            i0.ɵɵlistener("chartInit", function EchartComponent_Template_div_chartInit_0_listener($event) { return ctx.onChartInit($event); })("chartClick", function EchartComponent_Template_div_chartClick_0_listener($event) { return ctx.onClick($event); })("chartDblClick", function EchartComponent_Template_div_chartDblClick_0_listener($event) { return ctx.onChartDblClick($event); });
+            i0.ɵɵelementEnd();
+        } if (rf & 2) {
+            i0.ɵɵproperty("options", ctx.chartOptions)("initOpts", ctx.initOpts);
+        } }, dependencies: [CommonModule, NgxEchartsDirective], styles: [".echart-container[_ngcontent-%COMP%]{width:100%;height:100%}"], changeDetection: 0 }); }
+}
+(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassMetadata(EchartComponent, [{
+        type: Component,
+        args: [{ selector: 'vis-echart', standalone: true, template: `<div
+    echarts
+    [options]="chartOptions"
+    (chartInit)="onChartInit($event)"
+    (chartClick)="onClick($event)"
+    (chartDblClick)="onChartDblClick($event)"
+    [initOpts]="initOpts"
+    class="echart-container"
+  ></div>`, imports: [CommonModule, NgxEchartsDirective], providers: [provideEchartsCore({ echarts })], changeDetection: ChangeDetectionStrategy.OnPush, styles: [".echart-container{width:100%;height:100%}\n"] }]
+    }], () => [{ type: EventBusService }, { type: i0.ElementRef }], null); })();
+(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassDebugInfo(EchartComponent, { className: "EchartComponent", filePath: "lib/widgets/echarts/echart.component.ts", lineNumber: 33 }); })();
+
+var echart_component = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    EchartComponent: EchartComponent
+});
+
+function FilterComponent_Conditional_0_For_5_Template(rf, ctx) { if (rf & 1) {
+    const _r2 = i0.ɵɵgetCurrentView();
+    i0.ɵɵelementStart(0, "button", 5);
+    i0.ɵɵlistener("click", function FilterComponent_Conditional_0_For_5_Template_button_click_0_listener() { const item_r3 = i0.ɵɵrestoreView(_r2).$implicit; const ctx_r3 = i0.ɵɵnextContext(2); return i0.ɵɵresetView(ctx_r3.clearFilter(item_r3)); });
+    i0.ɵɵtext(1);
+    i0.ɵɵpipe(2, "uppercase");
+    i0.ɵɵpipe(3, "uppercase");
+    i0.ɵɵelement(4, "i", 6);
+    i0.ɵɵelementEnd();
+} if (rf & 2) {
+    const item_r3 = ctx.$implicit;
+    i0.ɵɵadvance();
+    i0.ɵɵtextInterpolate2(" ", i0.ɵɵpipeBind1(2, 2, item_r3.accessor), " = ", i0.ɵɵpipeBind1(3, 4, item_r3[item_r3.accessor]), " ");
+} }
+function FilterComponent_Conditional_0_Template(rf, ctx) { if (rf & 1) {
+    const _r1 = i0.ɵɵgetCurrentView();
+    i0.ɵɵelementStart(0, "div", 0)(1, "span", 2);
+    i0.ɵɵtext(2, "Applied Filter(s):");
+    i0.ɵɵelementEnd();
+    i0.ɵɵelementStart(3, "span");
+    i0.ɵɵrepeaterCreate(4, FilterComponent_Conditional_0_For_5_Template, 5, 6, "button", 3, i0.ɵɵrepeaterTrackByIdentity);
+    i0.ɵɵelementEnd();
+    i0.ɵɵelementStart(6, "button", 4);
+    i0.ɵɵlistener("click", function FilterComponent_Conditional_0_Template_button_click_6_listener() { i0.ɵɵrestoreView(_r1); const ctx_r3 = i0.ɵɵnextContext(); return i0.ɵɵresetView(ctx_r3.clearAllFilters(true)); });
+    i0.ɵɵtext(7, " Clear All ");
+    i0.ɵɵelementEnd()();
+} if (rf & 2) {
+    const ctx_r3 = i0.ɵɵnextContext();
+    i0.ɵɵadvance(4);
+    i0.ɵɵrepeater(ctx_r3.filterValues);
+} }
+function FilterComponent_Conditional_1_Template(rf, ctx) { if (rf & 1) {
+    i0.ɵɵelementStart(0, "div", 1);
+    i0.ɵɵtext(1, " Please click on any chart element to slice and dice data. You can use annotations to save a specific state of dashboard after applying filters. ");
+    i0.ɵɵelementEnd();
+} }
+/**
+ * Component for displaying and managing filter values
+ */
+class FilterComponent {
+    constructor() {
+        /** Internal storage for filter values to prevent infinite loops */
+        this._filterValues = [];
+    }
+    /**
+     * Initializes the component
+     */
+    ngOnInit() {
+        // Initialize filter values from widget config
+        const filters = this.widget.config.options;
+        if (filters && filters.values && filters.values.length > 0) {
+            this._filterValues = [...filters.values];
+        }
+    }
+    /**
+     * Gets the current filter values
+     * @returns Array of filter values
+     */
+    get filterValues() {
+        return this._filterValues;
+    }
+    /**
+     * Sets the filter values and updates the widget configuration
+     * @param values - The new filter values
+     */
+    set filterValues(values) {
+        if (values && values.length > 0) {
+            this._filterValues = [...values];
+            this.widget.config.options.values = [...this._filterValues];
+        }
+        else {
+            this._filterValues = [];
+            this.widget.config.options.values = [];
+        }
+    }
+    /**
+     * Clears all filter values
+     *
+     * @param item - The item that triggered the clear action
+     */
+    clearAllFilters(item) {
+        if (item) {
+            this._filterValues = [];
+            this.widget.config.options.values = [];
+            this.onUpdateFilter.emit([]);
+        }
+    }
+    /**
+     * Clears a specific filter value
+     *
+     * @param item - The filter value to clear
+     */
+    clearFilter(item) {
+        if (JSON.stringify(item).length > 0) {
+            const index = this._filterValues.indexOf(item);
+            if (index !== -1) {
+                this._filterValues.splice(index, 1);
+                this.widget.config.options.values = [...this._filterValues];
+                this.onUpdateFilter.emit([...this._filterValues]);
+            }
+        }
+    }
+    static { this.ɵfac = function FilterComponent_Factory(__ngFactoryType__) { return new (__ngFactoryType__ || FilterComponent)(); }; }
+    static { this.ɵcmp = /*@__PURE__*/ i0.ɵɵdefineComponent({ type: FilterComponent, selectors: [["vis-filters"]], inputs: { widget: "widget", onUpdateFilter: "onUpdateFilter" }, decls: 2, vars: 1, consts: [[1, "filter-component"], [1, "filter-component", "pt-2", "pb-1"], [1, "ml-1", "mr-1"], [1, "btn-wide", "mt-1", "mb-1", "mr-1", "btn", "btn-outline-primary", "btn-sm", "chip"], [1, "btn-wide", "ml-2", "mt-1", "mb-1", "mr-1", "btn-outline-warning", "btn-sm", "chip", 3, "click"], [1, "btn-wide", "mt-1", "mb-1", "mr-1", "btn", "btn-outline-primary", "btn-sm", "chip", 3, "click"], [1, "pi", "pi-times-circle", "close-icon"]], template: function FilterComponent_Template(rf, ctx) { if (rf & 1) {
+            i0.ɵɵconditionalCreate(0, FilterComponent_Conditional_0_Template, 8, 0, "div", 0)(1, FilterComponent_Conditional_1_Template, 2, 0, "div", 1);
+        } if (rf & 2) {
+            i0.ɵɵconditional(ctx.filterValues && ctx.filterValues.length > 0 ? 0 : 1);
+        } }, dependencies: [CommonModule, i6.UpperCasePipe], styles: [".chip[_ngcontent-%COMP%]{border-radius:50px;font-size:10px;font-weight:700!important;border:1px dashed #a6a6a6}.filter-component[_ngcontent-%COMP%]{display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;vertical-align:middle;margin:.2rem;padding-left:1rem;font-size:.9rem;font-weight:600}.close-icon[_ngcontent-%COMP%]{vertical-align:middle;margin-left:3px}"] }); }
+}
+(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassMetadata(FilterComponent, [{
+        type: Component,
+        args: [{ selector: 'vis-filters', standalone: true, imports: [CommonModule], template: "@if (filterValues && filterValues.length > 0) {\r\n  <div class=\"filter-component\">\r\n    <span class=\"ml-1 mr-1\">Applied Filter(s):</span>\r\n\r\n    <span>\r\n      @for (item of filterValues; track item) {\r\n        <button class=\"btn-wide mt-1 mb-1 mr-1 btn btn-outline-primary btn-sm chip\"\r\n                (click)=\"clearFilter(item)\">\r\n              {{ item.accessor | uppercase }} = {{ item[item.accessor] | uppercase }}\r\n          <i class=\"pi pi-times-circle close-icon\"></i>\r\n          </button>\r\n      }\r\n    </span>\r\n    \r\n    <button class=\"btn-wide ml-2 mt-1 mb-1 mr-1 btn-outline-warning btn-sm chip\" \r\n      (click)=\"clearAllFilters(true)\">\r\n      Clear All\r\n    </button>\r\n    \r\n    <!-- <button class=\"btn-wide ml-1 mt-1 mb-1 mr-1 btn btn-outline-warning btn-sm chip\"\r\n            (click)=\"chartOptions.callBackFunc(filters)\">\r\n      Add Annotation\r\n    </button>\r\n\r\n    <button class=\"btn-wide ml-1 mt-1 mb-1 mr-1 btn btn-outline-warning btn-sm chip\"\r\n            (click)=\"chartOptions.onClickViewOdata(filters)\">\r\n      View Data\r\n    </button> -->\r\n    \r\n  </div>\r\n} @else {\r\n  <div class=\"filter-component pt-2 pb-1\">\r\n    Please click on any chart element to slice and dice data. You can use annotations to save a specific state of\r\n    dashboard after applying filters.\r\n  </div>\r\n}\r\n", styles: [".chip{border-radius:50px;font-size:10px;font-weight:700!important;border:1px dashed #a6a6a6}.filter-component{display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;vertical-align:middle;margin:.2rem;padding-left:1rem;font-size:.9rem;font-weight:600}.close-icon{vertical-align:middle;margin-left:3px}\n"] }]
+    }], null, { widget: [{
+            type: Input
+        }], onUpdateFilter: [{
+            type: Input
+        }] }); })();
+(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassDebugInfo(FilterComponent, { className: "FilterComponent", filePath: "lib/widgets/filter/filter.component.ts", lineNumber: 17 }); })();
+
+var filter_component = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    FilterComponent: FilterComponent
+});
+
+class TableComponent {
+    static { this.ɵfac = function TableComponent_Factory(__ngFactoryType__) { return new (__ngFactoryType__ || TableComponent)(); }; }
+    static { this.ɵcmp = /*@__PURE__*/ i0.ɵɵdefineComponent({ type: TableComponent, selectors: [["vis-table"]], inputs: { widget: "widget" }, decls: 0, vars: 0, template: function TableComponent_Template(rf, ctx) { }, dependencies: [CommonModule], encapsulation: 2 }); }
+}
+(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassMetadata(TableComponent, [{
+        type: Component,
+        args: [{ selector: 'vis-table', standalone: true, imports: [CommonModule], template: "" }]
+    }], null, { widget: [{
+            type: Input
+        }] }); })();
+(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassDebugInfo(TableComponent, { className: "TableComponent", filePath: "lib/widgets/table/table.component.ts", lineNumber: 12 }); })();
+
+var table_component = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    TableComponent: TableComponent
+});
+
+class TileComponent {
+    static { this.ɵfac = function TileComponent_Factory(__ngFactoryType__) { return new (__ngFactoryType__ || TileComponent)(); }; }
+    static { this.ɵcmp = /*@__PURE__*/ i0.ɵɵdefineComponent({ type: TileComponent, selectors: [["vis-tile"]], inputs: { widget: "widget" }, decls: 0, vars: 0, template: function TileComponent_Template(rf, ctx) { }, dependencies: [CommonModule], encapsulation: 2 }); }
+}
+(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassMetadata(TileComponent, [{
+        type: Component,
+        args: [{ selector: 'vis-tile', standalone: true, imports: [CommonModule], template: "" }]
+    }], null, { widget: [{
+            type: Input
+        }] }); })();
+(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassDebugInfo(TileComponent, { className: "TileComponent", filePath: "lib/widgets/tile/tile.component.ts", lineNumber: 12 }); })();
+
+var tile_component = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    TileComponent: TileComponent
+});
+
+class MarkdownCellComponent {
+    static { this.ɵfac = function MarkdownCellComponent_Factory(__ngFactoryType__) { return new (__ngFactoryType__ || MarkdownCellComponent)(); }; }
+    static { this.ɵcmp = /*@__PURE__*/ i0.ɵɵdefineComponent({ type: MarkdownCellComponent, selectors: [["vis-markdown-cell"]], inputs: { widget: "widget" }, decls: 0, vars: 0, template: function MarkdownCellComponent_Template(rf, ctx) { }, dependencies: [CommonModule], encapsulation: 2 }); }
+}
+(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassMetadata(MarkdownCellComponent, [{
+        type: Component,
+        args: [{ selector: 'vis-markdown-cell', standalone: true, imports: [CommonModule], template: "" }]
+    }], null, { widget: [{
+            type: Input
+        }] }); })();
+(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassDebugInfo(MarkdownCellComponent, { className: "MarkdownCellComponent", filePath: "lib/widgets/markdown-cell/markdown-cell.component.ts", lineNumber: 12 }); })();
+
+var markdownCell_component = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    MarkdownCellComponent: MarkdownCellComponent
+});
+
+class CodeCellComponent {
+    static { this.ɵfac = function CodeCellComponent_Factory(__ngFactoryType__) { return new (__ngFactoryType__ || CodeCellComponent)(); }; }
+    static { this.ɵcmp = /*@__PURE__*/ i0.ɵɵdefineComponent({ type: CodeCellComponent, selectors: [["vis-code-cell"]], inputs: { widget: "widget" }, decls: 0, vars: 0, template: function CodeCellComponent_Template(rf, ctx) { }, dependencies: [CommonModule], encapsulation: 2 }); }
+}
+(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassMetadata(CodeCellComponent, [{
+        type: Component,
+        args: [{ selector: 'vis-code-cell', standalone: true, imports: [CommonModule], template: "" }]
+    }], null, { widget: [{
+            type: Input
+        }] }); })();
+(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassDebugInfo(CodeCellComponent, { className: "CodeCellComponent", filePath: "lib/widgets/code-cell/code-cell.component.ts", lineNumber: 12 }); })();
+
+var codeCell_component = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    CodeCellComponent: CodeCellComponent
+});
 
 /*
  * Public API Surface of dashboards

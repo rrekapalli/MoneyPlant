@@ -2,7 +2,7 @@ import * as echarts from 'echarts';
 import { EChartsOption, ECharts } from 'echarts';
 import { GridsterItem, GridsterConfig, GridsterItemComponentInterface } from 'angular-gridster2';
 import * as i0 from '@angular/core';
-import { EventEmitter, OnInit, OnDestroy } from '@angular/core';
+import { EventEmitter, OnInit, OnDestroy, AfterViewInit, ElementRef } from '@angular/core';
 import { FormGroup } from '@angular/forms';
 import { Observable, Subject } from 'rxjs';
 import { MenuItem } from 'primeng/api';
@@ -12,6 +12,7 @@ interface IState {
     column: string;
     isOdataQuery: boolean;
     supportsFiltering?: boolean;
+    filterDependencies?: string[];
 }
 
 interface IFilterValues {
@@ -301,6 +302,124 @@ declare class EventBusService {
 }
 
 /**
+ * Service for caching widget data to improve performance
+ *
+ * This service provides methods for caching and retrieving widget data,
+ * reducing the need for repeated data fetching.
+ */
+declare class WidgetDataCacheService {
+    private cache;
+    private cacheExpirationTime;
+    constructor();
+    /**
+     * Sets the cache expiration time
+     *
+     * @param timeInMs - The cache expiration time in milliseconds
+     */
+    setCacheExpirationTime(timeInMs: number): void;
+    /**
+     * Gets the cache key for a widget and optional filters
+     *
+     * @param widget - The widget to get the cache key for
+     * @param filters - Optional filter values
+     * @returns The cache key
+     */
+    private getCacheKey;
+    /**
+     * Converts filters to a string for use in cache keys
+     *
+     * @param filters - The filters to convert
+     * @returns A string representation of the filters
+     */
+    private getFilterString;
+    /**
+     * Gets data from the cache for a widget and filters
+     *
+     * @param widget - The widget to get data for
+     * @param filters - Optional filter values
+     * @returns The cached data if available and not expired, undefined otherwise
+     */
+    getData(widget: IWidget, filters?: string | IFilterValues[]): any;
+    /**
+     * Stores data in the cache for a widget and filters
+     *
+     * @param widget - The widget to store data for
+     * @param data - The data to store
+     * @param filters - Optional filter values
+     */
+    setData(widget: IWidget, data: any, filters?: string | IFilterValues[]): void;
+    /**
+     * Clears the cache for a specific widget
+     *
+     * @param widget - The widget to clear the cache for
+     */
+    clearWidgetCache(widget: IWidget): void;
+    /**
+     * Clears the entire cache
+     */
+    clearAllCache(): void;
+    /**
+     * Determines if a widget's data should be reloaded based on filter changes
+     *
+     * @param widget - The widget to check
+     * @param oldFilters - The old filter values
+     * @param newFilters - The new filter values
+     * @returns True if the widget should be reloaded, false otherwise
+     */
+    shouldReloadWidget(widget: IWidget, oldFilters: IFilterValues[], newFilters: IFilterValues[]): boolean;
+    static ɵfac: i0.ɵɵFactoryDeclaration<WidgetDataCacheService, never>;
+    static ɵprov: i0.ɵɵInjectableDeclaration<WidgetDataCacheService>;
+}
+
+/**
+ * Service for implementing virtual scrolling for large dashboards
+ *
+ * This service provides methods for determining which widgets should be
+ * rendered based on their position and the current viewport.
+ */
+declare class VirtualScrollService {
+    private viewportHeight;
+    private bufferSize;
+    constructor();
+    /**
+     * Sets the viewport height
+     *
+     * @param rows - The viewport height in rows
+     */
+    setViewportHeight(rows: number): void;
+    /**
+     * Sets the buffer size
+     *
+     * @param rows - The buffer size in rows
+     */
+    setBufferSize(rows: number): void;
+    /**
+     * Determines which widgets should be rendered based on the current scroll position
+     *
+     * @param widgets - All widgets in the dashboard
+     * @param scrollTop - The current scroll position in rows
+     * @returns The widgets that should be rendered
+     */
+    getVisibleWidgets(widgets: IWidget[], scrollTop: number): IWidget[];
+    /**
+     * Calculates the total height of the dashboard in rows
+     *
+     * @param widgets - All widgets in the dashboard
+     * @returns The total height in rows
+     */
+    getTotalHeight(widgets: IWidget[]): number;
+    /**
+     * Creates placeholder widgets for the virtual scroll
+     *
+     * @param totalHeight - The total height of the dashboard in rows
+     * @returns A placeholder widget that takes up the required space
+     */
+    createPlaceholders(totalHeight: number): IWidget;
+    static ɵfac: i0.ɵɵFactoryDeclaration<VirtualScrollService, never>;
+    static ɵprov: i0.ɵɵInjectableDeclaration<VirtualScrollService>;
+}
+
+/**
  * A container component for dashboard widgets.
  *
  * This component provides a grid-based layout for dashboard widgets using angular-gridster2.
@@ -310,13 +429,36 @@ declare class DashboardContainerComponent {
     private calculationService;
     private filterService;
     private eventBus;
+    private widgetDataCache;
+    private virtualScrollService;
     /** Array of widgets to display in the dashboard */
     widgets: IWidget[];
     /** Current filter values applied to the dashboard */
     filterValues: IFilterValues[];
     /** Current chart height in pixels */
     chartHeight: number;
-    constructor(calculationService: CalculationService, filterService: FilterService, eventBus: EventBusService);
+    private currentScrollPosition;
+    visibleWidgets: IWidget[];
+    totalDashboardHeight: number;
+    constructor(calculationService: CalculationService, filterService: FilterService, eventBus: EventBusService, widgetDataCache: WidgetDataCacheService, virtualScrollService: VirtualScrollService);
+    /**
+     * Lifecycle hook that is called after the component is initialized
+     */
+    ngOnInit(): void;
+    /**
+     * Initializes virtual scrolling for the dashboard
+     */
+    private initVirtualScrolling;
+    /**
+     * Updates the list of visible widgets based on the current scroll position
+     */
+    private updateVisibleWidgets;
+    /**
+     * Handles scroll events in the dashboard
+     *
+     * @param event - The scroll event
+     */
+    onDashboardScroll(event: any): void;
     /**
      * Subscribes to events from the event bus
      */
@@ -400,6 +542,12 @@ declare class DashboardContainerComponent {
      * @param $event - The filter event containing the new filter values
      */
     onUpdateFilter($event: any): void;
+    /**
+     * Updates a widget in the dashboard without reloading data
+     *
+     * @param widget - The updated widget
+     */
+    private updateWidgetWithoutReload;
     /**
      * Handles dashboard selection changes
      *
@@ -592,6 +740,8 @@ interface IWidgetPlugin {
  */
 declare class WidgetPluginService {
     private plugins;
+    private componentPromises;
+    private loadedComponents;
     constructor();
     /**
      * Registers a new widget plugin
@@ -616,9 +766,29 @@ declare class WidgetPluginService {
      * Gets the component for a widget type
      *
      * @param type - The type of the widget
-     * @returns The component for the widget type, or a default component if not found
+     * @returns The component for the widget type, or a promise that resolves to the component
      */
     getComponentForType(type: string): any;
+    /**
+     * Loads a component for a widget type
+     *
+     * @param type - The type of the widget
+     * @returns A promise that resolves to the component
+     */
+    private loadComponentForType;
+    /**
+     * Imports a component for a widget type
+     *
+     * @param type - The type of the widget
+     * @returns A promise that resolves to the component
+     */
+    private importComponentForType;
+    /**
+     * Gets a placeholder component to use while the real component is loading
+     *
+     * @returns A placeholder component
+     */
+    private getPlaceholderComponent;
     /**
      * Registers the default widget plugins
      */
@@ -1256,12 +1426,40 @@ declare const dataOptions: {
     };
 }[];
 
-declare class EchartComponent extends BaseWidgetComponent {
+declare class EchartComponent extends BaseWidgetComponent implements AfterViewInit, OnDestroy {
     protected eventBus: EventBusService;
+    private elementRef;
     isSingleClick: boolean;
+    private resizeSubject;
+    private resizeObserver;
     initOpts: any;
-    constructor(eventBus: EventBusService);
+    constructor(eventBus: EventBusService, elementRef: ElementRef);
+    /**
+     * Gets the chart options with dataset API if available
+     */
     get chartOptions(): echarts.EChartsOption;
+    /**
+     * Converts standard ECharts options to use the dataset API for better performance
+     *
+     * @param options - The ECharts options to convert
+     */
+    private convertToDatasetAPI;
+    /**
+     * Lifecycle hook that is called after the component's view has been initialized
+     */
+    ngAfterViewInit(): void;
+    /**
+     * Lifecycle hook that is called when the component is destroyed
+     */
+    ngOnDestroy(): void;
+    /**
+     * Sets up resize handling for the chart
+     */
+    private setupResizeHandling;
+    /**
+     * Resizes the chart to fit its container
+     */
+    private resizeChart;
     /**
      * Initializes the chart instance
      *
