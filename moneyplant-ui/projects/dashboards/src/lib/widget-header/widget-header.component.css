@@ -1,0 +1,9 @@
+.panel-button {
+  display: flex;
+  flex-direction: row;
+  justify-content: end;
+}
+
+:host ::ng-deep .p-panel .p-panel-content {
+  display: none;
+}

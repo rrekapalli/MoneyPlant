@@ -1,0 +1,27 @@
+<p-panel [header]="title">
+  <ng-template pTemplate="icons">
+    @if (onEditMode) {
+      <p-button *hasClaim="['PROJECT_WRITE','PROJECT_UPDATE','PROJECTUSERS_DELETE']" [outlined]="true" class="p-button-sm mr-2" type="button" (click)="onDeleteWidgetClicked($event)"
+                [outlined]="true"
+                icon="pi pi-trash"></p-button>
+
+      <p-button [outlined]="true" class="p-button-sm" type="button" (click)="sidebarVisible = true" [outlined]="true"
+                icon="pi pi-cog"></p-button>
+    }
+  </ng-template>
+</p-panel>
+<p-sidebar [(visible)]="sidebarVisible" position="right" model="false" [appendTo]="'body'" [style]="{
+      'width': '30%',
+      height: '100%',
+      padding: '0px',
+      'padding-right': '2px',
+    }">
+  <ng-template pTemplate="header">
+    <div class="font-bold ml-3 mb-3 text-lg">
+      {{ title }} Settings
+    </div>
+  </ng-template>
+  <ng-template pTemplate="content">
+    <vis-widget-config [selectedDashboardId]="dashboardId" [widget]="widget" (onUpdate)="onUpdateOptions($event)"/>
+  </ng-template>
+</p-sidebar>

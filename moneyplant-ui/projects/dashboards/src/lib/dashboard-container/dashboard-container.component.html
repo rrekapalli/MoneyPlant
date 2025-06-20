@@ -1,0 +1,33 @@
+<div class="gridster-container">
+  <gridster class="mt-2 dashboard-gridster" [options]="options">
+    <div id="dashboard" class="print-body">
+      @for (item of widgets; track item; let i = $index) {
+
+        <gridster-item 
+            [item]="item.position" 
+            (itemResize)="updateString('[Edit Mode - Pending Changes]')"
+            (itemChange)="updateString('[Edit Mode - Pending Changes]')">
+
+            @if (item.config.header) {
+              <vis-widget-header 
+                  [dashboardId]="dashboardId" 
+                  [widget]="item" 
+                  (onUpdateWidget)="onUpdateWidget($event)"
+                  (onDeleteWidget)="onDeleteWidget($event)" 
+                  [onEditMode]="isEditMode"/>
+            }
+
+            <vis-widget 
+                [widget]="item" 
+                (onDataLoad)="onDataLoad($event)" 
+                (onUpdateFilter)="onUpdateFilter($event)"/>
+
+        </gridster-item>
+
+      }
+    </div>
+  </gridster>
+</div>
+
+<!-- Toast Message -->
+<p-toast position="bottom-right" key="br" />
