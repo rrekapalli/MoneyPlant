@@ -17,6 +17,7 @@ import {
   GridsterItem,
   GridsterItemComponent,
   GridsterItemComponentInterface,
+  DisplayGrid,
 } from 'angular-gridster2';
 import {EChartsOption} from 'echarts';
 import buildQuery from 'odata-query';
@@ -78,11 +79,46 @@ export class DashboardContainerComponent {
 
   newDashboardForm!: FormGroup;
 
+  @ViewChild(GridsterComponent) gridster!: GridsterComponent;
+
   @Input() options: GridsterConfig = {};
+  public mergedOptions: GridsterConfig = {};
+
+  private readonly defaultOptions: GridsterConfig = {
+    gridType: GridType.Fixed,
+    displayGrid: DisplayGrid.None,
+    margin: 10,
+    outerMargin: true,
+    draggable: {
+      enabled: false,
+    },
+    resizable: {
+      enabled: false,
+    },
+    maxCols: 12,
+    minCols: 1,
+    maxRows: 50,
+    minRows: 1,
+    fixedColWidth: 100,
+    fixedRowHeight: 100,
+    outerMarginTop: 20,
+    outerMarginBottom: 20,
+    outerMarginLeft: 20,
+    outerMarginRight: 20,
+    enableEmptyCellClick: false,
+    enableEmptyCellContextMenu: false,
+    enableEmptyCellDrop: false,
+    enableEmptyCellDrag: false,
+    emptyCellDragMaxCols: 50,
+    emptyCellDragMaxRows: 50,
+    ignoreMarginInRow: false,
+    mobileBreakpoint: 640,
+  };
 
   ngOnInit() {
-    this.options.itemResizeCallback = this.onWidgetResize.bind(this);
-    this.options.itemChangeCallback = this.onWidgetChange.bind(this);
+    this.mergedOptions = { ...this.defaultOptions, ...this.options };
+    this.mergedOptions.itemResizeCallback = this.onWidgetResize.bind(this);
+    this.mergedOptions.itemChangeCallback = this.onWidgetChange.bind(this);
   }
 
   async onDataLoad(widget: IWidget) {

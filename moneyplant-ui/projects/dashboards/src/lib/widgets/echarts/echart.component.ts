@@ -27,28 +27,7 @@ export class EchartComponent {
   @Input() onUpdateFilter!: EventEmitter<any>;
 
   isSingleClick: boolean = true;
-  initOpts: any = {
-    gridType: GridType.Fit,
-    displayGrid: DisplayGrid.OnDragAndResize,
-    compactType: CompactType.CompactUpAndLeft,
-    pushItems: true,
-    draggable: {
-      enabled: true,
-    },
-    resizable: {
-      enabled:  true,
-    },
-    swap: false,
-    minCols: 12,
-    maxCols: 12,
-    minRows: 1,
-    maxRows: 50,
-    // fixedColWidth: 105,
-    // rowHeightRatio: 0.70,
-    fixedRowHeight: 30,
-    margin: 6
-  };
-
+  
   get chartOptions() {
     return this.widget?.config?.options as EChartsOption;
   }

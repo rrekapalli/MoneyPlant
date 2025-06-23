@@ -92,38 +92,6 @@ export class OverallComponent implements OnInit {
   // Dashboard widgets
   widgets: IWidget[] = [];
 
-  // Dashboard options
-  options: GridsterConfig = {
-    gridType: GridType.Fit, // Changed from Fixed to Fit for better visibility
-    displayGrid: DisplayGrid.Always, // Changed from None to Always for debugging
-    margin: 10,
-    outerMargin: true,
-    draggable: {
-      enabled: false
-    },
-    resizable: {
-      enabled: false
-    },
-    maxCols: 12,
-    minCols: 1,
-    maxRows: 50,
-    minRows: 1,
-    rowHeightRatio: 0.70,
-    fixedRowHeight: 30,
-    outerMarginTop: 20, // Added top margin
-    outerMarginBottom: 20, // Added bottom margin
-    outerMarginLeft: 20, // Added left margin
-    outerMarginRight: 20, // Added right margin
-    enableEmptyCellClick: false,
-    enableEmptyCellContextMenu: false,
-    enableEmptyCellDrop: false,
-    enableEmptyCellDrag: false,
-    emptyCellDragMaxCols: 50,
-    emptyCellDragMaxRows: 50,
-    ignoreMarginInRow: false,
-    mobileBreakpoint: 640
-  };
-
   constructor() {}
 
   ngOnInit(): void {
