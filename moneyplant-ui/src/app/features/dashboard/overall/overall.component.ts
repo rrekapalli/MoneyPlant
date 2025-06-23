@@ -8,21 +8,58 @@ import { MessageModule } from 'primeng/message';
 import { TooltipModule } from 'primeng/tooltip';
 import { GridsterConfig, DisplayGrid, GridType } from 'angular-gridster2';
 
+// Import echarts core module and components
+import * as echarts from 'echarts/core';
+// Import bar, line, pie, and other chart components
+import {
+  BarChart,
+  LineChart,
+  PieChart,
+  ScatterChart,
+  GaugeChart,
+  HeatmapChart
+} from 'echarts/charts';
+// Import tooltip, title, legend, and other components
+import {
+  TitleComponent,
+  TooltipComponent,
+  GridComponent,
+  DatasetComponent,
+  TransformComponent,
+  LegendComponent,
+  VisualMapComponent
+} from 'echarts/components';
+// Import renderer
+import {
+  CanvasRenderer
+} from 'echarts/renderers';
+
+// Register the required components
+echarts.use([
+  TitleComponent,
+  TooltipComponent,
+  GridComponent,
+  DatasetComponent,
+  TransformComponent,
+  LegendComponent,
+  VisualMapComponent,
+  BarChart,
+  LineChart,
+  PieChart,
+  ScatterChart,
+  GaugeChart,
+  HeatmapChart,
+  CanvasRenderer
+]);
+
 // Import dashboard modules
 // Import from the library's public API
 import { 
   IWidget,
   EventBusService,
-  EchartComponent,
-  TableComponent,
-  TileComponent,
-  MarkdownCellComponent,
   DashboardContainerComponent
 } from '@dashboards/public-api';
 
-// Import components not in the public API directly
-import { WidgetComponent } from '@dashboards/widgets/widget/widget.component';
-import { DataGridComponent } from '@dashboards/widgets/data-grid/data-grid.component';
 import { v4 as uuidv4 } from 'uuid';
 
 @Component({
@@ -49,8 +86,8 @@ export class OverallComponent implements OnInit {
 
   // Dashboard options
   options: GridsterConfig = {
-    gridType: GridType.Fixed,
-    displayGrid: DisplayGrid.None,
+    gridType: GridType.Fit, // Changed from Fixed to Fit for better visibility
+    displayGrid: DisplayGrid.Always, // Changed from None to Always for debugging
     margin: 10,
     outerMargin: true,
     draggable: {
@@ -63,22 +100,48 @@ export class OverallComponent implements OnInit {
     minCols: 1,
     maxRows: 100,
     minRows: 1,
-    fixedRowHeight: 100
+    fixedRowHeight: 100,
+    outerMarginTop: 20, // Added top margin
+    outerMarginBottom: 20, // Added bottom margin
+    outerMarginLeft: 20, // Added left margin
+    outerMarginRight: 20, // Added right margin
+    enableEmptyCellClick: false,
+    enableEmptyCellContextMenu: false,
+    enableEmptyCellDrop: false,
+    enableEmptyCellDrag: false,
+    emptyCellDragMaxCols: 50,
+    emptyCellDragMaxRows: 50,
+    ignoreMarginInRow: false,
+    mobileBreakpoint: 640
   };
 
   constructor(@Inject(EventBusService) private eventBus: EventBusService) {}
 
   ngOnInit(): void {
+    console.log('[Overall Debug] ngOnInit called');
+
     // Initialize dashboard widgets
     this.initializeDashboardWidgets();
+
+    // Log the widgets after initialization
+    console.log('[Overall Debug] Widgets initialized:', this.widgets);
+
+    // Force a redraw after a short delay
+    setTimeout(() => {
+      console.log('[Overall Debug] Forcing redraw');
+      // Create a shallow copy of the widgets array to trigger change detection
+      this.widgets = [...this.widgets];
+    }, 1000);
   }
 
   /**
    * Initialize dashboard widgets with mock data
    */
   private initializeDashboardWidgets(): void {
+    console.log('[Overall Debug] Initializing dashboard widgets');
+
     // Create widgets for each chart type
-    this.widgets = [
+    const widgets = [
       this.createPieChartWidget(),
       this.createBarChartWidget(),
       this.createLineChartWidget(),
@@ -89,13 +152,31 @@ export class OverallComponent implements OnInit {
       this.createTileWidget(),
       this.createMarkdownWidget()
     ];
+
+    // Log each widget for debugging
+    widgets.forEach((widget, index) => {
+      console.log(`[Overall Debug] Widget ${index + 1}:`, {
+        id: widget.id,
+        component: widget.config?.component,
+        position: widget.position,
+        title: widget.config?.header?.title,
+        hasOptions: !!widget.config?.options,
+        hasSeries: !!(widget.config?.options as any)?.series
+      });
+    });
+
+    // Set the widgets array
+    this.widgets = widgets;
   }
 
   /**
    * Create a pie chart widget
    */
   private createPieChartWidget(): IWidget {
-    return {
+    console.log('[Overall Debug] Creating pie chart widget');
+
+    // Create the widget with explicit height and state
+    const widget: IWidget = {
       id: uuidv4(),
       position: { x: 0, y: 0, cols: 4, rows: 4 },
       config: {
@@ -103,16 +184,29 @@ export class OverallComponent implements OnInit {
         header: {
           title: 'Asset Allocation'
         },
+        // Add height to ensure the chart has enough space
+        height: 300,
+        // Add state to track widget state
+        state: {
+          supportsFiltering: true
+        },
         options: {
+          // Add animation for better visibility
+          animation: true,
+          // Add background color for better visibility
+          backgroundColor: '#ffffff',
+          // Configure tooltip
           tooltip: {
             trigger: 'item',
             formatter: '{a} <br/>{b}: {c} ({d}%)'
           },
+          // Configure legend
           legend: {
             orient: 'vertical',
             left: 10,
             data: ['Stocks', 'Bonds', 'Cash', 'Real Estate', 'Commodities']
           },
+          // Configure series
           series: [
             {
               name: 'Asset Allocation',
@@ -145,13 +239,20 @@ export class OverallComponent implements OnInit {
         }
       }
     };
+
+    console.log('[Overall Debug] Pie chart widget created:', widget);
+
+    return widget;
   }
 
   /**
    * Create a bar chart widget
    */
   private createBarChartWidget(): IWidget {
-    return {
+    console.log('[Overall Debug] Creating bar chart widget');
+
+    // Create the widget with explicit height and state
+    const widget: IWidget = {
       id: uuidv4(),
       position: { x: 4, y: 0, cols: 4, rows: 4 },
       config: {
@@ -159,39 +260,61 @@ export class OverallComponent implements OnInit {
         header: {
           title: 'Monthly Income vs Expenses'
         },
+        // Add height to ensure the chart has enough space
+        height: 300,
+        // Add state to track widget state
+        state: {
+          supportsFiltering: true
+        },
         options: {
+          // Add animation for better visibility
+          animation: true,
+          // Add background color for better visibility
+          backgroundColor: '#ffffff',
+          // Configure tooltip
           tooltip: {
             trigger: 'axis',
             axisPointer: {
               type: 'shadow'
             }
           },
+          // Configure legend
           legend: {
-            data: ['Income', 'Expenses']
+            data: ['Income', 'Expenses'],
+            top: 10
           },
+          // Configure grid
           grid: {
             left: '3%',
             right: '4%',
             bottom: '3%',
+            top: '15%',
             containLabel: true
           },
+          // Configure x-axis
           xAxis: [
             {
               type: 'category',
               data: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun']
             }
           ],
+          // Configure y-axis
           yAxis: [
             {
-              type: 'value'
+              type: 'value',
+              name: 'Amount ($)'
             }
           ],
+          // Configure series
           series: [
             {
               name: 'Income',
               type: 'bar',
               emphasis: {
                 focus: 'series'
+              },
+              itemStyle: {
+                color: '#4caf50'  // Green for income
               },
               data: [5000, 5200, 5100, 5300, 5400, 5500]
             },
@@ -201,19 +324,29 @@ export class OverallComponent implements OnInit {
               emphasis: {
                 focus: 'series'
               },
+              itemStyle: {
+                color: '#f44336'  // Red for expenses
+              },
               data: [4000, 4200, 3800, 4100, 4300, 4200]
             }
           ]
         }
       }
     };
+
+    console.log('[Overall Debug] Bar chart widget created:', widget);
+
+    return widget;
   }
 
   /**
    * Create a line chart widget
    */
   private createLineChartWidget(): IWidget {
-    return {
+    console.log('[Overall Debug] Creating line chart widget');
+
+    // Create the widget with explicit height and state
+    const widget: IWidget = {
       id: uuidv4(),
       position: { x: 8, y: 0, cols: 4, rows: 4 },
       config: {
@@ -221,42 +354,99 @@ export class OverallComponent implements OnInit {
         header: {
           title: 'Portfolio Performance'
         },
+        // Add height to ensure the chart has enough space
+        height: 300,
+        // Add state to track widget state
+        state: {
+          supportsFiltering: true
+        },
         options: {
+          // Add animation for better visibility
+          animation: true,
+          // Add background color for better visibility
+          backgroundColor: '#ffffff',
+          // Configure tooltip
           tooltip: {
-            trigger: 'axis'
+            trigger: 'axis',
+            formatter: function(params: any) {
+              // Format the tooltip to show the value and percentage change
+              const date = params[0].name;
+              let html = `<div style="margin: 0px 0 0;line-height:1;"><div style="font-size:14px;color:#666;font-weight:400;line-height:1;">${date}</div></div>`;
+              params.forEach((param: any) => {
+                html += `<div style="margin: 10px 0 0;line-height:1;"><div style="margin: 0px 0 0;line-height:1;"><div style="display:inline-block;margin-right:4px;border-radius:10px;width:10px;height:10px;background-color:${param.color};"></div><span style="font-size:14px;color:#666;font-weight:400;margin-left:2px">${param.seriesName}</span><span style="float:right;margin-left:20px;font-size:14px;color:#666;font-weight:900">$${param.value.toLocaleString()}</span></div></div>`;
+              });
+              return html;
+            }
           },
+          // Configure legend
           legend: {
-            data: ['Portfolio', 'Benchmark']
+            data: ['Portfolio', 'Benchmark'],
+            top: 10
           },
+          // Configure grid
           grid: {
             left: '3%',
             right: '4%',
             bottom: '3%',
+            top: '15%',
             containLabel: true
           },
+          // Configure x-axis
           xAxis: {
             type: 'category',
             boundaryGap: false,
             data: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun']
           },
+          // Configure y-axis
           yAxis: {
-            type: 'value'
+            type: 'value',
+            name: 'Value ($)',
+            axisLabel: {
+              formatter: function(value: number) {
+                return '$' + value.toLocaleString();
+              }
+            }
           },
+          // Configure series
           series: [
             {
               name: 'Portfolio',
               type: 'line',
+              smooth: true,
+              symbol: 'circle',
+              symbolSize: 8,
+              lineStyle: {
+                width: 3,
+                color: '#4caf50'  // Green for portfolio
+              },
+              itemStyle: {
+                color: '#4caf50'
+              },
               data: [10000, 10500, 11000, 10800, 11200, 11500]
             },
             {
               name: 'Benchmark',
               type: 'line',
+              smooth: true,
+              symbol: 'circle',
+              symbolSize: 8,
+              lineStyle: {
+                width: 3,
+                color: '#2196f3'  // Blue for benchmark
+              },
+              itemStyle: {
+                color: '#2196f3'
+              },
               data: [10000, 10300, 10600, 10400, 10700, 11000]
             }
           ]
         }
       }
     };
+
+    console.log('[Overall Debug] Line chart widget created:', widget);
+
+    return widget;
   }
 
   /**
@@ -483,7 +673,7 @@ export class OverallComponent implements OnInit {
       id: uuidv4(),
       position: { x: 9, y: 8, cols: 3, rows: 4 },
       config: {
-        component: 'markdown-cell',
+        component: 'markdownCell',
         header: {
           title: 'Financial Tips'
         },

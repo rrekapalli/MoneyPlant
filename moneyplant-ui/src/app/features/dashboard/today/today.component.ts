@@ -15,8 +15,6 @@ import {
   EventBusService
 } from '@dashboards/public-api';
 
-// Import Superset components
-import { SupersetComponent } from '@superset-integration/public-api';
 import { v4 as uuidv4 } from 'uuid';
 
 @Component({
@@ -31,9 +29,7 @@ import { v4 as uuidv4 } from 'uuid';
     MessageModule,
     TooltipModule,
     // Dashboard components
-    DashboardContainerComponent,
-    // Superset components
-    SupersetComponent
+    DashboardContainerComponent
   ],
   templateUrl: './today.component.html',
   styleUrls: ['./today.component.scss'],

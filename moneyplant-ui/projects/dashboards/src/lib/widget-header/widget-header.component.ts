@@ -3,10 +3,13 @@ import {FormGroup, FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {IWidget} from '../entities/IWidget';
 import {PanelModule} from 'primeng/panel';
 import {SidebarModule} from 'primeng/sidebar';
+import {FormlyFieldConfig, FormlyModule} from '@ngx-formly/core';
+import {FormlyPrimeNGModule} from '@ngx-formly/primeng';
 import {WidgetConfigComponent} from '../widget-config/widget-config.component';
 import {CommonModule} from '@angular/common';
+import {VisStorybookModule} from 'vis-storybook';
 import {WidgetComponent} from '../widgets/widget/widget.component';
-import {Button} from "primeng/button";
+import {map} from 'lodash';
 
 @Component({
   selector: 'vis-widget-header',
@@ -17,8 +20,12 @@ import {Button} from "primeng/button";
     PanelModule,
     FormsModule,
     ReactiveFormsModule,
+    FormlyModule,
+    FormlyPrimeNGModule,
     WidgetConfigComponent,
-    Button
+    VisStorybookModule,
+    WidgetComponent,
+    WidgetHeaderComponent,
   ],
   templateUrl: './widget-header.component.html',
   styleUrls: ['./widget-header.component.css'],

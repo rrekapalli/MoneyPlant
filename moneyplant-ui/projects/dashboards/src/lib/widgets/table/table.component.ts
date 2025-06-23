@@ -1,4 +1,4 @@
-import {Component, Input} from '@angular/core';
+import {Component, Input, EventEmitter} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {IWidget} from '../../entities/IWidget';
 
@@ -11,4 +11,6 @@ import {IWidget} from '../../entities/IWidget';
 })
 export class TableComponent {
   @Input() widget!: IWidget;
+  @Input() onDataLoad!: EventEmitter<any>;
+  @Input() onUpdateFilter!: EventEmitter<any>;
 }

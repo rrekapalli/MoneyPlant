@@ -1,158 +1,26 @@
-<div id="panelId" class="widget-config-panel">
-  <div class="widget-config-header">
-    <h2>{{ title || 'Configure Widget' }}</h2>
-    <p class="widget-type">{{ getWidgetTypeName() }}</p>
-  </div>
+<div id="panelId" style="height:100%; overflow-y: visible;">
+  <p-scrollPanel [style]="{ height: '85vh', width: '100%', 'overflow-x': 'hidden', 'overflow': 'auto' }">
+    <form [formGroup]="form" (ngSubmit)="onWidgetSave()">
+      <formly-form [form]="formWidgetOptions" [model]="formModel" [fields]="widgetFields">
+      </formly-form>
+    </form>
+  </p-scrollPanel>
 
-  <p-tabMenu [model]="items" [activeItem]="activeItem" (activeItemChange)="onActiveTabItemChange($event)"></p-tabMenu>
-
-  <div class="widget-config-content">
-    <p-scrollPanel [style]="{width: '100%', height: '400px'}">
-      <!-- General Settings Tab -->
-      <div *ngIf="activeItem['value'] === 0" class="config-section">
-        <form [formGroup]="generalForm">
-          <div class="form-field">
-            <label for="widgetTitle">Widget Title <span class="required">*</span></label>
-            <input id="widgetTitle" type="text" pInputText formControlName="title" 
-                  [attr.aria-invalid]="isFieldInvalid('generalForm', 'title')" 
-                  aria-describedby="titleError">
-            <small id="titleError" class="error-message" *ngIf="isFieldInvalid('generalForm', 'title')">
-              Title is required
-            </small>
-          </div>
-
-          <div class="form-field">
-            <label for="widgetComponent">Widget Type <span class="required">*</span></label>
-            <p-dropdown id="widgetComponent" [options]="availableComponents" formControlName="component" 
-                      optionLabel="label" optionValue="value" [disabled]="!isNewWidget"
-                      [attr.aria-invalid]="isFieldInvalid('generalForm', 'component')"
-                      aria-describedby="componentError"></p-dropdown>
-            <small id="componentError" class="error-message" *ngIf="isFieldInvalid('generalForm', 'component')">
-              Widget type is required
-            </small>
-          </div>
-        </form>
-      </div>
-
-      <!-- Position Tab -->
-      <div *ngIf="activeItem['value'] === 1" class="config-section">
-        <form [formGroup]="positionForm">
-          <div class="form-row">
-            <div class="form-field">
-              <label for="widgetX">X Position</label>
-              <p-inputNumber id="widgetX" formControlName="x" [showButtons]="true" [min]="0" buttonLayout="horizontal"
-                          decrementButtonClass="p-button-secondary" incrementButtonClass="p-button-secondary"
-                          incrementButtonIcon="pi pi-plus" decrementButtonIcon="pi pi-minus"></p-inputNumber>
-            </div>
-
-            <div class="form-field">
-              <label for="widgetY">Y Position</label>
-              <p-inputNumber id="widgetY" formControlName="y" [showButtons]="true" [min]="0" buttonLayout="horizontal"
-                          decrementButtonClass="p-button-secondary" incrementButtonClass="p-button-secondary"
-                          incrementButtonIcon="pi pi-plus" decrementButtonIcon="pi pi-minus"></p-inputNumber>
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-field">
-              <label for="widgetCols">Width (Columns)</label>
-              <p-inputNumber id="widgetCols" formControlName="cols" [showButtons]="true" [min]="1" [max]="12" buttonLayout="horizontal"
-                          decrementButtonClass="p-button-secondary" incrementButtonClass="p-button-secondary"
-                          incrementButtonIcon="pi pi-plus" decrementButtonIcon="pi pi-minus"></p-inputNumber>
-            </div>
-
-            <div class="form-field">
-              <label for="widgetRows">Height (Rows)</label>
-              <p-inputNumber id="widgetRows" formControlName="rows" [showButtons]="true" [min]="1" buttonLayout="horizontal"
-                          decrementButtonClass="p-button-secondary" incrementButtonClass="p-button-secondary"
-                          incrementButtonIcon="pi pi-plus" decrementButtonIcon="pi pi-minus"></p-inputNumber>
-            </div>
-          </div>
-        </form>
-      </div>
-
-      <!-- Widget Options Tab -->
-      <div *ngIf="activeItem['value'] === 2" class="config-section">
-        <div *ngIf="isEchartWidget()" class="config-section">
-          <form [formGroup]="optionsForm">
-            <div class="form-field">
-              <label for="chartType">Chart Type</label>
-              <p-dropdown id="chartType" [options]="chartTypes" formControlName="chartType" 
-                        optionLabel="label" optionValue="value"></p-dropdown>
-            </div>
-
-            <div class="form-field">
-              <label for="chartTheme">Chart Theme</label>
-              <p-dropdown id="chartTheme" [options]="chartThemes" formControlName="chartTheme" 
-                        optionLabel="label" optionValue="value"></p-dropdown>
-            </div>
-
-            <div class="form-field">
-              <label>Show Legend</label>
-              <p-inputSwitch formControlName="showLegend"></p-inputSwitch>
-            </div>
-
-            <div class="form-field">
-              <label>Enable Data Zoom</label>
-              <p-inputSwitch formControlName="enableDataZoom"></p-inputSwitch>
-            </div>
-
-            <div class="form-field">
-              <label for="chartTitle">Chart Title</label>
-              <input id="chartTitle" type="text" pInputText formControlName="chartTitle">
-            </div>
-          </form>
-        </div>
-
-        <div *ngIf="isFilterWidget()" class="config-section">
-          <form [formGroup]="filterForm">
-            <div class="form-field">
-              <label for="filterType">Filter Type</label>
-              <p-dropdown id="filterType" [options]="filterTypes" formControlName="filterType" 
-                        optionLabel="label" optionValue="value"></p-dropdown>
-            </div>
-
-            <div class="form-field">
-              <label>Multi-select</label>
-              <p-inputSwitch formControlName="multiSelect"></p-inputSwitch>
-            </div>
-
-            <div class="form-field">
-              <label for="placeholder">Placeholder Text</label>
-              <input id="placeholder" type="text" pInputText formControlName="placeholder">
-            </div>
-          </form>
-        </div>
-
-        <div *ngIf="!isEchartWidget() && !isFilterWidget()" class="empty-state">
-          <p>Options for this widget type are not available in the configuration panel.</p>
-          <p>Please use the JSON editor for advanced configuration.</p>
-        </div>
-      </div>
-
-      <!-- Advanced Tab -->
-      <div *ngIf="activeItem['value'] === 3" class="config-section">
-        <div class="form-field">
-          <label for="jsonConfig">JSON Configuration</label>
-          <textarea id="jsonConfig" pInputTextarea [rows]="10" [cols]="30" formControlName="jsonConfig" 
-                  class="json-editor" [attr.aria-invalid]="isJsonInvalid"></textarea>
-          <small class="error-message" *ngIf="isJsonInvalid">
-            Invalid JSON format
-          </small>
-        </div>
-        <div class="form-actions">
-          <p-button label="Format JSON" icon="pi pi-code" (click)="formatJson()" [disabled]="isJsonInvalid"></p-button>
-        </div>
-      </div>
-    </p-scrollPanel>
-  </div>
-
-  <div class="widget-config-footer">
-    <p-button icon="pi pi-times" label="Cancel" styleClass="p-button-outlined p-button-secondary" (click)="handleCancel()"></p-button>
-    <p-button icon="pi pi-refresh" label="Reset" styleClass="p-button-outlined p-button-warning" (click)="onReset()"></p-button>
-    <p-button icon="pi pi-check" label="Save" [disabled]="!isFormValid()" (click)="onWidgetSave()"></p-button>
+  <div class="form-buttons">
+    <!-- Buttons in Footer -->
+    <div class="form-button">
+      <p-button *hasClaim="['PROJECT_WRITE','PROJECT_UPDATE','PROJECTUSERS_DELETE']" [outlined]="true" type="button" label="Save" (click)="onWidgetSave()"></p-button>
+    </div>
+    <div class="form-button">
+      <p-button *hasClaim="['PROJECT_WRITE','PROJECT_UPDATE','PROJECTUSERS_DELETE','PROJECT_READ']" [outlined]="true" type="button" label="Edit" class="ui-button-warning ml-2 mr-2"
+                severity="warning"></p-button>
+    </div>
+    <div class="form-button">
+      <p-button [outlined]="true" type="reset" label="Reset" class="ui-button-danger"></p-button>
+    </div>
   </div>
 </div>
+
 
 <!-- Toast Message -->
 <p-toast position="bottom-right" key="br" />

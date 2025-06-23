@@ -1,78 +1,32 @@
-<div class="dashboard-container" role="application" aria-label="Dashboard">
-  <!-- Dashboard Toolbar -->
-  <div class="dashboard-toolbar" *ngIf="isEditMode" role="toolbar" aria-label="Dashboard editing tools">
-    <div class="toolbar-actions">
-      <p-button 
-        icon="pi pi-undo" 
-        styleClass="p-button-rounded p-button-text" 
-        [disabled]="!canUndo" 
-        (onClick)="undo()" 
-        pTooltip="Undo (Ctrl+Z)" 
-        tooltipPosition="bottom"
-        [attr.aria-label]="'Undo last change' + (!canUndo ? ' (not available)' : '')"
-        [attr.aria-disabled]="!canUndo">
-      </p-button>
-      <p-button 
-        icon="pi pi-redo" 
-        styleClass="p-button-rounded p-button-text" 
-        [disabled]="!canRedo" 
-        (onClick)="redo()" 
-        pTooltip="Redo (Ctrl+Y)" 
-        tooltipPosition="bottom"
-        [attr.aria-label]="'Redo last change' + (!canRedo ? ' (not available)' : '')"
-        [attr.aria-disabled]="!canRedo">
-      </p-button>
-      <span class="edit-mode-indicator" aria-live="polite">{{ editModeString }}</span>
+<div class="gridster-container">
+  <gridster class="mt-2 dashboard-gridster" [options]="options">
+    <div id="dashboard" class="print-body">
+      @for (item of widgets; track item; let i = $index) {
+        
+        <gridster-item 
+            [item]="item.position" 
+            (itemResize)="updateString(container.editModeString)"
+            (itemChange)="updateString(container.editModeString)">
 
-      <!-- Template Manager -->
-      <div class="template-manager-container">
-        <vis-template-manager
-          [dashboardConfig]="getDashboardConfig()"
-          (templateLoaded)="loadTemplate($event)"
-          (templateSaved)="onTemplateSaved($event)">
-        </vis-template-manager>
-      </div>
-    </div>
-  </div>
-
-  <div class="gridster-container" (scroll)="onDashboardScroll($event)" role="region" aria-label="Dashboard widgets">
-    <gridster class="mt-2 dashboard-gridster" [options]="options">
-      <div id="dashboard" class="print-body" [style.height.px]="totalDashboardHeight * 50">
-        @for (item of visibleWidgets; track item.id; let i = $index) {
-
-          <gridster-item 
-              [item]="item.position" 
-              (itemResize)="updateString('[Edit Mode - Pending Changes]')"
-              (itemChange)="updateString('[Edit Mode - Pending Changes]')"
-              [attr.aria-label]="item.config.header?.title || 'Widget ' + (i + 1)"
-              role="region">
-
-              @if (item.config.header) {
-                <vis-widget-header 
-                    [dashboardId]="dashboardId" 
-                    [widget]="item" 
-                    (onUpdateWidget)="onUpdateWidget($event)"
-                    (onDeleteWidget)="onDeleteWidget($event)" 
-                    [onEditMode]="isEditMode"/>
-              }
-
-              <vis-widget 
+            @if (item.config.header) {
+              <vis-widget-header 
+                  [dashboardId]="dashboardId" 
                   [widget]="item" 
-                  (onDataLoad)="onDataLoad($event)" 
-                  (onUpdateFilter)="onUpdateFilter($event)"/>
+                  (onUpdateWidget)="onUpdateWidget($event)"
+                  (onDeleteWidget)="onDeleteWidget($event)" 
+                  [onEditMode]="isEditMode"/>
+            }
 
-          </gridster-item>
+            <vis-widget 
+                [widget]="item" 
+                (onDataLoad)="onDataLoad($event)" 
+                (onUpdateFilter)="onUpdateFilter($event)"/>
 
-        }
-      </div>
-    </gridster>
-  </div>
-
-  <!-- Virtual Scrolling Status -->
-  <div class="virtual-scroll-status" *ngIf="widgets.length > visibleWidgets.length" 
-       aria-live="polite" role="status">
-    Showing {{ visibleWidgets.length }} of {{ widgets.length }} widgets
-  </div>
+        </gridster-item>
+        
+      }
+    </div>
+  </gridster>
 </div>
 
 <!-- Toast Message -->
