@@ -1,9 +1,7 @@
 .vis-chart-container {
   background-color: white;
-  min-height: 2000px;
+  min-height: 1000px;
   width: 100%;
-  margin: 0px;
-  padding: 0px;
 }
 
 .gridster-container {
@@ -46,17 +44,18 @@
   }
 }
 
-:host ::ng-deep .p-dialog .p-dialog-content {
-  padding: 1rem 1.5rem 1rem 1.5rem;
-}
+// :host ::ng-deep .p-dialog .p-dialog-content {
+//   padding: 1rem 1.5rem 1rem 1.5rem;
+// }
 
-:host ::ng-deep .p-dialog .p-dialog-header,
-:host ::ng-deep .p-dialog .p-dialog-footer {
-  background: #f8f9fa;
-}
+// :host ::ng-deep .p-dialog .p-dialog-header,
+// :host ::ng-deep .p-dialog .p-dialog-footer {
+//   background: #f8f9fa;
+// }
 
 .dashboard-gridster {
-  background-color: var(--surface-100);
+  background-color: var(--p-surface-50);
+  padding: 5px;
   height: 100% !important;
   overflow-y: auto !important;
 }

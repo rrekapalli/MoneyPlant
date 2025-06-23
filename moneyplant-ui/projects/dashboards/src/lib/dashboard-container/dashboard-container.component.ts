@@ -87,7 +87,6 @@ export class DashboardContainerComponent {
   private readonly defaultOptions: GridsterConfig = {
     gridType: GridType.VerticalFixed,
     displayGrid: DisplayGrid.None,
-    margin: 10,
     outerMargin: true,
     draggable: {
       enabled: false,
@@ -101,10 +100,6 @@ export class DashboardContainerComponent {
     minRows: 1,
     fixedColWidth: 100,
     fixedRowHeight: 100,
-    outerMarginTop: 20,
-    outerMarginBottom: 20,
-    outerMarginLeft: 20,
-    outerMarginRight: 20,
     enableEmptyCellClick: false,
     enableEmptyCellContextMenu: false,
     enableEmptyCellDrop: false,

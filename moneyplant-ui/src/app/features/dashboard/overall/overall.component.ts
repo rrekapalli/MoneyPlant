@@ -70,6 +70,7 @@ import { createTileWidget } from './widgets/tileNetWorth';
 import { createMarkdownWidget } from './widgets/markdownFinancialTips';
 
 import { v4 as uuidv4 } from 'uuid';
+import { ScrollPanelModule } from 'primeng/scrollpanel';
 
 @Component({
   selector: 'app-overall',
@@ -82,6 +83,7 @@ import { v4 as uuidv4 } from 'uuid';
     DividerModule,
     MessageModule,
     TooltipModule,
+    ScrollPanelModule,
     // Dashboard components
     DashboardContainerComponent
   ],
