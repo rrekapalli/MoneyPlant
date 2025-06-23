@@ -4,6 +4,7 @@ import {CommonModule} from '@angular/common';
 import {NgxEchartsDirective, provideEchartsCore} from 'ngx-echarts';
 import { EChartsOption } from 'echarts';
 import { CompactType, DisplayGrid, GridType } from 'angular-gridster2';
+import { DashboardContainerComponent } from 'dashboards';
 
 @Component({
   selector: 'vis-echart',
@@ -30,6 +31,7 @@ export class EchartComponent {
   initOpts: any = {
     gridType: GridType.Fit,
     displayGrid: DisplayGrid.OnDragAndResize,
+    compactType: CompactType.CompactUpAndLeft,
     pushItems: true,
     draggable: {
       enabled: true,
@@ -42,56 +44,12 @@ export class EchartComponent {
     maxCols: 12,
     minRows: 1,
     maxRows: 50,
-    defaultItemCols: 1,
-    defaultItemRows: 1,
     fixedColWidth: 105,
     rowHeightRatio: 0.70,
     fixedRowHeight: 30,
-    scrollSensitivity: 10,
-    scrollSpeed: 20,
-    enableEmptyCellClick: false,
-    enableEmptyCellContextMenu: false,
-    enableEmptyCellDrop: false,
-    enableEmptyCellDrag: false,
-    enableOccupiedCellDrop: false,
-    emptyCellDragMaxCols: 50,
-    emptyCellDragMaxRows: 50,
-    ignoreMarginInRow: false,
-    dirType: 'ltr',
-    disableOneColumnMode: false,
-    disablePushOnDrag: false,
-    disablePushOnResize: false,
-    disableScrollVertical: false,
-    disableScrollHorizontal: false,
-    enableBoundaryControl: false,
-    compactType: CompactType.CompactUpAndLeft,
     margin: 6,
-    outerMargin: true,
-    outerMarginTop: null,
-    outerMarginRight: null,
-    outerMarginBottom: null,
-    outerMarginLeft: null,
-    useTransformPositioning: true,
-    mobileBreakpoint: 640,
-    useBodyForBreakpoint: false,
-    allowMultiLayer: true,
-    defaultLayerIndex: 0,
-    baseLayerIndex: 0,
-    maxLayerIndex: 0,
-    allowSwap: false,
-    allowSwapOverlap: false,
-    doNotPushItems: false,
-    disableItemMovement: false,
-    disableGridster: false,
-    emptyCellClickCallback: undefined,
-    emptyCellContextMenuCallback: undefined,
-    emptyCellDropCallback: undefined,
-    emptyCellDragCallback: undefined,
-    itemChangeCallback: undefined,
-    itemResizeCallback: undefined,
-    itemInitCallback: undefined,
-    itemRemovedCallback: undefined,
-    itemValidateCallback: undefined
+    itemResizeCallback: DashboardContainerComponent.onWidgetResize,
+    itemChangeCallback: DashboardContainerComponent.onWidgetChange
   };
 
   get chartOptions() {

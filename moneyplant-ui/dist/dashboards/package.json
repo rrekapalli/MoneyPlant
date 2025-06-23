@@ -1,6 +1,6 @@
 {
   "name": "dashboards",
-  "version": "0.0.0-watch+1750684409893",
+  "version": "0.0.0-watch+1750685501667",
   "peerDependencies": {
     "@angular/common": "^20.0.0",
     "@angular/core": "^20.0.0"
