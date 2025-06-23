@@ -127,6 +127,40 @@ import {
   DensityMapData
 } from '@dashboards/public-api';
 
+// Import widget creation functions
+import {
+  createAssetAllocationWidget,
+  createMonthlyIncomeExpensesWidget,
+  createPortfolioPerformanceWidget,
+  createRiskReturnWidget,
+  createSavingsGoalWidget,
+  createSpendingHeatmapWidget,
+  createInvestmentDistributionWidget,
+  // Data update functions
+  updateAssetAllocationData,
+  updateMonthlyIncomeExpensesData,
+  updatePortfolioPerformanceData,
+  updateRiskReturnData,
+  updateSavingsGoalData,
+  updateSpendingHeatmapData,
+  updateInvestmentDistributionData,
+  // Data fetching functions
+  getUpdatedAssetAllocationData,
+  getUpdatedMonthlyData,
+  getUpdatedPortfolioData,
+  getUpdatedRiskReturnData,
+  getUpdatedSavingsGoalData,
+  getUpdatedSpendingHeatmapData,
+  getUpdatedInvestmentDistributionData,
+  // Alternative data functions
+  getAlternativeAssetAllocationData,
+  getAlternativeMonthlyData,
+  getAlternativePortfolioData,
+  getAlternativeRiskReturnData,
+  getAlternativeSavingsGoalData,
+  getAlternativeSpendingHeatmapData,
+  getAlternativeInvestmentDistributionData
+} from './widgets';
 
 import { v4 as uuidv4 } from 'uuid';
 import { ScrollPanelModule } from 'primeng/scrollpanel';
@@ -162,182 +196,19 @@ export class OverallComponent implements OnInit {
   }
 
   /**
-   * Initialize dashboard widgets with mock data using new chart builders
+   * Initialize dashboard widgets using the new widget creation functions
    */
   private initializeDashboardWidgets(): void {
-    // Asset allocation data for pie chart
-    const assetAllocationData: PieChartData[] = [
-      { value: 45, name: 'Stocks' },
-      { value: 25, name: 'Bonds' },
-      { value: 15, name: 'Cash' },
-      { value: 10, name: 'Real Estate' },
-      { value: 5, name: 'Commodities' },
-    ];
-
-    // Monthly income vs expenses data for bar chart
-    const monthlyData: BarChartData[] = [
-      { name: 'Jan', value: 8500 },
-      { name: 'Feb', value: 9200 },
-      { name: 'Mar', value: 7800 },
-      { name: 'Apr', value: 9500 },
-      { name: 'May', value: 8800 },
-      { name: 'Jun', value: 10200 }
-    ];
-    const monthlyCategories = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-
-    // Portfolio performance data for line chart
-    const portfolioData: LineChartData[] = [
-      { name: 'Jan', value: 100000 },
-      { name: 'Feb', value: 105000 },
-      { name: 'Mar', value: 102000 },
-      { name: 'Apr', value: 108000 },
-      { name: 'May', value: 112000 },
-      { name: 'Jun', value: 115000 }
-    ];
-    const portfolioCategories = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-
-    // Risk vs return data for scatter chart
-    const riskReturnData: ScatterChartData[] = [
-      { value: [0.05, 0.08], name: 'Bonds' },
-      { value: [0.12, 0.15], name: 'Stocks' },
-      { value: [0.08, 0.10], name: 'REITs' },
-      { value: [0.15, 0.20], name: 'Small Cap' },
-      { value: [0.20, 0.25], name: 'Emerging Markets' },
-      { value: [0.03, 0.05], name: 'Cash' }
-    ];
-
-    // Savings goal progress data for gauge chart
-    const savingsGoalData: GaugeChartData[] = [
-      { value: 75, name: 'Savings Goal Progress' }
-    ];
-
-    // Spending heatmap data
-    const spendingHeatmapData: HeatmapChartData[] = [
-      { value: [0, 0, 1200], name: 'Mon-Food' },
-      { value: [1, 0, 1100], name: 'Tue-Food' },
-      { value: [2, 0, 1300], name: 'Wed-Food' },
-      { value: [3, 0, 1000], name: 'Thu-Food' },
-      { value: [4, 0, 1400], name: 'Fri-Food' },
-      { value: [0, 1, 800], name: 'Mon-Transport' },
-      { value: [1, 1, 750], name: 'Tue-Transport' },
-      { value: [2, 1, 900], name: 'Wed-Transport' },
-      { value: [3, 1, 700], name: 'Thu-Transport' },
-      { value: [4, 1, 850], name: 'Fri-Transport' },
-      { value: [0, 2, 500], name: 'Mon-Entertainment' },
-      { value: [1, 2, 600], name: 'Tue-Entertainment' },
-      { value: [2, 2, 400], name: 'Wed-Entertainment' },
-      { value: [3, 2, 700], name: 'Thu-Entertainment' },
-      { value: [4, 2, 800], name: 'Fri-Entertainment' }
-    ];
-    const heatmapXAxis = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
-    const heatmapYAxis = ['Food', 'Transport', 'Entertainment'];
-
-    // Create widgets using new chart builders
-    const pieAssetAllocation = PieChartBuilder.create()
-      .setData(assetAllocationData)
-      .setHeader('Asset Allocation')
-      .setPosition({ x: 0, y: 0, cols: 4, rows: 4 })
-      .setColors(['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de'])
-      .setRadius(['40%', '70%'])
-      .setLabelFormatter('{b}: {c} ({d}%)')
-      .setTooltip('item', '{b}: ${c} ({d}%)')
-      .build();
-    
+    // Create widgets using the new widget functions
+    const pieAssetAllocation = createAssetAllocationWidget();
     this.pieAssetAllocationWidgetId = pieAssetAllocation.id;
 
-    const barMonthlyIncomeVsExpenses = BarChartBuilder.create()
-      .setData(monthlyData.map(d => d.value))
-      .setCategories(monthlyCategories)
-      .setHeader('Monthly Income vs Expenses')
-      .setPosition({ x: 4, y: 0, cols: 6, rows: 4 })
-      .setTitle('Monthly Income vs Expenses', 'Last 6 Months')
-      .setColors(['#5470c6'])
-      .setBarWidth('60%')
-      .setBarBorderRadius(4)
-      .setYAxisName('Amount ($)')
-      .setTooltip('axis', '{b}: ${c}')
-      .build();
-
-    const linePortfolioPerformance = LineChartBuilder.create()
-      .setData(portfolioData.map(d => d.value))
-      .setXAxisData(portfolioCategories)
-      .setHeader('Portfolio Performance')
-      .setPosition({ x: 0, y: 4, cols: 6, rows: 4 })
-      .setTitle('Portfolio Performance', 'Last 6 Months')
-      .setSmooth(true)
-      .setAreaStyle('#5470c6', 0.3)
-      .setLineStyle(3, '#5470c6', 'solid')
-      .setSymbol('circle', 8)
-      .setYAxisName('Portfolio Value ($)')
-      .setTooltip('axis', '{b}: ${c}')
-      .build();
-
-    const scatterRiskVsReturn = ScatterChartBuilder.create()
-      .setData(riskReturnData)
-      .setHeader('Risk vs Return Analysis')
-      .setPosition({ x: 6, y: 4, cols: 6, rows: 4 })
-      .setTitle('Risk vs Return Analysis', 'Portfolio Components')
-      .setXAxisName('Risk (Volatility)')
-      .setYAxisName('Return (%)')
-      .setSymbol('circle', 10)
-      .setColors(['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de', '#3ba272'])
-      .setTooltip('item', '{b}: Risk {c[0]}, Return {c[1]}%')
-      .build();
-
-    const gaugeSavingsGoal = GaugeChartBuilder.create()
-      .setData(savingsGoalData)
-      .setHeader('Savings Goal Progress')
-      .setPosition({ x: 10, y: 0, cols: 4, rows: 4 })
-      .setTitle('Savings Goal Progress', 'Current Year')
-      .setRange(0, 100)
-      .setRadius('60%')
-      .setCenter(['50%', '60%'])
-      .setProgress(true, 10)
-      .setPointer(true, '80%', 6)
-      .setAxisLine(20, [[0.3, '#ff6e76'], [0.7, '#fddd60'], [1, '#58d9f9']])
-      .setDetail(true, [0, 40], '#333', 20, '{value}%')
-      .setGaugeTitle(true, [0, 70], '#333', 16)
-      .build();
-
-    const heatmapSpending = HeatmapChartBuilder.create()
-      .setData(spendingHeatmapData)
-      .setXAxisData(heatmapXAxis)
-      .setYAxisData(heatmapYAxis)
-      .setHeader('Weekly Spending Heatmap')
-      .setPosition({ x: 6, y: 8, cols: 8, rows: 4 })
-      .setTitle('Weekly Spending Heatmap', 'By Category')
-      .setVisualMap(0, 1500, ['#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8', '#ffffcc', '#fee090', '#fdae61', '#f46d43', '#d73027', '#a50026'])
-      .setXAxisName('Days')
-      .setYAxisName('Categories')
-      .setTooltip('item', '{b}: ${c}')
-      .build();
-
-    // Investment distribution by region data for density map
-    const investmentDistributionData: DensityMapData[] = [
-      { name: 'Hong Kong Island', value: 100 },
-      { name: 'Kowloon', value: 80 },
-      { name: 'New Territories', value: 60 },
-      { name: 'Lantau Island', value: 30 },
-      { name: 'Lamma Island', value: 20 }
-    ];
-
-    const densityMapInvestment = DensityMapBuilder.create()
-      .setData(investmentDistributionData)
-      .setMap('HK')
-      .setHeader('Investment Distribution by Region')
-      .setPosition({ x: 0, y: 8, cols: 6, rows: 4 })
-      .setTitle('Investment Distribution by Region', 'Hong Kong')
-      .setVisualMap(0, 100, ['#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8'])
-      .setRoam(true)
-      .setZoom(1.0)
-      .setCenter([2, 1])
-      .setLabelShow(true, 'inside', '{b}\n{c}%')
-      .setAreaColor('#f5f5f5')
-      .setBorderColor('#999', 0.5)
-      .setEmphasisColor('#b8e186')
-      .setShadow(15, 'rgba(0, 0, 0, 0.4)')
-      .setTooltip('item', '{b}: {c}% of total investment')
-      .build();
+    const barMonthlyIncomeVsExpenses = createMonthlyIncomeExpensesWidget();
+    const linePortfolioPerformance = createPortfolioPerformanceWidget();
+    const scatterRiskVsReturn = createRiskReturnWidget();
+    const gaugeSavingsGoal = createSavingsGoalWidget();
+    const heatmapSpending = createSpendingHeatmapWidget();
+    const densityMapInvestment = createInvestmentDistributionWidget();
 
     // Set the widgets array
     this.widgets = [
@@ -359,20 +230,11 @@ export class OverallComponent implements OnInit {
    */
   public async updateAssetAllocationData(widget: IWidget): Promise<void> {
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Example updated data from API
-      const updatedData: PieChartData[] = [
-        { value: 50, name: 'Stocks' },
-        { value: 20, name: 'Bonds' },
-        { value: 20, name: 'Cash' },
-        { value: 8, name: 'Real Estate' },
-        { value: 2, name: 'Commodities' },
-      ];
+      // Get updated data from the widget module
+      const updatedData = await getUpdatedAssetAllocationData();
       
       // Use the exposed setData method - this is what end users will call
-      PieChartBuilder.updateData(widget, updatedData);
+      updateAssetAllocationData(widget, updatedData);
       
       // Trigger change detection to ensure UI updates
       this.cdr.detectChanges();
@@ -476,13 +338,7 @@ export class OverallComponent implements OnInit {
     })));
     
     const pieChartData = [
-      [
-        { value: 60, name: 'Stocks' },
-        { value: 15, name: 'Bonds' },
-        { value: 15, name: 'Cash' },
-        { value: 7, name: 'Real Estate' },
-        { value: 3, name: 'Commodities' },
-      ],
+      getAlternativeAssetAllocationData(),
       [
         { value: 40, name: 'Domestic' },
         { value: 35, name: 'International' },
@@ -511,60 +367,25 @@ export class OverallComponent implements OnInit {
       
       switch (chartType) {
         case 'pie':
-          chartData.push([
-            { value: 55, name: 'Stocks' },
-            { value: 20, name: 'Bonds' },
-            { value: 15, name: 'Cash' },
-            { value: 8, name: 'Real Estate' },
-            { value: 2, name: 'Commodities' },
-          ]);
+          chartData.push(getAlternativeAssetAllocationData());
           break;
         case 'bar':
-          chartData.push([9500, 9800, 8200, 10000, 9200, 10800]);
+          chartData.push(getAlternativeMonthlyData());
           break;
         case 'line':
-          chartData.push([100000, 107000, 104000, 111000, 116000, 120000]);
+          chartData.push(getAlternativePortfolioData());
           break;
         case 'scatter':
-          chartData.push([
-            { value: [0.06, 0.09], name: 'Bonds' },
-            { value: [0.13, 0.16], name: 'Stocks' },
-            { value: [0.09, 0.11], name: 'REITs' },
-            { value: [0.16, 0.21], name: 'Small Cap' },
-            { value: [0.21, 0.26], name: 'Emerging Markets' },
-            { value: [0.04, 0.06], name: 'Cash' }
-          ]);
+          chartData.push(getAlternativeRiskReturnData());
           break;
         case 'gauge':
-          chartData.push([{ value: 85, name: 'Savings Goal Progress' }]);
+          chartData.push(getAlternativeSavingsGoalData());
           break;
         case 'heatmap':
-          chartData.push([
-            { value: [0, 0, 1300], name: 'Mon-Food' },
-            { value: [1, 0, 1200], name: 'Tue-Food' },
-            { value: [2, 0, 1400], name: 'Wed-Food' },
-            { value: [3, 0, 1100], name: 'Thu-Food' },
-            { value: [4, 0, 1500], name: 'Fri-Food' },
-            { value: [0, 1, 900], name: 'Mon-Transport' },
-            { value: [1, 1, 850], name: 'Tue-Transport' },
-            { value: [2, 1, 1000], name: 'Wed-Transport' },
-            { value: [3, 1, 800], name: 'Thu-Transport' },
-            { value: [4, 1, 950], name: 'Fri-Transport' },
-            { value: [0, 2, 600], name: 'Mon-Entertainment' },
-            { value: [1, 2, 700], name: 'Tue-Entertainment' },
-            { value: [2, 2, 500], name: 'Wed-Entertainment' },
-            { value: [3, 2, 800], name: 'Thu-Entertainment' },
-            { value: [4, 2, 900], name: 'Fri-Entertainment' }
-          ]);
+          chartData.push(getAlternativeSpendingHeatmapData());
           break;
         case 'map':
-          chartData.push([
-            { name: 'Hong Kong Island', value: 90 },
-            { name: 'Kowloon', value: 85 },
-            { name: 'New Territories', value: 70 },
-            { name: 'Lantau Island', value: 45 },
-            { name: 'Lamma Island', value: 35 }
-          ]);
+          chartData.push(getAlternativeInvestmentDistributionData());
           break;
         default:
           chartData.push([]);
@@ -607,8 +428,8 @@ export class OverallComponent implements OnInit {
     );
     
     if (barWidget) {
-      const newData = [9500, 9800, 8200, 10000, 9200, 10800];
-      BarChartBuilder.updateData(barWidget, newData);
+      const newData = await getUpdatedMonthlyData();
+      updateMonthlyIncomeExpensesData(barWidget, newData);
       this.cdr.detectChanges();
       console.log('Bar chart updated successfully');
     }
@@ -624,8 +445,8 @@ export class OverallComponent implements OnInit {
     );
     
     if (lineWidget) {
-      const newData = [100000, 107000, 104000, 111000, 116000, 120000];
-      LineChartBuilder.updateData(lineWidget, newData);
+      const newData = await getUpdatedPortfolioData();
+      updatePortfolioPerformanceData(lineWidget, newData);
       this.cdr.detectChanges();
       console.log('Line chart updated successfully');
     }
@@ -641,8 +462,8 @@ export class OverallComponent implements OnInit {
     );
     
     if (gaugeWidget) {
-      const newData = [{ value: 85, name: 'Savings Goal Progress' }];
-      GaugeChartBuilder.updateData(gaugeWidget, newData);
+      const newData = await getUpdatedSavingsGoalData();
+      updateSavingsGoalData(gaugeWidget, newData);
       this.cdr.detectChanges();
       console.log('Gauge chart updated successfully');
     }
@@ -658,14 +479,8 @@ export class OverallComponent implements OnInit {
     );
     
     if (densityMapWidget) {
-      const newData: DensityMapData[] = [
-        { name: 'Hong Kong Island', value: 90 },
-        { name: 'Kowloon', value: 85 },
-        { name: 'New Territories', value: 70 },
-        { name: 'Lantau Island', value: 45 },
-        { name: 'Lamma Island', value: 35 }
-      ];
-      DensityMapBuilder.updateData(densityMapWidget, newData);
+      const newData = await getUpdatedInvestmentDistributionData();
+      updateInvestmentDistributionData(densityMapWidget, newData);
       this.cdr.detectChanges();
       console.log('Density map updated successfully');
     }
