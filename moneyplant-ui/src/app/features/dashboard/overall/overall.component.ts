@@ -59,7 +59,7 @@ import {
   DashboardContainerComponent,
   WidgetBuilder
 } from '@dashboards/public-api';
-import { createPieChartWidget, PieChartData } from './widgets/pieAssetAllocationChart';
+import { PieChartBuilder, PieChartData } from './widgets/pieChart';
 import { createBarChartWidget } from './widgets/barMonthlyIncomeVsExpensesChart';
 import { createLineChartWidget } from './widgets/linePortfolioPerformanceChart';
 import { createScatterChartWidget } from './widgets/scatterRiskVsReturnChart';
@@ -93,7 +93,7 @@ import { ScrollPanelModule } from 'primeng/scrollpanel';
 export class OverallComponent implements OnInit {
   // Dashboard widgets
   widgets: IWidget[] = [];
-  private pieChartWidgetId: string = '';
+  private pieAssetAllocationWidgetId: string = '';
 
   constructor(private cdr: ChangeDetectorRef) {}
 
@@ -116,16 +116,16 @@ export class OverallComponent implements OnInit {
     ];
 
     // Create widgets for each chart type
-    const pieChartWidget = createPieChartWidget()
+    const pieAssetAllocation = PieChartBuilder.create()
+      .setData(assetAllocationData)
       .setHeader('Asset Allocation')
       .setPosition({ x: 0, y: 0, cols: 4, rows: 4 })
-      .setData(assetAllocationData)
       .build();
     
-    this.pieChartWidgetId = pieChartWidget.id;
+    this.pieAssetAllocationWidgetId = pieAssetAllocation.id;
 
     const widgets = [
-      pieChartWidget,
+      pieAssetAllocation,
       createBarChartWidget(),
       createLineChartWidget(),
       createScatterChartWidget(),
@@ -135,6 +135,8 @@ export class OverallComponent implements OnInit {
 
     // Set the widgets array
     this.widgets = widgets;
+
+    this.updateAssetAllocationData(pieAssetAllocation);
   }
 
   /**
@@ -156,7 +158,7 @@ export class OverallComponent implements OnInit {
       ];
       
       // Use the exposed setData method - this is what end users will call
-      WidgetBuilder.setData(widget, updatedData);
+      PieChartBuilder.updateData(widget, updatedData);
       
       // Trigger change detection to ensure UI updates
       this.cdr.detectChanges();
@@ -172,9 +174,9 @@ export class OverallComponent implements OnInit {
    */
   public async testUpdatePieChart(): Promise<void> {
     console.log('Updating pie chart data...');
-    const pieChartWidget = this.widgets.find(w => w.id === this.pieChartWidgetId);
-    if (pieChartWidget) {
-      await this.updateAssetAllocationData(pieChartWidget);
+    const pieAssetAllocation = this.widgets.find(w => w.id === this.pieAssetAllocationWidgetId);
+    if (pieAssetAllocation) {
+      await this.updateAssetAllocationData(pieAssetAllocation);
     }
   }
 
@@ -182,13 +184,13 @@ export class OverallComponent implements OnInit {
    * Alternative method showing direct widget.setData() usage
    * (if the widget has the setData method implemented)
    */
-  public updateAssetAllocationDataDirect(widget: IWidget, newData: PieChartData[]): void {
+  public updatePieChartDataDirect(widget: IWidget, newData: PieChartData[]): void {
     if (widget.setData) {
       // Direct call to widget's setData method
       widget.setData(newData);
       this.cdr.detectChanges();
     }
-  }
+  } 
 
   /**
    * Utility method to get widget by ID
@@ -215,7 +217,13 @@ export class OverallComponent implements OnInit {
       // Update each widget with corresponding data
       widgets.forEach((widget, index) => {
         if (data[index]) {
-          WidgetBuilder.setData(widget, data[index]);
+          // Use PieChartBuilder for pie chart widgets, WidgetBuilder for others
+          if (widget.config.component === 'echart' && 
+              (widget.config.options as any)?.series?.[0]?.type === 'pie') {
+            PieChartBuilder.updateData(widget, data[index]);
+          } else {
+            WidgetBuilder.setData(widget, data[index]);
+          }
         }
       });
       
