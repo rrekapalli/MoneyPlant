@@ -21,6 +21,10 @@ export * from './lib/entities/ITileOptions';
 export * from './lib/entities/IWidget';
 
 
+// Chart Builders
+export * from './lib/chart-builders';
+
+
 // Widgets
 export * from './lib/widgets/echarts/echart.component';
 export * from './lib/widgets/filter/filter.component';

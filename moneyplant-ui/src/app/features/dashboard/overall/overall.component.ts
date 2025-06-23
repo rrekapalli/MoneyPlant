@@ -57,9 +57,10 @@ echarts.use([
 import { 
   IWidget,
   DashboardContainerComponent,
-  WidgetBuilder
+  WidgetBuilder,
+  PieChartBuilder,
+  PieChartData
 } from '@dashboards/public-api';
-import { PieChartBuilder, PieChartData } from './widgets/pieChart';
 import { createBarChartWidget } from './widgets/barMonthlyIncomeVsExpensesChart';
 import { createLineChartWidget } from './widgets/linePortfolioPerformanceChart';
 import { createScatterChartWidget } from './widgets/scatterRiskVsReturnChart';
@@ -257,5 +258,27 @@ export class OverallComponent implements OnInit {
     ];
     
     await this.updateMultipleWidgets(pieChartWidgets, pieChartData);
+  }
+
+  /**
+   * Test method to demonstrate the new generic methods from ApacheEchartBuilder
+   */
+  public testGenericMethods(): void {
+    const pieChart = PieChartBuilder.create()
+      .setData([
+        { value: 30, name: 'Test 1' },
+        { value: 40, name: 'Test 2' },
+        { value: 30, name: 'Test 3' }
+      ])
+      .setLabelFormatter('{b}: {c} ({d}%)')  // Generic method from base class
+      .setColors(['#ff6b6b', '#4ecdc4', '#45b7d1'])  // Generic method from base class
+      .setBorderRadius(8)  // Generic method from base class
+      .setBorder('#fff', 2)  // Generic method from base class
+      .setEmphasis(15, 0, 'rgba(0, 0, 0, 0.6)')  // Generic method from base class
+      .setHeader('Test Generic Methods')
+      .setPosition({ x: 0, y: 0, cols: 4, rows: 4 })
+      .build();
+    
+    console.log('Generic methods test completed:', pieChart);
   }
 }
