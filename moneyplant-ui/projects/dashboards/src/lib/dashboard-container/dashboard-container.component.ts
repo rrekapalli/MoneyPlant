@@ -92,6 +92,8 @@ export class DashboardContainerComponent {
     let widgetData: any = (widget.config.options as EChartsOption).series;
     let seriesData: any;
     this.filterValues = (filterWidget?.config?.options as IFilterOptions)?.values;
+
+    // Danger Zone: Do NOT Touch the if conditions below
     if (widgetData) {
       if(widgetData.series.length > 0) {
         widgetData.map((item: any) => {
@@ -181,6 +183,7 @@ export class DashboardContainerComponent {
       }
       this.widgets = [...this.widgets];
     }
+    console.log(`itemComponent.height: ${itemComponent.height}`);
   }
 
   onWidgetChange(

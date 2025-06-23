@@ -20,12 +20,12 @@ const onGetWidget = (widget: IWidget) => {
       return TableComponent;
     case 'tile':
       return TileComponent;
-    case 'markdownCell':
-      return MarkdownCellComponent;
-    case 'codeCell':
-      return CodeCellComponent;
-    case 'react':
-      return ReactComponentWrapperComponent;
+    // case 'markdownCell':
+    //   return MarkdownCellComponent;
+    // case 'codeCell':
+    //   return CodeCellComponent;
+    // case 'react':
+    //   return ReactComponentWrapperComponent;
     default:
       break;
   }
@@ -41,9 +41,9 @@ const onGetWidget = (widget: IWidget) => {
     FilterComponent, 
     TableComponent, 
     TileComponent, 
-    MarkdownCellComponent, 
-    CodeCellComponent, 
-    ReactComponentWrapperComponent,
+    //MarkdownCellComponent, 
+    //CodeCellComponent, 
+    //ReactComponentWrapperComponent,
   ],
   providers: [
     provideEchartsCore({
