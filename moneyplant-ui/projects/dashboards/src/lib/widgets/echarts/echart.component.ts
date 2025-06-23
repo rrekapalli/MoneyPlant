@@ -14,7 +14,6 @@ import { CompactType, DisplayGrid, GridType } from 'angular-gridster2';
     (chartInit)="onChartInit($event)"
     (chartClick)="onClick($event)"
     (chartDblClick)="onChartDblClick($event)"
-    [initOpts]="initOpts"
   ></div>`,
   imports: [CommonModule, NgxEchartsDirective],
   providers: [provideEchartsCore({

@@ -85,7 +85,7 @@ export class DashboardContainerComponent {
   public mergedOptions: GridsterConfig = {};
 
   private readonly defaultOptions: GridsterConfig = {
-    gridType: GridType.Fixed,
+    gridType: GridType.VerticalFixed,
     displayGrid: DisplayGrid.None,
     margin: 10,
     outerMargin: true,
