@@ -69,33 +69,33 @@ export class TodayComponent implements OnInit {
   private initializeDashboardWidgets(): void {
     // Create Superset dashboard widget
     this.widgets = [
-      this.createSupersetDashboardWidget()
+      //this.createSupersetDashboardWidget()
     ];
   }
 
   /**
    * Create a Superset dashboard widget
    */
-  private createSupersetDashboardWidget(): IWidget {
-    return {
-      id: uuidv4(),
-      position: { x: 0, y: 0, cols: 12, rows: 8 },
-      config: {
-        component: 'superset',
-        header: {
-          title: 'Today\'s Dashboard'
-        },
-        options: {
-          dashboardUrl: 'https://superset.example.com',
-          dashboardId: '123',
-          config: {
-            showHeader: true,
-            showFooter: false,
-            height: '100%',
-            width: '100%'
-          }
-        }
-      }
-    };
-  }
+  // private createSupersetDashboardWidget(): IWidget {
+  //   return {
+  //     id: uuidv4(),
+  //     position: { x: 0, y: 0, cols: 12, rows: 8 },
+  //     config: {
+  //       component: 'superset',
+  //       header: {
+  //         title: 'Today\'s Dashboard'
+  //       },
+  //       options: {
+  //         dashboardUrl: 'https://superset.example.com',
+  //         dashboardId: '123',
+  //         config: {
+  //           showHeader: true,
+  //           showFooter: false,
+  //           height: '100%',
+  //           width: '100%'
+  //         }
+  //       }
+  //     }
+  //   };
+  // }
 }

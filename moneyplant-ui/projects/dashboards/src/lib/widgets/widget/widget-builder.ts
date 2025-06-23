@@ -11,6 +11,11 @@ import { IFilterValues } from '../../entities/IFilterValues';
 
 export class WidgetBuilder {
   private widget: IWidget = {
+    id: '',
+    x: 0,
+    y: 0,
+    cols: 1,
+    rows: 1,
     position: { x: 0, y: 0, cols: 1, rows: 1 },
     config: {
       options: {}

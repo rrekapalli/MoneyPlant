@@ -12,7 +12,7 @@ export function createPieChartWidget(): IWidget {
 
   return new WidgetBuilder()
     .setId(uuidv4())
-    .setPosition({ x: 0, y: 0, cols: 4, rows: 4 })
+    .setPosition({ x: 0, y: 0, cols: 4, rows: 4 })  
     .setComponent('echart')
     .setHeader('Asset Allocation')
     .setEChartsOptions({

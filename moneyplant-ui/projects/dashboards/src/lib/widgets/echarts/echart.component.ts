@@ -4,7 +4,6 @@ import {CommonModule} from '@angular/common';
 import {NgxEchartsDirective, provideEchartsCore} from 'ngx-echarts';
 import { EChartsOption } from 'echarts';
 import { CompactType, DisplayGrid, GridType } from 'angular-gridster2';
-import { DashboardContainerComponent } from 'dashboards';
 
 @Component({
   selector: 'vis-echart',
@@ -44,12 +43,10 @@ export class EchartComponent {
     maxCols: 12,
     minRows: 1,
     maxRows: 50,
-    fixedColWidth: 105,
-    rowHeightRatio: 0.70,
+    // fixedColWidth: 105,
+    // rowHeightRatio: 0.70,
     fixedRowHeight: 30,
-    margin: 6,
-    itemResizeCallback: DashboardContainerComponent.onWidgetResize,
-    itemChangeCallback: DashboardContainerComponent.onWidgetChange
+    margin: 6
   };
 
   get chartOptions() {

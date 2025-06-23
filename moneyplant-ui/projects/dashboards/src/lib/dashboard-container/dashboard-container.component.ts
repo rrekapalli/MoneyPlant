@@ -56,7 +56,7 @@ export class DashboardContainerComponent {
   @Input() filterValues: IFilterValues[] = [];
   public container = DashboardContainerComponent;
   chartHeight: number = 300;
-  readonly defaultChartHeight: number = 300;
+  readonly defaultChartHeight: number = 400;
 
   @Output() containerTouchChanged: EventEmitter<any> = new EventEmitter<any>();
   @Output() editModeStringChange: EventEmitter<string> = new EventEmitter<string>();
@@ -78,13 +78,11 @@ export class DashboardContainerComponent {
 
   newDashboardForm!: FormGroup;
 
-  @Input() options: GridsterConfig = {
-    itemResizeCallback: DashboardContainerComponent.onWidgetResize,
-    itemChangeCallback: DashboardContainerComponent.onWidgetChange
-  };
+  @Input() options: GridsterConfig = {};
 
   ngOnInit() {
-    // Empty
+    this.options.itemResizeCallback = this.onWidgetResize.bind(this);
+    this.options.itemChangeCallback = this.onWidgetChange.bind(this);
   }
 
   async onDataLoad(widget: IWidget) {
@@ -130,6 +128,11 @@ export class DashboardContainerComponent {
       const filter = widget.config.state?.isOdataQuery === true ? this.getFilterParams() : this.filterValues 
       widget?.config?.events?.onChartOptions(widget,widget.chartInstance ?? undefined , filter  )
     }
+    const widgetsWithNewOptions = this.widgets.map((w: IWidget) =>
+      w.id === widget.id ? {...widget} : w
+    );
+    this.widgets = widgetsWithNewOptions;
+    this.widgets.forEach(w => this.onDataLoad(w))
   }
 
   getFilterParams() {
@@ -149,23 +152,38 @@ export class DashboardContainerComponent {
   }
 
   onUpdateWidget(widget: IWidget) {
-    const widgetsWithNewOptions = this.widgets.map((item: any) =>
-      item.id === widget.id ? {...widget} : item
-    );
-    this.widgets = widgetsWithNewOptions;
-    this.widgets.forEach(widget => this.onDataLoad(widget))
+    this.widgets = this.widgets.map((w: IWidget) => {
+      if (w.id === widget.id) {
+        return { ...w, ...widget };
+      }
+      return w;
+    });
+    this.widgets.forEach(w => this.onDataLoad(w))
   }
 
-  static onWidgetResize(
+  onWidgetResize(
     item: GridsterItem,
     itemComponent: GridsterItemComponentInterface
   ) {
     DashboardContainerComponent.containerTouched = true;
     DashboardContainerComponent.editModeString =
       '[Edit Mode - Pending Changes]';
+
+    const widget = this.widgets.find(w => 
+      w.position.x == item.x && w.position.y == item.y 
+      && ((w.position.cols == item.cols && w.position.rows == item.rows) 
+      || (w['size']?.cols == item.cols && w['size']?.rows == item.rows)));
+
+    if(widget) {
+      widget.height = this.calculateChartHeight(item.cols, item.rows);
+      if(widget.chartInstance) {
+        widget.chartInstance.resize();
+      }
+      this.widgets = [...this.widgets];
+    }
   }
 
-  static onWidgetChange(
+  onWidgetChange(
     item: GridsterItem,
     itemComponent: GridsterItemComponentInterface
   ) {

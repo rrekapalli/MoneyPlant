@@ -11,9 +11,9 @@ import {IFilterValues} from './IFilterValues';
 /**
  * Interface representing a widget in the dashboard
  */
-export interface IWidget {
+export interface IWidget extends GridsterItem {
   /** Unique identifier for the widget */
-  id?: string;
+  id: string;
   
   /** Position and size configuration for the gridster layout */
   position: GridsterItem;
@@ -59,4 +59,7 @@ export interface IWidget {
   
   /** Reference to the ECharts instance if applicable */
   chartInstance?: ECharts | null;
+  
+  /** Optional height of the widget */
+  height?: number;
 }
