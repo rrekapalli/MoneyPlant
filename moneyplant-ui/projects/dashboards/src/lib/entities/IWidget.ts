@@ -57,9 +57,15 @@ export interface IWidget extends GridsterItem {
   /** Data series for the widget */
   series?: [{}];
   
+  /** Dynamic data for the widget that can be updated via API calls */
+  data?: any;
+  
   /** Reference to the ECharts instance if applicable */
   chartInstance?: ECharts | null;
   
   /** Optional height of the widget */
   height?: number;
+
+  /** Method to update widget data dynamically */
+  setData?(data: any): void;
 }

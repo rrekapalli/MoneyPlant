@@ -102,6 +102,10 @@ export class WidgetBuilder {
     return this;
   }
 
+  setData(data: any) {
+    this.widget.data = data;
+    return this;
+  }
 
   setChartInstance(chartInstance: ECharts | null) {
     this.widget.chartInstance = chartInstance;
@@ -166,6 +170,32 @@ export class WidgetBuilder {
 
   build() {
     return this.widget;
+  }
+
+  /**
+   * Static method to update data on an existing widget
+   * @param widget - The widget to update
+   * @param data - The new data to set
+   */
+  static setData(widget: IWidget, data: any): void {
+    widget.data = data;
+    
+    // Update ECharts series data if it's an ECharts widget
+    if (widget.config.options && 'series' in widget.config.options) {
+      const options = widget.config.options as EChartsOption;
+      if (options.series && Array.isArray(options.series)) {
+        options.series.forEach(series => {
+          if (series && typeof series === 'object' && 'data' in series) {
+            (series as any).data = data;
+          }
+        });
+      }
+      
+      // Trigger chart update if chart instance exists
+      if (widget.chartInstance) {
+        widget.chartInstance.setOption(options, true);
+      }
+    }
   }
 }
     

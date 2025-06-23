@@ -1,4 +1,24 @@
 <p class="dashboard-title">Financial Dashboard</p>
+
+<!-- Test button for async data update -->
+<div class="test-controls">
+  <p-button 
+    label="Update Pie Chart Data (Async)" 
+    icon="pi pi-refresh" 
+    (onClick)="testUpdatePieChart()"
+    [loading]="false"
+    styleClass="p-button-sm">
+  </p-button>
+  
+  <p-button 
+    label="Update All Charts" 
+    icon="pi pi-sync" 
+    (onClick)="updateAllPieCharts()"
+    [loading]="false"
+    styleClass="p-button-sm p-button-secondary">
+  </p-button>
+</div>
+
 <p-scrollPanel [style]="{ height: '100%', width: '100%', 'overflow-x': 'hidden', 'overflow': 'auto' }">
   <div class="dashboard-container">
     <!-- Dashboard Container Component -->
