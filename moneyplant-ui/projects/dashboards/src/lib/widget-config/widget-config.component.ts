@@ -1,19 +1,14 @@
-import {Component, EventEmitter, inject, Input, Output} from '@angular/core';
+import {Component, EventEmitter, Input, Output} from '@angular/core';
 import {FormGroup, FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {IWidget} from '../entities/IWidget';
-import {FormlyFieldConfig, FormlyModule} from '@ngx-formly/core';
-import {FormlyPrimeNGModule} from '@ngx-formly/primeng';
-import {TabMenuModule} from 'primeng/tabmenu';
 import {CommonModule} from '@angular/common';
 import {MenuItem} from 'primeng/api';
-// import { formOptions } from './options';
-import {merge} from 'lodash';
-import {VisStorybookModule,MessageService} from 'vis-storybook';
-import {dataOptions} from '../formly-configs/series-options';
-import {formOptions} from '../formly-configs/form-options';
-import {set} from 'lodash-es';
-import { DashboardApi } from 'vis-services';
-import _ from 'lodash';
+import {ButtonModule} from 'primeng/button';
+import {ScrollPanelModule} from 'primeng/scrollpanel';
+import {PanelModule} from 'primeng/panel';
+import {TabMenuModule} from 'primeng/tabmenu';
+import {InputTextModule} from 'primeng/inputtext';
+import { ToastModule } from 'primeng/toast';
 
 @Component({
   selector: 'vis-widget-config',
@@ -22,19 +17,17 @@ import _ from 'lodash';
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
-    FormlyModule,
-    FormlyPrimeNGModule,
+    ButtonModule,
+    ScrollPanelModule,
+    PanelModule,
     TabMenuModule,
-    VisStorybookModule,
+    InputTextModule,
+    ToastModule,
   ],
-  providers: [MessageService],
   templateUrl: './widget-config.component.html',
   styleUrls: ['./widget-config.component.scss'],
 })
 export class WidgetConfigComponent {
-
-  private readonly messageService = inject(MessageService);
-  private readonly dashboardApi = inject(DashboardApi);
 
   sidebarVisible: boolean = true;
   private _widget!: IWidget | undefined;
@@ -69,11 +62,6 @@ export class WidgetConfigComponent {
   form = new FormGroup({});
   formSeriesOptions = new FormGroup({});
 
-  widgetFields: FormlyFieldConfig[] = formOptions;
-  seriesFields: FormlyFieldConfig[] = dataOptions;
-
-  // formlyTabOptions: FormlyFieldConfig[] = formOptions;
-
   ngOnInit() {
     this.formModel = {};
   }
@@ -83,15 +71,13 @@ export class WidgetConfigComponent {
   }
 
   onWidgetSave() {
-    const newOptions = merge(this._widget, this.formModel);
-    set(newOptions, 'config.options.series', this.formModel.series);
+    const newOptions = {...this._widget, ...this.formModel};
+    newOptions.config.options.series = this.formModel.series;
     this.onUpdate.emit(newOptions);
 
-    if(this._widget && !_.isEmpty(this._widget)){
-      if(_.isEmpty(this._widget.series)){
-        this._widget.series?.push({});
-      } 
-    } 
+    if(this._widget && this._widget.series){
+      this._widget.series?.push({});
+    }
 
     let payload = {
       name: (this._widget?.config?.header?.title ?? this._widget?.id) ?? 'New Widget',
@@ -103,24 +89,20 @@ export class WidgetConfigComponent {
     };
 
     // Call the API to save the empty widget
-    this.dashboardApi.updateByQuery(`${this.selectedDashboardId}/${this._widget?.id}/visualization`, payload)
-    .subscribe({
-      next: (res: any) => {
-        if(res) {
-          if(this._widget) {
-            this._widget.id = res.id;
-          }
-        }
-        //this.messageService.add({ severity: 'success', summary: 'SUCCESS', detail: 'Visualization created successfully', key: 'br', life: 3000 });      
-      },      
-      error: (error) => {
-        console.log('Error creating visualization:', error);
-        this.messageService.add({ severity: 'error', summary: 'ERROR', detail: 'Error creating visualization', key: 'br', life: 3000 });
-      },
-      complete: () => {
-        this.messageService.add({ severity: 'success', summary: 'SUCCESS', detail: 'Visualization created successfully', key: 'br', life: 3000 }); 
-      }
-    });
+    // this.dashboardApi.updateByQuery(`${this.selectedDashboardId}/${this._widget?.id}/visualization`, payload)
+    // .subscribe({
+    //   next: (res: any) => {
+    //     if(res) {
+    //       if(this._widget) {
+    //         this._widget.id = res.id;
+    //       }
+    //     }
+    //     //this.messageService.add({ severity: 'success', summary: 'SUCCESS', detail: 'Visualization created successfully', key: 'br', life: 3000 });      
+    //   },  
+    //   error: (error: any) => {
+    //     console.log('Error creating visualization:', error);
+    //   },
+    // });
   }
 
 }

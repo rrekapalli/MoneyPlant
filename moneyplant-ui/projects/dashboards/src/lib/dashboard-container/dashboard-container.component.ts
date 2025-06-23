@@ -24,23 +24,20 @@ import {CommonModule} from '@angular/common';
 import {FormBuilder, FormGroup, FormsModule} from '@angular/forms';
 import {IWidget} from '../entities/IWidget';
 import {WidgetComponent} from '../widgets/widget/widget.component';
-import {map, find} from 'lodash-es';
 import {WidgetHeaderComponent} from '../widget-header/widget-header.component';
-import {MenuItem, MessageService, VisStorybookModule} from 'vis-storybook';
-import _ from 'lodash';
 import {IFilterOptions} from '../entities/IFilterOptions';
 import {IFilterValues} from '../entities/IFilterValues';
 import {v4 as uuid} from 'uuid';
 import {NgxPrintModule} from 'ngx-print';
 import {BrowserModule} from '@angular/platform-browser';
 import {NgxPrintService, PrintOptions} from 'ngx-print';
+import { ToastModule } from 'primeng/toast';
 
 @Component({
   selector: 'vis-dashboard-container',
   standalone: true,
   templateUrl: './dashboard-container.component.html',
   styleUrls: ['./dashboard-container.component.scss'],
-  providers: [MessageService],
   imports: [
     CommonModule,
     FormsModule,
@@ -48,15 +45,13 @@ import {NgxPrintService, PrintOptions} from 'ngx-print';
     GridsterItemComponent,
     WidgetComponent,
     WidgetHeaderComponent,
-    VisStorybookModule,
     NgxPrintModule,
+    ToastModule,
     // BrowserModule
   ],
 })
 export class DashboardContainerComponent {
   
-  private readonly messageService = inject(MessageService);
-
   @Input() widgets!: IWidget[];
   @Input() filterValues: IFilterValues[] = [];
   public container = DashboardContainerComponent;
@@ -93,15 +88,14 @@ export class DashboardContainerComponent {
   }
 
   async onDataLoad(widget: IWidget) {
-    const filterWidget = find(
-      this.widgets,
+    const filterWidget = this.widgets.find(
       (item: IWidget) => item.config.component === 'filter'
     );
     let widgetData: any = (widget.config.options as EChartsOption).series;
     let seriesData: any;
     this.filterValues = (filterWidget?.config?.options as IFilterOptions)?.values;
     if (widgetData) {
-      if(!_.isEmpty(widgetData.series)) {
+      if(widgetData.series.length > 0) {
         widgetData.map((item: any) => {
           return {
             x: {
@@ -142,7 +136,7 @@ export class DashboardContainerComponent {
     let params = '';
     if (this.filterValues.length !== 0) {
       const filtersParams: any = [];
-      map(this.filterValues, (item) => {
+      this.filterValues.map((item: any) => {
         filtersParams.push({
           [item.accessor]: item[item.accessor]
         });
@@ -155,7 +149,7 @@ export class DashboardContainerComponent {
   }
 
   onUpdateWidget(widget: IWidget) {
-    const widgetsWithNewOptions = map(this.widgets, (item) =>
+    const widgetsWithNewOptions = this.widgets.map((item: any) =>
       item.id === widget.id ? {...widget} : item
     );
     this.widgets = widgetsWithNewOptions;
@@ -190,10 +184,7 @@ export class DashboardContainerComponent {
   }
 
   onUpdateFilter($event: any) {
-    const filterWidget = find(
-      this.widgets,
-      (item: IWidget) => item.config.component === 'filter'
-    );
+    const filterWidget = this.widgets.find((item: IWidget) => item.config.component === 'filter');
     const newFilterWidget = {...filterWidget};
     if (newFilterWidget) {
 
@@ -220,7 +211,6 @@ export class DashboardContainerComponent {
   // Delete an existing widget, only when in Edit Model
   onDeleteWidget(widget: IWidget) {
     this.widgets.splice(this.widgets.indexOf(widget), 1);
-    this.messageService.add({ severity: 'warn', summary: 'ALERT', detail: 'Widget Deleted!', key: 'br', life: 3000 });
   }
 
   public calculateChartHeight(cols: number, rows: number, flag: boolean = false, baseHeight: number = this.defaultChartHeight): number {

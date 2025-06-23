@@ -1,4 +1,4 @@
-import { Component, OnInit, Inject } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
@@ -12,7 +12,6 @@ import { GridsterConfig, DisplayGrid, GridType } from 'angular-gridster2';
 import { 
   DashboardContainerComponent,
   IWidget,
-  EventBusService
 } from '@dashboards/public-api';
 
 import { v4 as uuidv4 } from 'uuid';
@@ -33,7 +32,6 @@ import { v4 as uuidv4 } from 'uuid';
   ],
   templateUrl: './today.component.html',
   styleUrls: ['./today.component.scss'],
-  providers: [EventBusService]
 })
 export class TodayComponent implements OnInit {
   // Dashboard widgets
@@ -58,7 +56,7 @@ export class TodayComponent implements OnInit {
     fixedRowHeight: 100
   };
 
-  constructor(@Inject(EventBusService) private eventBus: EventBusService) {}
+  constructor() {}
 
   ngOnInit(): void {
     // Initialize dashboard widgets

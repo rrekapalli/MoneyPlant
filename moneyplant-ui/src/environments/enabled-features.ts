@@ -4,6 +4,11 @@
  */
 export const enabledFeatures = [
   'dashboard',
+  'dashboard-overall',
+  'dashboard-today',
+  'dashboard-week',
+  'dashboard-month',
+  'dashboard-year',
   'watchlist',
   'holdings',
   'market',

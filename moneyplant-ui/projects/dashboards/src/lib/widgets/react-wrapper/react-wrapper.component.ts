@@ -10,9 +10,6 @@ import {
   ViewChild,
 } from '@angular/core';
 import {IWidget} from '../../entities/IWidget';
-import ReactDOM from 'react-dom';
-import React from 'react';
-//import { MyReactComponent } from 'projects/notebook/src';
 
 declare global {
   interface Window {

@@ -1,3 +1,4 @@
 export interface IMarkdownCellOptions {
-  accessor: string;
+  accessor?: string;
+  content: string;
 }

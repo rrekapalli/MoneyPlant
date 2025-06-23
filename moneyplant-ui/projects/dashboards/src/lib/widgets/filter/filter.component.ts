@@ -1,16 +1,15 @@
-import {Component, EventEmitter, Inject, Input, signal} from '@angular/core';
+import {Component, EventEmitter, Input} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {IWidget} from '../../entities/IWidget';
 import {IFilterValues} from '../../entities/IFilterValues';
 import {IFilterOptions} from '../../entities/IFilterOptions';
-import {VisStorybookModule} from 'vis-storybook';
 
 @Component({
   selector: 'vis-filters',
   templateUrl: './filter.component.html',
   styleUrls: ['./filter.component.css'],
   standalone: true,
-  imports: [CommonModule, VisStorybookModule],
+  imports: [CommonModule],
 })
 export class FilterComponent {
   @Input() widget!: IWidget;

@@ -1,9 +1,8 @@
 import {Component, Input, EventEmitter} from '@angular/core';
 import {IWidget} from '../../entities/IWidget';
 import {CommonModule} from '@angular/common';
-import {NgxEchartsDirective, provideEcharts} from 'ngx-echarts';
-import {ECharts, EChartsInitOpts, EChartsOption} from 'echarts';
-import { find } from 'lodash-es';
+import {NgxEchartsDirective, provideEchartsCore} from 'ngx-echarts';
+import { EChartsOption } from 'echarts';
 import { CompactType, DisplayGrid, GridType } from 'angular-gridster2';
 
 @Component({
@@ -18,7 +17,9 @@ import { CompactType, DisplayGrid, GridType } from 'angular-gridster2';
     [initOpts]="initOpts"
   ></div>`,
   imports: [CommonModule, NgxEchartsDirective],
-  providers: [provideEcharts()],
+  providers: [provideEchartsCore({
+    echarts: () => import('echarts'),
+  })],
 })
 export class EchartComponent {
   @Input() widget!: IWidget;
@@ -37,14 +38,14 @@ export class EchartComponent {
       enabled:  true,
     },
     swap: false,
-    minCols: 1,
+    minCols: 12,
     maxCols: 12,
-    minRows: 50,
+    minRows: 1,
     maxRows: 50,
     defaultItemCols: 1,
     defaultItemRows: 1,
     fixedColWidth: 105,
-    rowHeightRatio: 0.15,
+    rowHeightRatio: 0.70,
     fixedRowHeight: 30,
     scrollSensitivity: 10,
     scrollSpeed: 20,
@@ -63,7 +64,7 @@ export class EchartComponent {
     disableScrollVertical: false,
     disableScrollHorizontal: false,
     enableBoundaryControl: false,
-    compactType: CompactType.None,
+    compactType: CompactType.CompactUpAndLeft,
     margin: 6,
     outerMargin: true,
     outerMarginTop: null,
@@ -97,7 +98,7 @@ export class EchartComponent {
     return this.widget?.config?.options as EChartsOption;
   }
 
-  onChartInit(instance: ECharts) {
+  onChartInit(instance: any) {
     this.widget.chartInstance = instance;
     setTimeout(() => {
       this.onDataLoad?.emit(this.widget);
@@ -113,7 +114,7 @@ export class EchartComponent {
     setTimeout(() => {
       let selectedPoint = e.data;
       if(e.seriesType === "scatter") {
-        const scatterChartData = find(e.data, this.widget.config.state?.accessor)
+        const scatterChartData = e.data.find((item: any) => item.name === this.widget.config.state?.accessor)
         selectedPoint = {
           ...selectedPoint,
           ...scatterChartData as object

@@ -8,6 +8,7 @@ import {TileComponent} from '../tile/tile.component';
 import {MarkdownCellComponent} from '../markdown-cell/markdown-cell.component';
 import {CodeCellComponent} from '../code-cell/code-cell.component';
 import {ReactComponentWrapperComponent} from '../react-wrapper/react-wrapper.component';
+import { provideEchartsCore } from 'ngx-echarts';
 
 const onGetWidget = (widget: IWidget) => {
   switch (widget?.config?.component) {
@@ -35,7 +36,20 @@ const onGetWidget = (widget: IWidget) => {
   selector: 'vis-widget',
   standalone: true,
   templateUrl:'./widget.component.html',
-  imports: [NgComponentOutlet, AsyncPipe],
+  imports: [NgComponentOutlet, 
+    EchartComponent, 
+    FilterComponent, 
+    TableComponent, 
+    TileComponent, 
+    MarkdownCellComponent, 
+    CodeCellComponent, 
+    ReactComponentWrapperComponent,
+  ],
+  providers: [
+    provideEchartsCore({
+      echarts: () => import('echarts'),
+    })
+  ]
 })
 export class WidgetComponent {
   @Input() widget!: IWidget;

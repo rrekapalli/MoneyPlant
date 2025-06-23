@@ -1,14 +1,5 @@
-@if(isEchartComponent) {
-    <div [style]="{ height: '20vh' }">
-        <ng-container 
-            *ngComponentOutlet="currentWidget.component; inputs: currentWidget.inputs">
-        </ng-container>
-    </div>
-}
-@else {
-    <div [style]="{ height: '20vh' }">
-        <ng-container 
-            *ngComponentOutlet="currentWidget.component; inputs: currentWidget.inputs">
-        </ng-container>
-    </div>
-}
+<div [style]="{ height: '20vh' }">
+    <ng-container
+        *ngComponentOutlet="currentWidget.component; inputs: currentWidget.inputs">
+    </ng-container>
+</div>

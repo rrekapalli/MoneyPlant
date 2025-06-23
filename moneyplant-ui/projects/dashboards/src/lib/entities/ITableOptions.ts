@@ -1,3 +1,5 @@
 export interface ITableOptions {
-  accessor: string;
+  accessor?: string;
+  columns: string[];
+  data: any[];
 }
