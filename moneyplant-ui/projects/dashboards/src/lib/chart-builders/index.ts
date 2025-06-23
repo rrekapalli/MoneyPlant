@@ -10,4 +10,5 @@ export * from './bar';
 export * from './line';
 export * from './scatter';
 export * from './gauge';
-export * from './heatmap'; 
+export * from './heatmap';
+export * from './density-map'; 

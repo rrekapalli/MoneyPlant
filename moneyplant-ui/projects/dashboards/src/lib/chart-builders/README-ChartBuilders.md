@@ -36,6 +36,11 @@ chart-builders/
 │   ├── heatmapChart-examples.ts
 │   ├── README.md
 │   └── index.ts
+├── density-map/                      # Density map chart implementation
+│   ├── density-map-builder.ts
+│   ├── densityMap-examples.ts
+│   ├── README.md
+│   └── index.ts
 └── bar/                              # Bar chart implementation
     ├── bar-chart-builder.ts
     ├── README.md
@@ -178,7 +183,37 @@ const widget = HeatmapChartBuilder.create()
   .build();
 ```
 
-### 6. BarChartBuilder (`bar/`)
+### 6. DensityMapBuilder (`density-map/`)
+Creates density map charts for geographical data visualization.
+
+**Key Features:**
+- Geo map visualization with various map types (HK, US, CN, etc.)
+- Density coloring with customizable color gradients
+- Interactive controls (pan, zoom, hover effects)
+- Customizable styling (borders, shadows, emphasis effects)
+
+**Usage:**
+```typescript
+import { DensityMapBuilder } from './density-map';
+
+const data = [
+  { name: 'Hong Kong Island', value: 100 },
+  { name: 'Kowloon', value: 80 },
+  { name: 'New Territories', value: 60 }
+];
+
+const widget = DensityMapBuilder.create()
+  .setData(data)
+  .setMap('HK')
+  .setVisualMap(0, 100, ['#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8'])
+  .setRoam(true)
+  .setZoom(1.2)
+  .setHeader('Hong Kong Population Density')
+  .setPosition({ x: 0, y: 0, cols: 8, rows: 6 })
+  .build();
+```
+
+### 7. BarChartBuilder (`bar/`)
 Creates bar charts for data comparison and categorization.
 
 **Key Features:**
@@ -209,6 +244,7 @@ import {
   ScatterChartBuilder, 
   GaugeChartBuilder, 
   HeatmapChartBuilder, 
+  DensityMapBuilder,
   BarChartBuilder 
 } from './chart-builders';
 ```
@@ -220,6 +256,7 @@ import { LineChartBuilder } from './chart-builders/line';
 import { ScatterChartBuilder } from './chart-builders/scatter';
 import { GaugeChartBuilder } from './chart-builders/gauge';
 import { HeatmapChartBuilder } from './chart-builders/heatmap';
+import { DensityMapBuilder } from './chart-builders/density-map';
 import { BarChartBuilder } from './chart-builders/bar';
 ```
 
@@ -264,6 +301,7 @@ Each chart type folder contains comprehensive examples:
 - `scatter/scatterChart-examples.ts` - Scatter chart usage patterns
 - `gauge/gaugeChart-examples.ts` - Gauge chart usage patterns
 - `heatmap/heatmapChart-examples.ts` - Heatmap chart usage patterns
+- `density-map/densityMap-examples.ts` - Density map usage patterns
 
 ## Data Formats
 
@@ -309,6 +347,15 @@ interface HeatmapChartData {
   value: [number, number, number]; // [x, y, value]
   name?: string;
   [key: string]: any;
+}
+```
+
+### Density Map Data
+```typescript
+interface DensityMapData {
+  name: string;    // Region name (must match map data)
+  value: number;   // Density value
+  [key: string]: any; // Additional properties
 }
 ```
 

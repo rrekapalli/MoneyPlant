@@ -17,7 +17,8 @@ import {
   PieChart,
   ScatterChart,
   GaugeChart,
-  HeatmapChart
+  HeatmapChart,
+  MapChart
 } from 'echarts/charts';
 // Import tooltip, title, legend, and other components
 import {
@@ -34,6 +35,56 @@ import {
   CanvasRenderer
 } from 'echarts/renderers';
 
+// Create a simple custom map data for demonstration
+const customMapData = {
+  type: 'FeatureCollection' as const,
+  features: [
+    {
+      type: 'Feature' as const,
+      properties: { name: 'Hong Kong Island' },
+      geometry: {
+        type: 'Polygon' as const,
+        coordinates: [[[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]]
+      }
+    },
+    {
+      type: 'Feature' as const,
+      properties: { name: 'Kowloon' },
+      geometry: {
+        type: 'Polygon' as const,
+        coordinates: [[[1, 0], [2, 0], [2, 1], [1, 1], [1, 0]]]
+      }
+    },
+    {
+      type: 'Feature' as const,
+      properties: { name: 'New Territories' },
+      geometry: {
+        type: 'Polygon' as const,
+        coordinates: [[[0, 1], [2, 1], [2, 2], [0, 2], [0, 1]]]
+      }
+    },
+    {
+      type: 'Feature' as const,
+      properties: { name: 'Lantau Island' },
+      geometry: {
+        type: 'Polygon' as const,
+        coordinates: [[[2, 0], [3, 0], [3, 1], [2, 1], [2, 0]]]
+      }
+    },
+    {
+      type: 'Feature' as const,
+      properties: { name: 'Lamma Island' },
+      geometry: {
+        type: 'Polygon' as const,
+        coordinates: [[[3, 0], [4, 0], [4, 1], [3, 1], [3, 0]]]
+      }
+    }
+  ]
+};
+
+// Register the custom map data
+echarts.registerMap('HK', customMapData);
+
 // Register the required components
 echarts.use([
   TitleComponent,
@@ -49,6 +100,7 @@ echarts.use([
   ScatterChart,
   GaugeChart,
   HeatmapChart,
+  MapChart,
   CanvasRenderer
 ]);
 
@@ -64,13 +116,15 @@ import {
   ScatterChartBuilder,
   GaugeChartBuilder,
   HeatmapChartBuilder,
+  DensityMapBuilder,
   // Data interfaces
   PieChartData,
   BarChartData,
   LineChartData,
   ScatterChartData,
   GaugeChartData,
-  HeatmapChartData
+  HeatmapChartData,
+  DensityMapData
 } from '@dashboards/public-api';
 
 
@@ -258,6 +312,32 @@ export class OverallComponent implements OnInit {
       .setTooltip('item', '{b}: ${c}')
       .build();
 
+    // Investment distribution by region data for density map
+    const investmentDistributionData: DensityMapData[] = [
+      { name: 'Hong Kong Island', value: 100 },
+      { name: 'Kowloon', value: 80 },
+      { name: 'New Territories', value: 60 },
+      { name: 'Lantau Island', value: 30 },
+      { name: 'Lamma Island', value: 20 }
+    ];
+
+    const densityMapInvestment = DensityMapBuilder.create()
+      .setData(investmentDistributionData)
+      .setMap('HK')
+      .setHeader('Investment Distribution by Region')
+      .setPosition({ x: 0, y: 8, cols: 6, rows: 4 })
+      .setTitle('Investment Distribution by Region', 'Hong Kong')
+      .setVisualMap(0, 100, ['#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8'])
+      .setRoam(true)
+      .setZoom(1.0)
+      .setCenter([2, 1])
+      .setLabelShow(true, 'inside', '{b}\n{c}%')
+      .setAreaColor('#f5f5f5')
+      .setBorderColor('#999', 0.5)
+      .setEmphasisColor('#b8e186')
+      .setShadow(15, 'rgba(0, 0, 0, 0.4)')
+      .setTooltip('item', '{b}: {c}% of total investment')
+      .build();
 
     // Set the widgets array
     this.widgets = [
@@ -267,6 +347,7 @@ export class OverallComponent implements OnInit {
       scatterRiskVsReturn,
       gaugeSavingsGoal,
       heatmapSpending,
+      densityMapInvestment,
     ];
 
     this.updateAssetAllocationData(pieAssetAllocation);
@@ -363,6 +444,8 @@ export class OverallComponent implements OnInit {
             GaugeChartBuilder.updateData(widget, data[index]);
           } else if (HeatmapChartBuilder.isHeatmapChart(widget)) {
             HeatmapChartBuilder.updateData(widget, data[index]);
+          } else if (DensityMapBuilder.isDensityMap(widget)) {
+            DensityMapBuilder.updateData(widget, data[index]);
           } else {
             WidgetBuilder.setData(widget, data[index]);
           }
@@ -382,7 +465,16 @@ export class OverallComponent implements OnInit {
    * Example of updating all pie chart widgets
    */
   public async updateAllPieCharts(): Promise<void> {
-    const pieChartWidgets = this.getWidgetsByType('echart');
+    // Get only pie chart widgets, not all echart widgets
+    const pieChartWidgets = this.widgets.filter(w => PieChartBuilder.isPieChart(w));
+    
+    console.log('Found pie chart widgets:', pieChartWidgets.length);
+    console.log('All widgets:', this.widgets.map(w => ({
+      id: w.id,
+      component: w.config.component,
+      chartType: (w.config.options as any)?.series?.[0]?.type
+    })));
+    
     const pieChartData = [
       [
         { value: 60, name: 'Stocks' },
@@ -399,6 +491,88 @@ export class OverallComponent implements OnInit {
     ];
     
     await this.updateMultipleWidgets(pieChartWidgets, pieChartData);
+  }
+
+  /**
+   * Example of updating all chart widgets with appropriate data
+   */
+  public async updateAllCharts(): Promise<void> {
+    // Get all echart widgets
+    const chartWidgets = this.widgets.filter(w => w.config.component === 'echart');
+    
+    console.log('Found chart widgets:', chartWidgets.length);
+    
+    // Create appropriate data for each chart type
+    const chartData: any[] = [];
+    
+    chartWidgets.forEach(widget => {
+      const chartType = (widget.config.options as any)?.series?.[0]?.type;
+      console.log('Widget chart type:', chartType);
+      
+      switch (chartType) {
+        case 'pie':
+          chartData.push([
+            { value: 55, name: 'Stocks' },
+            { value: 20, name: 'Bonds' },
+            { value: 15, name: 'Cash' },
+            { value: 8, name: 'Real Estate' },
+            { value: 2, name: 'Commodities' },
+          ]);
+          break;
+        case 'bar':
+          chartData.push([9500, 9800, 8200, 10000, 9200, 10800]);
+          break;
+        case 'line':
+          chartData.push([100000, 107000, 104000, 111000, 116000, 120000]);
+          break;
+        case 'scatter':
+          chartData.push([
+            { value: [0.06, 0.09], name: 'Bonds' },
+            { value: [0.13, 0.16], name: 'Stocks' },
+            { value: [0.09, 0.11], name: 'REITs' },
+            { value: [0.16, 0.21], name: 'Small Cap' },
+            { value: [0.21, 0.26], name: 'Emerging Markets' },
+            { value: [0.04, 0.06], name: 'Cash' }
+          ]);
+          break;
+        case 'gauge':
+          chartData.push([{ value: 85, name: 'Savings Goal Progress' }]);
+          break;
+        case 'heatmap':
+          chartData.push([
+            { value: [0, 0, 1300], name: 'Mon-Food' },
+            { value: [1, 0, 1200], name: 'Tue-Food' },
+            { value: [2, 0, 1400], name: 'Wed-Food' },
+            { value: [3, 0, 1100], name: 'Thu-Food' },
+            { value: [4, 0, 1500], name: 'Fri-Food' },
+            { value: [0, 1, 900], name: 'Mon-Transport' },
+            { value: [1, 1, 850], name: 'Tue-Transport' },
+            { value: [2, 1, 1000], name: 'Wed-Transport' },
+            { value: [3, 1, 800], name: 'Thu-Transport' },
+            { value: [4, 1, 950], name: 'Fri-Transport' },
+            { value: [0, 2, 600], name: 'Mon-Entertainment' },
+            { value: [1, 2, 700], name: 'Tue-Entertainment' },
+            { value: [2, 2, 500], name: 'Wed-Entertainment' },
+            { value: [3, 2, 800], name: 'Thu-Entertainment' },
+            { value: [4, 2, 900], name: 'Fri-Entertainment' }
+          ]);
+          break;
+        case 'map':
+          chartData.push([
+            { name: 'Hong Kong Island', value: 90 },
+            { name: 'Kowloon', value: 85 },
+            { name: 'New Territories', value: 70 },
+            { name: 'Lantau Island', value: 45 },
+            { name: 'Lamma Island', value: 35 }
+          ]);
+          break;
+        default:
+          chartData.push([]);
+          console.warn('Unknown chart type:', chartType);
+      }
+    });
+    
+    await this.updateMultipleWidgets(chartWidgets, chartData);
   }
 
   /**
@@ -471,6 +645,29 @@ export class OverallComponent implements OnInit {
       GaugeChartBuilder.updateData(gaugeWidget, newData);
       this.cdr.detectChanges();
       console.log('Gauge chart updated successfully');
+    }
+  }
+
+  /**
+   * Example method to update density map data
+   */
+  public async updateDensityMapData(): Promise<void> {
+    const densityMapWidget = this.widgets.find(w => 
+      w.config.component === 'echart' && 
+      (w.config.options as any)?.series?.[0]?.type === 'map'
+    );
+    
+    if (densityMapWidget) {
+      const newData: DensityMapData[] = [
+        { name: 'Hong Kong Island', value: 90 },
+        { name: 'Kowloon', value: 85 },
+        { name: 'New Territories', value: 70 },
+        { name: 'Lantau Island', value: 45 },
+        { name: 'Lamma Island', value: 35 }
+      ];
+      DensityMapBuilder.updateData(densityMapWidget, newData);
+      this.cdr.detectChanges();
+      console.log('Density map updated successfully');
     }
   }
 }
