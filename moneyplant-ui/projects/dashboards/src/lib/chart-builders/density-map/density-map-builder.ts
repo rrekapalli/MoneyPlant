@@ -437,10 +437,39 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
   }
 
   /**
-   * Check if a widget is a density map
+   * Static method to check if a widget is a density map
    */
   static isDensityMap(widget: IWidget): boolean {
-    return (widget.config.options as any)?.series?.[0]?.type === 'map';
+    return ApacheEchartBuilder.isChartType(widget, 'map');
+  }
+
+  /**
+   * Export density map data for Excel/CSV
+   */
+  exportData(widget: IWidget): any[] {
+    const series = (widget.config?.options as any)?.series?.[0];
+    if (!series?.data) return [];
+
+    return series.data.map((item: any) => [
+      item.name || 'Unknown Region',
+      item.value || 0
+    ]);
+  }
+
+  /**
+   * Get headers for density map export
+   */
+  getExportHeaders(widget: IWidget): string[] {
+    return ['Region', 'Value'];
+  }
+
+  /**
+   * Get sheet name for density map export
+   */
+  getExportSheetName(widget: IWidget): string {
+    const title = widget.config?.header?.title || 'Density Map';
+    const cleanTitle = title.replace(/[^\w\s]/gi, '').substring(0, 20);
+    return `${cleanTitle} (Density Map)`;
   }
 
   /**

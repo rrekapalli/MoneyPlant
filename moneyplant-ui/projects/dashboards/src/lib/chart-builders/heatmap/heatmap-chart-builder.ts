@@ -355,6 +355,36 @@ export class HeatmapChartBuilder extends ApacheEchartBuilder<HeatmapChartOptions
       .setEChartsOptions(finalOptions)
       .setData(data || []);
   }
+
+  /**
+   * Export heatmap chart data for Excel/CSV
+   */
+  exportData(widget: IWidget): any[] {
+    const series = (widget.config?.options as any)?.series?.[0];
+    if (!series?.data) return [];
+
+    return series.data.map((point: any) => [
+      point[0] || 'X',
+      point[1] || 'Y',
+      point[2] || 0
+    ]);
+  }
+
+  /**
+   * Get headers for heatmap chart export
+   */
+  getExportHeaders(widget: IWidget): string[] {
+    return ['X Axis', 'Y Axis', 'Value'];
+  }
+
+  /**
+   * Get sheet name for heatmap chart export
+   */
+  getExportSheetName(widget: IWidget): string {
+    const title = widget.config?.header?.title || 'Heatmap Chart';
+    const cleanTitle = title.replace(/[^\w\s]/gi, '').substring(0, 20);
+    return `${cleanTitle} (Heatmap Chart)`;
+  }
 }
 
 /**

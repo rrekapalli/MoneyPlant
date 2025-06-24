@@ -9,6 +9,12 @@ import { ICodeCellOptions } from '../../entities/ICodeCellOptions';
 import { ITableOptions } from '../../entities/ITableOptions';
 import { IFilterValues } from '../../entities/IFilterValues';
 
+export interface WidgetDataExtractor {
+  extractData(widget: IWidget): any[];
+  getHeaders(widget: IWidget): string[];
+  getSheetName(widget: IWidget): string;
+}
+
 export class WidgetBuilder {
   private widget: IWidget = {
     id: '',

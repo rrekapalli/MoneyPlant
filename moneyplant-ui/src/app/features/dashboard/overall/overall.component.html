@@ -18,6 +18,15 @@
     [disabled]="isExportingPdf"
     styleClass="p-button-sm p-button-success">
   </p-button>
+  
+  <p-button 
+    label="Export to Excel" 
+    icon="pi pi-file-excel" 
+    (onClick)="exportDashboardToExcel()"
+    [loading]="isExportingExcel"
+    [disabled]="isExportingExcel"
+    styleClass="p-button-sm p-button-info">
+  </p-button>
 </div>
 
 <p-scrollPanel [style]="{ height: '100%', width: '100%', 'overflow-x': 'hidden', 'overflow': 'auto' }">

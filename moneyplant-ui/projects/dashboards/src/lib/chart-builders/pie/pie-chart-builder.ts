@@ -221,6 +221,45 @@ export class PieChartBuilder extends ApacheEchartBuilder<PieChartOptions, PieCha
       .setEChartsOptions(finalOptions)
       .setData(data || []);
   }
+
+  /**
+   * Export pie chart data for Excel/CSV
+   */
+  exportData(widget: IWidget): any[] {
+    const series = (widget.config?.options as any)?.series?.[0];
+    if (!series?.data) return [];
+
+    return series.data.map((item: any) => [
+      item.name || 'Unknown',
+      item.value || 0,
+      this.calculatePercentage(item.value, series.data)
+    ]);
+  }
+
+  /**
+   * Get headers for pie chart export
+   */
+  getExportHeaders(widget: IWidget): string[] {
+    return ['Category', 'Value', 'Percentage'];
+  }
+
+  /**
+   * Get sheet name for pie chart export
+   */
+  getExportSheetName(widget: IWidget): string {
+    const title = widget.config?.header?.title || 'Pie Chart';
+    const cleanTitle = title.replace(/[^\w\s]/gi, '').substring(0, 20);
+    return `${cleanTitle} (Pie Chart)`;
+  }
+
+  /**
+   * Calculate percentage for pie chart data
+   */
+  private calculatePercentage(value: number, data: any[]): string {
+    const total = data.reduce((sum: number, item: any) => sum + (item.value || 0), 0);
+    if (total === 0) return '0%';
+    return `${((value / total) * 100).toFixed(2)}%`;
+  }
 }
 
 /**

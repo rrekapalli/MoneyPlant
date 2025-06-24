@@ -130,7 +130,10 @@ import {
   DashboardConfig,
   // PDF Export Service
   PdfExportService,
-  PdfExportOptions
+  PdfExportOptions,
+  // Excel Export Service
+  ExcelExportService,
+  ExcelExportOptions
 } from '@dashboards/public-api';
 
 // Import widget creation functions
@@ -196,13 +199,17 @@ export class OverallComponent implements OnInit {
   
   // PDF export loading state
   isExportingPdf = false;
+  
+  // Excel export loading state
+  isExportingExcel = false;
 
   // Reference to dashboard container for PDF export
   @ViewChild('dashboardContainer', { static: false }) dashboardContainer!: ElementRef<HTMLElement>;
 
   constructor(
     private cdr: ChangeDetectorRef,
-    private pdfExportService: PdfExportService
+    private pdfExportService: PdfExportService,
+    private excelExportService: ExcelExportService
   ) {}
 
   ngOnInit(): void {
@@ -290,35 +297,80 @@ export class OverallComponent implements OnInit {
   }
 
   /**
+   * Export dashboard data to Excel
+   */
+  public async exportDashboardToExcel(): Promise<void> {
+    this.isExportingExcel = true;
+    this.cdr.detectChanges();
+
+    try {
+      console.log('Starting Excel export...');
+      console.log('Number of widgets to export:', this.dashboardConfig.widgets.length);
+      console.log('Widgets:', this.dashboardConfig.widgets.map(w => ({
+        id: w.id,
+        title: w.config?.header?.title,
+        component: w.config?.component,
+        position: w.position
+      })));
+
+      const options: ExcelExportOptions = {
+        filename: `financial-dashboard-data-${new Date().toISOString().split('T')[0]}.xlsx`,
+        includeHeaders: true,
+        includeTimestamp: true,
+        sheetNamePrefix: 'Widget',
+        autoColumnWidth: true,
+        includeWidgetTitles: true
+      };
+
+      await this.excelExportService.exportDashboardToExcel(
+        this.dashboardConfig.widgets,
+        options
+      );
+
+      console.log('Dashboard data exported to Excel successfully');
+    } catch (error) {
+      console.error('Error exporting dashboard to Excel:', error);
+      // You could add a toast notification here for user feedback
+    } finally {
+      this.isExportingExcel = false;
+      this.cdr.detectChanges();
+    }
+  }
+
+  /**
    * Utility method to update multiple widgets at once
    */
   public async updateMultipleWidgets(widgets: IWidget[], data: any[]): Promise<void> {
     try {
       // Simulate API call delay
       await new Promise(resolve => setTimeout(resolve, 1000));
-      // Update each widget with corresponding data
+      
+      // Update each widget with corresponding data using chart builders
       widgets.forEach((widget, index) => {
         if (data[index]) {
-          // Use appropriate chart builder based on widget type
-          if (PieChartBuilder.isPieChart(widget)) {
+          const chartType = (widget.config.options as any)?.series?.[0]?.type;
+          
+          // Use chart builders to update data based on chart type
+          if (chartType === 'pie') {
             PieChartBuilder.updateData(widget, data[index]);
-          } else if (BarChartBuilder.isBarChart(widget)) {
+          } else if (chartType === 'bar') {
             BarChartBuilder.updateData(widget, data[index]);
-          } else if (LineChartBuilder.isLineChart(widget)) {
+          } else if (chartType === 'line') {
             LineChartBuilder.updateData(widget, data[index]);
-          } else if (ScatterChartBuilder.isScatterChart(widget)) {
+          } else if (chartType === 'scatter') {
             ScatterChartBuilder.updateData(widget, data[index]);
-          } else if (GaugeChartBuilder.isGaugeChart(widget)) {
+          } else if (chartType === 'gauge') {
             GaugeChartBuilder.updateData(widget, data[index]);
-          } else if (HeatmapChartBuilder.isHeatmapChart(widget)) {
+          } else if (chartType === 'heatmap') {
             HeatmapChartBuilder.updateData(widget, data[index]);
-          } else if (DensityMapBuilder.isDensityMap(widget)) {
+          } else if (chartType === 'map') {
             DensityMapBuilder.updateData(widget, data[index]);
           } else {
             WidgetBuilder.setData(widget, data[index]);
           }
         }
       });
+      
       // Trigger change detection once for all updates
       this.cdr.detectChanges();
       console.log(`Updated ${widgets.length} widgets successfully`);
@@ -334,38 +386,44 @@ export class OverallComponent implements OnInit {
     // Get all echart widgets
     const chartWidgets = this.dashboardConfig.widgets.filter(w => w.config.component === 'echart');
     console.log('Found chart widgets:', chartWidgets.length);
-    // Create appropriate data for each chart type
+    
+    // Create appropriate data for each chart type using chart builders
     const chartData: any[] = [];
     chartWidgets.forEach(widget => {
       const chartType = (widget.config.options as any)?.series?.[0]?.type;
       console.log('Widget chart type:', chartType);
+      
+      // Use chart builders to determine appropriate data
+      let data: any;
       switch (chartType) {
         case 'pie':
-          chartData.push(getAlternativeAssetAllocationData());
+          data = getAlternativeAssetAllocationData();
           break;
         case 'bar':
-          chartData.push(getAlternativeMonthlyData());
+          data = getAlternativeMonthlyData();
           break;
         case 'line':
-          chartData.push(getAlternativePortfolioData());
+          data = getAlternativePortfolioData();
           break;
         case 'scatter':
-          chartData.push(getAlternativeRiskReturnData());
+          data = getAlternativeRiskReturnData();
           break;
         case 'gauge':
-          chartData.push(getAlternativeSavingsGoalData());
+          data = getAlternativeSavingsGoalData();
           break;
         case 'heatmap':
-          chartData.push(getAlternativeSpendingHeatmapData());
+          data = getAlternativeSpendingHeatmapData();
           break;
         case 'map':
-          chartData.push(getAlternativeInvestmentDistributionData());
+          data = getAlternativeInvestmentDistributionData();
           break;
         default:
-          chartData.push([]);
+          data = [];
           console.warn('Unknown chart type:', chartType);
       }
+      chartData.push(data);
     });
+    
     await this.updateMultipleWidgets(chartWidgets, chartData);
   }
 }

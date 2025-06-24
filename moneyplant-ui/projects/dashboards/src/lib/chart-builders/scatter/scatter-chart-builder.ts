@@ -313,6 +313,36 @@ export class ScatterChartBuilder extends ApacheEchartBuilder<ScatterChartOptions
       .setEChartsOptions(finalOptions)
       .setData(data || []);
   }
+
+  /**
+   * Export scatter chart data for Excel/CSV
+   */
+  exportData(widget: IWidget): any[] {
+    const series = (widget.config?.options as any)?.series?.[0];
+    if (!series?.data) return [];
+
+    return series.data.map((point: any) => [
+      point[0] || 0,
+      point[1] || 0,
+      point[2] || 'Default'
+    ]);
+  }
+
+  /**
+   * Get headers for scatter chart export
+   */
+  getExportHeaders(widget: IWidget): string[] {
+    return ['X Value', 'Y Value', 'Category'];
+  }
+
+  /**
+   * Get sheet name for scatter chart export
+   */
+  getExportSheetName(widget: IWidget): string {
+    const title = widget.config?.header?.title || 'Scatter Chart';
+    const cleanTitle = title.replace(/[^\w\s]/gi, '').substring(0, 20);
+    return `${cleanTitle} (Scatter Chart)`;
+  }
 }
 
 /**

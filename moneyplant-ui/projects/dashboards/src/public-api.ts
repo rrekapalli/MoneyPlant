@@ -9,6 +9,7 @@ export * from './lib/dashboard-container';
 
 // Services
 export * from './lib/services/pdf-export.service';
+export * from './lib/services/excel-export.service';
 
 // Examples
 export * from './lib/usage-examples/pdf-export-examples';

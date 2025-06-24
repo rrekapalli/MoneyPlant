@@ -327,6 +327,37 @@ export class LineChartBuilder extends ApacheEchartBuilder<LineChartOptions, Line
       .setEChartsOptions(finalOptions)
       .setData(data || []);
   }
+
+  /**
+   * Export line chart data for Excel/CSV
+   */
+  exportData(widget: IWidget): any[] {
+    const series = (widget.config?.options as any)?.series?.[0];
+    const xAxis = (widget.config?.options as any)?.xAxis?.[0];
+    
+    if (!series?.data || !xAxis?.data) return [];
+
+    return series.data.map((value: any, index: number) => [
+      xAxis.data[index] || `Point ${index + 1}`,
+      value || 0
+    ]);
+  }
+
+  /**
+   * Get headers for line chart export
+   */
+  getExportHeaders(widget: IWidget): string[] {
+    return ['Date', 'Value'];
+  }
+
+  /**
+   * Get sheet name for line chart export
+   */
+  getExportSheetName(widget: IWidget): string {
+    const title = widget.config?.header?.title || 'Line Chart';
+    const cleanTitle = title.replace(/[^\w\s]/gi, '').substring(0, 20);
+    return `${cleanTitle} (Line Chart)`;
+  }
 }
 
 /**

@@ -406,6 +406,48 @@ export class GaugeChartBuilder extends ApacheEchartBuilder<GaugeChartOptions, Ga
       .setEChartsOptions(finalOptions)
       .setData(data || []);
   }
+
+  /**
+   * Export gauge chart data for Excel/CSV
+   */
+  exportData(widget: IWidget): any[] {
+    const series = (widget.config?.options as any)?.series?.[0];
+    if (!series?.data) return [];
+
+    const data = series.data[0];
+    const max = series.max || 100;
+    
+    return [[
+      widget.config?.header?.title || 'Metric',
+      data?.value || 0,
+      max,
+      this.calculatePercentage(data?.value || 0, max)
+    ]];
+  }
+
+  /**
+   * Get headers for gauge chart export
+   */
+  getExportHeaders(widget: IWidget): string[] {
+    return ['Metric', 'Value', 'Target', 'Percentage'];
+  }
+
+  /**
+   * Get sheet name for gauge chart export
+   */
+  getExportSheetName(widget: IWidget): string {
+    const title = widget.config?.header?.title || 'Gauge Chart';
+    const cleanTitle = title.replace(/[^\w\s]/gi, '').substring(0, 20);
+    return `${cleanTitle} (Gauge Chart)`;
+  }
+
+  /**
+   * Calculate percentage for gauge chart data
+   */
+  private calculatePercentage(value: number, max: number): string {
+    if (max === 0) return '0%';
+    return `${((value / max) * 100).toFixed(2)}%`;
+  }
 }
 
 /**
