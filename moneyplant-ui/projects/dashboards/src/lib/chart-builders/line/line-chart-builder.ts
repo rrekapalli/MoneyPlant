@@ -327,6 +327,61 @@ export class LineChartBuilder extends ApacheEchartBuilder<LineChartOptions, Line
       .setEChartsOptions(finalOptions)
       .setData(data || []);
   }
+
+  /**
+   * Export line chart data for Excel/CSV export
+   * Extracts x-axis categories and their corresponding y-axis values
+   * @param widget - Widget containing line chart data
+   * @returns Array of data rows for export
+   */
+  static override exportData(widget: IWidget): any[] {
+    const series = (widget.config?.options as any)?.series?.[0];
+    const xAxis = (widget.config?.options as any)?.xAxis;
+    
+    if (!series?.data) {
+      console.warn('LineChartBuilder.exportData - No series data found');
+      return [];
+    }
+
+    // Handle different xAxis structures
+    let categories: string[] = [];
+    
+    if (xAxis) {
+      // Handle array of xAxis objects
+      if (Array.isArray(xAxis)) {
+        categories = xAxis[0]?.data || [];
+      } 
+      // Handle single xAxis object
+      else if (xAxis.data) {
+        categories = xAxis.data;
+      }
+    }
+
+    // If no categories found, create default ones
+    if (categories.length === 0) {
+      categories = series.data.map((_: any, index: number) => `Point ${index + 1}`);
+    }
+
+    return series.data.map((value: any, index: number) => [
+      categories[index] || `Point ${index + 1}`,
+      value || 0
+    ]);
+  }
+
+  /**
+   * Get headers for line chart export
+   */
+  static override getExportHeaders(widget: IWidget): string[] {
+    return ['Date', 'Value'];
+  }
+
+  /**
+   * Get sheet name for line chart export
+   */
+  static override getExportSheetName(widget: IWidget): string {
+    const title = widget.config?.header?.title || 'Sheet';
+    return title.replace(/[^\w\s]/gi, '').substring(0, 31).trim();
+  }
 }
 
 /**

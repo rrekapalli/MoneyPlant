@@ -33,6 +33,9 @@ import {NgxPrintModule} from 'ngx-print';
 import {BrowserModule} from '@angular/platform-browser';
 import {NgxPrintService, PrintOptions} from 'ngx-print';
 import { ToastModule } from 'primeng/toast';
+import { StandardDashboardBuilder } from './standard-dashboard-builder';
+import { DashboardConfig } from './dashboard-container-builder';
+import { PdfExportService, PdfExportOptions } from '../services/pdf-export.service';
 
 @Component({
   selector: 'vis-dashboard-container',
@@ -48,7 +51,6 @@ import { ToastModule } from 'primeng/toast';
     WidgetHeaderComponent,
     NgxPrintModule,
     ToastModule,
-    // BrowserModule
   ],
 })
 export class DashboardContainerComponent {
@@ -80,40 +82,165 @@ export class DashboardContainerComponent {
   newDashboardForm!: FormGroup;
 
   @ViewChild(GridsterComponent) gridster!: GridsterComponent;
+  @ViewChild('dashboardContainer', { static: true }) dashboardContainer!: ElementRef<HTMLElement>;
 
   @Input() options: GridsterConfig = {};
   public mergedOptions: GridsterConfig = {};
 
-  private readonly defaultOptions: GridsterConfig = {
-    gridType: GridType.VerticalFixed,
-    displayGrid: DisplayGrid.None,
-    outerMargin: true,
-    draggable: {
-      enabled: false,
-    },
-    resizable: {
-      enabled: false,
-    },
-    maxCols: 12,
-    minCols: 1,
-    maxRows: 50,
-    minRows: 1,
-    fixedColWidth: 100,
-    fixedRowHeight: 100,
-    enableEmptyCellClick: false,
-    enableEmptyCellContextMenu: false,
-    enableEmptyCellDrop: false,
-    enableEmptyCellDrag: false,
-    emptyCellDragMaxCols: 50,
-    emptyCellDragMaxRows: 50,
-    ignoreMarginInRow: false,
-    mobileBreakpoint: 640,
-  };
+  // Track view modes for each widget
+  private widgetViewModes: Map<string, 'chart' | 'table'> = new Map();
+
+  // Dashboard builder instance
+  private dashboardBuilder: StandardDashboardBuilder = StandardDashboardBuilder.createStandard();
+  
+  // PDF export service
+  private pdfExportService = inject(PdfExportService);
 
   ngOnInit() {
-    this.mergedOptions = { ...this.defaultOptions, ...this.options };
-    this.mergedOptions.itemResizeCallback = this.onWidgetResize.bind(this);
-    this.mergedOptions.itemChangeCallback = this.onWidgetChange.bind(this);
+    this.initializeDashboard();
+  }
+
+  /**
+   * Initialize dashboard using the builder pattern
+   */
+  private initializeDashboard(): void {
+    // Build the dashboard configuration
+    const dashboardConfig = this.dashboardBuilder
+      .setWidgets(this.widgets || [])
+      .setFilterValues(this.filterValues || [])
+      .setDashboardId(this.dashboardId || '')
+      .setEditMode(this.isEditMode)
+      .setChartHeight(this.chartHeight)
+      .setDefaultChartHeight(this.defaultChartHeight)
+      .setCustomConfig(this.options)
+      .setItemResizeCallback(this.onWidgetResize.bind(this))
+      .setItemChangeCallback(this.onWidgetChange.bind(this))
+      .build();
+
+    // Apply the configuration
+    this.applyDashboardConfig(dashboardConfig);
+  }
+
+  /**
+   * Apply dashboard configuration to component properties
+   */
+  private applyDashboardConfig(config: DashboardConfig): void {
+    this.mergedOptions = config.config;
+    this.widgets = config.widgets;
+    this.filterValues = config.filterValues;
+    this.dashboardId = config.dashboardId;
+    this.isEditMode = config.isEditMode;
+    this.chartHeight = config.chartHeight;
+    
+    // Override the exportToPdf method with the component's implementation
+    if (config.exportToPdf) {
+      config.exportToPdf = this.exportToPdf.bind(this);
+    }
+  }
+
+  /**
+   * Update dashboard configuration dynamically
+   */
+  public updateDashboardConfig(updates: Partial<DashboardConfig>): void {
+    if (updates.config) {
+      this.dashboardBuilder.setCustomConfig(updates.config);
+    }
+    if (updates.widgets) {
+      this.dashboardBuilder.setWidgets(updates.widgets);
+    }
+    if (updates.filterValues) {
+      this.dashboardBuilder.setFilterValues(updates.filterValues);
+    }
+    if (updates.dashboardId) {
+      this.dashboardBuilder.setDashboardId(updates.dashboardId);
+    }
+    if (updates.isEditMode !== undefined) {
+      this.dashboardBuilder.setEditMode(updates.isEditMode);
+    }
+    if (updates.chartHeight) {
+      this.dashboardBuilder.setChartHeight(updates.chartHeight);
+    }
+
+    // Rebuild and apply
+    const newConfig = this.dashboardBuilder.build();
+    this.applyDashboardConfig(newConfig);
+  }
+
+  /**
+   * Enable edit mode using builder
+   */
+  public enableEditMode(): void {
+    this.dashboardBuilder.enableEditMode();
+    const config = this.dashboardBuilder.build();
+    this.applyDashboardConfig(config);
+  }
+
+  /**
+   * Disable edit mode using builder
+   */
+  public disableEditMode(): void {
+    this.dashboardBuilder.disableEditMode();
+    const config = this.dashboardBuilder.build();
+    this.applyDashboardConfig(config);
+  }
+
+  /**
+   * Set responsive configuration
+   */
+  public setResponsive(breakpoint: number = 640): void {
+    this.dashboardBuilder.setResponsive(breakpoint);
+    const config = this.dashboardBuilder.build();
+    this.applyDashboardConfig(config);
+  }
+
+  /**
+   * Set compact layout
+   */
+  public setCompactLayout(): void {
+    this.dashboardBuilder.setCompactLayout();
+    const config = this.dashboardBuilder.build();
+    this.applyDashboardConfig(config);
+  }
+
+  /**
+   * Set spacious layout
+   */
+  public setSpaciousLayout(): void {
+    this.dashboardBuilder.setSpaciousLayout();
+    const config = this.dashboardBuilder.build();
+    this.applyDashboardConfig(config);
+  }
+
+  /**
+   * Set mobile optimized layout
+   */
+  public setMobileOptimized(): void {
+    this.dashboardBuilder.setMobileOptimized();
+    const config = this.dashboardBuilder.build();
+    this.applyDashboardConfig(config);
+  }
+
+  /**
+   * Set desktop optimized layout
+   */
+  public setDesktopOptimized(): void {
+    this.dashboardBuilder.setDesktopOptimized();
+    const config = this.dashboardBuilder.build();
+    this.applyDashboardConfig(config);
+  }
+
+  /**
+   * Get current dashboard configuration
+   */
+  public getCurrentConfig(): DashboardConfig {
+    return this.dashboardBuilder.build();
+  }
+
+  /**
+   * Get the dashboard builder instance for advanced configuration
+   */
+  public getBuilder(): StandardDashboardBuilder {
+    return this.dashboardBuilder;
   }
 
   async onDataLoad(widget: IWidget) {
@@ -214,7 +341,6 @@ export class DashboardContainerComponent {
       }
       this.widgets = [...this.widgets];
     }
-    console.log(`itemComponent.height: ${itemComponent.height}`);
   }
 
   onWidgetChange(
@@ -266,70 +392,82 @@ export class DashboardContainerComponent {
   }
 
   public calculateChartHeight(cols: number, rows: number, flag: boolean = false, baseHeight: number = this.defaultChartHeight): number {
-    // Base height for standard container
-    const baseContainerHeight = baseHeight;
-    
-    // Calculate aspect ratio
-    const aspectRatio = cols / rows;
-    const area = cols * rows;
-
-    // Adjust zoom based on area
-    // Larger area = more zoom out (smaller zoom number)
-    const zoomAdjustment = Math.log(area) / Math.log(2); // logarithmic scaling
-    
-    // Apply margin reduction (2.5% top and bottom = 5% total)
-    const marginReduction = 0.95; // 100% - 5%
-    
-    // Adjust height based on aspect ratio:
-    // - Taller containers (rows > cols) get proportionally more height
-    // - Wider containers (cols > rows) maintain base height
-    let heightAdjustment = aspectRatio < 1 
-      ? 1 / aspectRatio
-      : 1;
-
-    if(flag) {
-      heightAdjustment = heightAdjustment * aspectRatio;
-    }
-    
-    return Math.round(baseContainerHeight * heightAdjustment * marginReduction);
+    return StandardDashboardBuilder.calculateChartHeight(cols, rows, flag, baseHeight);
   }
 
   // Add these helper methods to your class
   public calculateMapCenter(cols: number, rows: number): number[] {
-    // Base center for USA map
-    const baseLongitude = -95;
-    const baseLatitude = 38;
-    
-    // Adjust center based on aspect ratio
-    const aspectRatio = cols / rows;
-    
-    // Adjust longitude more for wider containers
-    const longitudeAdjustment = (aspectRatio > 1) ? (aspectRatio - 1) * 5 : 0;
-  
-    // Adjust latitude more for taller containers
-    const latitudeAdjustment = (aspectRatio < 1) ? ((1 / aspectRatio) - 1) * 2 : 0;
-  
-    return [
-      baseLongitude + longitudeAdjustment,
-      baseLatitude + latitudeAdjustment
-    ];
+    return StandardDashboardBuilder.calculateMapCenter(cols, rows);
   }
 
   public calculateMapZoom(cols: number, rows: number): number {
-    // Base zoom level
-    const baseZoom = 4.0;
-    
-    // Calculate area of grid
-    const area = cols * rows;
-    
-    // Adjust zoom based on area
-    // Larger area = more zoom out (smaller zoom number)
-    const zoomAdjustment = Math.log(area) / Math.log(2); // logarithmic scaling
-    
-    // Calculate aspect ratio adjustment
-    const aspectRatio = cols / rows;
-    const aspectAdjustment = Math.abs(1 - aspectRatio) * 0.5;
+    return StandardDashboardBuilder.calculateMapZoom(cols, rows);
+  }
 
-    return baseZoom - (zoomAdjustment * 0.1) - aspectAdjustment;
+  /**
+   * Export dashboard to PDF
+   * @param options - PDF export options
+   */
+  async exportToPdf(options: PdfExportOptions = {}): Promise<void> {
+    try {
+      await this.pdfExportService.exportDashboardToPdf(
+        this.dashboardContainer,
+        this.widgets,
+        options
+      );
+    } catch (error) {
+      console.error('Error exporting dashboard to PDF:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Export specific widget to PDF
+   * @param widgetId - ID of the widget to export
+   * @param options - PDF export options
+   */
+  async exportWidgetToPdf(widgetId: string, options: PdfExportOptions = {}): Promise<void> {
+    const widget = this.widgets.find(w => w.id === widgetId);
+    if (!widget) {
+      throw new Error(`Widget with ID ${widgetId} not found`);
+    }
+
+    const widgetElement = this.dashboardContainer.nativeElement.querySelector(
+      `[data-widget-id="${widgetId}"]`
+    ) as HTMLElement;
+
+    if (!widgetElement) {
+      throw new Error(`Widget element with ID ${widgetId} not found`);
+    }
+
+    try {
+      await this.pdfExportService.exportWidgetToPdf(
+        { nativeElement: widgetElement },
+        widget,
+        options
+      );
+    } catch (error) {
+      console.error(`Error exporting widget ${widgetId} to PDF:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get current view mode for a widget
+   * @param widgetId - ID of the widget
+   * @returns Current view mode (default: 'chart')
+   */
+  getWidgetViewMode(widgetId: string): 'chart' | 'table' {
+    return this.widgetViewModes.get(widgetId) || 'chart';
+  }
+
+  /**
+   * Handle view mode toggle for a widget
+   * @param event - View mode toggle event
+   */
+  onToggleViewMode(event: {widgetId: string, viewMode: 'chart' | 'table'}) {
+    this.widgetViewModes.set(event.widgetId, event.viewMode);
+    // Trigger change detection
+    this.widgets = [...this.widgets];
   }
 }

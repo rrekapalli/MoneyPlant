@@ -8,8 +8,26 @@
       <p-button [outlined]="true" class="p-button-sm" type="button" (click)="sidebarVisible = true" [outlined]="true"
                 icon="pi pi-cog"></p-button>
     }
+    
+    <!-- Three-dot menu for widget actions -->
+    <p-button #menuButton
+              [outlined]="true" 
+              class="p-button-sm ml-2" 
+              type="button" 
+              icon="pi pi-ellipsis-v"
+              (click)="menu.toggle($event)">
+    </p-button>
   </ng-template>
 </p-panel>
+
+<!-- Widget Actions Menu -->
+<p-menu #menu 
+        [model]="menuItems" 
+        [popup]="true" 
+        appendTo="body">
+</p-menu>
+
+<!-- Settings Sidebar -->
 <p-sidebar [(visible)]="sidebarVisible" position="right" model="false" [appendTo]="'body'" [style]="{
       'width': '30%',
       height: '100%',

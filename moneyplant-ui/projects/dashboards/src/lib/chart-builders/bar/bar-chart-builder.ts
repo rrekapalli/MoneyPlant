@@ -240,4 +240,59 @@ export class BarChartBuilder extends ApacheEchartBuilder<BarChartOptions, BarCha
   static isBarChart(widget: IWidget): boolean {
     return ApacheEchartBuilder.isChartType(widget, 'bar');
   }
+
+  /**
+   * Export bar chart data for Excel/CSV export
+   * Extracts categories and their corresponding values
+   * @param widget - Widget containing bar chart data
+   * @returns Array of data rows for export
+   */
+  static override exportData(widget: IWidget): any[] {
+    const series = (widget.config?.options as any)?.series?.[0];
+    const xAxis = (widget.config?.options as any)?.xAxis;
+    
+    if (!series?.data) {
+      console.warn('BarChartBuilder.exportData - No series data found');
+      return [];
+    }
+
+    // Handle different xAxis structures
+    let categories: string[] = [];
+    
+    if (xAxis) {
+      // Handle array of xAxis objects
+      if (Array.isArray(xAxis)) {
+        categories = xAxis[0]?.data || [];
+      } 
+      // Handle single xAxis object
+      else if (xAxis.data) {
+        categories = xAxis.data;
+      }
+    }
+
+    // If no categories found, create default ones
+    if (categories.length === 0) {
+      categories = series.data.map((_: any, index: number) => `Category ${index + 1}`);
+    }
+
+    return series.data.map((value: any, index: number) => [
+      categories[index] || `Category ${index + 1}`,
+      value || 0
+    ]);
+  }
+
+  /**
+   * Get headers for bar chart export
+   */
+  static override getExportHeaders(widget: IWidget): string[] {
+    return ['Category', 'Value'];
+  }
+
+  /**
+   * Get sheet name for bar chart export
+   */
+  static override getExportSheetName(widget: IWidget): string {
+    const title = widget.config?.header?.title || 'Sheet';
+    return title.replace(/[^\w\s]/gi, '').substring(0, 31).trim();
+  }
 } 

@@ -19,6 +19,19 @@ vis-dashboard-container {
   text-align: left;
 }
 
+/* Test controls styling */
+.test-controls {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.test-controls p-button {
+  margin-right: 0.5rem;
+}
+
 /* Make sure the dashboard container takes up available space */
 :host {
   display: block;
