@@ -7,6 +7,7 @@ export { createSavingsGoalWidget } from './savings-goal-widget';
 export { createSpendingHeatmapWidget } from './spending-heatmap-widget';
 export { createInvestmentDistributionWidget } from './investment-distribution-widget';
 export { createAreaChartWidget, createStackedAreaChartWidget, createLargeScaleAreaChartWidget } from './area-chart-widget';
+export { createPolarChartWidget, createMultiSeriesPolarChartWidget, createRadarPolarChartWidget } from './polar-chart-widget';
 
 // Data update functions
 export { updateAssetAllocationData } from './asset-allocation-widget';
@@ -17,6 +18,7 @@ export { updateSavingsGoalData } from './savings-goal-widget';
 export { updateSpendingHeatmapData } from './spending-heatmap-widget';
 export { updateInvestmentDistributionData } from './investment-distribution-widget';
 export { updateAreaChartData } from './area-chart-widget';
+export { updatePolarChartData } from './polar-chart-widget';
 
 // Data fetching functions
 export { getUpdatedAssetAllocationData } from './asset-allocation-widget';
@@ -27,6 +29,7 @@ export { getUpdatedSavingsGoalData } from './savings-goal-widget';
 export { getUpdatedSpendingHeatmapData } from './spending-heatmap-widget';
 export { getUpdatedInvestmentDistributionData } from './investment-distribution-widget';
 export { getUpdatedAreaChartData } from './area-chart-widget';
+export { getUpdatedPolarChartData } from './polar-chart-widget';
 
 // Alternative data functions
 export { getAlternativeAssetAllocationData } from './asset-allocation-widget';
@@ -37,6 +40,7 @@ export { getAlternativeSavingsGoalData } from './savings-goal-widget';
 export { getAlternativeSpendingHeatmapData } from './spending-heatmap-widget';
 export { getAlternativeInvestmentDistributionData } from './investment-distribution-widget';
 export { getAlternativeAreaChartData } from './area-chart-widget';
+export { getAlternativePolarChartData } from './polar-chart-widget';
 
 // Static data exports
 export { ASSET_ALLOCATION_DATA, ASSET_ALLOCATION_COLORS } from './asset-allocation-widget';
@@ -46,4 +50,5 @@ export { RISK_RETURN_DATA, RISK_RETURN_COLORS } from './risk-return-widget';
 export { SAVINGS_GOAL_DATA } from './savings-goal-widget';
 export { SPENDING_HEATMAP_DATA, HEATMAP_X_AXIS, HEATMAP_Y_AXIS } from './spending-heatmap-widget';
 export { INVESTMENT_DISTRIBUTION_DATA } from './investment-distribution-widget';
-export { sampleAreaChartData, sampleAreaChartXAxis } from './area-chart-widget'; 
+export { sampleAreaChartData, sampleAreaChartXAxis } from './area-chart-widget';
+export { samplePolarChartData } from './polar-chart-widget'; 

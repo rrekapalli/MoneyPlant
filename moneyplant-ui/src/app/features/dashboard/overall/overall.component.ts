@@ -28,7 +28,8 @@ import {
   DatasetComponent,
   TransformComponent,
   LegendComponent,
-  VisualMapComponent
+  VisualMapComponent,
+  PolarComponent
 } from 'echarts/components';
 // Import renderer
 import {
@@ -94,6 +95,7 @@ echarts.use([
   TransformComponent,
   LegendComponent,
   VisualMapComponent,
+  PolarComponent,
   BarChart,
   LineChart,
   PieChart,
@@ -118,6 +120,7 @@ import {
   HeatmapChartBuilder,
   DensityMapBuilder,
   AreaChartBuilder,
+  PolarChartBuilder,
   // Data interfaces
   PieChartData,
   BarChartData,
@@ -127,6 +130,7 @@ import {
   HeatmapChartData,
   DensityMapData,
   AreaChartData,
+  PolarChartData,
   // Fluent API
   StandardDashboardBuilder,
   DashboardConfig,
@@ -148,6 +152,7 @@ import {
   createSpendingHeatmapWidget,
   createInvestmentDistributionWidget,
   createAreaChartWidget,
+  createPolarChartWidget,
   // Data update functions
   updateAssetAllocationData,
   updateMonthlyIncomeExpensesData,
@@ -157,6 +162,7 @@ import {
   updateSpendingHeatmapData,
   updateInvestmentDistributionData,
   updateAreaChartData,
+  updatePolarChartData,
   // Data fetching functions
   getUpdatedAssetAllocationData,
   getUpdatedMonthlyData,
@@ -166,6 +172,7 @@ import {
   getUpdatedSpendingHeatmapData,
   getUpdatedInvestmentDistributionData,
   getUpdatedAreaChartData,
+  getUpdatedPolarChartData,
   // Alternative data functions
   getAlternativeAssetAllocationData,
   getAlternativeMonthlyData,
@@ -174,7 +181,8 @@ import {
   getAlternativeSavingsGoalData,
   getAlternativeSpendingHeatmapData,
   getAlternativeInvestmentDistributionData,
-  getAlternativeAreaChartData
+  getAlternativeAreaChartData,
+  getAlternativePolarChartData
 } from './widgets';
 
 import { v4 as uuidv4 } from 'uuid';
@@ -235,6 +243,7 @@ export class OverallComponent implements OnInit {
     const heatmapSpending = createSpendingHeatmapWidget();
     const densityMapInvestment = createInvestmentDistributionWidget();
     const areaChart = createAreaChartWidget();
+    const polarChart = createPolarChartWidget();
 
     // Use the Fluent API to build the dashboard config
     this.dashboardConfig = StandardDashboardBuilder.createStandard()
@@ -247,7 +256,8 @@ export class OverallComponent implements OnInit {
         gaugeSavingsGoal,
         heatmapSpending,
         densityMapInvestment,
-        areaChart
+        areaChart,
+        polarChart
       ])
       .setEditMode(false)
       .build();
@@ -359,12 +369,16 @@ export class OverallComponent implements OnInit {
           const series = (widget.config.options as any)?.series?.[0];
           const chartType = series?.type;
           const hasAreaStyle = series?.areaStyle;
+          const coordinateSystem = series?.coordinateSystem;
           
           // Use chart builders to update data based on chart type
           if (chartType === 'pie') {
             PieChartBuilder.updateData(widget, data[index]);
           } else if (chartType === 'bar') {
             BarChartBuilder.updateData(widget, data[index]);
+          } else if (chartType === 'line' && coordinateSystem === 'polar') {
+            // Polar chart (line chart with polar coordinate system)
+            PolarChartBuilder.updateData(widget, data[index]);
           } else if (chartType === 'line' && hasAreaStyle) {
             // Area chart (line chart with area style)
             AreaChartBuilder.updateData(widget, data[index]);
@@ -406,11 +420,15 @@ export class OverallComponent implements OnInit {
       const series = (widget.config.options as any)?.series?.[0];
       const chartType = series?.type;
       const hasAreaStyle = series?.areaStyle;
-      console.log('Widget chart type:', chartType, 'hasAreaStyle:', hasAreaStyle);
+      const coordinateSystem = series?.coordinateSystem;
+      console.log('Widget chart type:', chartType, 'hasAreaStyle:', hasAreaStyle, 'coordinateSystem:', coordinateSystem);
       
       // Use chart builders to determine appropriate data
       let data: any;
-      if (chartType === 'line' && hasAreaStyle) {
+      if (chartType === 'line' && coordinateSystem === 'polar') {
+        // Polar chart (line chart with polar coordinate system)
+        data = getAlternativePolarChartData();
+      } else if (chartType === 'line' && hasAreaStyle) {
         // Area chart (line chart with area style)
         data = getAlternativeAreaChartData();
       } else {
