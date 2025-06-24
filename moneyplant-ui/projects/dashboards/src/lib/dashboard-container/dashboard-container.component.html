@@ -1,4 +1,4 @@
-<div class="gridster-container">
+<div class="gridster-container" #dashboardContainer>
   <gridster class="mt-2 dashboard-gridster" [options]="mergedOptions">
     <div id="dashboard" class="print-body">
       @for (item of widgets; track item; let i = $index) {
@@ -6,7 +6,8 @@
         <gridster-item 
             [item]="item.position" 
             (itemResize)="updateString(container.editModeString)"
-            (itemChange)="updateString(container.editModeString)">
+            (itemChange)="updateString(container.editModeString)"
+            [attr.data-widget-id]="item.id">
 
             @if (item.config.header) {
               <vis-widget-header 

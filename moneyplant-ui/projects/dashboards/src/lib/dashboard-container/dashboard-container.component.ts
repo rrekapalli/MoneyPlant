@@ -35,6 +35,7 @@ import {NgxPrintService, PrintOptions} from 'ngx-print';
 import { ToastModule } from 'primeng/toast';
 import { StandardDashboardBuilder } from './standard-dashboard-builder';
 import { DashboardConfig } from './dashboard-container-builder';
+import { PdfExportService, PdfExportOptions } from '../services/pdf-export.service';
 
 @Component({
   selector: 'vis-dashboard-container',
@@ -81,12 +82,16 @@ export class DashboardContainerComponent {
   newDashboardForm!: FormGroup;
 
   @ViewChild(GridsterComponent) gridster!: GridsterComponent;
+  @ViewChild('dashboardContainer', { static: true }) dashboardContainer!: ElementRef<HTMLElement>;
 
   @Input() options: GridsterConfig = {};
   public mergedOptions: GridsterConfig = {};
 
   // Dashboard builder instance
   private dashboardBuilder: StandardDashboardBuilder = StandardDashboardBuilder.createStandard();
+  
+  // PDF export service
+  private pdfExportService = inject(PdfExportService);
 
   ngOnInit() {
     this.initializeDashboard();
@@ -123,6 +128,11 @@ export class DashboardContainerComponent {
     this.dashboardId = config.dashboardId;
     this.isEditMode = config.isEditMode;
     this.chartHeight = config.chartHeight;
+    
+    // Override the exportToPdf method with the component's implementation
+    if (config.exportToPdf) {
+      config.exportToPdf = this.exportToPdf.bind(this);
+    }
   }
 
   /**
@@ -389,5 +399,53 @@ export class DashboardContainerComponent {
 
   public calculateMapZoom(cols: number, rows: number): number {
     return StandardDashboardBuilder.calculateMapZoom(cols, rows);
+  }
+
+  /**
+   * Export dashboard to PDF
+   * @param options - PDF export options
+   */
+  async exportToPdf(options: PdfExportOptions = {}): Promise<void> {
+    try {
+      await this.pdfExportService.exportDashboardToPdf(
+        this.dashboardContainer,
+        this.widgets,
+        options
+      );
+    } catch (error) {
+      console.error('Error exporting dashboard to PDF:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Export specific widget to PDF
+   * @param widgetId - ID of the widget to export
+   * @param options - PDF export options
+   */
+  async exportWidgetToPdf(widgetId: string, options: PdfExportOptions = {}): Promise<void> {
+    const widget = this.widgets.find(w => w.id === widgetId);
+    if (!widget) {
+      throw new Error(`Widget with ID ${widgetId} not found`);
+    }
+
+    const widgetElement = this.dashboardContainer.nativeElement.querySelector(
+      `[data-widget-id="${widgetId}"]`
+    ) as HTMLElement;
+
+    if (!widgetElement) {
+      throw new Error(`Widget element with ID ${widgetId} not found`);
+    }
+
+    try {
+      await this.pdfExportService.exportWidgetToPdf(
+        { nativeElement: widgetElement },
+        widget,
+        options
+      );
+    } catch (error) {
+      console.error(`Error exporting widget ${widgetId} to PDF:`, error);
+      throw error;
+    }
   }
 }

@@ -1,5 +1,5 @@
 import { GridsterConfig, GridType, DisplayGrid } from 'angular-gridster2';
-import { DashboardContainerBuilder } from './dashboard-container-builder';
+import { DashboardContainerBuilder, DashboardConfig } from './dashboard-container-builder';
 
 /**
  * Standard Dashboard Container Builder
@@ -238,5 +238,29 @@ export class StandardDashboardBuilder extends DashboardContainerBuilder<Gridster
     return new StandardDashboardBuilder()
       .setDesktopOptimized()
       .setSpaciousLayout();
+  }
+
+  /**
+   * Build the dashboard configuration
+   */
+  override build(): DashboardConfig {
+    return {
+      config: this.containerConfig as GridsterConfig,
+      widgets: this.widgets,
+      filterValues: this.filterValues,
+      dashboardId: this.dashboardId,
+      isEditMode: this.isEditMode,
+      chartHeight: this.chartHeight,
+      defaultChartHeight: this.defaultChartHeight,
+      exportToPdf: this.exportToPdf.bind(this)
+    };
+  }
+
+  /**
+   * Export dashboard to PDF (placeholder - will be overridden by component)
+   */
+  private async exportToPdf(options: any = {}): Promise<void> {
+    // This is a placeholder - the actual implementation will be provided by the component
+    throw new Error('Export to PDF method must be implemented by the dashboard component');
   }
 } 

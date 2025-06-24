@@ -1,6 +1,7 @@
 import { GridsterConfig, GridType, DisplayGrid } from 'angular-gridster2';
 import { IWidget } from '../entities/IWidget';
 import { IFilterValues } from '../entities/IFilterValues';
+import { PdfExportOptions } from '../services/pdf-export.service';
 
 /**
  * Abstract base class for Dashboard Container builders
@@ -341,4 +342,5 @@ export interface DashboardConfig {
   isEditMode: boolean;
   chartHeight: number;
   defaultChartHeight: number;
+  exportToPdf?: (options?: PdfExportOptions) => Promise<void>;
 } 
