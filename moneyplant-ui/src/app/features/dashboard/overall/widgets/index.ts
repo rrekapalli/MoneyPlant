@@ -6,6 +6,7 @@ export { createRiskReturnWidget } from './risk-return-widget';
 export { createSavingsGoalWidget } from './savings-goal-widget';
 export { createSpendingHeatmapWidget } from './spending-heatmap-widget';
 export { createInvestmentDistributionWidget } from './investment-distribution-widget';
+export { createAreaChartWidget, createStackedAreaChartWidget, createLargeScaleAreaChartWidget } from './area-chart-widget';
 
 // Data update functions
 export { updateAssetAllocationData } from './asset-allocation-widget';
@@ -15,6 +16,7 @@ export { updateRiskReturnData } from './risk-return-widget';
 export { updateSavingsGoalData } from './savings-goal-widget';
 export { updateSpendingHeatmapData } from './spending-heatmap-widget';
 export { updateInvestmentDistributionData } from './investment-distribution-widget';
+export { updateAreaChartData } from './area-chart-widget';
 
 // Data fetching functions
 export { getUpdatedAssetAllocationData } from './asset-allocation-widget';
@@ -24,6 +26,7 @@ export { getUpdatedRiskReturnData } from './risk-return-widget';
 export { getUpdatedSavingsGoalData } from './savings-goal-widget';
 export { getUpdatedSpendingHeatmapData } from './spending-heatmap-widget';
 export { getUpdatedInvestmentDistributionData } from './investment-distribution-widget';
+export { getUpdatedAreaChartData } from './area-chart-widget';
 
 // Alternative data functions
 export { getAlternativeAssetAllocationData } from './asset-allocation-widget';
@@ -33,6 +36,7 @@ export { getAlternativeRiskReturnData } from './risk-return-widget';
 export { getAlternativeSavingsGoalData } from './savings-goal-widget';
 export { getAlternativeSpendingHeatmapData } from './spending-heatmap-widget';
 export { getAlternativeInvestmentDistributionData } from './investment-distribution-widget';
+export { getAlternativeAreaChartData } from './area-chart-widget';
 
 // Static data exports
 export { ASSET_ALLOCATION_DATA, ASSET_ALLOCATION_COLORS } from './asset-allocation-widget';
@@ -41,4 +45,5 @@ export { PORTFOLIO_DATA, PORTFOLIO_CATEGORIES } from './portfolio-performance-wi
 export { RISK_RETURN_DATA, RISK_RETURN_COLORS } from './risk-return-widget';
 export { SAVINGS_GOAL_DATA } from './savings-goal-widget';
 export { SPENDING_HEATMAP_DATA, HEATMAP_X_AXIS, HEATMAP_Y_AXIS } from './spending-heatmap-widget';
-export { INVESTMENT_DISTRIBUTION_DATA } from './investment-distribution-widget'; 
+export { INVESTMENT_DISTRIBUTION_DATA } from './investment-distribution-widget';
+export { sampleAreaChartData, sampleAreaChartXAxis } from './area-chart-widget'; 

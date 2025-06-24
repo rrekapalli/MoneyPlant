@@ -16,6 +16,7 @@ export * from './lib/usage-examples/pdf-export-examples';
 export * from './lib/usage-examples/usage-example-with-pdf';
 export * from './lib/usage-examples/usage-example';
 export * from './lib/usage-examples/dashboard-container-examples';
+export * from './lib/usage-examples/areaChart-examples';
 
 // Config
 export * from './lib/formly-configs/form-options';

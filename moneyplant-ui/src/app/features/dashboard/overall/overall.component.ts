@@ -117,6 +117,7 @@ import {
   GaugeChartBuilder,
   HeatmapChartBuilder,
   DensityMapBuilder,
+  AreaChartBuilder,
   // Data interfaces
   PieChartData,
   BarChartData,
@@ -125,6 +126,7 @@ import {
   GaugeChartData,
   HeatmapChartData,
   DensityMapData,
+  AreaChartData,
   // Fluent API
   StandardDashboardBuilder,
   DashboardConfig,
@@ -145,6 +147,7 @@ import {
   createSavingsGoalWidget,
   createSpendingHeatmapWidget,
   createInvestmentDistributionWidget,
+  createAreaChartWidget,
   // Data update functions
   updateAssetAllocationData,
   updateMonthlyIncomeExpensesData,
@@ -153,6 +156,7 @@ import {
   updateSavingsGoalData,
   updateSpendingHeatmapData,
   updateInvestmentDistributionData,
+  updateAreaChartData,
   // Data fetching functions
   getUpdatedAssetAllocationData,
   getUpdatedMonthlyData,
@@ -161,6 +165,7 @@ import {
   getUpdatedSavingsGoalData,
   getUpdatedSpendingHeatmapData,
   getUpdatedInvestmentDistributionData,
+  getUpdatedAreaChartData,
   // Alternative data functions
   getAlternativeAssetAllocationData,
   getAlternativeMonthlyData,
@@ -168,7 +173,8 @@ import {
   getAlternativeRiskReturnData,
   getAlternativeSavingsGoalData,
   getAlternativeSpendingHeatmapData,
-  getAlternativeInvestmentDistributionData
+  getAlternativeInvestmentDistributionData,
+  getAlternativeAreaChartData
 } from './widgets';
 
 import { v4 as uuidv4 } from 'uuid';
@@ -228,6 +234,7 @@ export class OverallComponent implements OnInit {
     const gaugeSavingsGoal = createSavingsGoalWidget();
     const heatmapSpending = createSpendingHeatmapWidget();
     const densityMapInvestment = createInvestmentDistributionWidget();
+    const areaChart = createAreaChartWidget();
 
     // Use the Fluent API to build the dashboard config
     this.dashboardConfig = StandardDashboardBuilder.createStandard()
@@ -240,6 +247,7 @@ export class OverallComponent implements OnInit {
         gaugeSavingsGoal,
         heatmapSpending,
         densityMapInvestment,
+        areaChart
       ])
       .setEditMode(false)
       .build();
@@ -348,13 +356,18 @@ export class OverallComponent implements OnInit {
       // Update each widget with corresponding data using chart builders
       widgets.forEach((widget, index) => {
         if (data[index]) {
-          const chartType = (widget.config.options as any)?.series?.[0]?.type;
+          const series = (widget.config.options as any)?.series?.[0];
+          const chartType = series?.type;
+          const hasAreaStyle = series?.areaStyle;
           
           // Use chart builders to update data based on chart type
           if (chartType === 'pie') {
             PieChartBuilder.updateData(widget, data[index]);
           } else if (chartType === 'bar') {
             BarChartBuilder.updateData(widget, data[index]);
+          } else if (chartType === 'line' && hasAreaStyle) {
+            // Area chart (line chart with area style)
+            AreaChartBuilder.updateData(widget, data[index]);
           } else if (chartType === 'line') {
             LineChartBuilder.updateData(widget, data[index]);
           } else if (chartType === 'scatter') {
@@ -390,36 +403,43 @@ export class OverallComponent implements OnInit {
     // Create appropriate data for each chart type using chart builders
     const chartData: any[] = [];
     chartWidgets.forEach(widget => {
-      const chartType = (widget.config.options as any)?.series?.[0]?.type;
-      console.log('Widget chart type:', chartType);
+      const series = (widget.config.options as any)?.series?.[0];
+      const chartType = series?.type;
+      const hasAreaStyle = series?.areaStyle;
+      console.log('Widget chart type:', chartType, 'hasAreaStyle:', hasAreaStyle);
       
       // Use chart builders to determine appropriate data
       let data: any;
-      switch (chartType) {
-        case 'pie':
-          data = getAlternativeAssetAllocationData();
-          break;
-        case 'bar':
-          data = getAlternativeMonthlyData();
-          break;
-        case 'line':
-          data = getAlternativePortfolioData();
-          break;
-        case 'scatter':
-          data = getAlternativeRiskReturnData();
-          break;
-        case 'gauge':
-          data = getAlternativeSavingsGoalData();
-          break;
-        case 'heatmap':
-          data = getAlternativeSpendingHeatmapData();
-          break;
-        case 'map':
-          data = getAlternativeInvestmentDistributionData();
-          break;
-        default:
-          data = [];
-          console.warn('Unknown chart type:', chartType);
+      if (chartType === 'line' && hasAreaStyle) {
+        // Area chart (line chart with area style)
+        data = getAlternativeAreaChartData();
+      } else {
+        switch (chartType) {
+          case 'pie':
+            data = getAlternativeAssetAllocationData();
+            break;
+          case 'bar':
+            data = getAlternativeMonthlyData();
+            break;
+          case 'line':
+            data = getAlternativePortfolioData();
+            break;
+          case 'scatter':
+            data = getAlternativeRiskReturnData();
+            break;
+          case 'gauge':
+            data = getAlternativeSavingsGoalData();
+            break;
+          case 'heatmap':
+            data = getAlternativeSpendingHeatmapData();
+            break;
+          case 'map':
+            data = getAlternativeInvestmentDistributionData();
+            break;
+          default:
+            data = [];
+            console.warn('Unknown chart type:', chartType);
+        }
       }
       chartData.push(data);
     });
