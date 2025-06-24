@@ -13,4 +13,5 @@ export * from './gauge';
 export * from './heatmap';
 export * from './density-map';
 export * from './area';
-export * from './polar'; 
+export * from './polar';
+export * from './stacked-area'; 

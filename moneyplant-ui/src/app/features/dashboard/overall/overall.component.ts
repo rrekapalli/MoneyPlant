@@ -121,6 +121,7 @@ import {
   DensityMapBuilder,
   AreaChartBuilder,
   PolarChartBuilder,
+  StackedAreaChartBuilder,
   // Data interfaces
   PieChartData,
   BarChartData,
@@ -131,6 +132,7 @@ import {
   DensityMapData,
   AreaChartData,
   PolarChartData,
+  StackedAreaSeriesData,
   // Fluent API
   StandardDashboardBuilder,
   DashboardConfig,
@@ -153,6 +155,9 @@ import {
   createInvestmentDistributionWidget,
   createAreaChartWidget,
   createPolarChartWidget,
+  createNewStackedAreaChartWidget,
+  createPerformanceStackedAreaChartWidget,
+  createMarketTrendStackedAreaChartWidget,
   // Data update functions
   updateAssetAllocationData,
   updateMonthlyIncomeExpensesData,
@@ -163,6 +168,7 @@ import {
   updateInvestmentDistributionData,
   updateAreaChartData,
   updatePolarChartData,
+  updateStackedAreaChartData,
   // Data fetching functions
   getUpdatedAssetAllocationData,
   getUpdatedMonthlyData,
@@ -173,6 +179,7 @@ import {
   getUpdatedInvestmentDistributionData,
   getUpdatedAreaChartData,
   getUpdatedPolarChartData,
+  getUpdatedStackedAreaChartData,
   // Alternative data functions
   getAlternativeAssetAllocationData,
   getAlternativeMonthlyData,
@@ -182,7 +189,8 @@ import {
   getAlternativeSpendingHeatmapData,
   getAlternativeInvestmentDistributionData,
   getAlternativeAreaChartData,
-  getAlternativePolarChartData
+  getAlternativePolarChartData,
+  getAlternativeStackedAreaChartData
 } from './widgets';
 
 import { v4 as uuidv4 } from 'uuid';
@@ -244,6 +252,9 @@ export class OverallComponent implements OnInit {
     const densityMapInvestment = createInvestmentDistributionWidget();
     const areaChart = createAreaChartWidget();
     const polarChart = createPolarChartWidget();
+    const stackedAreaChart = createNewStackedAreaChartWidget();
+    const performanceStackedAreaChart = createPerformanceStackedAreaChartWidget();
+    const marketTrendStackedAreaChart = createMarketTrendStackedAreaChartWidget();
 
     // Use the Fluent API to build the dashboard config
     this.dashboardConfig = StandardDashboardBuilder.createStandard()
@@ -257,7 +268,10 @@ export class OverallComponent implements OnInit {
         heatmapSpending,
         densityMapInvestment,
         areaChart,
-        polarChart
+        polarChart,
+        stackedAreaChart,
+        performanceStackedAreaChart,
+        marketTrendStackedAreaChart
       ])
       .setEditMode(false)
       .build();
@@ -370,6 +384,7 @@ export class OverallComponent implements OnInit {
           const chartType = series?.type;
           const hasAreaStyle = series?.areaStyle;
           const coordinateSystem = series?.coordinateSystem;
+          const hasStack = series?.stack;
           
           // Use chart builders to update data based on chart type
           if (chartType === 'pie') {
@@ -379,6 +394,9 @@ export class OverallComponent implements OnInit {
           } else if (chartType === 'line' && coordinateSystem === 'polar') {
             // Polar chart (line chart with polar coordinate system)
             PolarChartBuilder.updateData(widget, data[index]);
+          } else if (chartType === 'line' && hasAreaStyle && hasStack) {
+            // Stacked area chart (line chart with area style and stack)
+            StackedAreaChartBuilder.updateData(widget, data[index]);
           } else if (chartType === 'line' && hasAreaStyle) {
             // Area chart (line chart with area style)
             AreaChartBuilder.updateData(widget, data[index]);
@@ -421,13 +439,17 @@ export class OverallComponent implements OnInit {
       const chartType = series?.type;
       const hasAreaStyle = series?.areaStyle;
       const coordinateSystem = series?.coordinateSystem;
-      console.log('Widget chart type:', chartType, 'hasAreaStyle:', hasAreaStyle, 'coordinateSystem:', coordinateSystem);
+      const hasStack = series?.stack;
+      console.log('Widget chart type:', chartType, 'hasAreaStyle:', hasAreaStyle, 'coordinateSystem:', coordinateSystem, 'hasStack:', hasStack);
       
       // Use chart builders to determine appropriate data
       let data: any;
       if (chartType === 'line' && coordinateSystem === 'polar') {
         // Polar chart (line chart with polar coordinate system)
         data = getAlternativePolarChartData();
+      } else if (chartType === 'line' && hasAreaStyle && hasStack) {
+        // Stacked area chart (line chart with area style and stack)
+        data = getAlternativeStackedAreaChartData();
       } else if (chartType === 'line' && hasAreaStyle) {
         // Area chart (line chart with area style)
         data = getAlternativeAreaChartData();
