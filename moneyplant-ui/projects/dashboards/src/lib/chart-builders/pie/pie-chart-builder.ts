@@ -221,6 +221,51 @@ export class PieChartBuilder extends ApacheEchartBuilder<PieChartOptions, PieCha
       .setEChartsOptions(finalOptions)
       .setData(data || []);
   }
+
+  /**
+   * Export pie chart data for Excel/CSV export
+   * Extracts category names, values, and calculated percentages
+   * @param widget - Widget containing pie chart data
+   * @returns Array of data rows for export
+   */
+  static override exportData(widget: IWidget): any[] {
+    const series = (widget.config?.options as any)?.series?.[0];
+    
+    if (!series?.data) {
+      console.warn('PieChartBuilder.exportData - No series data found');
+      return [];
+    }
+
+    return series.data.map((item: any) => [
+      item.name || 'Unknown',
+      item.value || 0,
+      PieChartBuilder.calculatePercentage(item.value, series.data)
+    ]);
+  }
+
+  /**
+   * Get headers for pie chart export
+   */
+  static override getExportHeaders(widget: IWidget): string[] {
+    return ['Category', 'Value', 'Percentage'];
+  }
+
+  /**
+   * Get sheet name for pie chart export
+   */
+  static override getExportSheetName(widget: IWidget): string {
+    const title = widget.config?.header?.title || 'Sheet';
+    return title.replace(/[^\w\s]/gi, '').substring(0, 31).trim();
+  }
+
+  /**
+   * Calculate percentage for pie chart data
+   */
+  private static calculatePercentage(value: number, data: any[]): string {
+    const total = data.reduce((sum: number, item: any) => sum + (item.value || 0), 0);
+    if (total === 0) return '0%';
+    return `${((value / total) * 100).toFixed(2)}%`;
+  }
 }
 
 /**

@@ -4,6 +4,18 @@ export * from './lib/dashboard-container/dashboard-container.component';
 export * from './lib/widget-header/widget-header.component';
 export * from './lib/widget-config/widget-config.component';
 
+// Dashboard Container Builders
+export * from './lib/dashboard-container';
+
+// Services
+export * from './lib/services/pdf-export.service';
+export * from './lib/services/excel-export.service';
+
+// Examples
+export * from './lib/usage-examples/pdf-export-examples';
+export * from './lib/usage-examples/usage-example-with-pdf';
+export * from './lib/usage-examples/usage-example';
+export * from './lib/usage-examples/dashboard-container-examples';
 
 // Config
 export * from './lib/formly-configs/form-options';

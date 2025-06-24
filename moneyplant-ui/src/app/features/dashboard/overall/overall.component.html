@@ -9,14 +9,33 @@
     [loading]="false"
     styleClass="p-button-sm p-button-secondary">
   </p-button>
+  
+  <p-button 
+    label="Export to PDF" 
+    icon="pi pi-file-pdf" 
+    (onClick)="exportDashboardToPdf()"
+    [loading]="isExportingPdf"
+    [disabled]="isExportingPdf"
+    styleClass="p-button-sm p-button-success">
+  </p-button>
+  
+  <p-button 
+    label="Export to Excel" 
+    icon="pi pi-file-excel" 
+    (onClick)="exportDashboardToExcel()"
+    [loading]="isExportingExcel"
+    [disabled]="isExportingExcel"
+    styleClass="p-button-sm p-button-info">
+  </p-button>
 </div>
 
 <p-scrollPanel [style]="{ height: '100%', width: '100%', 'overflow-x': 'hidden', 'overflow': 'auto' }">
-  <div class="dashboard-container">
+  <div class="dashboard-container" #dashboardContainer>
     <!-- Dashboard Container Component -->
     <vis-dashboard-container 
-      [widgets]="widgets" 
-      [isEditMode]="false">
+      [widgets]="dashboardConfig.widgets" 
+      [options]="dashboardConfig.config"
+      [dashboardId]="dashboardConfig.dashboardId">
     </vis-dashboard-container>
   </div>
 </p-scrollPanel>

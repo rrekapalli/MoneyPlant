@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
@@ -124,7 +124,16 @@ import {
   ScatterChartData,
   GaugeChartData,
   HeatmapChartData,
-  DensityMapData
+  DensityMapData,
+  // Fluent API
+  StandardDashboardBuilder,
+  DashboardConfig,
+  // PDF Export Service
+  PdfExportService,
+  PdfExportOptions,
+  // Excel Export Service
+  ExcelExportService,
+  ExcelExportOptions
 } from '@dashboards/public-api';
 
 // Import widget creation functions
@@ -185,25 +194,34 @@ import { updatePieChartDataDirect } from './widgets/asset-allocation-widget';
   styleUrls: ['./overall.component.scss'],
 })
 export class OverallComponent implements OnInit {
-  // Dashboard widgets
-  widgets: IWidget[] = [];
-  private pieAssetAllocationWidgetId: string = '';
+  // Dashboard config (Fluent API)
+  dashboardConfig!: DashboardConfig;
+  
+  // PDF export loading state
+  isExportingPdf = false;
+  
+  // Excel export loading state
+  isExportingExcel = false;
 
-  constructor(private cdr: ChangeDetectorRef) {}
+  // Reference to dashboard container for PDF export
+  @ViewChild('dashboardContainer', { static: false }) dashboardContainer!: ElementRef<HTMLElement>;
+
+  constructor(
+    private cdr: ChangeDetectorRef,
+    private pdfExportService: PdfExportService,
+    private excelExportService: ExcelExportService
+  ) {}
 
   ngOnInit(): void {
-    // Initialize dashboard widgets
-    this.initializeDashboardWidgets();
+    this.initializeDashboardConfig();
   }
 
   /**
-   * Initialize dashboard widgets using the new widget creation functions
+   * Initialize dashboard config using the Fluent API
    */
-  private initializeDashboardWidgets(): void {
+  private initializeDashboardConfig(): void {
     // Create widgets using the new widget functions
     const pieAssetAllocation = createAssetAllocationWidget();
-    this.pieAssetAllocationWidgetId = pieAssetAllocation.id;
-
     const barMonthlyIncomeVsExpenses = createMonthlyIncomeExpensesWidget();
     const linePortfolioPerformance = createPortfolioPerformanceWidget();
     const scatterRiskVsReturn = createRiskReturnWidget();
@@ -211,41 +229,113 @@ export class OverallComponent implements OnInit {
     const heatmapSpending = createSpendingHeatmapWidget();
     const densityMapInvestment = createInvestmentDistributionWidget();
 
-    // Set the widgets array
-    this.widgets = [
-      pieAssetAllocation,
-      barMonthlyIncomeVsExpenses,
-      linePortfolioPerformance,
-      scatterRiskVsReturn,
-      gaugeSavingsGoal,
-      heatmapSpending,
-      densityMapInvestment,
-    ];
-
-    this.updateAssetAllocationData(pieAssetAllocation);
+    // Use the Fluent API to build the dashboard config
+    this.dashboardConfig = StandardDashboardBuilder.createStandard()
+      .setDashboardId('overall-dashboard')
+      .setWidgets([
+        pieAssetAllocation,
+        barMonthlyIncomeVsExpenses,
+        linePortfolioPerformance,
+        scatterRiskVsReturn,
+        gaugeSavingsGoal,
+        heatmapSpending,
+        densityMapInvestment,
+      ])
+      .setEditMode(false)
+      .build();
   }
 
   /**
-   * Example method showing how end users can update widget data dynamically
-   * This is the exposed setData functionality for end users
+   * Export dashboard to PDF
    */
-  public async updateAssetAllocationData(widget: IWidget): Promise<void> {
+  public async exportDashboardToPdf(): Promise<void> {
+    if (!this.dashboardContainer) {
+      console.error('Dashboard container reference not found');
+      return;
+    }
+
+    this.isExportingPdf = true;
+    this.cdr.detectChanges();
+
     try {
-      // Get updated data from the widget module
-      const updatedData = await getUpdatedAssetAllocationData();
-      
-      // Use the exposed setData method - this is what end users will call
-      updateAssetAllocationData(widget, updatedData);
-      
-      // Trigger change detection to ensure UI updates
-      this.cdr.detectChanges();
-      
-      console.log('Widget data updated successfully');
+      console.log('Starting PDF export...');
+      console.log('Dashboard container:', this.dashboardContainer.nativeElement);
+      console.log('Number of widgets to export:', this.dashboardConfig.widgets.length);
+      console.log('Widgets:', this.dashboardConfig.widgets.map(w => ({
+        id: w.id,
+        title: w.config?.header?.title,
+        component: w.config?.component,
+        position: w.position
+      })));
+
+      const options: PdfExportOptions = {
+        orientation: 'landscape',
+        format: 'a4',
+        margin: 15,
+        filename: `financial-dashboard-${new Date().toISOString().split('T')[0]}.pdf`,
+        title: 'Financial Dashboard - MoneyPlant',
+        includeHeader: true,
+        includeFooter: true,
+        quality: 1,
+        scale: 2
+      };
+
+      await this.pdfExportService.exportDashboardToPdf(
+        this.dashboardContainer,
+        this.dashboardConfig.widgets,
+        options
+      );
+
+      console.log('Dashboard exported to PDF successfully');
     } catch (error) {
-      console.error('Error updating widget data:', error);
+      console.error('Error exporting dashboard to PDF:', error);
+      // You could add a toast notification here for user feedback
+    } finally {
+      this.isExportingPdf = false;
+      this.cdr.detectChanges();
     }
   }
 
+  /**
+   * Export dashboard data to Excel
+   */
+  public async exportDashboardToExcel(): Promise<void> {
+    this.isExportingExcel = true;
+    this.cdr.detectChanges();
+
+    try {
+      console.log('Starting Excel export...');
+      console.log('Number of widgets to export:', this.dashboardConfig.widgets.length);
+      console.log('Widgets:', this.dashboardConfig.widgets.map(w => ({
+        id: w.id,
+        title: w.config?.header?.title,
+        component: w.config?.component,
+        position: w.position
+      })));
+
+      const options: ExcelExportOptions = {
+        filename: `financial-dashboard-data-${new Date().toISOString().split('T')[0]}.xlsx`,
+        includeHeaders: true,
+        includeTimestamp: true,
+        sheetNamePrefix: 'Widget',
+        autoColumnWidth: true,
+        includeWidgetTitles: true
+      };
+
+      await this.excelExportService.exportDashboardToExcel(
+        this.dashboardConfig.widgets,
+        options
+      );
+
+      console.log('Dashboard data exported to Excel successfully');
+    } catch (error) {
+      console.error('Error exporting dashboard to Excel:', error);
+      // You could add a toast notification here for user feedback
+    } finally {
+      this.isExportingExcel = false;
+      this.cdr.detectChanges();
+    }
+  }
 
   /**
    * Utility method to update multiple widgets at once
@@ -255,23 +345,25 @@ export class OverallComponent implements OnInit {
       // Simulate API call delay
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Update each widget with corresponding data
+      // Update each widget with corresponding data using chart builders
       widgets.forEach((widget, index) => {
         if (data[index]) {
-          // Use appropriate chart builder based on widget type
-          if (PieChartBuilder.isPieChart(widget)) {
+          const chartType = (widget.config.options as any)?.series?.[0]?.type;
+          
+          // Use chart builders to update data based on chart type
+          if (chartType === 'pie') {
             PieChartBuilder.updateData(widget, data[index]);
-          } else if (BarChartBuilder.isBarChart(widget)) {
+          } else if (chartType === 'bar') {
             BarChartBuilder.updateData(widget, data[index]);
-          } else if (LineChartBuilder.isLineChart(widget)) {
+          } else if (chartType === 'line') {
             LineChartBuilder.updateData(widget, data[index]);
-          } else if (ScatterChartBuilder.isScatterChart(widget)) {
+          } else if (chartType === 'scatter') {
             ScatterChartBuilder.updateData(widget, data[index]);
-          } else if (GaugeChartBuilder.isGaugeChart(widget)) {
+          } else if (chartType === 'gauge') {
             GaugeChartBuilder.updateData(widget, data[index]);
-          } else if (HeatmapChartBuilder.isHeatmapChart(widget)) {
+          } else if (chartType === 'heatmap') {
             HeatmapChartBuilder.updateData(widget, data[index]);
-          } else if (DensityMapBuilder.isDensityMap(widget)) {
+          } else if (chartType === 'map') {
             DensityMapBuilder.updateData(widget, data[index]);
           } else {
             WidgetBuilder.setData(widget, data[index]);
@@ -281,59 +373,57 @@ export class OverallComponent implements OnInit {
       
       // Trigger change detection once for all updates
       this.cdr.detectChanges();
-      
       console.log(`Updated ${widgets.length} widgets successfully`);
     } catch (error) {
       console.error('Error updating multiple widgets:', error);
     }
   }
 
-
   /**
    * Example of updating all chart widgets with appropriate data
    */
   public async updateAllCharts(): Promise<void> {
     // Get all echart widgets
-    const chartWidgets = this.widgets.filter(w => w.config.component === 'echart');
-    
+    const chartWidgets = this.dashboardConfig.widgets.filter(w => w.config.component === 'echart');
     console.log('Found chart widgets:', chartWidgets.length);
     
-    // Create appropriate data for each chart type
+    // Create appropriate data for each chart type using chart builders
     const chartData: any[] = [];
-    
     chartWidgets.forEach(widget => {
       const chartType = (widget.config.options as any)?.series?.[0]?.type;
       console.log('Widget chart type:', chartType);
       
+      // Use chart builders to determine appropriate data
+      let data: any;
       switch (chartType) {
         case 'pie':
-          chartData.push(getAlternativeAssetAllocationData());
+          data = getAlternativeAssetAllocationData();
           break;
         case 'bar':
-          chartData.push(getAlternativeMonthlyData());
+          data = getAlternativeMonthlyData();
           break;
         case 'line':
-          chartData.push(getAlternativePortfolioData());
+          data = getAlternativePortfolioData();
           break;
         case 'scatter':
-          chartData.push(getAlternativeRiskReturnData());
+          data = getAlternativeRiskReturnData();
           break;
         case 'gauge':
-          chartData.push(getAlternativeSavingsGoalData());
+          data = getAlternativeSavingsGoalData();
           break;
         case 'heatmap':
-          chartData.push(getAlternativeSpendingHeatmapData());
+          data = getAlternativeSpendingHeatmapData();
           break;
         case 'map':
-          chartData.push(getAlternativeInvestmentDistributionData());
+          data = getAlternativeInvestmentDistributionData();
           break;
         default:
-          chartData.push([]);
+          data = [];
           console.warn('Unknown chart type:', chartType);
       }
+      chartData.push(data);
     });
     
     await this.updateMultipleWidgets(chartWidgets, chartData);
   }
-
 }

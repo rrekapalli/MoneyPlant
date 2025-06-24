@@ -406,6 +406,54 @@ export class GaugeChartBuilder extends ApacheEchartBuilder<GaugeChartOptions, Ga
       .setEChartsOptions(finalOptions)
       .setData(data || []);
   }
+
+  /**
+   * Export gauge chart data for Excel/CSV export
+   * Extracts metric name, current value, target value, and calculated percentage
+   * @param widget - Widget containing gauge chart data
+   * @returns Array of data rows for export
+   */
+  static override exportData(widget: IWidget): any[] {
+    const series = (widget.config?.options as any)?.series?.[0];
+    
+    if (!series?.data) {
+      console.warn('GaugeChartBuilder.exportData - No series data found');
+      return [];
+    }
+
+    const data = series.data[0];
+    const max = series.max || 100;
+    
+    return [[
+      widget.config?.header?.title || 'Metric',
+      data?.value || 0,
+      max,
+      GaugeChartBuilder.calculatePercentage(data?.value || 0, max)
+    ]];
+  }
+
+  /**
+   * Get headers for gauge chart export
+   */
+  static override getExportHeaders(widget: IWidget): string[] {
+    return ['Metric', 'Value', 'Target', 'Percentage'];
+  }
+
+  /**
+   * Get sheet name for gauge chart export
+   */
+  static override getExportSheetName(widget: IWidget): string {
+    const title = widget.config?.header?.title || 'Sheet';
+    return title.replace(/[^\w\s]/gi, '').substring(0, 31).trim();
+  }
+
+  /**
+   * Calculate percentage for gauge chart data
+   */
+  private static calculatePercentage(value: number, max: number): string {
+    if (max === 0) return '0%';
+    return `${((value / max) * 100).toFixed(2)}%`;
+  }
 }
 
 /**

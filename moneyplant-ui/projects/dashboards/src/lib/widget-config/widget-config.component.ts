@@ -36,7 +36,7 @@ export class WidgetConfigComponent {
   @Input() set widget(value: IWidget | undefined) {
     this._widget = value;
 
-    // Patch form value after a delay!  Why is this needed?
+    // Patch form value after a delay to ensure form is initialized
     setTimeout(() => {
       this.formWidgetOptions.patchValue({
         position: value?.position,
@@ -79,30 +79,15 @@ export class WidgetConfigComponent {
       this._widget.series?.push({});
     }
 
-    let payload = {
-      name: (this._widget?.config?.header?.title ?? this._widget?.id) ?? 'New Widget',
-      category: this._widget?.config.component ?? 'BarChartVisual',
-      description: this._widget?.config.component ?? 'BarChartVisual',
-      placementOptions: JSON.stringify(this._widget?.position),
-      chartOptions: JSON.stringify(this._widget?.config),
-      otherOptions: JSON.stringify(this._widget?.series),
-    };
-
-    // Call the API to save the empty widget
-    // this.dashboardApi.updateByQuery(`${this.selectedDashboardId}/${this._widget?.id}/visualization`, payload)
-    // .subscribe({
-    //   next: (res: any) => {
-    //     if(res) {
-    //       if(this._widget) {
-    //         this._widget.id = res.id;
-    //       }
-    //     }
-    //     //this.messageService.add({ severity: 'success', summary: 'SUCCESS', detail: 'Visualization created successfully', key: 'br', life: 3000 });      
-    //   },  
-    //   error: (error: any) => {
-    //     console.log('Error creating visualization:', error);
-    //   },
-    // });
+    // TODO: Implement API call to save widget configuration
+    // const payload = {
+    //   name: (this._widget?.config?.header?.title ?? this._widget?.id) ?? 'New Widget',
+    //   category: this._widget?.config.component ?? 'BarChartVisual',
+    //   description: this._widget?.config.component ?? 'BarChartVisual',
+    //   placementOptions: JSON.stringify(this._widget?.position),
+    //   chartOptions: JSON.stringify(this._widget?.config),
+    //   otherOptions: JSON.stringify(this._widget?.series),
+    // };
   }
 
 }

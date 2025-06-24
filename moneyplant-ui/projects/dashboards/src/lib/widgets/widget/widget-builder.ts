@@ -9,6 +9,12 @@ import { ICodeCellOptions } from '../../entities/ICodeCellOptions';
 import { ITableOptions } from '../../entities/ITableOptions';
 import { IFilterValues } from '../../entities/IFilterValues';
 
+export interface WidgetDataExtractor {
+  extractData(widget: IWidget): any[];
+  getHeaders(widget: IWidget): string[];
+  getSheetName(widget: IWidget): string;
+}
+
 export class WidgetBuilder {
   private widget: IWidget = {
     id: '',
@@ -193,9 +199,86 @@ export class WidgetBuilder {
       
       // Trigger chart update if chart instance exists
       if (widget.chartInstance) {
-        widget.chartInstance.setOption(options, true);
+        widget.chartInstance.setOption(options);
       }
     }
+    
+    // Update table data if it's a table widget
+    if (widget.config.component === 'table' && widget.config.options) {
+      const tableOptions = widget.config.options as ITableOptions;
+      if (tableOptions.data) {
+        tableOptions.data = data;
+      }
+    }
+    
+    // Update tile data if it's a tile widget
+    if (widget.config.component === 'tile' && widget.config.options) {
+      const tileOptions = widget.config.options as ITileOptions;
+      if (data && typeof data === 'object') {
+        Object.assign(tileOptions, data);
+      }
+    }
+  }
+
+  /**
+   * Export table widget data for Excel/CSV
+   */
+  static exportTableData(widget: IWidget): any[] {
+    const tableOptions = widget.config?.options as ITableOptions;
+    if (!tableOptions?.data || !tableOptions?.columns) return [];
+
+    return tableOptions.data.map(row => 
+      tableOptions.columns.map(column => row[column] || '')
+    );
+  }
+
+  /**
+   * Get headers for table widget export
+   */
+  static getTableExportHeaders(widget: IWidget): string[] {
+    const tableOptions = widget.config?.options as ITableOptions;
+    return tableOptions?.columns || [];
+  }
+
+  /**
+   * Get sheet name for table widget export
+   */
+  static getTableExportSheetName(widget: IWidget): string {
+    const title = widget.config?.header?.title || 'Table';
+    const cleanTitle = title.replace(/[^\w\s]/gi, '').substring(0, 20);
+    return `${cleanTitle} (Table)`;
+  }
+
+  /**
+   * Export tile widget data for Excel/CSV
+   */
+  static exportTileData(widget: IWidget): any[] {
+    const tileOptions = widget.config?.options as ITileOptions;
+    if (!tileOptions) return [];
+
+    return [[
+      widget.config?.header?.title || 'Metric',
+      tileOptions.value || '',
+      tileOptions.change || '',
+      tileOptions.changeType || 'neutral',
+      tileOptions.description || ''
+    ]];
+  }
+
+  /**
+   * Get headers for tile widget export
+   */
+  static getTileExportHeaders(widget: IWidget): string[] {
+    return ['Metric', 'Value', 'Change', 'Change Type', 'Description'];
+  }
+
+  /**
+   * Get sheet name for tile widget export
+   */
+  static getTileExportSheetName(widget: IWidget): string {
+    const title = widget.config?.header?.title || 'Tile';
+    const cleanTitle = title.replace(/[^\w\s]/gi, '').substring(0, 20);
+    return `${cleanTitle} (Tile)`;
   }
 }
     
