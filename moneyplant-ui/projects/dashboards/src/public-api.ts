@@ -4,6 +4,8 @@ export * from './lib/dashboard-container/dashboard-container.component';
 export * from './lib/widget-header/widget-header.component';
 export * from './lib/widget-config/widget-config.component';
 
+// Dashboard Container Builders
+export * from './lib/dashboard-container';
 
 // Config
 export * from './lib/formly-configs/form-options';

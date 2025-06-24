@@ -124,7 +124,10 @@ import {
   ScatterChartData,
   GaugeChartData,
   HeatmapChartData,
-  DensityMapData
+  DensityMapData,
+  // Fluent API
+  StandardDashboardBuilder,
+  DashboardConfig
 } from '@dashboards/public-api';
 
 // Import widget creation functions
@@ -185,23 +188,21 @@ import { updatePieChartDataDirect } from './widgets/asset-allocation-widget';
   styleUrls: ['./overall.component.scss'],
 })
 export class OverallComponent implements OnInit {
-  // Dashboard widgets
-  widgets: IWidget[] = [];
+  // Dashboard config (Fluent API)
+  dashboardConfig!: DashboardConfig;
 
   constructor(private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
-    // Initialize dashboard widgets
-    this.initializeDashboardWidgets();
+    this.initializeDashboardConfig();
   }
 
   /**
-   * Initialize dashboard widgets using the new widget creation functions
+   * Initialize dashboard config using the Fluent API
    */
-  private initializeDashboardWidgets(): void {
+  private initializeDashboardConfig(): void {
     // Create widgets using the new widget functions
     const pieAssetAllocation = createAssetAllocationWidget();
-
     const barMonthlyIncomeVsExpenses = createMonthlyIncomeExpensesWidget();
     const linePortfolioPerformance = createPortfolioPerformanceWidget();
     const scatterRiskVsReturn = createRiskReturnWidget();
@@ -209,16 +210,20 @@ export class OverallComponent implements OnInit {
     const heatmapSpending = createSpendingHeatmapWidget();
     const densityMapInvestment = createInvestmentDistributionWidget();
 
-    // Set the widgets array
-    this.widgets = [
-      pieAssetAllocation,
-      barMonthlyIncomeVsExpenses,
-      linePortfolioPerformance,
-      scatterRiskVsReturn,
-      gaugeSavingsGoal,
-      heatmapSpending,
-      densityMapInvestment,
-    ];
+    // Use the Fluent API to build the dashboard config
+    this.dashboardConfig = StandardDashboardBuilder.createStandard()
+      .setDashboardId('overall-dashboard')
+      .setWidgets([
+        pieAssetAllocation,
+        barMonthlyIncomeVsExpenses,
+        linePortfolioPerformance,
+        scatterRiskVsReturn,
+        gaugeSavingsGoal,
+        heatmapSpending,
+        densityMapInvestment,
+      ])
+      .setEditMode(false)
+      .build();
   }
 
   /**
@@ -228,7 +233,6 @@ export class OverallComponent implements OnInit {
     try {
       // Simulate API call delay
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
       // Update each widget with corresponding data
       widgets.forEach((widget, index) => {
         if (data[index]) {
@@ -252,33 +256,26 @@ export class OverallComponent implements OnInit {
           }
         }
       });
-      
       // Trigger change detection once for all updates
       this.cdr.detectChanges();
-      
       console.log(`Updated ${widgets.length} widgets successfully`);
     } catch (error) {
       console.error('Error updating multiple widgets:', error);
     }
   }
 
-
   /**
    * Example of updating all chart widgets with appropriate data
    */
   public async updateAllCharts(): Promise<void> {
     // Get all echart widgets
-    const chartWidgets = this.widgets.filter(w => w.config.component === 'echart');
-    
+    const chartWidgets = this.dashboardConfig.widgets.filter(w => w.config.component === 'echart');
     console.log('Found chart widgets:', chartWidgets.length);
-    
     // Create appropriate data for each chart type
     const chartData: any[] = [];
-    
     chartWidgets.forEach(widget => {
       const chartType = (widget.config.options as any)?.series?.[0]?.type;
       console.log('Widget chart type:', chartType);
-      
       switch (chartType) {
         case 'pie':
           chartData.push(getAlternativeAssetAllocationData());
@@ -306,8 +303,6 @@ export class OverallComponent implements OnInit {
           console.warn('Unknown chart type:', chartType);
       }
     });
-    
     await this.updateMultipleWidgets(chartWidgets, chartData);
   }
-
 }

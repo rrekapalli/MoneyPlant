@@ -15,8 +15,9 @@
   <div class="dashboard-container">
     <!-- Dashboard Container Component -->
     <vis-dashboard-container 
-      [widgets]="widgets" 
-      [isEditMode]="false">
+      [widgets]="dashboardConfig.widgets" 
+      [options]="dashboardConfig.config"
+      [dashboardId]="dashboardConfig.dashboardId">
     </vis-dashboard-container>
   </div>
 </p-scrollPanel>
