@@ -16,4 +16,5 @@ export * from './area';
 export * from './polar';
 export * from './stacked-area';
 export * from './treemap';
-export * from './sunburst'; 
+export * from './sunburst';
+export * from './sankey'; 

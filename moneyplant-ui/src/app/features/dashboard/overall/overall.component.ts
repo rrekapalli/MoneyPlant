@@ -20,7 +20,8 @@ import {
   HeatmapChart,
   MapChart,
   TreemapChart,
-  SunburstChart
+  SunburstChart,
+  SankeyChart
 } from 'echarts/charts';
 // Import tooltip, title, legend, and other components
 import {
@@ -37,56 +38,6 @@ import {
 import {
   CanvasRenderer
 } from 'echarts/renderers';
-
-// Create a simple custom map data for demonstration
-const customMapData = {
-  type: 'FeatureCollection' as const,
-  features: [
-    {
-      type: 'Feature' as const,
-      properties: { name: 'Hong Kong Island' },
-      geometry: {
-        type: 'Polygon' as const,
-        coordinates: [[[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]]
-      }
-    },
-    {
-      type: 'Feature' as const,
-      properties: { name: 'Kowloon' },
-      geometry: {
-        type: 'Polygon' as const,
-        coordinates: [[[1, 0], [2, 0], [2, 1], [1, 1], [1, 0]]]
-      }
-    },
-    {
-      type: 'Feature' as const,
-      properties: { name: 'New Territories' },
-      geometry: {
-        type: 'Polygon' as const,
-        coordinates: [[[0, 1], [2, 1], [2, 2], [0, 2], [0, 1]]]
-      }
-    },
-    {
-      type: 'Feature' as const,
-      properties: { name: 'Lantau Island' },
-      geometry: {
-        type: 'Polygon' as const,
-        coordinates: [[[2, 0], [3, 0], [3, 1], [2, 1], [2, 0]]]
-      }
-    },
-    {
-      type: 'Feature' as const,
-      properties: { name: 'Lamma Island' },
-      geometry: {
-        type: 'Polygon' as const,
-        coordinates: [[[3, 0], [4, 0], [4, 1], [3, 1], [3, 0]]]
-      }
-    }
-  ]
-};
-
-// Register the custom map data
-echarts.registerMap('HK', customMapData);
 
 // Register the required components
 echarts.use([
@@ -107,6 +58,7 @@ echarts.use([
   MapChart,
   TreemapChart,
   SunburstChart,
+  SankeyChart,
   CanvasRenderer
 ]);
 
@@ -128,6 +80,7 @@ import {
   StackedAreaChartBuilder,
   TreemapChartBuilder,
   SunburstChartBuilder,
+  SankeyChartBuilder,
   // Data interfaces
   PieChartData,
   BarChartData,
@@ -141,6 +94,7 @@ import {
   StackedAreaSeriesData,
   TreemapData,
   SunburstChartData,
+  SankeyChartData,
   // Fluent API
   StandardDashboardBuilder,
   DashboardConfig,
@@ -172,6 +126,10 @@ import {
   createSunburstChartWidget,
   createOrganizationalSunburstWidget,
   createLargeScaleSunburstWidget,
+  createSankeyChartWidget,
+  createInvestmentFlowSankeyWidget,
+  createBudgetAllocationSankeyWidget,
+  createMinimalSankeyChartWidget,
   // Data update functions
   updateAssetAllocationData,
   updateMonthlyIncomeExpensesData,
@@ -185,6 +143,7 @@ import {
   updateStackedAreaChartData,
   updateTreemapChartData,
   updateSunburstChartData,
+  updateSankeyChartData,
   // Data fetching functions
   getUpdatedAssetAllocationData,
   getUpdatedMonthlyData,
@@ -198,6 +157,7 @@ import {
   getUpdatedStackedAreaChartData,
   getUpdatedTreemapChartData,
   getUpdatedSunburstChartData,
+  getUpdatedSankeyChartData,
   // Alternative data functions
   getAlternativeAssetAllocationData,
   getAlternativeMonthlyData,
@@ -210,7 +170,8 @@ import {
   getAlternativePolarChartData,
   getAlternativeStackedAreaChartData,
   getAlternativeTreemapChartData,
-  getAlternativeSunburstChartData
+  getAlternativeSunburstChartData,
+  getAlternativeSankeyChartData
 } from './widgets';
 
 import { v4 as uuidv4 } from 'uuid';
@@ -281,6 +242,10 @@ export class OverallComponent implements OnInit {
     const sunburstChart = createSunburstChartWidget();
     const organizationalSunburst = createOrganizationalSunburstWidget();
     const largeScaleSunburst = createLargeScaleSunburstWidget();
+    const sankeyChart = createSankeyChartWidget();
+    const investmentFlowSankey = createInvestmentFlowSankeyWidget();
+    const budgetAllocationSankey = createBudgetAllocationSankeyWidget();
+    const minimalSankeyTest = createMinimalSankeyChartWidget();
 
     // Use the Fluent API to build the dashboard config
     this.dashboardConfig = StandardDashboardBuilder.createStandard()
@@ -303,7 +268,11 @@ export class OverallComponent implements OnInit {
         largeScaleTreemap,
         sunburstChart,
         organizationalSunburst,
-        largeScaleSunburst
+        largeScaleSunburst,
+        sankeyChart,
+        investmentFlowSankey,
+        budgetAllocationSankey,
+        minimalSankeyTest
       ])
       .setEditMode(false)
       .build();
@@ -446,6 +415,8 @@ export class OverallComponent implements OnInit {
             TreemapChartBuilder.updateData(widget, data[index]);
           } else if (chartType === 'sunburst') {
             SunburstChartBuilder.updateData(widget, data[index]);
+          } else if (chartType === 'sankey') {
+            SankeyChartBuilder.updateData(widget, data[index]);
           } else {
             WidgetBuilder.setData(widget, data[index]);
           }
@@ -517,6 +488,9 @@ export class OverallComponent implements OnInit {
             break;
           case 'sunburst':
             data = getAlternativeSunburstChartData();
+            break;
+          case 'sankey':
+            data = getAlternativeSankeyChartData();
             break;
           default:
             data = [];

@@ -11,6 +11,7 @@ export { createPolarChartWidget, createMultiSeriesPolarChartWidget, createRadarP
 export { createStackedAreaChartWidget as createNewStackedAreaChartWidget, createPerformanceStackedAreaChartWidget, createMarketTrendStackedAreaChartWidget } from './stacked-area-chart-widget';
 export { createTreemapChartWidget, createExpenseTreemapWidget, createLargeScaleTreemapWidget } from './treemap-chart-widget';
 export { createSunburstChartWidget, createOrganizationalSunburstWidget, createLargeScaleSunburstWidget } from './sunburst-chart-widget';
+export { createSankeyChartWidget, createInvestmentFlowSankeyWidget, createBudgetAllocationSankeyWidget, createMinimalSankeyChartWidget } from './sankey-chart-widget';
 
 // Data update functions
 export { updateAssetAllocationData } from './asset-allocation-widget';
@@ -25,6 +26,7 @@ export { updatePolarChartData } from './polar-chart-widget';
 export { updateStackedAreaChartData } from './stacked-area-chart-widget';
 export { updateTreemapChartData } from './treemap-chart-widget';
 export { updateSunburstChartData } from './sunburst-chart-widget';
+export { updateSankeyChartData } from './sankey-chart-widget';
 
 // Data fetching functions
 export { getUpdatedAssetAllocationData } from './asset-allocation-widget';
@@ -39,6 +41,7 @@ export { getUpdatedPolarChartData } from './polar-chart-widget';
 export { getUpdatedStackedAreaChartData } from './stacked-area-chart-widget';
 export { getUpdatedTreemapChartData } from './treemap-chart-widget';
 export { getUpdatedSunburstChartData } from './sunburst-chart-widget';
+export { getUpdatedSankeyChartData } from './sankey-chart-widget';
 
 // Alternative data functions
 export { getAlternativeAssetAllocationData } from './asset-allocation-widget';
@@ -53,6 +56,7 @@ export { getAlternativePolarChartData } from './polar-chart-widget';
 export { getAlternativeStackedAreaChartData } from './stacked-area-chart-widget';
 export { getAlternativeTreemapChartData } from './treemap-chart-widget';
 export { getAlternativeSunburstChartData } from './sunburst-chart-widget';
+export { getAlternativeSankeyChartData } from './sankey-chart-widget';
 
 // Static data exports
 export { ASSET_ALLOCATION_DATA, ASSET_ALLOCATION_COLORS } from './asset-allocation-widget';
@@ -66,4 +70,5 @@ export { sampleAreaChartData, sampleAreaChartXAxis } from './area-chart-widget';
 export { samplePolarChartData } from './polar-chart-widget';
 export { sampleStackedAreaChartData, sampleStackedAreaChartXAxis } from './stacked-area-chart-widget';
 export { sampleTreemapData, alternativeTreemapData } from './treemap-chart-widget';
-export { SUNBURST_DATA, ALTERNATIVE_SUNBURST_DATA } from './sunburst-chart-widget'; 
+export { SUNBURST_DATA, ALTERNATIVE_SUNBURST_DATA } from './sunburst-chart-widget';
+export { SANKEY_CHART_DATA, SANKEY_CHART_COLORS } from './sankey-chart-widget'; 
