@@ -9,6 +9,7 @@ export { createInvestmentDistributionWidget } from './investment-distribution-wi
 export { createAreaChartWidget, createStackedAreaChartWidget, createLargeScaleAreaChartWidget } from './area-chart-widget';
 export { createPolarChartWidget, createMultiSeriesPolarChartWidget, createRadarPolarChartWidget } from './polar-chart-widget';
 export { createStackedAreaChartWidget as createNewStackedAreaChartWidget, createPerformanceStackedAreaChartWidget, createMarketTrendStackedAreaChartWidget } from './stacked-area-chart-widget';
+export { createTreemapChartWidget, createExpenseTreemapWidget, createLargeScaleTreemapWidget } from './treemap-chart-widget';
 
 // Data update functions
 export { updateAssetAllocationData } from './asset-allocation-widget';
@@ -21,6 +22,7 @@ export { updateInvestmentDistributionData } from './investment-distribution-widg
 export { updateAreaChartData } from './area-chart-widget';
 export { updatePolarChartData } from './polar-chart-widget';
 export { updateStackedAreaChartData } from './stacked-area-chart-widget';
+export { updateTreemapChartData } from './treemap-chart-widget';
 
 // Data fetching functions
 export { getUpdatedAssetAllocationData } from './asset-allocation-widget';
@@ -33,6 +35,7 @@ export { getUpdatedInvestmentDistributionData } from './investment-distribution-
 export { getUpdatedAreaChartData } from './area-chart-widget';
 export { getUpdatedPolarChartData } from './polar-chart-widget';
 export { getUpdatedStackedAreaChartData } from './stacked-area-chart-widget';
+export { getUpdatedTreemapChartData } from './treemap-chart-widget';
 
 // Alternative data functions
 export { getAlternativeAssetAllocationData } from './asset-allocation-widget';
@@ -45,6 +48,7 @@ export { getAlternativeInvestmentDistributionData } from './investment-distribut
 export { getAlternativeAreaChartData } from './area-chart-widget';
 export { getAlternativePolarChartData } from './polar-chart-widget';
 export { getAlternativeStackedAreaChartData } from './stacked-area-chart-widget';
+export { getAlternativeTreemapChartData } from './treemap-chart-widget';
 
 // Static data exports
 export { ASSET_ALLOCATION_DATA, ASSET_ALLOCATION_COLORS } from './asset-allocation-widget';
@@ -56,4 +60,5 @@ export { SPENDING_HEATMAP_DATA, HEATMAP_X_AXIS, HEATMAP_Y_AXIS } from './spendin
 export { INVESTMENT_DISTRIBUTION_DATA } from './investment-distribution-widget';
 export { sampleAreaChartData, sampleAreaChartXAxis } from './area-chart-widget';
 export { samplePolarChartData } from './polar-chart-widget';
-export { sampleStackedAreaChartData, sampleStackedAreaChartXAxis } from './stacked-area-chart-widget'; 
+export { sampleStackedAreaChartData, sampleStackedAreaChartXAxis } from './stacked-area-chart-widget';
+export { sampleTreemapData, alternativeTreemapData } from './treemap-chart-widget'; 

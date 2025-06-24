@@ -18,7 +18,8 @@ import {
   ScatterChart,
   GaugeChart,
   HeatmapChart,
-  MapChart
+  MapChart,
+  TreemapChart
 } from 'echarts/charts';
 // Import tooltip, title, legend, and other components
 import {
@@ -103,6 +104,7 @@ echarts.use([
   GaugeChart,
   HeatmapChart,
   MapChart,
+  TreemapChart,
   CanvasRenderer
 ]);
 
@@ -122,6 +124,7 @@ import {
   AreaChartBuilder,
   PolarChartBuilder,
   StackedAreaChartBuilder,
+  TreemapChartBuilder,
   // Data interfaces
   PieChartData,
   BarChartData,
@@ -133,6 +136,7 @@ import {
   AreaChartData,
   PolarChartData,
   StackedAreaSeriesData,
+  TreemapData,
   // Fluent API
   StandardDashboardBuilder,
   DashboardConfig,
@@ -158,6 +162,9 @@ import {
   createNewStackedAreaChartWidget,
   createPerformanceStackedAreaChartWidget,
   createMarketTrendStackedAreaChartWidget,
+  createTreemapChartWidget,
+  createExpenseTreemapWidget,
+  createLargeScaleTreemapWidget,
   // Data update functions
   updateAssetAllocationData,
   updateMonthlyIncomeExpensesData,
@@ -169,6 +176,7 @@ import {
   updateAreaChartData,
   updatePolarChartData,
   updateStackedAreaChartData,
+  updateTreemapChartData,
   // Data fetching functions
   getUpdatedAssetAllocationData,
   getUpdatedMonthlyData,
@@ -180,6 +188,7 @@ import {
   getUpdatedAreaChartData,
   getUpdatedPolarChartData,
   getUpdatedStackedAreaChartData,
+  getUpdatedTreemapChartData,
   // Alternative data functions
   getAlternativeAssetAllocationData,
   getAlternativeMonthlyData,
@@ -190,7 +199,8 @@ import {
   getAlternativeInvestmentDistributionData,
   getAlternativeAreaChartData,
   getAlternativePolarChartData,
-  getAlternativeStackedAreaChartData
+  getAlternativeStackedAreaChartData,
+  getAlternativeTreemapChartData
 } from './widgets';
 
 import { v4 as uuidv4 } from 'uuid';
@@ -255,6 +265,9 @@ export class OverallComponent implements OnInit {
     const stackedAreaChart = createNewStackedAreaChartWidget();
     const performanceStackedAreaChart = createPerformanceStackedAreaChartWidget();
     const marketTrendStackedAreaChart = createMarketTrendStackedAreaChartWidget();
+    const treemapChart = createTreemapChartWidget();
+    const expenseTreemap = createExpenseTreemapWidget();
+    const largeScaleTreemap = createLargeScaleTreemapWidget();
 
     // Use the Fluent API to build the dashboard config
     this.dashboardConfig = StandardDashboardBuilder.createStandard()
@@ -271,7 +284,10 @@ export class OverallComponent implements OnInit {
         polarChart,
         stackedAreaChart,
         performanceStackedAreaChart,
-        marketTrendStackedAreaChart
+        marketTrendStackedAreaChart,
+        treemapChart,
+        expenseTreemap,
+        largeScaleTreemap
       ])
       .setEditMode(false)
       .build();
@@ -410,6 +426,8 @@ export class OverallComponent implements OnInit {
             HeatmapChartBuilder.updateData(widget, data[index]);
           } else if (chartType === 'map') {
             DensityMapBuilder.updateData(widget, data[index]);
+          } else if (chartType === 'treemap') {
+            TreemapChartBuilder.updateData(widget, data[index]);
           } else {
             WidgetBuilder.setData(widget, data[index]);
           }
@@ -475,6 +493,9 @@ export class OverallComponent implements OnInit {
             break;
           case 'map':
             data = getAlternativeInvestmentDistributionData();
+            break;
+          case 'treemap':
+            data = getAlternativeTreemapChartData();
             break;
           default:
             data = [];
