@@ -95,6 +95,77 @@ export class PdfExportService {
   }
 
   /**
+   * Export dashboard to PDF with intelligent layout
+   */
+  async exportDashboardToPdfIntelligent(
+    dashboardElement: ElementRef<HTMLElement>,
+    widgets: IWidget[],
+    options: PdfExportOptions = {}
+  ): Promise<void> {
+    const {
+      orientation = 'landscape',
+      format = 'a4',
+      margin = 15,
+      filename = 'dashboard-export.pdf',
+      title = 'Dashboard Export',
+      includeHeader = true,
+      includeFooter = true,
+      quality = 1,
+      scale = 3 // Higher scale for better quality
+    } = options;
+
+    try {
+      // Wait for all charts to be fully rendered
+      console.log('Waiting for charts to render...');
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      // Create PDF document
+      const pdf = new jsPDF({
+        orientation,
+        unit: 'mm',
+        format
+      });
+
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const contentWidth = pageWidth - (margin * 2);
+      const contentHeight = pageHeight - (margin * 2);
+
+      let currentY = margin;
+
+      // Add header if requested
+      if (includeHeader) {
+        currentY = this.addHeader(pdf, title, pageWidth, margin, currentY);
+      }
+
+      // Export widgets with intelligent layout
+      currentY = await this.exportWidgetsIntelligent(
+        pdf,
+        dashboardElement,
+        widgets,
+        contentWidth,
+        contentHeight,
+        margin,
+        currentY,
+        quality,
+        scale
+      );
+
+      // Add footer if requested
+      if (includeFooter) {
+        this.addFooter(pdf, pageWidth, pageHeight, margin);
+      }
+
+      // Save the PDF
+      pdf.save(filename);
+
+    } catch (error) {
+      console.error('Error exporting dashboard to PDF:', error);
+      throw new Error('Failed to export dashboard to PDF');
+    }
+  }
+
+  /**
    * Add header to PDF
    */
   private addHeader(
@@ -104,21 +175,21 @@ export class PdfExportService {
     margin: number,
     currentY: number
   ): number {
-    pdf.setFontSize(18);
+    pdf.setFontSize(16);
     pdf.setFont('helvetica', 'bold');
     pdf.text(title, pageWidth / 2, currentY, { align: 'center' });
     
     // Add timestamp
-    pdf.setFontSize(10);
+    pdf.setFontSize(8);
     pdf.setFont('helvetica', 'normal');
     const timestamp = new Date().toLocaleString();
-    pdf.text(`Generated on: ${timestamp}`, pageWidth / 2, currentY + 8, { align: 'center' });
+    pdf.text(`Generated on: ${timestamp}`, pageWidth / 2, currentY + 6, { align: 'center' });
     
     // Add separator line
     pdf.setDrawColor(200, 200, 200);
-    pdf.line(margin, currentY + 12, pageWidth - margin, currentY + 12);
+    pdf.line(margin, currentY + 10, pageWidth - margin, currentY + 10);
     
-    return currentY + 20;
+    return currentY + 15; // Reduced spacing
   }
 
   /**
@@ -140,7 +211,16 @@ export class PdfExportService {
 
     console.log(`Starting export of ${widgets.length} widgets`);
 
-    for (const widget of widgets) {
+    // Calculate grid layout for better space utilization
+    const widgetsPerRow = 2; // 2 widgets per row
+    const maxWidgetsPerPage = 4; // 4 widgets per page (2x2 grid)
+    let currentRow = 0;
+    let currentCol = 0;
+    let widgetsOnCurrentPage = 0;
+
+    for (let i = 0; i < widgets.length; i++) {
+      const widget = widgets[i];
+      
       try {
         console.log(`Processing widget: ${widget.id} - ${widget.config?.header?.title || 'Untitled'}`);
         
@@ -158,7 +238,7 @@ export class PdfExportService {
 
         // Convert widget to canvas
         const canvas = await html2canvas(widgetElement, {
-          scale,
+          scale: 3, // Higher scale for better quality
           useCORS: true,
           allowTaint: true,
           backgroundColor: '#ffffff',
@@ -169,27 +249,32 @@ export class PdfExportService {
 
         console.log(`Canvas created for widget ${widget.id}:`, canvas.width, 'x', canvas.height);
 
-        // Calculate widget dimensions - use actual element dimensions if available
-        const actualWidth = widgetElement.offsetWidth || widget['w'] * 100;
-        const actualHeight = widgetElement.offsetHeight || widget['h'] * 100;
-        
-        // Scale widget to fit content width while maintaining aspect ratio
-        const scaleFactor = Math.min(contentWidth / actualWidth, 1);
-        const scaledWidth = actualWidth * scaleFactor;
-        const scaledHeight = actualHeight * scaleFactor;
-
-        console.log(`Widget ${widget.id} dimensions:`, {
-          original: `${actualWidth}x${actualHeight}`,
-          scaled: `${scaledWidth}x${scaledHeight}`,
-          scaleFactor
-        });
-
         // Check if we need a new page
-        if (currentY + scaledHeight > pageHeight - margin) {
+        if (widgetsOnCurrentPage >= maxWidgetsPerPage) {
           pdf.addPage();
           currentY = margin;
+          currentRow = 0;
+          currentCol = 0;
+          widgetsOnCurrentPage = 0;
           console.log(`Added new page for widget ${widget.id}`);
         }
+
+        // Calculate widget dimensions for grid layout
+        const widgetWidth = (contentWidth - margin) / widgetsPerRow; // Divide available width by number of columns
+        const widgetHeight = Math.min(80, (pageHeight - margin - startY) / 2); // Smaller fixed height
+        
+        // Calculate position in grid
+        const x = margin + (currentCol * widgetWidth);
+        const y = currentY + (currentRow * widgetHeight);
+
+        console.log(`Widget ${widget.id} grid position:`, {
+          row: currentRow,
+          col: currentCol,
+          x: x,
+          y: y,
+          width: widgetWidth,
+          height: widgetHeight
+        });
 
         // Convert canvas to image
         const imgData = canvas.toDataURL('image/png');
@@ -198,25 +283,32 @@ export class PdfExportService {
         pdf.addImage(
           imgData,
           'PNG',
-          margin,
-          currentY,
-          scaledWidth,
-          scaledHeight
+          x,
+          y,
+          widgetWidth,
+          widgetHeight
         );
 
         // Add widget title if available
         if (widget.config?.header?.title) {
-          pdf.setFontSize(12);
+          pdf.setFontSize(10);
           pdf.setFont('helvetica', 'bold');
           pdf.text(
             widget.config.header.title,
-            margin,
-            currentY - 5
+            x,
+            y - 5
           );
         }
 
-        currentY += scaledHeight + 10; // Add spacing between widgets
-        console.log(`Widget ${widget.id} exported successfully. Current Y: ${currentY}`);
+        // Update grid position
+        currentCol++;
+        if (currentCol >= widgetsPerRow) {
+          currentCol = 0;
+          currentRow++;
+        }
+        widgetsOnCurrentPage++;
+
+        console.log(`Widget ${widget.id} exported successfully. Grid position: ${currentRow},${currentCol}`);
 
       } catch (error) {
         console.error(`Error exporting widget ${widget.id}:`, error);
@@ -225,6 +317,141 @@ export class PdfExportService {
     }
 
     console.log(`Export completed. Total widgets processed: ${widgets.length}`);
+    return currentY + (currentRow * 80) + 20; // Return final Y position with new height
+  }
+
+  /**
+   * Export widgets with intelligent layout
+   */
+  private async exportWidgetsIntelligent(
+    pdf: jsPDF,
+    dashboardElement: ElementRef<HTMLElement>,
+    widgets: IWidget[],
+    contentWidth: number,
+    contentHeight: number,
+    margin: number,
+    startY: number,
+    quality: number,
+    scale: number
+  ): Promise<number> {
+    let currentY = startY;
+    const pageHeight = pdf.internal.pageSize.getHeight();
+
+    console.log(`Starting intelligent export of ${widgets.length} widgets`);
+
+    // Group widgets by type for better layout
+    const chartWidgets = widgets.filter(w => w.config?.component === 'echart');
+    const otherWidgets = widgets.filter(w => w.config?.component !== 'echart');
+
+    // Export chart widgets in a 2x2 grid
+    const chartsPerRow = 2;
+    const chartsPerPage = 4;
+    let chartRow = 0;
+    let chartCol = 0;
+    let chartsOnPage = 0;
+
+    for (let i = 0; i < chartWidgets.length; i++) {
+      const widget = chartWidgets[i];
+      
+      // Check if we need a new page
+      if (chartsOnPage >= chartsPerPage) {
+        pdf.addPage();
+        currentY = margin;
+        chartRow = 0;
+        chartCol = 0;
+        chartsOnPage = 0;
+      }
+
+      try {
+        const widgetElement = this.findWidgetElement(dashboardElement, widget.id);
+        if (!widgetElement) continue;
+
+        // Wait for rendering
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        // Convert to canvas with high quality
+        const canvas = await html2canvas(widgetElement, {
+          scale,
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: '#ffffff',
+          logging: false,
+          width: widgetElement.offsetWidth,
+          height: widgetElement.offsetHeight
+        });
+
+        // Calculate dimensions for grid layout
+        const widgetWidth = (contentWidth - margin) / chartsPerRow;
+        const widgetHeight = 100; // Fixed height for charts
+        
+        const x = margin + (chartCol * widgetWidth);
+        const y = currentY + (chartRow * widgetHeight);
+
+        // Add widget to PDF
+        const imgData = canvas.toDataURL('image/png');
+        pdf.addImage(imgData, 'PNG', x, y, widgetWidth, widgetHeight);
+
+        // Add title
+        if (widget.config?.header?.title) {
+          pdf.setFontSize(10);
+          pdf.setFont('helvetica', 'bold');
+          pdf.text(widget.config.header.title, x, y - 5);
+        }
+
+        // Update grid position
+        chartCol++;
+        if (chartCol >= chartsPerRow) {
+          chartCol = 0;
+          chartRow++;
+        }
+        chartsOnPage++;
+
+      } catch (error) {
+        console.error(`Error exporting chart widget ${widget.id}:`, error);
+      }
+    }
+
+    // Export other widgets
+    for (const widget of otherWidgets) {
+      try {
+        const widgetElement = this.findWidgetElement(dashboardElement, widget.id);
+        if (!widgetElement) continue;
+
+        // Check if we need a new page
+        if (currentY + 80 > pageHeight - margin) {
+          pdf.addPage();
+          currentY = margin;
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        const canvas = await html2canvas(widgetElement, {
+          scale,
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: '#ffffff',
+          logging: false
+        });
+
+        const widgetWidth = contentWidth;
+        const widgetHeight = 60;
+
+        const imgData = canvas.toDataURL('image/png');
+        pdf.addImage(imgData, 'PNG', margin, currentY, widgetWidth, widgetHeight);
+
+        if (widget.config?.header?.title) {
+          pdf.setFontSize(10);
+          pdf.setFont('helvetica', 'bold');
+          pdf.text(widget.config.header.title, margin, currentY - 5);
+        }
+
+        currentY += widgetHeight + 10;
+
+      } catch (error) {
+        console.error(`Error exporting other widget ${widget.id}:`, error);
+      }
+    }
+
     return currentY;
   }
 

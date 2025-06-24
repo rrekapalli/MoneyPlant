@@ -264,13 +264,13 @@ export class OverallComponent implements OnInit {
       const options: PdfExportOptions = {
         orientation: 'landscape',
         format: 'a4',
-        margin: 10,
+        margin: 15,
         filename: `financial-dashboard-${new Date().toISOString().split('T')[0]}.pdf`,
         title: 'Financial Dashboard - MoneyPlant',
         includeHeader: true,
         includeFooter: true,
-        quality: 5,
-        scale: 0.5
+        quality: 1,
+        scale: 2
       };
 
       await this.pdfExportService.exportDashboardToPdf(
