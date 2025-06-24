@@ -1,5 +1,5 @@
 import { Component, ViewChild } from '@angular/core';
-import { DashboardContainerComponent } from './dashboard-container.component';
+import { DashboardContainerComponent } from '../dashboard-container/dashboard-container.component';
 import { PdfExportOptions } from '../services/pdf-export.service';
 import { IWidget } from '../entities/IWidget';
 
@@ -76,7 +76,8 @@ import { IWidget } from '../entities/IWidget';
     .btn:hover {
       opacity: 0.8;
     }
-  `]
+  `],
+  imports: [DashboardContainerComponent]
 })
 export class DashboardWithPdfExampleComponent {
   @ViewChild('dashboardContainer') dashboardContainer!: DashboardContainerComponent;

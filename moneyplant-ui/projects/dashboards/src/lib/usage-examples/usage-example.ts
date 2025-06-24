@@ -1,4 +1,4 @@
-import { StandardDashboardBuilder, DashboardContainerComponent } from './index';
+import { StandardDashboardBuilder, DashboardContainerComponent } from '../dashboard-container';
 import { IWidget } from '../entities/IWidget';
 import { IFilterValues } from '../entities/IFilterValues';
 import { GridType, DisplayGrid } from 'angular-gridster2';
