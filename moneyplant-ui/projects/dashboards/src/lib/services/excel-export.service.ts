@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import * as XLSX from 'xlsx';
 import { IWidget } from '../entities/IWidget';
-import { WidgetDataExtractor } from '../widgets/widget/widget-builder';
+import { WidgetDataExtractor, WidgetBuilder } from '../widgets/widget/widget-builder';
 import { 
   PieChartBuilder, 
   BarChartBuilder, 
@@ -197,12 +197,20 @@ export class ExcelExportService {
       return this.getChartDataExtractor(chartType);
     }
     
-    // For other widget types, use generic extractors
+    // For other widget types, use WidgetBuilder methods
     switch (component) {
       case 'table':
-        return this.getTableDataExtractor();
+        return {
+          extractData: (widget: IWidget) => WidgetBuilder.exportTableData(widget),
+          getHeaders: (widget: IWidget) => WidgetBuilder.getTableExportHeaders(widget),
+          getSheetName: (widget: IWidget) => WidgetBuilder.getTableExportSheetName(widget)
+        };
       case 'tile':
-        return this.getTileDataExtractor();
+        return {
+          extractData: (widget: IWidget) => WidgetBuilder.exportTileData(widget),
+          getHeaders: (widget: IWidget) => WidgetBuilder.getTileExportHeaders(widget),
+          getSheetName: (widget: IWidget) => WidgetBuilder.getTileExportSheetName(widget)
+        };
       default:
         return this.getGenericDataExtractor();
     }
@@ -265,28 +273,6 @@ export class ExcelExportService {
   }
 
   /**
-   * Get table data extractor
-   */
-  private getTableDataExtractor(): WidgetDataExtractor {
-    return {
-      extractData: (widget: IWidget) => this.extractTableData(widget),
-      getHeaders: (widget: IWidget) => this.extractTableHeaders(widget),
-      getSheetName: (widget: IWidget) => this.getWidgetSheetName(widget, 'Table')
-    };
-  }
-
-  /**
-   * Get tile data extractor
-   */
-  private getTileDataExtractor(): WidgetDataExtractor {
-    return {
-      extractData: (widget: IWidget) => this.extractTileData(widget),
-      getHeaders: () => ['Metric', 'Value', 'Change', 'Percentage'],
-      getSheetName: (widget: IWidget) => this.getWidgetSheetName(widget, 'Tile')
-    };
-  }
-
-  /**
    * Get generic data extractor
    */
   private getGenericDataExtractor(): WidgetDataExtractor {
@@ -295,44 +281,6 @@ export class ExcelExportService {
       getHeaders: () => ['Property', 'Value'],
       getSheetName: (widget: IWidget) => this.getWidgetSheetName(widget, 'Data')
     };
-  }
-
-  /**
-   * Extract table data
-   */
-  private extractTableData(widget: IWidget): any[] {
-    const tableOptions = widget.config?.options as any;
-    const tableData = tableOptions?.data;
-    if (!tableData || !Array.isArray(tableData)) return [];
-
-    return tableData;
-  }
-
-  /**
-   * Extract table headers
-   */
-  private extractTableHeaders(widget: IWidget): string[] {
-    const tableOptions = widget.config?.options as any;
-    const columns = tableOptions?.columns;
-    if (!columns || !Array.isArray(columns)) return [];
-
-    return columns.map((col: any) => col.title || col.field || 'Column');
-  }
-
-  /**
-   * Extract tile data
-   */
-  private extractTileData(widget: IWidget): any[] {
-    const tileOptions = widget.config?.options as any;
-    const tileData = tileOptions?.data;
-    if (!tileData) return [];
-
-    return [[
-      widget.config?.header?.title || 'Metric',
-      tileData.value || 0,
-      tileData.change || 0,
-      tileData.percentage || 0
-    ]];
   }
 
   /**
