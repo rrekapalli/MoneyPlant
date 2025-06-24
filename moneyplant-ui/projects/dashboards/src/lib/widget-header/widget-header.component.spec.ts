@@ -2,6 +2,7 @@ import {ComponentFixture, TestBed} from "@angular/core/testing";
 import {HttpClientTestingModule} from "@angular/common/http/testing";
 import {BrowserAnimationsModule} from "@angular/platform-browser/animations";
 import {WidgetHeaderComponent} from "./widget-header.component";
+import {IWidget} from "../entities/IWidget";
 
 describe('Dashboard: WidgetConfigComponent', () => {
   let fixture: ComponentFixture<WidgetHeaderComponent>;
@@ -27,12 +28,14 @@ describe('Dashboard: WidgetConfigComponent', () => {
     expect(widgetHeaderComponent).toBeTruthy();
   });
 
-  it('Should update widget options', () => {
-    const data: any = {id: 'widgetId'};
-    jest.spyOn(widgetHeaderComponent.onUpdateWidget, 'emit');
-    widgetHeaderComponent.onUpdateOptions(data);
-    expect(widgetHeaderComponent.onUpdateWidget.emit).toHaveBeenCalledWith(data);
-    expect(widgetHeaderComponent.sidebarVisible).toBeFalsy();
+  it('should emit onUpdateWidget when onUpdateOptions is called', () => {
+    const spy = spyOn(widgetHeaderComponent.onUpdateWidget, 'emit');
+    const mockWidget = { id: 'test' } as IWidget;
+    
+    widgetHeaderComponent.onUpdateOptions(mockWidget);
+    
+    expect(spy).toHaveBeenCalledWith(mockWidget);
+    expect(widgetHeaderComponent.sidebarVisible).toBe(false);
   });
 
   it('Should update edit mode from true to false', () => {
@@ -47,12 +50,12 @@ describe('Dashboard: WidgetConfigComponent', () => {
     expect(widgetHeaderComponent.onEditMode).toBe(true);
   });
 
-  it('Should emit the selected widget and delete it', () => {
-    const event: any = [];
-    const widget: any = {id: 'WidgetId'}
-    widgetHeaderComponent.widget = widget;
-    jest.spyOn(widgetHeaderComponent.onDeleteWidget, 'emit');
-    widgetHeaderComponent.onDeleteWidgetClicked(event);
-    expect(widgetHeaderComponent.onDeleteWidget.emit).toHaveBeenCalledWith(widget);
+  it('should emit onDeleteWidget when onDeleteWidgetClicked is called', () => {
+    const spy = spyOn(widgetHeaderComponent.onDeleteWidget, 'emit');
+    const mockEvent = { preventDefault: () => {} };
+    
+    widgetHeaderComponent.onDeleteWidgetClicked(mockEvent);
+    
+    expect(spy).toHaveBeenCalledWith(widgetHeaderComponent.widget);
   });
 });

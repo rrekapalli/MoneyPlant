@@ -50,7 +50,6 @@ import { DashboardConfig } from './dashboard-container-builder';
     WidgetHeaderComponent,
     NgxPrintModule,
     ToastModule,
-    // BrowserModule
   ],
 })
 export class DashboardContainerComponent {
@@ -329,7 +328,6 @@ export class DashboardContainerComponent {
       }
       this.widgets = [...this.widgets];
     }
-    console.log(`itemComponent.height: ${itemComponent.height}`);
   }
 
   onWidgetChange(

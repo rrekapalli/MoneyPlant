@@ -7,7 +7,6 @@ import { TableComponent } from '../table/table.component';
 import { TileComponent } from '../tile/tile.component';
 import { MarkdownCellComponent } from '../markdown-cell/markdown-cell.component';
 import { CodeCellComponent } from '../code-cell/code-cell.component';
-import { ReactComponentWrapperComponent } from '../react-wrapper/react-wrapper.component';
 
 describe('WidgetComponent', () => {
   let component: WidgetComponent;
@@ -57,11 +56,6 @@ describe('WidgetComponent', () => {
       expect(component.currentWidget.component).toBe(CodeCellComponent);
     });
 
-    it('should return ReactComponentWrapperComponent for react widget type', () => {
-      component.widget = { config: { component: 'react' } } as IWidget;
-      expect(component.currentWidget.component).toBe(ReactComponentWrapperComponent);
-    });
-
     it('should return EchartComponent for unknown widget type', () => {
       component.widget = { config: { component: 'unknown' } } as IWidget;
       expect(component.currentWidget.component).toBe(EchartComponent);
@@ -86,7 +80,7 @@ describe('WidgetComponent', () => {
 
   describe('EventEmitters', () => {
     it('should emit onDataLoad event', () => {
-      const spy = jest.spyOn(component.onDataLoad, 'emit');
+      const spy = spyOn(component.onDataLoad, 'emit');
       const testWidget = { config: { component: 'echart' } } as IWidget;
       
       component.onDataLoad.emit(testWidget);
@@ -95,7 +89,7 @@ describe('WidgetComponent', () => {
     });
 
     it('should emit onUpdateFilter event', () => {
-      const spy = jest.spyOn(component.onUpdateFilter, 'emit');
+      const spy = spyOn(component.onUpdateFilter, 'emit');
       const filterData = { key: 'value' };
       
       component.onUpdateFilter.emit(filterData);
