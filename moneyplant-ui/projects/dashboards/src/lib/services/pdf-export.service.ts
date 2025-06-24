@@ -44,6 +44,10 @@ export class PdfExportService {
     } = options;
 
     try {
+      // Wait for all charts to be fully rendered
+      console.log('Waiting for charts to render...');
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
       // Create PDF document
       const pdf = new jsPDF({
         orientation,
@@ -134,8 +138,12 @@ export class PdfExportService {
     let currentY = startY;
     const pageHeight = pdf.internal.pageSize.getHeight();
 
+    console.log(`Starting export of ${widgets.length} widgets`);
+
     for (const widget of widgets) {
       try {
+        console.log(`Processing widget: ${widget.id} - ${widget.config?.header?.title || 'Untitled'}`);
+        
         // Find widget element
         const widgetElement = this.findWidgetElement(dashboardElement, widget.id);
         if (!widgetElement) {
@@ -143,28 +151,44 @@ export class PdfExportService {
           continue;
         }
 
+        console.log(`Found widget element for ${widget.id}:`, widgetElement);
+
+        // Wait a bit for any animations or rendering to complete
+        await new Promise(resolve => setTimeout(resolve, 100));
+
         // Convert widget to canvas
         const canvas = await html2canvas(widgetElement, {
           scale,
           useCORS: true,
           allowTaint: true,
           backgroundColor: '#ffffff',
-          logging: false
+          logging: false,
+          width: widgetElement.offsetWidth,
+          height: widgetElement.offsetHeight
         });
 
-        // Calculate widget dimensions
-        const widgetWidth = widget['w'] * 100; // Convert grid units to pixels (approximate)
-        const widgetHeight = widget['h'] * 100;
+        console.log(`Canvas created for widget ${widget.id}:`, canvas.width, 'x', canvas.height);
+
+        // Calculate widget dimensions - use actual element dimensions if available
+        const actualWidth = widgetElement.offsetWidth || widget['w'] * 100;
+        const actualHeight = widgetElement.offsetHeight || widget['h'] * 100;
         
-        // Scale widget to fit content width
-        const scaleFactor = contentWidth / widgetWidth;
-        const scaledWidth = widgetWidth * scaleFactor;
-        const scaledHeight = widgetHeight * scaleFactor;
+        // Scale widget to fit content width while maintaining aspect ratio
+        const scaleFactor = Math.min(contentWidth / actualWidth, 1);
+        const scaledWidth = actualWidth * scaleFactor;
+        const scaledHeight = actualHeight * scaleFactor;
+
+        console.log(`Widget ${widget.id} dimensions:`, {
+          original: `${actualWidth}x${actualHeight}`,
+          scaled: `${scaledWidth}x${scaledHeight}`,
+          scaleFactor
+        });
 
         // Check if we need a new page
         if (currentY + scaledHeight > pageHeight - margin) {
           pdf.addPage();
           currentY = margin;
+          console.log(`Added new page for widget ${widget.id}`);
         }
 
         // Convert canvas to image
@@ -192,6 +216,7 @@ export class PdfExportService {
         }
 
         currentY += scaledHeight + 10; // Add spacing between widgets
+        console.log(`Widget ${widget.id} exported successfully. Current Y: ${currentY}`);
 
       } catch (error) {
         console.error(`Error exporting widget ${widget.id}:`, error);
@@ -199,6 +224,7 @@ export class PdfExportService {
       }
     }
 
+    console.log(`Export completed. Total widgets processed: ${widgets.length}`);
     return currentY;
   }
 
@@ -234,7 +260,45 @@ export class PdfExportService {
     widgetId: string
   ): HTMLElement | null {
     const dashboard = dashboardElement.nativeElement;
-    return dashboard.querySelector(`[data-widget-id="${widgetId}"]`) as HTMLElement;
+    
+    // First try to find the gridster-item with the widget ID
+    const gridsterItem = dashboard.querySelector(`[data-widget-id="${widgetId}"]`) as HTMLElement;
+    
+    if (!gridsterItem) {
+      console.warn(`Gridster item not found for widget ID: ${widgetId}`);
+      return null;
+    }
+    
+    // Look for the actual widget content within the gridster-item
+    // The widget content is typically in a div with the widget component
+    let widgetContent = gridsterItem.querySelector('vis-widget');
+    
+    if (widgetContent) {
+      // For echart widgets, look for the actual chart element
+      const chartElement = widgetContent.querySelector('vis-echart') || 
+                          widgetContent.querySelector('[echarts]') ||
+                          widgetContent.querySelector('canvas') ||
+                          widgetContent.querySelector('div[style*="height"]');
+      
+      if (chartElement) {
+        widgetContent = chartElement as HTMLElement;
+      }
+    }
+    
+    // Fallback to other selectors if vis-widget not found
+    if (!widgetContent) {
+      widgetContent = gridsterItem.querySelector('.widget-content') ||
+                     gridsterItem.querySelector('[style*="height"]') ||
+                     gridsterItem;
+    }
+    
+    if (!widgetContent) {
+      console.warn(`Widget content not found for widget ID: ${widgetId}`);
+      return gridsterItem; // Fallback to gridster-item if no specific content found
+    }
+    
+    console.log(`Found widget content for ${widgetId}:`, widgetContent);
+    return widgetContent as HTMLElement;
   }
 
   /**

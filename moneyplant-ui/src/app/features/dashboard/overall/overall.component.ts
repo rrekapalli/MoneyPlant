@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
@@ -127,7 +127,10 @@ import {
   DensityMapData,
   // Fluent API
   StandardDashboardBuilder,
-  DashboardConfig
+  DashboardConfig,
+  // PDF Export Service
+  PdfExportService,
+  PdfExportOptions
 } from '@dashboards/public-api';
 
 // Import widget creation functions
@@ -190,8 +193,17 @@ import { updatePieChartDataDirect } from './widgets/asset-allocation-widget';
 export class OverallComponent implements OnInit {
   // Dashboard config (Fluent API)
   dashboardConfig!: DashboardConfig;
+  
+  // PDF export loading state
+  isExportingPdf = false;
 
-  constructor(private cdr: ChangeDetectorRef) {}
+  // Reference to dashboard container for PDF export
+  @ViewChild('dashboardContainer', { static: false }) dashboardContainer!: ElementRef<HTMLElement>;
+
+  constructor(
+    private cdr: ChangeDetectorRef,
+    private pdfExportService: PdfExportService
+  ) {}
 
   ngOnInit(): void {
     this.initializeDashboardConfig();
@@ -224,6 +236,57 @@ export class OverallComponent implements OnInit {
       ])
       .setEditMode(false)
       .build();
+  }
+
+  /**
+   * Export dashboard to PDF
+   */
+  public async exportDashboardToPdf(): Promise<void> {
+    if (!this.dashboardContainer) {
+      console.error('Dashboard container reference not found');
+      return;
+    }
+
+    this.isExportingPdf = true;
+    this.cdr.detectChanges();
+
+    try {
+      console.log('Starting PDF export...');
+      console.log('Dashboard container:', this.dashboardContainer.nativeElement);
+      console.log('Number of widgets to export:', this.dashboardConfig.widgets.length);
+      console.log('Widgets:', this.dashboardConfig.widgets.map(w => ({
+        id: w.id,
+        title: w.config?.header?.title,
+        component: w.config?.component,
+        position: w.position
+      })));
+
+      const options: PdfExportOptions = {
+        orientation: 'landscape',
+        format: 'a4',
+        margin: 10,
+        filename: `financial-dashboard-${new Date().toISOString().split('T')[0]}.pdf`,
+        title: 'Financial Dashboard - MoneyPlant',
+        includeHeader: true,
+        includeFooter: true,
+        quality: 5,
+        scale: 0.5
+      };
+
+      await this.pdfExportService.exportDashboardToPdf(
+        this.dashboardContainer,
+        this.dashboardConfig.widgets,
+        options
+      );
+
+      console.log('Dashboard exported to PDF successfully');
+    } catch (error) {
+      console.error('Error exporting dashboard to PDF:', error);
+      // You could add a toast notification here for user feedback
+    } finally {
+      this.isExportingPdf = false;
+      this.cdr.detectChanges();
+    }
   }
 
   /**
