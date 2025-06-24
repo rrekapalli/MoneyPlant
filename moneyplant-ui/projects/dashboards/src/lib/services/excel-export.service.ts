@@ -96,6 +96,11 @@ export class ExcelExportService {
   ): Promise<void> {
     const { includeHeaders, sheetNamePrefix, autoColumnWidth, includeWidgetTitles } = options;
 
+    console.log(`\n=== Processing Widget: ${widget.id} ===`);
+    console.log(`Widget component: ${widget.config?.component}`);
+    console.log(`Widget title: ${widget.config?.header?.title}`);
+    console.log(`Widget config:`, widget.config);
+
     // Extract data from widget based on its type
     const dataExtractor = this.getDataExtractor(widget);
     if (!dataExtractor) {
@@ -103,46 +108,84 @@ export class ExcelExportService {
       return;
     }
 
-    const data = dataExtractor.extractData(widget);
-    const headers = dataExtractor.getHeaders(widget);
-    const sheetName = dataExtractor.getSheetName(widget);
+    try {
+      const data = dataExtractor.extractData(widget);
+      const headers = dataExtractor.getHeaders(widget);
+      const sheetName = dataExtractor.getSheetName(widget);
 
-    if (!data || data.length === 0) {
-      console.warn(`No data found for widget: ${widget.id}`);
-      return;
+      console.log(`Extracted data:`, data);
+      console.log(`Headers:`, headers);
+      console.log(`Sheet name:`, sheetName);
+
+      if (!data || data.length === 0) {
+        console.warn(`No data found for widget: ${widget.id}`);
+        // Create a sheet with a message indicating no data
+        const noDataMessage = [
+          [widget.config?.header?.title || 'Widget Data'],
+          [],
+          ['No data available for export'],
+          ['Widget ID:', widget.id],
+          ['Component:', widget.config?.component || 'Unknown'],
+          ['Export Time:', new Date().toLocaleString()]
+        ];
+        
+        const worksheet = XLSX.utils.aoa_to_sheet(noDataMessage);
+        XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+        console.log(`Created empty sheet for widget ${widget.id}: ${sheetName}`);
+        return;
+      }
+
+      console.log(`Exporting widget ${widget.id} (${sheetName}) with ${data.length} rows`);
+
+      // Prepare worksheet data
+      let worksheetData: any[] = [];
+
+      // Add widget title if requested
+      if (includeWidgetTitles && widget.config?.header?.title) {
+        worksheetData.push([widget.config.header.title]);
+        worksheetData.push([]); // Empty row
+      }
+
+      // Add headers if requested
+      if (includeHeaders && headers.length > 0) {
+        worksheetData.push(headers);
+      }
+
+      // Add data rows
+      worksheetData = worksheetData.concat(data);
+
+      // Create worksheet
+      const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+
+      // Auto-resize columns if requested
+      if (autoColumnWidth) {
+        this.autoResizeColumns(worksheet, worksheetData);
+      }
+
+      // Add worksheet to workbook
+      XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+
+      console.log(`Widget ${widget.id} exported to sheet: ${sheetName}`);
+    } catch (error) {
+      console.error(`Error processing widget ${widget.id}:`, error);
+      // Create a sheet with error information
+      const errorMessage = [
+        [widget.config?.header?.title || 'Widget Data'],
+        [],
+        ['Error occurred during export'],
+        ['Widget ID:', widget.id],
+        ['Component:', widget.config?.component || 'Unknown'],
+        ['Error:', error instanceof Error ? error.message : String(error)],
+        ['Export Time:', new Date().toLocaleString()]
+      ];
+      
+      const worksheet = XLSX.utils.aoa_to_sheet(errorMessage);
+      const sheetName = this.getErrorSheetName(widget);
+      XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+      console.log(`Created error sheet for widget ${widget.id}: ${sheetName}`);
     }
 
-    console.log(`Exporting widget ${widget.id} (${sheetName}) with ${data.length} rows`);
-
-    // Prepare worksheet data
-    let worksheetData: any[] = [];
-
-    // Add widget title if requested
-    if (includeWidgetTitles && widget.config?.header?.title) {
-      worksheetData.push([widget.config.header.title]);
-      worksheetData.push([]); // Empty row
-    }
-
-    // Add headers if requested
-    if (includeHeaders && headers.length > 0) {
-      worksheetData.push(headers);
-    }
-
-    // Add data rows
-    worksheetData = worksheetData.concat(data);
-
-    // Create worksheet
-    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
-
-    // Auto-resize columns if requested
-    if (autoColumnWidth) {
-      this.autoResizeColumns(worksheet, worksheetData);
-    }
-
-    // Add worksheet to workbook
-    XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
-
-    console.log(`Widget ${widget.id} exported to sheet: ${sheetName}`);
+    console.log(`=== End Processing Widget: ${widget.id} ===\n`);
   }
 
   /**
@@ -192,26 +235,39 @@ export class ExcelExportService {
     const component = widget.config?.component;
     const chartType = (widget.config?.options as any)?.series?.[0]?.type;
 
+    console.log(`Widget ${widget.id} - Component: ${component}, Chart Type: ${chartType}`);
+    console.log('Widget config options:', widget.config?.options);
+
     // For echart widgets, use the appropriate chart builder
     if (component === 'echart') {
-      return this.getChartDataExtractor(chartType);
+      if (!chartType) {
+        console.warn(`No chart type found for echart widget: ${widget.id}`);
+        return this.getGenericDataExtractor();
+      }
+      
+      const extractor = this.getChartDataExtractor(chartType);
+      console.log(`Using chart extractor for type: ${chartType}`);
+      return extractor;
     }
     
     // For other widget types, use WidgetBuilder methods
     switch (component) {
       case 'table':
+        console.log('Using table extractor');
         return {
           extractData: (widget: IWidget) => WidgetBuilder.exportTableData(widget),
           getHeaders: (widget: IWidget) => WidgetBuilder.getTableExportHeaders(widget),
           getSheetName: (widget: IWidget) => WidgetBuilder.getTableExportSheetName(widget)
         };
       case 'tile':
+        console.log('Using tile extractor');
         return {
           extractData: (widget: IWidget) => WidgetBuilder.exportTileData(widget),
           getHeaders: (widget: IWidget) => WidgetBuilder.getTileExportHeaders(widget),
           getSheetName: (widget: IWidget) => WidgetBuilder.getTileExportSheetName(widget)
         };
       default:
+        console.log(`Using generic extractor for component: ${component}`);
         return this.getGenericDataExtractor();
     }
   }
@@ -220,50 +276,60 @@ export class ExcelExportService {
    * Get chart data extractor based on chart type using chart builders
    */
   private getChartDataExtractor(chartType: string): WidgetDataExtractor {
+    console.log(`Getting chart data extractor for chart type: ${chartType}`);
+    
     switch (chartType) {
       case 'pie':
+        console.log('Using PieChartBuilder extractor');
         return {
           extractData: (widget: IWidget) => PieChartBuilder.exportData(widget),
           getHeaders: (widget: IWidget) => PieChartBuilder.getExportHeaders(widget),
           getSheetName: (widget: IWidget) => PieChartBuilder.getExportSheetName(widget)
         };
       case 'bar':
+        console.log('Using BarChartBuilder extractor');
         return {
           extractData: (widget: IWidget) => BarChartBuilder.exportData(widget),
           getHeaders: (widget: IWidget) => BarChartBuilder.getExportHeaders(widget),
           getSheetName: (widget: IWidget) => BarChartBuilder.getExportSheetName(widget)
         };
       case 'line':
+        console.log('Using LineChartBuilder extractor');
         return {
           extractData: (widget: IWidget) => LineChartBuilder.exportData(widget),
           getHeaders: (widget: IWidget) => LineChartBuilder.getExportHeaders(widget),
           getSheetName: (widget: IWidget) => LineChartBuilder.getExportSheetName(widget)
         };
       case 'scatter':
+        console.log('Using ScatterChartBuilder extractor');
         return {
           extractData: (widget: IWidget) => ScatterChartBuilder.exportData(widget),
           getHeaders: (widget: IWidget) => ScatterChartBuilder.getExportHeaders(widget),
           getSheetName: (widget: IWidget) => ScatterChartBuilder.getExportSheetName(widget)
         };
       case 'gauge':
+        console.log('Using GaugeChartBuilder extractor');
         return {
           extractData: (widget: IWidget) => GaugeChartBuilder.exportData(widget),
           getHeaders: (widget: IWidget) => GaugeChartBuilder.getExportHeaders(widget),
           getSheetName: (widget: IWidget) => GaugeChartBuilder.getExportSheetName(widget)
         };
       case 'heatmap':
+        console.log('Using HeatmapChartBuilder extractor');
         return {
           extractData: (widget: IWidget) => HeatmapChartBuilder.exportData(widget),
           getHeaders: (widget: IWidget) => HeatmapChartBuilder.getExportHeaders(widget),
           getSheetName: (widget: IWidget) => HeatmapChartBuilder.getExportSheetName(widget)
         };
       case 'map':
+        console.log('Using DensityMapBuilder extractor');
         return {
           extractData: (widget: IWidget) => DensityMapBuilder.exportData(widget),
           getHeaders: (widget: IWidget) => DensityMapBuilder.getExportHeaders(widget),
           getSheetName: (widget: IWidget) => DensityMapBuilder.getExportSheetName(widget)
         };
       default:
+        console.log(`Using generic chart extractor for unknown type: ${chartType}`);
         return {
           extractData: (widget: IWidget) => this.extractGenericChartData(widget),
           getHeaders: () => ['Data Point', 'Value'],
@@ -301,12 +367,29 @@ export class ExcelExportService {
    */
   private extractGenericData(widget: IWidget): any[] {
     const widgetOptions = widget.config?.options as any;
-    const data = widgetOptions?.data;
-    if (!data) return [];
+    console.log('Generic data extractor - Widget options:', widgetOptions);
+    
+    // Try to extract data from different possible locations
+    let data = widgetOptions?.data || widgetOptions?.series?.[0]?.data || widgetOptions?.value;
+    
+    console.log('Generic data extractor - Extracted data:', data);
+    
+    if (!data) {
+      console.warn('Generic data extractor - No data found in widget options');
+      return [];
+    }
 
     if (Array.isArray(data)) {
-      return data.map((item, index) => [`Item ${index + 1}`, item]);
-    } else if (typeof data === 'object') {
+      return data.map((item, index) => {
+        if (typeof item === 'object' && item !== null) {
+          // Handle object arrays
+          return Object.entries(item).map(([key, value]) => [key, value]);
+        } else {
+          // Handle simple arrays
+          return [`Item ${index + 1}`, item];
+        }
+      }).flat();
+    } else if (typeof data === 'object' && data !== null) {
       return Object.entries(data).map(([key, value]) => [key, value]);
     } else {
       return [['Value', data]];
@@ -320,6 +403,13 @@ export class ExcelExportService {
     const title = widget.config?.header?.title || widget.id;
     const cleanTitle = title.replace(/[^\w\s]/gi, '').substring(0, 20);
     return `${cleanTitle} (${type})`;
+  }
+
+  /**
+   * Get sheet name for error cases
+   */
+  private getErrorSheetName(widget: IWidget): string {
+    return this.getWidgetSheetName(widget, 'Error');
   }
 
   /**

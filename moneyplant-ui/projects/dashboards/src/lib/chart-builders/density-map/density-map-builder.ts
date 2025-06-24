@@ -448,7 +448,16 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
    */
   static override exportData(widget: IWidget): any[] {
     const series = (widget.config?.options as any)?.series?.[0];
-    if (!series?.data) return [];
+    
+    console.log('DensityMapBuilder.exportData - Widget config:', widget.config?.options);
+    console.log('DensityMapBuilder.exportData - Series:', series);
+    
+    if (!series?.data) {
+      console.warn('DensityMapBuilder.exportData - No series data found');
+      return [];
+    }
+
+    console.log('DensityMapBuilder.exportData - Series data:', series.data);
 
     return series.data.map((item: any) => [
       item.name || 'Unknown Region',
@@ -467,9 +476,8 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
    * Get sheet name for density map export
    */
   static override getExportSheetName(widget: IWidget): string {
-    const title = widget.config?.header?.title || 'Density Map';
-    const cleanTitle = title.replace(/[^\w\s]/gi, '').substring(0, 20);
-    return `${cleanTitle} (Density Map)`;
+    const title = widget.config?.header?.title || 'Sheet';
+    return title.replace(/[^\w\s]/gi, '').substring(0, 31).trim();
   }
 
   /**

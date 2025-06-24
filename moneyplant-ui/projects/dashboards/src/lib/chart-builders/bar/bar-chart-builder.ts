@@ -246,12 +246,41 @@ export class BarChartBuilder extends ApacheEchartBuilder<BarChartOptions, BarCha
    */
   static override exportData(widget: IWidget): any[] {
     const series = (widget.config?.options as any)?.series?.[0];
-    const xAxis = (widget.config?.options as any)?.xAxis?.[0];
+    const xAxis = (widget.config?.options as any)?.xAxis;
     
-    if (!series?.data || !xAxis?.data) return [];
+    console.log('BarChartBuilder.exportData - Widget config:', widget.config?.options);
+    console.log('BarChartBuilder.exportData - Series:', series);
+    console.log('BarChartBuilder.exportData - XAxis:', xAxis);
+    
+    if (!series?.data) {
+      console.warn('BarChartBuilder.exportData - No series data found');
+      return [];
+    }
+
+    // Handle different xAxis structures
+    let categories: string[] = [];
+    
+    if (xAxis) {
+      // Handle array of xAxis objects
+      if (Array.isArray(xAxis)) {
+        categories = xAxis[0]?.data || [];
+      } 
+      // Handle single xAxis object
+      else if (xAxis.data) {
+        categories = xAxis.data;
+      }
+    }
+
+    console.log('BarChartBuilder.exportData - Categories:', categories);
+    console.log('BarChartBuilder.exportData - Series data:', series.data);
+
+    // If no categories found, create default ones
+    if (categories.length === 0) {
+      categories = series.data.map((_: any, index: number) => `Category ${index + 1}`);
+    }
 
     return series.data.map((value: any, index: number) => [
-      xAxis.data[index] || `Category ${index + 1}`,
+      categories[index] || `Category ${index + 1}`,
       value || 0
     ]);
   }
@@ -267,8 +296,7 @@ export class BarChartBuilder extends ApacheEchartBuilder<BarChartOptions, BarCha
    * Get sheet name for bar chart export
    */
   static override getExportSheetName(widget: IWidget): string {
-    const title = widget.config?.header?.title || 'Bar Chart';
-    const cleanTitle = title.replace(/[^\w\s]/gi, '').substring(0, 20);
-    return `${cleanTitle} (Bar Chart)`;
+    const title = widget.config?.header?.title || 'Sheet';
+    return title.replace(/[^\w\s]/gi, '').substring(0, 31).trim();
   }
 } 

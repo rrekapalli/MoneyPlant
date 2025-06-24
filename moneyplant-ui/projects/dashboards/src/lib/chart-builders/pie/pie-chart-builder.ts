@@ -227,7 +227,16 @@ export class PieChartBuilder extends ApacheEchartBuilder<PieChartOptions, PieCha
    */
   static override exportData(widget: IWidget): any[] {
     const series = (widget.config?.options as any)?.series?.[0];
-    if (!series?.data) return [];
+    
+    console.log('PieChartBuilder.exportData - Widget config:', widget.config?.options);
+    console.log('PieChartBuilder.exportData - Series:', series);
+    
+    if (!series?.data) {
+      console.warn('PieChartBuilder.exportData - No series data found');
+      return [];
+    }
+
+    console.log('PieChartBuilder.exportData - Series data:', series.data);
 
     return series.data.map((item: any) => [
       item.name || 'Unknown',
@@ -247,9 +256,8 @@ export class PieChartBuilder extends ApacheEchartBuilder<PieChartOptions, PieCha
    * Get sheet name for pie chart export
    */
   static override getExportSheetName(widget: IWidget): string {
-    const title = widget.config?.header?.title || 'Pie Chart';
-    const cleanTitle = title.replace(/[^\w\s]/gi, '').substring(0, 20);
-    return `${cleanTitle} (Pie Chart)`;
+    const title = widget.config?.header?.title || 'Sheet';
+    return title.replace(/[^\w\s]/gi, '').substring(0, 31).trim();
   }
 
   /**

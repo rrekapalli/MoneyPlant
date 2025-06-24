@@ -361,7 +361,16 @@ export class HeatmapChartBuilder extends ApacheEchartBuilder<HeatmapChartOptions
    */
   static override exportData(widget: IWidget): any[] {
     const series = (widget.config?.options as any)?.series?.[0];
-    if (!series?.data) return [];
+    
+    console.log('HeatmapChartBuilder.exportData - Widget config:', widget.config?.options);
+    console.log('HeatmapChartBuilder.exportData - Series:', series);
+    
+    if (!series?.data) {
+      console.warn('HeatmapChartBuilder.exportData - No series data found');
+      return [];
+    }
+
+    console.log('HeatmapChartBuilder.exportData - Series data:', series.data);
 
     return series.data.map((point: any) => [
       point[0] || 'X',
@@ -381,9 +390,8 @@ export class HeatmapChartBuilder extends ApacheEchartBuilder<HeatmapChartOptions
    * Get sheet name for heatmap chart export
    */
   static override getExportSheetName(widget: IWidget): string {
-    const title = widget.config?.header?.title || 'Heatmap Chart';
-    const cleanTitle = title.replace(/[^\w\s]/gi, '').substring(0, 20);
-    return `${cleanTitle} (Heatmap Chart)`;
+    const title = widget.config?.header?.title || 'Sheet';
+    return title.replace(/[^\w\s]/gi, '').substring(0, 31).trim();
   }
 }
 
