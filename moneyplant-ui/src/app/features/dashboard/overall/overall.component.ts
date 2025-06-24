@@ -164,6 +164,7 @@ import {
 
 import { v4 as uuidv4 } from 'uuid';
 import { ScrollPanelModule } from 'primeng/scrollpanel';
+import { updatePieChartDataDirect } from './widgets/asset-allocation-widget';
 
 @Component({
   selector: 'app-overall',
@@ -245,42 +246,6 @@ export class OverallComponent implements OnInit {
     }
   }
 
-  /**
-   * Test method to update pie chart data
-   */
-  public async testUpdatePieChart(): Promise<void> {
-    console.log('Updating pie chart data...');
-    const pieAssetAllocation = this.widgets.find(w => w.id === this.pieAssetAllocationWidgetId);
-    if (pieAssetAllocation) {
-      await this.updateAssetAllocationData(pieAssetAllocation);
-    }
-  }
-
-  /**
-   * Alternative method showing direct widget.setData() usage
-   * (if the widget has the setData method implemented)
-   */
-  public updatePieChartDataDirect(widget: IWidget, newData: PieChartData[]): void {
-    if (widget.setData) {
-      // Direct call to widget's setData method
-      widget.setData(newData);
-      this.cdr.detectChanges();
-    }
-  } 
-
-  /**
-   * Utility method to get widget by ID
-   */
-  public getWidgetById(widgetId: string): IWidget | undefined {
-    return this.widgets.find(w => w.id === widgetId);
-  }
-
-  /**
-   * Utility method to get widgets by component type
-   */
-  public getWidgetsByType(componentType: string): IWidget[] {
-    return this.widgets.filter(w => w.config.component === componentType);
-  }
 
   /**
    * Utility method to update multiple widgets at once
@@ -323,31 +288,6 @@ export class OverallComponent implements OnInit {
     }
   }
 
-  /**
-   * Example of updating all pie chart widgets
-   */
-  public async updateAllPieCharts(): Promise<void> {
-    // Get only pie chart widgets, not all echart widgets
-    const pieChartWidgets = this.widgets.filter(w => PieChartBuilder.isPieChart(w));
-    
-    console.log('Found pie chart widgets:', pieChartWidgets.length);
-    console.log('All widgets:', this.widgets.map(w => ({
-      id: w.id,
-      component: w.config.component,
-      chartType: (w.config.options as any)?.series?.[0]?.type
-    })));
-    
-    const pieChartData = [
-      getAlternativeAssetAllocationData(),
-      [
-        { value: 40, name: 'Domestic' },
-        { value: 35, name: 'International' },
-        { value: 25, name: 'Emerging Markets' },
-      ]
-    ];
-    
-    await this.updateMultipleWidgets(pieChartWidgets, pieChartData);
-  }
 
   /**
    * Example of updating all chart widgets with appropriate data
@@ -396,93 +336,4 @@ export class OverallComponent implements OnInit {
     await this.updateMultipleWidgets(chartWidgets, chartData);
   }
 
-  /**
-   * Test method to demonstrate the new generic methods from ApacheEchartBuilder
-   */
-  public testGenericMethods(): void {
-    const pieChart = PieChartBuilder.create()
-      .setData([
-        { value: 30, name: 'Test 1' },
-        { value: 40, name: 'Test 2' },
-        { value: 30, name: 'Test 3' }
-      ])
-      .setLabelFormatter('{b}: {c} ({d}%)')  // Generic method from base class
-      .setColors(['#ff6b6b', '#4ecdc4', '#45b7d1'])  // Generic method from base class
-      .setBorderRadius(8)  // Generic method from base class
-      .setBorder('#fff', 2)  // Generic method from base class
-      .setEmphasis(15, 0, 'rgba(0, 0, 0, 0.6)')  // Generic method from base class
-      .setHeader('Test Generic Methods')
-      .setPosition({ x: 0, y: 0, cols: 4, rows: 4 })
-      .build();
-    
-    console.log('Generic methods test completed:', pieChart);
-  }
-
-  /**
-   * Example method to update bar chart data
-   */
-  public async updateBarChartData(): Promise<void> {
-    const barWidget = this.widgets.find(w => 
-      w.config.component === 'echart' && 
-      (w.config.options as any)?.series?.[0]?.type === 'bar'
-    );
-    
-    if (barWidget) {
-      const newData = await getUpdatedMonthlyData();
-      updateMonthlyIncomeExpensesData(barWidget, newData);
-      this.cdr.detectChanges();
-      console.log('Bar chart updated successfully');
-    }
-  }
-
-  /**
-   * Example method to update line chart data
-   */
-  public async updateLineChartData(): Promise<void> {
-    const lineWidget = this.widgets.find(w => 
-      w.config.component === 'echart' && 
-      (w.config.options as any)?.series?.[0]?.type === 'line'
-    );
-    
-    if (lineWidget) {
-      const newData = await getUpdatedPortfolioData();
-      updatePortfolioPerformanceData(lineWidget, newData);
-      this.cdr.detectChanges();
-      console.log('Line chart updated successfully');
-    }
-  }
-
-  /**
-   * Example method to update gauge chart data
-   */
-  public async updateGaugeChartData(): Promise<void> {
-    const gaugeWidget = this.widgets.find(w => 
-      w.config.component === 'echart' && 
-      (w.config.options as any)?.series?.[0]?.type === 'gauge'
-    );
-    
-    if (gaugeWidget) {
-      const newData = await getUpdatedSavingsGoalData();
-      updateSavingsGoalData(gaugeWidget, newData);
-      this.cdr.detectChanges();
-      console.log('Gauge chart updated successfully');
-    }
-  }
-
-  /**
-   * Example method to update density map data
-   */
-  public async updateDensityMapData(): Promise<void> {
-    const densityMapWidget = this.widgets.find(w => 
-      w.config.component === 'echart' && 
-      (w.config.options as any)?.series?.[0]?.type === 'map'
-    );
-    
-    if (densityMapWidget) {
-      const newData = await getUpdatedInvestmentDistributionData();
-      updateInvestmentDistributionData(densityMapWidget, newData);
-      this.cdr.detectChanges();
-      console.log('Density map updated successfully');
-    }
-  }
 }

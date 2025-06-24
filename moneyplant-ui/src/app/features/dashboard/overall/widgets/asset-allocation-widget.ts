@@ -62,3 +62,11 @@ export function getAlternativeAssetAllocationData(): PieChartData[] {
     { value: 3, name: 'Commodities' },
   ];
 } 
+
+  /**
+   * Alternative method showing direct widget.setData() usage
+   * (if the widget has the setData method implemented)
+   */
+  export function updatePieChartDataDirect(widget: IWidget, newData: PieChartData[]): void {
+    PieChartBuilder.updateData(widget, newData);
+  } 
