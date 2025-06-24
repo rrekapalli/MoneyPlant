@@ -317,7 +317,7 @@ export class ScatterChartBuilder extends ApacheEchartBuilder<ScatterChartOptions
   /**
    * Export scatter chart data for Excel/CSV
    */
-  exportData(widget: IWidget): any[] {
+  static override exportData(widget: IWidget): any[] {
     const series = (widget.config?.options as any)?.series?.[0];
     if (!series?.data) return [];
 
@@ -331,14 +331,14 @@ export class ScatterChartBuilder extends ApacheEchartBuilder<ScatterChartOptions
   /**
    * Get headers for scatter chart export
    */
-  getExportHeaders(widget: IWidget): string[] {
+  static override getExportHeaders(widget: IWidget): string[] {
     return ['X Value', 'Y Value', 'Category'];
   }
 
   /**
    * Get sheet name for scatter chart export
    */
-  getExportSheetName(widget: IWidget): string {
+  static override getExportSheetName(widget: IWidget): string {
     const title = widget.config?.header?.title || 'Scatter Chart';
     const cleanTitle = title.replace(/[^\w\s]/gi, '').substring(0, 20);
     return `${cleanTitle} (Scatter Chart)`;

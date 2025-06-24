@@ -223,45 +223,45 @@ export class ExcelExportService {
     switch (chartType) {
       case 'pie':
         return {
-          extractData: (widget: IWidget) => PieChartBuilder.create().exportData(widget),
-          getHeaders: (widget: IWidget) => PieChartBuilder.create().getExportHeaders(widget),
-          getSheetName: (widget: IWidget) => PieChartBuilder.create().getExportSheetName(widget)
+          extractData: (widget: IWidget) => PieChartBuilder.exportData(widget),
+          getHeaders: (widget: IWidget) => PieChartBuilder.getExportHeaders(widget),
+          getSheetName: (widget: IWidget) => PieChartBuilder.getExportSheetName(widget)
         };
       case 'bar':
         return {
-          extractData: (widget: IWidget) => BarChartBuilder.create().exportData(widget),
-          getHeaders: (widget: IWidget) => BarChartBuilder.create().getExportHeaders(widget),
-          getSheetName: (widget: IWidget) => BarChartBuilder.create().getExportSheetName(widget)
+          extractData: (widget: IWidget) => BarChartBuilder.exportData(widget),
+          getHeaders: (widget: IWidget) => BarChartBuilder.getExportHeaders(widget),
+          getSheetName: (widget: IWidget) => BarChartBuilder.getExportSheetName(widget)
         };
       case 'line':
         return {
-          extractData: (widget: IWidget) => LineChartBuilder.create().exportData(widget),
-          getHeaders: (widget: IWidget) => LineChartBuilder.create().getExportHeaders(widget),
-          getSheetName: (widget: IWidget) => LineChartBuilder.create().getExportSheetName(widget)
+          extractData: (widget: IWidget) => LineChartBuilder.exportData(widget),
+          getHeaders: (widget: IWidget) => LineChartBuilder.getExportHeaders(widget),
+          getSheetName: (widget: IWidget) => LineChartBuilder.getExportSheetName(widget)
         };
       case 'scatter':
         return {
-          extractData: (widget: IWidget) => ScatterChartBuilder.create().exportData(widget),
-          getHeaders: (widget: IWidget) => ScatterChartBuilder.create().getExportHeaders(widget),
-          getSheetName: (widget: IWidget) => ScatterChartBuilder.create().getExportSheetName(widget)
+          extractData: (widget: IWidget) => ScatterChartBuilder.exportData(widget),
+          getHeaders: (widget: IWidget) => ScatterChartBuilder.getExportHeaders(widget),
+          getSheetName: (widget: IWidget) => ScatterChartBuilder.getExportSheetName(widget)
         };
       case 'gauge':
         return {
-          extractData: (widget: IWidget) => GaugeChartBuilder.create().exportData(widget),
-          getHeaders: (widget: IWidget) => GaugeChartBuilder.create().getExportHeaders(widget),
-          getSheetName: (widget: IWidget) => GaugeChartBuilder.create().getExportSheetName(widget)
+          extractData: (widget: IWidget) => GaugeChartBuilder.exportData(widget),
+          getHeaders: (widget: IWidget) => GaugeChartBuilder.getExportHeaders(widget),
+          getSheetName: (widget: IWidget) => GaugeChartBuilder.getExportSheetName(widget)
         };
       case 'heatmap':
         return {
-          extractData: (widget: IWidget) => HeatmapChartBuilder.create().exportData(widget),
-          getHeaders: (widget: IWidget) => HeatmapChartBuilder.create().getExportHeaders(widget),
-          getSheetName: (widget: IWidget) => HeatmapChartBuilder.create().getExportSheetName(widget)
+          extractData: (widget: IWidget) => HeatmapChartBuilder.exportData(widget),
+          getHeaders: (widget: IWidget) => HeatmapChartBuilder.getExportHeaders(widget),
+          getSheetName: (widget: IWidget) => HeatmapChartBuilder.getExportSheetName(widget)
         };
       case 'map':
         return {
-          extractData: (widget: IWidget) => DensityMapBuilder.create().exportData(widget),
-          getHeaders: (widget: IWidget) => DensityMapBuilder.create().getExportHeaders(widget),
-          getSheetName: (widget: IWidget) => DensityMapBuilder.create().getExportSheetName(widget)
+          extractData: (widget: IWidget) => DensityMapBuilder.exportData(widget),
+          getHeaders: (widget: IWidget) => DensityMapBuilder.getExportHeaders(widget),
+          getSheetName: (widget: IWidget) => DensityMapBuilder.getExportSheetName(widget)
         };
       default:
         return {

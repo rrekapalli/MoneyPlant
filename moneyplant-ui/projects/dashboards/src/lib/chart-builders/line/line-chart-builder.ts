@@ -331,7 +331,7 @@ export class LineChartBuilder extends ApacheEchartBuilder<LineChartOptions, Line
   /**
    * Export line chart data for Excel/CSV
    */
-  exportData(widget: IWidget): any[] {
+  static override exportData(widget: IWidget): any[] {
     const series = (widget.config?.options as any)?.series?.[0];
     const xAxis = (widget.config?.options as any)?.xAxis?.[0];
     
@@ -346,14 +346,14 @@ export class LineChartBuilder extends ApacheEchartBuilder<LineChartOptions, Line
   /**
    * Get headers for line chart export
    */
-  getExportHeaders(widget: IWidget): string[] {
+  static override getExportHeaders(widget: IWidget): string[] {
     return ['Date', 'Value'];
   }
 
   /**
    * Get sheet name for line chart export
    */
-  getExportSheetName(widget: IWidget): string {
+  static override getExportSheetName(widget: IWidget): string {
     const title = widget.config?.header?.title || 'Line Chart';
     const cleanTitle = title.replace(/[^\w\s]/gi, '').substring(0, 20);
     return `${cleanTitle} (Line Chart)`;

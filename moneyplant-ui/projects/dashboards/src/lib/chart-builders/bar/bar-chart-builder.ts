@@ -244,7 +244,7 @@ export class BarChartBuilder extends ApacheEchartBuilder<BarChartOptions, BarCha
   /**
    * Export bar chart data for Excel/CSV
    */
-  exportData(widget: IWidget): any[] {
+  static override exportData(widget: IWidget): any[] {
     const series = (widget.config?.options as any)?.series?.[0];
     const xAxis = (widget.config?.options as any)?.xAxis?.[0];
     
@@ -259,14 +259,14 @@ export class BarChartBuilder extends ApacheEchartBuilder<BarChartOptions, BarCha
   /**
    * Get headers for bar chart export
    */
-  getExportHeaders(widget: IWidget): string[] {
+  static override getExportHeaders(widget: IWidget): string[] {
     return ['Category', 'Value'];
   }
 
   /**
    * Get sheet name for bar chart export
    */
-  getExportSheetName(widget: IWidget): string {
+  static override getExportSheetName(widget: IWidget): string {
     const title = widget.config?.header?.title || 'Bar Chart';
     const cleanTitle = title.replace(/[^\w\s]/gi, '').substring(0, 20);
     return `${cleanTitle} (Bar Chart)`;

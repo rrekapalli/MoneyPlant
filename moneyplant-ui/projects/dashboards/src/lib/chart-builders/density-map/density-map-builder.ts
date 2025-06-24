@@ -446,7 +446,7 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
   /**
    * Export density map data for Excel/CSV
    */
-  exportData(widget: IWidget): any[] {
+  static override exportData(widget: IWidget): any[] {
     const series = (widget.config?.options as any)?.series?.[0];
     if (!series?.data) return [];
 
@@ -459,14 +459,14 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
   /**
    * Get headers for density map export
    */
-  getExportHeaders(widget: IWidget): string[] {
+  static override getExportHeaders(widget: IWidget): string[] {
     return ['Region', 'Value'];
   }
 
   /**
    * Get sheet name for density map export
    */
-  getExportSheetName(widget: IWidget): string {
+  static override getExportSheetName(widget: IWidget): string {
     const title = widget.config?.header?.title || 'Density Map';
     const cleanTitle = title.replace(/[^\w\s]/gi, '').substring(0, 20);
     return `${cleanTitle} (Density Map)`;

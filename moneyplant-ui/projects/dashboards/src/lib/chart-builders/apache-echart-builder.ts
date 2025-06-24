@@ -32,22 +32,28 @@ export abstract class ApacheEchartBuilder<T extends EChartsOption = EChartsOptio
   protected abstract getChartType(): string;
 
   /**
-   * Abstract method to export chart data for Excel/CSV export
+   * Static method to export chart data for Excel/CSV export
    * Should return an array of data rows
    */
-  abstract exportData(widget: IWidget): any[];
+  static exportData(widget: IWidget): any[] {
+    throw new Error('exportData must be implemented by subclass');
+  }
 
   /**
-   * Abstract method to get headers for the exported data
+   * Static method to get headers for the exported data
    * Should return an array of column headers
    */
-  abstract getExportHeaders(widget: IWidget): string[];
+  static getExportHeaders(widget: IWidget): string[] {
+    throw new Error('getExportHeaders must be implemented by subclass');
+  }
 
   /**
-   * Abstract method to get sheet name for the exported data
+   * Static method to get sheet name for the exported data
    * Should return a string suitable for Excel sheet name
    */
-  abstract getExportSheetName(widget: IWidget): string;
+  static getExportSheetName(widget: IWidget): string {
+    throw new Error('getExportSheetName must be implemented by subclass');
+  }
 
   /**
    * Set the data for the chart
