@@ -159,10 +159,8 @@ export class BarChartBuilder extends ApacheEchartBuilder<BarChartOptions, BarCha
    * Set colors for the bars
    */
   override setColors(colors: string[]): this {
-    this.seriesOptions.itemStyle = {
-      ...this.seriesOptions.itemStyle,
-      color: colors,
-    };
+    // For bar charts, set colors directly on the series
+    (this.seriesOptions as any).color = colors;
     return this;
   }
 

@@ -72,8 +72,17 @@ export abstract class ApacheEchartBuilder<T extends EChartsOption = EChartsOptio
    * Set colors for the chart segments/bars/lines
    */
   setColors(colors: string[]): this {
-    if (!(this.seriesOptions as any).itemStyle) (this.seriesOptions as any).itemStyle = {};
-    (this.seriesOptions as any).itemStyle.color = colors;
+    const chartType = this.getChartType();
+    
+    if (chartType === 'pie') {
+      // For pie charts, set colors directly on the series
+      (this.seriesOptions as any).color = colors;
+    } else {
+      // For other charts (bar, line, etc.), set colors in itemStyle
+      if (!(this.seriesOptions as any).itemStyle) (this.seriesOptions as any).itemStyle = {};
+      (this.seriesOptions as any).itemStyle.color = colors;
+    }
+    
     return this;
   }
 
