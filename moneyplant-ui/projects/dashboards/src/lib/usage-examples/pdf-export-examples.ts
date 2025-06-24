@@ -8,6 +8,7 @@ import { PdfExportOptions } from '../services/pdf-export.service';
  */
 @Component({
   selector: 'app-pdf-export-examples',
+  imports: [DashboardContainerComponent],
   template: `
     <vis-dashboard-container #dashboardContainer [widgets]="widgets"></vis-dashboard-container>
     <div class="export-buttons">

@@ -87,6 +87,9 @@ export class DashboardContainerComponent {
   @Input() options: GridsterConfig = {};
   public mergedOptions: GridsterConfig = {};
 
+  // Track view modes for each widget
+  private widgetViewModes: Map<string, 'chart' | 'table'> = new Map();
+
   // Dashboard builder instance
   private dashboardBuilder: StandardDashboardBuilder = StandardDashboardBuilder.createStandard();
   
@@ -447,5 +450,24 @@ export class DashboardContainerComponent {
       console.error(`Error exporting widget ${widgetId} to PDF:`, error);
       throw error;
     }
+  }
+
+  /**
+   * Get current view mode for a widget
+   * @param widgetId - ID of the widget
+   * @returns Current view mode (default: 'chart')
+   */
+  getWidgetViewMode(widgetId: string): 'chart' | 'table' {
+    return this.widgetViewModes.get(widgetId) || 'chart';
+  }
+
+  /**
+   * Handle view mode toggle for a widget
+   * @param event - View mode toggle event
+   */
+  onToggleViewMode(event: {widgetId: string, viewMode: 'chart' | 'table'}) {
+    this.widgetViewModes.set(event.widgetId, event.viewMode);
+    // Trigger change detection
+    this.widgets = [...this.widgets];
   }
 }

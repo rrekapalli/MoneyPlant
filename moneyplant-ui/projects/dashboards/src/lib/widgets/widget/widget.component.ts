@@ -8,6 +8,7 @@ import {TileComponent} from '../tile/tile.component';
 import {MarkdownCellComponent} from '../markdown-cell/markdown-cell.component';
 import {CodeCellComponent} from '../code-cell/code-cell.component';
 import { provideEchartsCore } from 'ngx-echarts';
+import {ITableOptions} from '../../entities/ITableOptions';
 
 /**
  * Factory function to determine the appropriate component based on widget type
@@ -53,21 +54,28 @@ export class WidgetComponent {
   /** Widget configuration to render */
   @Input() widget!: IWidget;
   
+  /** Current view mode for the widget */
+  @Input() viewMode: 'chart' | 'table' = 'chart';
+  
   /** Event emitted when widget data is loaded */
   @Output() onDataLoad: EventEmitter<IWidget> = new EventEmitter();
   
   /** Event emitted when filter is updated */
   @Output() onUpdateFilter: EventEmitter<any> = new EventEmitter();
 
+  private originalWidget: IWidget | null = null;
+  private tableWidget: IWidget | null = null;
+
   /**
    * Get the current widget configuration for dynamic component rendering
    * @returns Object containing component class and input properties
    */
   get currentWidget() {
+    const widgetToRender = this.getWidgetForCurrentMode();
     return {
-      component: onGetWidget(this.widget),
+      component: onGetWidget(widgetToRender),
       inputs: {
-        widget: this.widget,
+        widget: widgetToRender,
         onDataLoad: this.onDataLoad,
         onUpdateFilter: this.onUpdateFilter,
       },
@@ -79,6 +87,312 @@ export class WidgetComponent {
    * @returns True if the widget is an ECharts component
    */
   get isEchartComponent(): boolean {
-    return this.currentWidget.component === EchartComponent;
+    const widgetToRender = this.getWidgetForCurrentMode();
+    return onGetWidget(widgetToRender) === EchartComponent;
+  }
+
+  /**
+   * Get the widget configuration based on current view mode
+   * @returns Widget configuration for current mode
+   */
+  private getWidgetForCurrentMode(): IWidget {
+    if (this.viewMode === 'table') {
+      return this.getTableWidget();
+    } else {
+      return this.getOriginalWidget();
+    }
+  }
+
+  /**
+   * Get the original widget configuration
+   * @returns Original widget configuration
+   */
+  private getOriginalWidget(): IWidget {
+    if (!this.originalWidget) {
+      this.originalWidget = { ...this.widget };
+    }
+    return this.originalWidget;
+  }
+
+  /**
+   * Get or create table widget configuration
+   * @returns Table widget configuration
+   */
+  private getTableWidget(): IWidget {
+    if (!this.tableWidget) {
+      this.tableWidget = this.createTableWidget();
+    }
+    return this.tableWidget;
+  }
+
+  /**
+   * Create table widget configuration from chart data
+   * @returns Table widget configuration
+   */
+  private createTableWidget(): IWidget {
+    const originalWidget = this.getOriginalWidget();
+    const dataExtractor = this.getDataExtractor(originalWidget);
+    
+    let columns: string[] = [];
+    let data: any[] = [];
+
+    if (dataExtractor) {
+      columns = dataExtractor.getHeaders(originalWidget);
+      const rawData = dataExtractor.extractData(originalWidget);
+      
+      // Convert array data to object format for table
+      data = rawData.map((row: any[], index: number) => {
+        const rowObj: any = {};
+        columns.forEach((col: string, colIndex: number) => {
+          rowObj[col] = row[colIndex] || '';
+        });
+        return rowObj;
+      });
+    } else {
+      // Fallback for unsupported widget types
+      columns = ['Property', 'Value'];
+      data = [
+        { 'Property': 'Widget ID', 'Value': originalWidget.id },
+        { 'Property': 'Component Type', 'Value': originalWidget.config?.component || 'Unknown' },
+        { 'Property': 'Title', 'Value': originalWidget.config?.header?.title || 'Untitled' }
+      ];
+    }
+
+    const tableOptions: ITableOptions = {
+      columns,
+      data
+    };
+
+    return {
+      ...originalWidget,
+      config: {
+        ...originalWidget.config,
+        component: 'table',
+        options: tableOptions
+      }
+    };
+  }
+
+  /**
+   * Get data extractor for widget type
+   * @param widget - Widget to get extractor for
+   * @returns Data extractor or null
+   */
+  private getDataExtractor(widget: IWidget): any {
+    const component = widget.config?.component;
+    
+    // Handle different widget types
+    if (component === 'echart') {
+      const chartType = this.getChartType(widget);
+      if (chartType) {
+        return this.getChartDataExtractor(chartType);
+      }
+    } else if (component === 'table') {
+      return {
+        extractData: (w: IWidget) => (w.config?.options as any)?.data || [],
+        getHeaders: (w: IWidget) => (w.config?.options as any)?.columns || [],
+        getSheetName: (w: IWidget) => this.getWidgetSheetName(w, 'Table')
+      };
+    } else if (component === 'tile') {
+      return {
+        extractData: (w: IWidget) => {
+          const options = w.config?.options as any;
+          return [[
+            options?.value || '',
+            options?.change || '',
+            options?.changeType || '',
+            options?.description || ''
+          ]];
+        },
+        getHeaders: () => ['Value', 'Change', 'Type', 'Description'],
+        getSheetName: (w: IWidget) => this.getWidgetSheetName(w, 'Tile')
+      };
+    } else {
+      return this.getGenericDataExtractor();
+    }
+  }
+
+  /**
+   * Get chart type from widget configuration
+   * @param widget - Widget to get chart type from
+   * @returns Chart type string or null
+   */
+  private getChartType(widget: IWidget): string | null {
+    if (widget.config?.component === 'echart' && 
+        (widget.config?.options as any)?.series?.[0]?.type) {
+      return (widget.config.options as any).series[0].type;
+    }
+    return null;
+  }
+
+  /**
+   * Get chart data extractor based on chart type
+   * @param chartType - Type of chart
+   * @returns Data extractor or null
+   */
+  private getChartDataExtractor(chartType: string): any {
+    switch (chartType) {
+      case 'pie':
+        return {
+          extractData: (w: IWidget) => {
+            const series = (w.config?.options as any)?.series?.[0];
+            if (!series?.data) return [];
+            return series.data.map((item: any) => [
+              item.name || 'Unknown',
+              item.value || 0,
+              this.calculatePercentage(item.value, series.data)
+            ]);
+          },
+          getHeaders: () => ['Category', 'Value', 'Percentage'],
+          getSheetName: (w: IWidget) => this.getWidgetSheetName(w, 'PieChart')
+        };
+      case 'bar':
+        return {
+          extractData: (w: IWidget) => {
+            const series = (w.config?.options as any)?.series?.[0];
+            const xAxis = (w.config?.options as any)?.xAxis;
+            
+            if (!series?.data) return [];
+            
+            // Handle different xAxis structures
+            let categories: string[] = [];
+            if (xAxis) {
+              if (Array.isArray(xAxis)) {
+                categories = xAxis[0]?.data || [];
+              } else if (xAxis.data) {
+                categories = xAxis.data;
+              }
+            }
+            
+            // If no categories found, create default ones
+            if (categories.length === 0) {
+              categories = series.data.map((_: any, index: number) => `Category ${index + 1}`);
+            }
+            
+            return series.data.map((value: any, index: number) => [
+              categories[index] || `Category ${index + 1}`,
+              value || 0
+            ]);
+          },
+          getHeaders: () => ['Category', 'Value'],
+          getSheetName: (w: IWidget) => this.getWidgetSheetName(w, 'BarChart')
+        };
+      case 'line':
+        return {
+          extractData: (w: IWidget) => {
+            const series = (w.config?.options as any)?.series;
+            const xAxis = (w.config?.options as any)?.xAxis;
+            
+            if (!series || series.length === 0) return [];
+            
+            // Handle different xAxis structures
+            let categories: string[] = [];
+            if (xAxis) {
+              if (Array.isArray(xAxis)) {
+                categories = xAxis[0]?.data || [];
+              } else if (xAxis.data) {
+                categories = xAxis.data;
+              }
+            }
+            
+            // If no categories found, create default ones
+            if (categories.length === 0 && series[0]?.data) {
+              categories = series[0].data.map((_: any, index: number) => `Point ${index + 1}`);
+            }
+            
+            const data: any[] = [];
+            series.forEach((s: any, index: number) => {
+              if (s.data) {
+                s.data.forEach((value: any, pointIndex: number) => {
+                  if (index === 0) {
+                    data[pointIndex] = [categories[pointIndex] || `Point ${pointIndex + 1}`];
+                  }
+                  if (data[pointIndex]) {
+                    data[pointIndex].push(value || 0);
+                  }
+                });
+              }
+            });
+            return data;
+          },
+          getHeaders: (w: IWidget) => {
+            const series = (w.config?.options as any)?.series;
+            if (!series || series.length === 0) return ['Category'];
+            return ['Category', ...series.map((s: any) => s.name || 'Series')];
+          },
+          getSheetName: (w: IWidget) => this.getWidgetSheetName(w, 'LineChart')
+        };
+      case 'scatter':
+        return {
+          extractData: (w: IWidget) => {
+            const series = (w.config?.options as any)?.series?.[0];
+            if (!series?.data) return [];
+            return series.data.map((item: any) => [
+              item.name || 'Point',
+              Array.isArray(item.value) ? item.value[0] || 0 : item.value || 0,
+              Array.isArray(item.value) ? item.value[1] || 0 : ''
+            ]);
+          },
+          getHeaders: () => ['Name', 'X', 'Y'],
+          getSheetName: (w: IWidget) => this.getWidgetSheetName(w, 'ScatterChart')
+        };
+      default:
+        return this.getGenericDataExtractor();
+    }
+  }
+
+  /**
+   * Get generic data extractor for unsupported widget types
+   * @returns Generic data extractor
+   */
+  private getGenericDataExtractor(): any {
+    return {
+      extractData: (w: IWidget) => {
+        const data: any[] = [];
+        data.push(['Widget ID', w.id]);
+        data.push(['Component Type', w.config?.component || 'Unknown']);
+        data.push(['Title', w.config?.header?.title || 'Untitled']);
+        
+        if (w.config?.options) {
+          const options = w.config.options as any;
+          Object.keys(options).forEach(key => {
+            if (typeof options[key] !== 'object' || options[key] === null) {
+              data.push([key, options[key]]);
+            }
+          });
+        }
+        
+        if (w.series && w.series.length > 0) {
+          data.push(['Series Data', JSON.stringify(w.series)]);
+        }
+        
+        return data;
+      },
+      getHeaders: () => ['Property', 'Value'],
+      getSheetName: (w: IWidget) => this.getWidgetSheetName(w, 'Widget')
+    };
+  }
+
+  /**
+   * Get widget sheet name for export
+   * @param widget - Widget configuration
+   * @param prefix - Sheet name prefix
+   * @returns Sheet name
+   */
+  private getWidgetSheetName(widget: IWidget, prefix: string): string {
+    const title = widget.config?.header?.title || widget.id;
+    return `${prefix}_${title}`.replace(/[^a-zA-Z0-9_]/g, '_').substring(0, 31);
+  }
+
+  /**
+   * Calculate percentage for pie charts
+   * @param value - Current value
+   * @param data - All data points
+   * @returns Percentage string
+   */
+  private calculatePercentage(value: number, data: any[]): string {
+    const total = data.reduce((sum: number, item: any) => sum + (item.value || 0), 0);
+    if (total === 0) return '0%';
+    return `${((value / total) * 100).toFixed(1)}%`;
   }
 }

@@ -13,13 +13,16 @@
               <vis-widget-header 
                   [dashboardId]="dashboardId" 
                   [widget]="item" 
+                  [currentViewMode]="getWidgetViewMode(item.id)"
                   (onUpdateWidget)="onUpdateWidget($event)"
-                  (onDeleteWidget)="onDeleteWidget($event)" 
+                  (onDeleteWidget)="onDeleteWidget($event)"
+                  (onToggleViewMode)="onToggleViewMode($event)"
                   [onEditMode]="isEditMode"/>
             }
 
             <vis-widget 
                 [widget]="item" 
+                [viewMode]="getWidgetViewMode(item.id)"
                 (onDataLoad)="onDataLoad($event)" 
                 (onUpdateFilter)="onUpdateFilter($event)"/>
 
