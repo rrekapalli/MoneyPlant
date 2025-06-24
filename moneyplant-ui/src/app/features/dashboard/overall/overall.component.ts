@@ -81,6 +81,8 @@ import {
   TreemapChartBuilder,
   SunburstChartBuilder,
   SankeyChartBuilder,
+  // D3.js Chart Builders
+  D3PieChartBuilder,
   // Data interfaces
   PieChartData,
   BarChartData,
@@ -95,6 +97,7 @@ import {
   TreemapData,
   SunburstChartData,
   SankeyChartData,
+  D3PieChartData,
   // Fluent API
   StandardDashboardBuilder,
   DashboardConfig,
@@ -108,7 +111,7 @@ import {
 
 // Import widget creation functions
 import {
-  createAssetAllocationWidget,
+  createD3AssetAllocationWidget,
   createMonthlyIncomeExpensesWidget,
   createPortfolioPerformanceWidget,
   createRiskReturnWidget,
@@ -131,7 +134,7 @@ import {
   createBudgetAllocationSankeyWidget,
   createMinimalSankeyChartWidget,
   // Data update functions
-  updateAssetAllocationData,
+  updateD3AssetAllocationData,
   updateMonthlyIncomeExpensesData,
   updatePortfolioPerformanceData,
   updateRiskReturnData,
@@ -145,7 +148,7 @@ import {
   updateSunburstChartData,
   updateSankeyChartData,
   // Data fetching functions
-  getUpdatedAssetAllocationData,
+  getUpdatedD3AssetAllocationData,
   getUpdatedMonthlyData,
   getUpdatedPortfolioData,
   getUpdatedRiskReturnData,
@@ -159,7 +162,7 @@ import {
   getUpdatedSunburstChartData,
   getUpdatedSankeyChartData,
   // Alternative data functions
-  getAlternativeAssetAllocationData,
+  getAlternativeD3AssetAllocationData,
   getAlternativeMonthlyData,
   getAlternativePortfolioData,
   getAlternativeRiskReturnData,
@@ -176,7 +179,7 @@ import {
 
 import { v4 as uuidv4 } from 'uuid';
 import { ScrollPanelModule } from 'primeng/scrollpanel';
-import { updatePieChartDataDirect } from './widgets/asset-allocation-widget';
+import { updateD3PieChartDataDirect } from './widgets/d3-asset-allocation-widget';
 
 @Component({
   selector: 'app-overall',
@@ -224,7 +227,7 @@ export class OverallComponent implements OnInit {
    */
   private initializeDashboardConfig(): void {
     // Create widgets using the new widget functions
-    const pieAssetAllocation = createAssetAllocationWidget();
+    const d3PieAssetAllocation = createD3AssetAllocationWidget();
     const barMonthlyIncomeVsExpenses = createMonthlyIncomeExpensesWidget();
     const linePortfolioPerformance = createPortfolioPerformanceWidget();
     const scatterRiskVsReturn = createRiskReturnWidget();
@@ -251,7 +254,7 @@ export class OverallComponent implements OnInit {
     this.dashboardConfig = StandardDashboardBuilder.createStandard()
       .setDashboardId('overall-dashboard')
       .setWidgets([
-        pieAssetAllocation,
+        d3PieAssetAllocation,
         barMonthlyIncomeVsExpenses,
         linePortfolioPerformance,
         scatterRiskVsReturn,
@@ -386,9 +389,14 @@ export class OverallComponent implements OnInit {
           const hasAreaStyle = series?.areaStyle;
           const coordinateSystem = series?.coordinateSystem;
           const hasStack = series?.stack;
+          const d3ChartType = (widget.config.options as any)?.chartType;
           
           // Use chart builders to update data based on chart type
-          if (chartType === 'pie') {
+          if (d3ChartType === 'd3-pie') {
+            // D3.js pie chart
+            D3PieChartBuilder.updateData(widget, data[index]);
+          } else if (chartType === 'pie') {
+            // ECharts pie chart
             PieChartBuilder.updateData(widget, data[index]);
           } else if (chartType === 'bar') {
             BarChartBuilder.updateData(widget, data[index]);
@@ -435,8 +443,10 @@ export class OverallComponent implements OnInit {
    * Example of updating all chart widgets with appropriate data
    */
   public async updateAllCharts(): Promise<void> {
-    // Get all echart widgets
-    const chartWidgets = this.dashboardConfig.widgets.filter(w => w.config.component === 'echart');
+    // Get all chart widgets (both ECharts and D3.js)
+    const chartWidgets = this.dashboardConfig.widgets.filter(w => 
+      w.config.component === 'echart' || w.config.component === 'd3-chart'
+    );
     console.log('Found chart widgets:', chartWidgets.length);
     
     // Create appropriate data for each chart type using chart builders
@@ -447,11 +457,16 @@ export class OverallComponent implements OnInit {
       const hasAreaStyle = series?.areaStyle;
       const coordinateSystem = series?.coordinateSystem;
       const hasStack = series?.stack;
-      console.log('Widget chart type:', chartType, 'hasAreaStyle:', hasAreaStyle, 'coordinateSystem:', coordinateSystem, 'hasStack:', hasStack);
+      const d3ChartType = (widget.config.options as any)?.chartType;
+      
+      console.log('Widget chart type:', chartType, 'D3 chart type:', d3ChartType, 'hasAreaStyle:', hasAreaStyle, 'coordinateSystem:', coordinateSystem, 'hasStack:', hasStack);
       
       // Use chart builders to determine appropriate data
       let data: any;
-      if (chartType === 'line' && coordinateSystem === 'polar') {
+      if (d3ChartType === 'd3-pie') {
+        // D3.js pie chart
+        data = getAlternativeD3AssetAllocationData();
+      } else if (chartType === 'line' && coordinateSystem === 'polar') {
         // Polar chart (line chart with polar coordinate system)
         data = getAlternativePolarChartData();
       } else if (chartType === 'line' && hasAreaStyle && hasStack) {
@@ -463,7 +478,7 @@ export class OverallComponent implements OnInit {
       } else {
         switch (chartType) {
           case 'pie':
-            data = getAlternativeAssetAllocationData();
+            data = getAlternativeD3AssetAllocationData(); // Use D3 data for consistency
             break;
           case 'bar':
             data = getAlternativeMonthlyData();

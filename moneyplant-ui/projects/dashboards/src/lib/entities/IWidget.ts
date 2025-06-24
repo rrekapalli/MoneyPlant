@@ -7,6 +7,7 @@ import {IMarkdownCellOptions} from './IMarkdownCellOptions';
 import {ICodeCellOptions} from './ICodeCellOptions';
 import {ITableOptions} from './ITableOptions';
 import {IFilterValues} from './IFilterValues';
+import {D3PieChartOptions} from '../d3-chart-builders/pie/pie-chart-builder';
 
 /**
  * Interface representing a widget in the dashboard
@@ -41,7 +42,7 @@ export interface IWidget extends GridsterItem {
     size?: number[];
     
     /** Widget-specific options based on the component type */
-    options: EChartsOption | IFilterOptions | ITileOptions | IMarkdownCellOptions | ICodeCellOptions | ITableOptions;
+    options: EChartsOption | IFilterOptions | ITileOptions | IMarkdownCellOptions | ICodeCellOptions | ITableOptions | D3PieChartOptions;
     
     /** Event handlers */
     events?: {

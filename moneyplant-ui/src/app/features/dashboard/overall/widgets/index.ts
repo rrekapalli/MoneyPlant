@@ -1,5 +1,6 @@
 // Widget creation functions
 export { createAssetAllocationWidget } from './asset-allocation-widget';
+export { createD3AssetAllocationWidget } from './d3-asset-allocation-widget';
 export { createMonthlyIncomeExpensesWidget } from './monthly-income-expenses-widget';
 export { createPortfolioPerformanceWidget } from './portfolio-performance-widget';
 export { createRiskReturnWidget } from './risk-return-widget';
@@ -15,6 +16,7 @@ export { createSankeyChartWidget, createInvestmentFlowSankeyWidget, createBudget
 
 // Data update functions
 export { updateAssetAllocationData } from './asset-allocation-widget';
+export { updateD3AssetAllocationData } from './d3-asset-allocation-widget';
 export { updateMonthlyIncomeExpensesData } from './monthly-income-expenses-widget';
 export { updatePortfolioPerformanceData } from './portfolio-performance-widget';
 export { updateRiskReturnData } from './risk-return-widget';
@@ -30,6 +32,7 @@ export { updateSankeyChartData } from './sankey-chart-widget';
 
 // Data fetching functions
 export { getUpdatedAssetAllocationData } from './asset-allocation-widget';
+export { getUpdatedD3AssetAllocationData } from './d3-asset-allocation-widget';
 export { getUpdatedMonthlyData } from './monthly-income-expenses-widget';
 export { getUpdatedPortfolioData } from './portfolio-performance-widget';
 export { getUpdatedRiskReturnData } from './risk-return-widget';
@@ -45,6 +48,7 @@ export { getUpdatedSankeyChartData } from './sankey-chart-widget';
 
 // Alternative data functions
 export { getAlternativeAssetAllocationData } from './asset-allocation-widget';
+export { getAlternativeD3AssetAllocationData } from './d3-asset-allocation-widget';
 export { getAlternativeMonthlyData } from './monthly-income-expenses-widget';
 export { getAlternativePortfolioData } from './portfolio-performance-widget';
 export { getAlternativeRiskReturnData } from './risk-return-widget';
@@ -60,6 +64,7 @@ export { getAlternativeSankeyChartData } from './sankey-chart-widget';
 
 // Static data exports
 export { ASSET_ALLOCATION_DATA, ASSET_ALLOCATION_COLORS } from './asset-allocation-widget';
+export { D3_ASSET_ALLOCATION_DATA, D3_ASSET_ALLOCATION_COLORS } from './d3-asset-allocation-widget';
 export { MONTHLY_DATA, MONTHLY_CATEGORIES } from './monthly-income-expenses-widget';
 export { PORTFOLIO_DATA, PORTFOLIO_CATEGORIES } from './portfolio-performance-widget';
 export { RISK_RETURN_DATA, RISK_RETURN_COLORS } from './risk-return-widget';

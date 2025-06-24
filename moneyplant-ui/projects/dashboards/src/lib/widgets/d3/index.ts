@@ -1,0 +1,1 @@
+export { D3ChartComponent } from './d3-chart.component'; 
