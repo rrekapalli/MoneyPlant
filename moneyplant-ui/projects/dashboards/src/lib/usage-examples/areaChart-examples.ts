@@ -1,4 +1,4 @@
-import { AreaChartBuilder, AreaChartData } from '../chart-builders/area';
+import { AreaChartBuilder, AreaChartData } from '../echart-chart-builders/area';
 import { WidgetBuilder } from '../widgets/widget/widget-builder';
 
 // Sample data for area charts

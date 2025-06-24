@@ -1,4 +1,4 @@
-import { PolarChartBuilder, PolarChartData } from '../chart-builders/polar';
+import { PolarChartBuilder, PolarChartData } from '../echart-chart-builders/polar';
 import { IWidget } from '../entities/IWidget';
 
 /**

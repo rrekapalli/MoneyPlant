@@ -1,4 +1,4 @@
-import { SunburstChartBuilder, SunburstChartData } from '../chart-builders/sunburst';
+import { SunburstChartBuilder, SunburstChartData } from '../echart-chart-builders/sunburst';
 
 // Sample hierarchical data for sunburst chart examples
 export const sampleSunburstData: SunburstChartData[] = [

@@ -10,7 +10,7 @@ import {
   GaugeChartBuilder, 
   HeatmapChartBuilder, 
   DensityMapBuilder 
-} from '../chart-builders';
+} from '../echart-chart-builders';
 
 /**
  * Configuration options for Excel export functionality

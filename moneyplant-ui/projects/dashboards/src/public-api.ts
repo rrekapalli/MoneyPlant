@@ -36,7 +36,7 @@ export * from './lib/entities/IWidget';
 
 
 // Chart Builders
-export * from './lib/chart-builders';
+export * from './lib/echart-chart-builders';
 
 
 // Widgets
