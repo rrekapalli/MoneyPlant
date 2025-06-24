@@ -187,7 +187,6 @@ import { updatePieChartDataDirect } from './widgets/asset-allocation-widget';
 export class OverallComponent implements OnInit {
   // Dashboard widgets
   widgets: IWidget[] = [];
-  private pieAssetAllocationWidgetId: string = '';
 
   constructor(private cdr: ChangeDetectorRef) {}
 
@@ -202,7 +201,6 @@ export class OverallComponent implements OnInit {
   private initializeDashboardWidgets(): void {
     // Create widgets using the new widget functions
     const pieAssetAllocation = createAssetAllocationWidget();
-    this.pieAssetAllocationWidgetId = pieAssetAllocation.id;
 
     const barMonthlyIncomeVsExpenses = createMonthlyIncomeExpensesWidget();
     const linePortfolioPerformance = createPortfolioPerformanceWidget();
@@ -221,31 +219,7 @@ export class OverallComponent implements OnInit {
       heatmapSpending,
       densityMapInvestment,
     ];
-
-    this.updateAssetAllocationData(pieAssetAllocation);
   }
-
-  /**
-   * Example method showing how end users can update widget data dynamically
-   * This is the exposed setData functionality for end users
-   */
-  public async updateAssetAllocationData(widget: IWidget): Promise<void> {
-    try {
-      // Get updated data from the widget module
-      const updatedData = await getUpdatedAssetAllocationData();
-      
-      // Use the exposed setData method - this is what end users will call
-      updateAssetAllocationData(widget, updatedData);
-      
-      // Trigger change detection to ensure UI updates
-      this.cdr.detectChanges();
-      
-      console.log('Widget data updated successfully');
-    } catch (error) {
-      console.error('Error updating widget data:', error);
-    }
-  }
-
 
   /**
    * Utility method to update multiple widgets at once
