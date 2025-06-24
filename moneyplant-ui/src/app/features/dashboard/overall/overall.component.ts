@@ -19,7 +19,8 @@ import {
   GaugeChart,
   HeatmapChart,
   MapChart,
-  TreemapChart
+  TreemapChart,
+  SunburstChart
 } from 'echarts/charts';
 // Import tooltip, title, legend, and other components
 import {
@@ -105,6 +106,7 @@ echarts.use([
   HeatmapChart,
   MapChart,
   TreemapChart,
+  SunburstChart,
   CanvasRenderer
 ]);
 
@@ -125,6 +127,7 @@ import {
   PolarChartBuilder,
   StackedAreaChartBuilder,
   TreemapChartBuilder,
+  SunburstChartBuilder,
   // Data interfaces
   PieChartData,
   BarChartData,
@@ -137,6 +140,7 @@ import {
   PolarChartData,
   StackedAreaSeriesData,
   TreemapData,
+  SunburstChartData,
   // Fluent API
   StandardDashboardBuilder,
   DashboardConfig,
@@ -165,6 +169,9 @@ import {
   createTreemapChartWidget,
   createExpenseTreemapWidget,
   createLargeScaleTreemapWidget,
+  createSunburstChartWidget,
+  createOrganizationalSunburstWidget,
+  createLargeScaleSunburstWidget,
   // Data update functions
   updateAssetAllocationData,
   updateMonthlyIncomeExpensesData,
@@ -177,6 +184,7 @@ import {
   updatePolarChartData,
   updateStackedAreaChartData,
   updateTreemapChartData,
+  updateSunburstChartData,
   // Data fetching functions
   getUpdatedAssetAllocationData,
   getUpdatedMonthlyData,
@@ -189,6 +197,7 @@ import {
   getUpdatedPolarChartData,
   getUpdatedStackedAreaChartData,
   getUpdatedTreemapChartData,
+  getUpdatedSunburstChartData,
   // Alternative data functions
   getAlternativeAssetAllocationData,
   getAlternativeMonthlyData,
@@ -200,7 +209,8 @@ import {
   getAlternativeAreaChartData,
   getAlternativePolarChartData,
   getAlternativeStackedAreaChartData,
-  getAlternativeTreemapChartData
+  getAlternativeTreemapChartData,
+  getAlternativeSunburstChartData
 } from './widgets';
 
 import { v4 as uuidv4 } from 'uuid';
@@ -268,6 +278,9 @@ export class OverallComponent implements OnInit {
     const treemapChart = createTreemapChartWidget();
     const expenseTreemap = createExpenseTreemapWidget();
     const largeScaleTreemap = createLargeScaleTreemapWidget();
+    const sunburstChart = createSunburstChartWidget();
+    const organizationalSunburst = createOrganizationalSunburstWidget();
+    const largeScaleSunburst = createLargeScaleSunburstWidget();
 
     // Use the Fluent API to build the dashboard config
     this.dashboardConfig = StandardDashboardBuilder.createStandard()
@@ -287,7 +300,10 @@ export class OverallComponent implements OnInit {
         marketTrendStackedAreaChart,
         treemapChart,
         expenseTreemap,
-        largeScaleTreemap
+        largeScaleTreemap,
+        sunburstChart,
+        organizationalSunburst,
+        largeScaleSunburst
       ])
       .setEditMode(false)
       .build();
@@ -428,6 +444,8 @@ export class OverallComponent implements OnInit {
             DensityMapBuilder.updateData(widget, data[index]);
           } else if (chartType === 'treemap') {
             TreemapChartBuilder.updateData(widget, data[index]);
+          } else if (chartType === 'sunburst') {
+            SunburstChartBuilder.updateData(widget, data[index]);
           } else {
             WidgetBuilder.setData(widget, data[index]);
           }
@@ -496,6 +514,9 @@ export class OverallComponent implements OnInit {
             break;
           case 'treemap':
             data = getAlternativeTreemapChartData();
+            break;
+          case 'sunburst':
+            data = getAlternativeSunburstChartData();
             break;
           default:
             data = [];
