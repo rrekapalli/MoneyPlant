@@ -315,20 +315,18 @@ export class ScatterChartBuilder extends ApacheEchartBuilder<ScatterChartOptions
   }
 
   /**
-   * Export scatter chart data for Excel/CSV
+   * Export scatter chart data for Excel/CSV export
+   * Extracts x, y coordinates and optional category information
+   * @param widget - Widget containing scatter chart data
+   * @returns Array of data rows for export
    */
   static override exportData(widget: IWidget): any[] {
     const series = (widget.config?.options as any)?.series?.[0];
-    
-    console.log('ScatterChartBuilder.exportData - Widget config:', widget.config?.options);
-    console.log('ScatterChartBuilder.exportData - Series:', series);
     
     if (!series?.data) {
       console.warn('ScatterChartBuilder.exportData - No series data found');
       return [];
     }
-
-    console.log('ScatterChartBuilder.exportData - Series data:', series.data);
 
     return series.data.map((point: any) => [
       point[0] || 0,

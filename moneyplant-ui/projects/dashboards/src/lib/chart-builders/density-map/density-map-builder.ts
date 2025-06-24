@@ -444,20 +444,18 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
   }
 
   /**
-   * Export density map data for Excel/CSV
+   * Export density map data for Excel/CSV export
+   * Extracts region names and their corresponding values
+   * @param widget - Widget containing density map data
+   * @returns Array of data rows for export
    */
   static override exportData(widget: IWidget): any[] {
     const series = (widget.config?.options as any)?.series?.[0];
-    
-    console.log('DensityMapBuilder.exportData - Widget config:', widget.config?.options);
-    console.log('DensityMapBuilder.exportData - Series:', series);
     
     if (!series?.data) {
       console.warn('DensityMapBuilder.exportData - No series data found');
       return [];
     }
-
-    console.log('DensityMapBuilder.exportData - Series data:', series.data);
 
     return series.data.map((item: any) => [
       item.name || 'Unknown Region',

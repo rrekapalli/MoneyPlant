@@ -223,20 +223,18 @@ export class PieChartBuilder extends ApacheEchartBuilder<PieChartOptions, PieCha
   }
 
   /**
-   * Export pie chart data for Excel/CSV
+   * Export pie chart data for Excel/CSV export
+   * Extracts category names, values, and calculated percentages
+   * @param widget - Widget containing pie chart data
+   * @returns Array of data rows for export
    */
   static override exportData(widget: IWidget): any[] {
     const series = (widget.config?.options as any)?.series?.[0];
-    
-    console.log('PieChartBuilder.exportData - Widget config:', widget.config?.options);
-    console.log('PieChartBuilder.exportData - Series:', series);
     
     if (!series?.data) {
       console.warn('PieChartBuilder.exportData - No series data found');
       return [];
     }
-
-    console.log('PieChartBuilder.exportData - Series data:', series.data);
 
     return series.data.map((item: any) => [
       item.name || 'Unknown',

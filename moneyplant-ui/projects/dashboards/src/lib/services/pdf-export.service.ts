@@ -3,28 +3,44 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { IWidget } from '../entities/IWidget';
 
+/**
+ * Configuration options for PDF export functionality
+ */
 export interface PdfExportOptions {
+  /** Page orientation for the PDF */
   orientation?: 'portrait' | 'landscape';
+  /** Page format/size for the PDF */
   format?: 'a4' | 'a3' | 'letter' | 'legal';
+  /** Margin size in millimeters */
   margin?: number;
+  /** Output filename for the PDF */
   filename?: string;
+  /** Title to display in the PDF header */
   title?: string;
+  /** Whether to include a header in the PDF */
   includeHeader?: boolean;
+  /** Whether to include a footer in the PDF */
   includeFooter?: boolean;
+  /** Image quality for chart captures (0-1) */
   quality?: number;
+  /** Scale factor for chart captures */
   scale?: number;
 }
 
+/**
+ * Service for exporting dashboard widgets to PDF format
+ * Supports both basic and intelligent layout algorithms
+ */
 @Injectable({
   providedIn: 'root'
 })
 export class PdfExportService {
 
   /**
-   * Export dashboard to PDF
+   * Export dashboard to PDF using basic layout algorithm
    * @param dashboardElement - Reference to the dashboard container element
    * @param widgets - Array of widgets to export
-   * @param options - PDF export options
+   * @param options - PDF export configuration options
    */
   async exportDashboardToPdf(
     dashboardElement: ElementRef<HTMLElement>,
@@ -44,11 +60,10 @@ export class PdfExportService {
     } = options;
 
     try {
-      // Wait for all charts to be fully rendered
-      console.log('Waiting for charts to render...');
+      // Wait for all charts to be fully rendered before capture
       await new Promise(resolve => setTimeout(resolve, 2000));
 
-      // Create PDF document
+      // Create PDF document with specified settings
       const pdf = new jsPDF({
         orientation,
         unit: 'mm',
@@ -67,7 +82,7 @@ export class PdfExportService {
         currentY = this.addHeader(pdf, title, pageWidth, margin, currentY);
       }
 
-      // Export widgets
+      // Export widgets using basic layout
       currentY = await this.exportWidgets(
         pdf,
         dashboardElement,
@@ -85,7 +100,7 @@ export class PdfExportService {
         this.addFooter(pdf, pageWidth, pageHeight, margin);
       }
 
-      // Save the PDF
+      // Save the PDF file
       pdf.save(filename);
 
     } catch (error) {
@@ -95,7 +110,11 @@ export class PdfExportService {
   }
 
   /**
-   * Export dashboard to PDF with intelligent layout
+   * Export dashboard to PDF using intelligent layout algorithm
+   * Attempts to preserve widget positioning and relationships
+   * @param dashboardElement - Reference to the dashboard container element
+   * @param widgets - Array of widgets to export
+   * @param options - PDF export configuration options
    */
   async exportDashboardToPdfIntelligent(
     dashboardElement: ElementRef<HTMLElement>,
@@ -115,11 +134,10 @@ export class PdfExportService {
     } = options;
 
     try {
-      // Wait for all charts to be fully rendered
-      console.log('Waiting for charts to render...');
+      // Wait for all charts to be fully rendered before capture
       await new Promise(resolve => setTimeout(resolve, 2000));
 
-      // Create PDF document
+      // Create PDF document with specified settings
       const pdf = new jsPDF({
         orientation,
         unit: 'mm',
@@ -138,7 +156,7 @@ export class PdfExportService {
         currentY = this.addHeader(pdf, title, pageWidth, margin, currentY);
       }
 
-      // Export widgets with intelligent layout
+      // Export widgets using intelligent layout
       currentY = await this.exportWidgetsIntelligent(
         pdf,
         dashboardElement,
@@ -156,7 +174,7 @@ export class PdfExportService {
         this.addFooter(pdf, pageWidth, pageHeight, margin);
       }
 
-      // Save the PDF
+      // Save the PDF file
       pdf.save(filename);
 
     } catch (error) {
@@ -166,7 +184,13 @@ export class PdfExportService {
   }
 
   /**
-   * Add header to PDF
+   * Add header section to the PDF document
+   * @param pdf - The PDF document instance
+   * @param title - Title to display in the header
+   * @param pageWidth - Width of the PDF page
+   * @param margin - Page margin
+   * @param currentY - Current Y position on the page
+   * @returns Updated Y position after adding header
    */
   private addHeader(
     pdf: jsPDF,
@@ -189,11 +213,22 @@ export class PdfExportService {
     pdf.setDrawColor(200, 200, 200);
     pdf.line(margin, currentY + 10, pageWidth - margin, currentY + 10);
     
-    return currentY + 15; // Reduced spacing
+    return currentY + 15; // Return updated Y position
   }
 
   /**
-   * Export widgets to PDF
+   * Export widgets to PDF using basic layout algorithm
+   * Each widget gets its own page
+   * @param pdf - The PDF document instance
+   * @param dashboardElement - Reference to the dashboard container
+   * @param widgets - Array of widgets to export
+   * @param contentWidth - Available content width
+   * @param contentHeight - Available content height
+   * @param margin - Page margin
+   * @param startY - Starting Y position
+   * @param quality - Image quality for captures
+   * @param scale - Scale factor for captures
+   * @returns Final Y position after export
    */
   private async exportWidgets(
     pdf: jsPDF,
@@ -207,108 +242,40 @@ export class PdfExportService {
     scale: number
   ): Promise<number> {
     let currentY = startY;
-    const pageHeight = pdf.internal.pageSize.getHeight();
 
-    console.log(`Starting export of ${widgets.length} widgets`);
-
-    // Calculate grid layout for better space utilization
-    const widgetsPerRow = 2; // 2 widgets per row
-    const maxWidgetsPerPage = 4; // 4 widgets per page (2x2 grid)
-    let currentRow = 0;
-    let currentCol = 0;
-    let widgetsOnCurrentPage = 0;
-
-    for (let i = 0; i < widgets.length; i++) {
-      const widget = widgets[i];
-      
+    for (const widget of widgets) {
       try {
-        console.log(`Processing widget: ${widget.id} - ${widget.config?.header?.title || 'Untitled'}`);
-        
-        // Find widget element
+        // Find the widget element in the DOM
         const widgetElement = this.findWidgetElement(dashboardElement, widget.id);
+        
         if (!widgetElement) {
-          console.warn(`Widget element not found for widget ID: ${widget.id}`);
-          continue;
+          continue; // Skip if widget element not found
         }
 
-        console.log(`Found widget element for ${widget.id}:`, widgetElement);
-
-        // Wait a bit for any animations or rendering to complete
-        await new Promise(resolve => setTimeout(resolve, 100));
-
-        // Convert widget to canvas
+        // Create canvas from widget element
         const canvas = await html2canvas(widgetElement, {
-          scale: 3, // Higher scale for better quality
+          scale,
           useCORS: true,
           allowTaint: true,
           backgroundColor: '#ffffff',
-          logging: false,
-          width: widgetElement.offsetWidth,
-          height: widgetElement.offsetHeight
+          logging: false
         });
 
-        console.log(`Canvas created for widget ${widget.id}:`, canvas.width, 'x', canvas.height);
+        // Calculate image dimensions to fit content width
+        const imgWidth = contentWidth;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-        // Check if we need a new page
-        if (widgetsOnCurrentPage >= maxWidgetsPerPage) {
+        // Add new page if needed
+        if (currentY + imgHeight > contentHeight) {
           pdf.addPage();
           currentY = margin;
-          currentRow = 0;
-          currentCol = 0;
-          widgetsOnCurrentPage = 0;
-          console.log(`Added new page for widget ${widget.id}`);
         }
 
-        // Calculate widget dimensions for grid layout
-        const widgetWidth = (contentWidth - margin) / widgetsPerRow; // Divide available width by number of columns
-        const widgetHeight = Math.min(80, (pageHeight - margin - startY) / 2); // Smaller fixed height
-        
-        // Calculate position in grid
-        const x = margin + (currentCol * widgetWidth);
-        const y = currentY + (currentRow * widgetHeight);
+        // Convert canvas to image and add to PDF
+        const imgData = canvas.toDataURL('image/png', quality);
+        pdf.addImage(imgData, 'PNG', margin, currentY, imgWidth, imgHeight);
 
-        console.log(`Widget ${widget.id} grid position:`, {
-          row: currentRow,
-          col: currentCol,
-          x: x,
-          y: y,
-          width: widgetWidth,
-          height: widgetHeight
-        });
-
-        // Convert canvas to image
-        const imgData = canvas.toDataURL('image/png');
-
-        // Add widget to PDF
-        pdf.addImage(
-          imgData,
-          'PNG',
-          x,
-          y,
-          widgetWidth,
-          widgetHeight
-        );
-
-        // Add widget title if available
-        if (widget.config?.header?.title) {
-          pdf.setFontSize(10);
-          pdf.setFont('helvetica', 'bold');
-          pdf.text(
-            widget.config.header.title,
-            x,
-            y - 5
-          );
-        }
-
-        // Update grid position
-        currentCol++;
-        if (currentCol >= widgetsPerRow) {
-          currentCol = 0;
-          currentRow++;
-        }
-        widgetsOnCurrentPage++;
-
-        console.log(`Widget ${widget.id} exported successfully. Grid position: ${currentRow},${currentCol}`);
+        currentY += imgHeight + 10; // Add spacing between widgets
 
       } catch (error) {
         console.error(`Error exporting widget ${widget.id}:`, error);
@@ -316,12 +283,22 @@ export class PdfExportService {
       }
     }
 
-    console.log(`Export completed. Total widgets processed: ${widgets.length}`);
-    return currentY + (currentRow * 80) + 20; // Return final Y position with new height
+    return currentY;
   }
 
   /**
-   * Export widgets with intelligent layout
+   * Export widgets to PDF using intelligent layout algorithm
+   * Attempts to preserve widget grid positioning
+   * @param pdf - The PDF document instance
+   * @param dashboardElement - Reference to the dashboard container
+   * @param widgets - Array of widgets to export
+   * @param contentWidth - Available content width
+   * @param contentHeight - Available content height
+   * @param margin - Page margin
+   * @param startY - Starting Y position
+   * @param quality - Image quality for captures
+   * @param scale - Scale factor for captures
+   * @returns Final Y position after export
    */
   private async exportWidgetsIntelligent(
     pdf: jsPDF,
@@ -335,96 +312,20 @@ export class PdfExportService {
     scale: number
   ): Promise<number> {
     let currentY = startY;
-    const pageHeight = pdf.internal.pageSize.getHeight();
+    let currentRow = 0;
+    let currentCol = 0;
+    const maxCols = 2; // Maximum columns per row
 
-    console.log(`Starting intelligent export of ${widgets.length} widgets`);
-
-    // Group widgets by type for better layout
-    const chartWidgets = widgets.filter(w => w.config?.component === 'echart');
-    const otherWidgets = widgets.filter(w => w.config?.component !== 'echart');
-
-    // Export chart widgets in a 2x2 grid
-    const chartsPerRow = 2;
-    const chartsPerPage = 4;
-    let chartRow = 0;
-    let chartCol = 0;
-    let chartsOnPage = 0;
-
-    for (let i = 0; i < chartWidgets.length; i++) {
-      const widget = chartWidgets[i];
-      
-      // Check if we need a new page
-      if (chartsOnPage >= chartsPerPage) {
-        pdf.addPage();
-        currentY = margin;
-        chartRow = 0;
-        chartCol = 0;
-        chartsOnPage = 0;
-      }
-
+    for (const widget of widgets) {
       try {
+        // Find the widget element in the DOM
         const widgetElement = this.findWidgetElement(dashboardElement, widget.id);
-        if (!widgetElement) continue;
-
-        // Wait for rendering
-        await new Promise(resolve => setTimeout(resolve, 100));
-
-        // Convert to canvas with high quality
-        const canvas = await html2canvas(widgetElement, {
-          scale,
-          useCORS: true,
-          allowTaint: true,
-          backgroundColor: '#ffffff',
-          logging: false,
-          width: widgetElement.offsetWidth,
-          height: widgetElement.offsetHeight
-        });
-
-        // Calculate dimensions for grid layout
-        const widgetWidth = (contentWidth - margin) / chartsPerRow;
-        const widgetHeight = 100; // Fixed height for charts
         
-        const x = margin + (chartCol * widgetWidth);
-        const y = currentY + (chartRow * widgetHeight);
-
-        // Add widget to PDF
-        const imgData = canvas.toDataURL('image/png');
-        pdf.addImage(imgData, 'PNG', x, y, widgetWidth, widgetHeight);
-
-        // Add title
-        if (widget.config?.header?.title) {
-          pdf.setFontSize(10);
-          pdf.setFont('helvetica', 'bold');
-          pdf.text(widget.config.header.title, x, y - 5);
+        if (!widgetElement) {
+          continue; // Skip if widget element not found
         }
 
-        // Update grid position
-        chartCol++;
-        if (chartCol >= chartsPerRow) {
-          chartCol = 0;
-          chartRow++;
-        }
-        chartsOnPage++;
-
-      } catch (error) {
-        console.error(`Error exporting chart widget ${widget.id}:`, error);
-      }
-    }
-
-    // Export other widgets
-    for (const widget of otherWidgets) {
-      try {
-        const widgetElement = this.findWidgetElement(dashboardElement, widget.id);
-        if (!widgetElement) continue;
-
-        // Check if we need a new page
-        if (currentY + 80 > pageHeight - margin) {
-          pdf.addPage();
-          currentY = margin;
-        }
-
-        await new Promise(resolve => setTimeout(resolve, 100));
-
+        // Create canvas from widget element
         const canvas = await html2canvas(widgetElement, {
           scale,
           useCORS: true,
@@ -433,22 +334,37 @@ export class PdfExportService {
           logging: false
         });
 
-        const widgetWidth = contentWidth;
-        const widgetHeight = 60;
+        // Calculate widget dimensions
+        const widgetWidth = contentWidth / maxCols - 5; // 5mm spacing between widgets
+        const widgetHeight = (canvas.height * widgetWidth) / canvas.width;
 
-        const imgData = canvas.toDataURL('image/png');
-        pdf.addImage(imgData, 'PNG', margin, currentY, widgetWidth, widgetHeight);
-
-        if (widget.config?.header?.title) {
-          pdf.setFontSize(10);
-          pdf.setFont('helvetica', 'bold');
-          pdf.text(widget.config.header.title, margin, currentY - 5);
+        // Check if we need a new page
+        if (currentY + widgetHeight > contentHeight) {
+          pdf.addPage();
+          currentY = margin;
+          currentRow = 0;
+          currentCol = 0;
         }
 
-        currentY += widgetHeight + 10;
+        // Calculate position based on grid
+        const x = margin + (currentCol * (widgetWidth + 5));
+        const y = currentY;
+
+        // Convert canvas to image and add to PDF
+        const imgData = canvas.toDataURL('image/png', quality);
+        pdf.addImage(imgData, 'PNG', x, y, widgetWidth, widgetHeight);
+
+        // Update grid position
+        currentCol++;
+        if (currentCol >= maxCols) {
+          currentCol = 0;
+          currentRow++;
+          currentY += widgetHeight + 10; // Add spacing between rows
+        }
 
       } catch (error) {
-        console.error(`Error exporting other widget ${widget.id}:`, error);
+        console.error(`Error exporting widget ${widget.id}:`, error);
+        // Continue with next widget
       }
     }
 
@@ -456,7 +372,11 @@ export class PdfExportService {
   }
 
   /**
-   * Add footer to PDF
+   * Add footer section to the PDF document
+   * @param pdf - The PDF document instance
+   * @param pageWidth - Width of the PDF page
+   * @param pageHeight - Height of the PDF page
+   * @param margin - Page margin
    */
   private addFooter(
     pdf: jsPDF,
@@ -466,70 +386,67 @@ export class PdfExportService {
   ): void {
     const footerY = pageHeight - margin;
     
-    pdf.setFontSize(8);
-    pdf.setFont('helvetica', 'normal');
+    // Add separator line
     pdf.setDrawColor(200, 200, 200);
     pdf.line(margin, footerY - 5, pageWidth - margin, footerY - 5);
     
-    pdf.text(
-      'Dashboard Export - MoneyPlant',
-      pageWidth / 2,
-      footerY,
-      { align: 'center' }
-    );
+    // Add page number
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'normal');
+    const pageNumber = `Page ${pdf.getCurrentPageInfo().pageNumber}`;
+    pdf.text(pageNumber, pageWidth / 2, footerY, { align: 'center' });
   }
 
   /**
-   * Find widget element by ID
+   * Find widget element in the dashboard DOM
+   * @param dashboardElement - Reference to the dashboard container
+   * @param widgetId - ID of the widget to find
+   * @returns HTMLElement of the widget or null if not found
    */
   private findWidgetElement(
     dashboardElement: ElementRef<HTMLElement>,
     widgetId: string
   ): HTMLElement | null {
-    const dashboard = dashboardElement.nativeElement;
-    
-    // First try to find the gridster-item with the widget ID
-    const gridsterItem = dashboard.querySelector(`[data-widget-id="${widgetId}"]`) as HTMLElement;
-    
-    if (!gridsterItem) {
-      console.warn(`Gridster item not found for widget ID: ${widgetId}`);
+    if (!dashboardElement?.nativeElement) {
       return null;
     }
-    
-    // Look for the actual widget content within the gridster-item
-    // The widget content is typically in a div with the widget component
-    let widgetContent = gridsterItem.querySelector('vis-widget');
-    
-    if (widgetContent) {
-      // For echart widgets, look for the actual chart element
-      const chartElement = widgetContent.querySelector('vis-echart') || 
-                          widgetContent.querySelector('[echarts]') ||
-                          widgetContent.querySelector('canvas') ||
-                          widgetContent.querySelector('div[style*="height"]');
-      
-      if (chartElement) {
-        widgetContent = chartElement as HTMLElement;
+
+    // Try to find widget by data attribute
+    const widgetElement = dashboardElement.nativeElement.querySelector(
+      `[data-widget-id="${widgetId}"]`
+    ) as HTMLElement;
+
+    if (widgetElement) {
+      return widgetElement;
+    }
+
+    // Fallback: try to find by class name pattern
+    const widgetClass = dashboardElement.nativeElement.querySelector(
+      `.widget-${widgetId}`
+    ) as HTMLElement;
+
+    if (widgetClass) {
+      return widgetClass;
+    }
+
+    // Last resort: search for any element containing the widget ID
+    const allElements = dashboardElement.nativeElement.querySelectorAll('*');
+    for (const element of Array.from(allElements)) {
+      if (element.textContent?.includes(widgetId) || 
+          element.className?.includes(widgetId) ||
+          element.id?.includes(widgetId)) {
+        return element as HTMLElement;
       }
     }
-    
-    // Fallback to other selectors if vis-widget not found
-    if (!widgetContent) {
-      widgetContent = gridsterItem.querySelector('.widget-content') ||
-                     gridsterItem.querySelector('[style*="height"]') ||
-                     gridsterItem;
-    }
-    
-    if (!widgetContent) {
-      console.warn(`Widget content not found for widget ID: ${widgetId}`);
-      return gridsterItem; // Fallback to gridster-item if no specific content found
-    }
-    
-    console.log(`Found widget content for ${widgetId}:`, widgetContent);
-    return widgetContent as HTMLElement;
+
+    return null;
   }
 
   /**
-   * Export single widget to PDF
+   * Export a single widget to PDF
+   * @param widgetElement - Reference to the widget element
+   * @param widget - Widget configuration
+   * @param options - PDF export options
    */
   async exportWidgetToPdf(
     widgetElement: ElementRef<HTMLElement>,
@@ -540,13 +457,19 @@ export class PdfExportService {
       orientation = 'portrait',
       format = 'a4',
       margin = 10,
-      filename = `widget-${widget.id}.pdf`,
+      filename = `${widget.id}-export.pdf`,
       title = widget.config?.header?.title || 'Widget Export',
+      includeHeader = true,
+      includeFooter = true,
       quality = 1,
       scale = 2
     } = options;
 
     try {
+      // Wait for chart to be fully rendered
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Create PDF document
       const pdf = new jsPDF({
         orientation,
         unit: 'mm',
@@ -558,12 +481,14 @@ export class PdfExportService {
       const contentWidth = pageWidth - (margin * 2);
       const contentHeight = pageHeight - (margin * 2);
 
-      // Add title
-      pdf.setFontSize(16);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text(title, pageWidth / 2, margin + 10, { align: 'center' });
+      let currentY = margin;
 
-      // Convert widget to canvas
+      // Add header if requested
+      if (includeHeader) {
+        currentY = this.addHeader(pdf, title, pageWidth, margin, currentY);
+      }
+
+      // Create canvas from widget element
       const canvas = await html2canvas(widgetElement.nativeElement, {
         scale,
         useCORS: true,
@@ -572,31 +497,20 @@ export class PdfExportService {
         logging: false
       });
 
-      // Calculate dimensions
-      const widgetWidth = widget['w'] * 100;
-      const widgetHeight = widget['h'] * 100;
-      const scaleFactor = Math.min(
-        contentWidth / widgetWidth,
-        contentHeight / widgetHeight
-      );
-      const scaledWidth = widgetWidth * scaleFactor;
-      const scaledHeight = widgetHeight * scaleFactor;
+      // Calculate image dimensions
+      const imgWidth = contentWidth;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-      // Center the widget
-      const x = (pageWidth - scaledWidth) / 2;
-      const y = margin + 20;
+      // Convert canvas to image and add to PDF
+      const imgData = canvas.toDataURL('image/png', quality);
+      pdf.addImage(imgData, 'PNG', margin, currentY, imgWidth, imgHeight);
 
-      // Add widget to PDF
-      const imgData = canvas.toDataURL('image/png');
-      pdf.addImage(
-        imgData,
-        'PNG',
-        x,
-        y,
-        scaledWidth,
-        scaledHeight
-      );
+      // Add footer if requested
+      if (includeFooter) {
+        this.addFooter(pdf, pageWidth, pageHeight, margin);
+      }
 
+      // Save the PDF
       pdf.save(filename);
 
     } catch (error) {

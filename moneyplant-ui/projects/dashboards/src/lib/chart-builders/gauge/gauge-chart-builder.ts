@@ -408,13 +408,13 @@ export class GaugeChartBuilder extends ApacheEchartBuilder<GaugeChartOptions, Ga
   }
 
   /**
-   * Export gauge chart data for Excel/CSV
+   * Export gauge chart data for Excel/CSV export
+   * Extracts metric name, current value, target value, and calculated percentage
+   * @param widget - Widget containing gauge chart data
+   * @returns Array of data rows for export
    */
   static override exportData(widget: IWidget): any[] {
     const series = (widget.config?.options as any)?.series?.[0];
-    
-    console.log('GaugeChartBuilder.exportData - Widget config:', widget.config?.options);
-    console.log('GaugeChartBuilder.exportData - Series:', series);
     
     if (!series?.data) {
       console.warn('GaugeChartBuilder.exportData - No series data found');
@@ -423,9 +423,6 @@ export class GaugeChartBuilder extends ApacheEchartBuilder<GaugeChartOptions, Ga
 
     const data = series.data[0];
     const max = series.max || 100;
-    
-    console.log('GaugeChartBuilder.exportData - Data:', data);
-    console.log('GaugeChartBuilder.exportData - Max:', max);
     
     return [[
       widget.config?.header?.title || 'Metric',

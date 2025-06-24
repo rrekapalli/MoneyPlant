@@ -9,6 +9,11 @@ import {MarkdownCellComponent} from '../markdown-cell/markdown-cell.component';
 import {CodeCellComponent} from '../code-cell/code-cell.component';
 import { provideEchartsCore } from 'ngx-echarts';
 
+/**
+ * Factory function to determine the appropriate component based on widget type
+ * @param widget - Widget configuration to determine component for
+ * @returns Component class to render
+ */
 const onGetWidget = (widget: IWidget) => {
   switch (widget?.config?.component) {
     case 'echart':
@@ -28,6 +33,11 @@ const onGetWidget = (widget: IWidget) => {
   }
 };
 
+/**
+ * Generic widget component that dynamically renders different widget types
+ * based on the widget configuration. Supports echart, filter, table, tile,
+ * markdown cell, and code cell components.
+ */
 @Component({
   selector: 'vis-widget',
   standalone: true,
@@ -40,10 +50,19 @@ const onGetWidget = (widget: IWidget) => {
   ]
 })
 export class WidgetComponent {
+  /** Widget configuration to render */
   @Input() widget!: IWidget;
+  
+  /** Event emitted when widget data is loaded */
   @Output() onDataLoad: EventEmitter<IWidget> = new EventEmitter();
+  
+  /** Event emitted when filter is updated */
   @Output() onUpdateFilter: EventEmitter<any> = new EventEmitter();
 
+  /**
+   * Get the current widget configuration for dynamic component rendering
+   * @returns Object containing component class and input properties
+   */
   get currentWidget() {
     return {
       component: onGetWidget(this.widget),
@@ -55,6 +74,10 @@ export class WidgetComponent {
     };
   }
 
+  /**
+   * Check if the current widget is an ECharts component
+   * @returns True if the widget is an ECharts component
+   */
   get isEchartComponent(): boolean {
     return this.currentWidget.component === EchartComponent;
   }

@@ -357,20 +357,18 @@ export class HeatmapChartBuilder extends ApacheEchartBuilder<HeatmapChartOptions
   }
 
   /**
-   * Export heatmap chart data for Excel/CSV
+   * Export heatmap chart data for Excel/CSV export
+   * Extracts x-axis, y-axis, and value data points
+   * @param widget - Widget containing heatmap chart data
+   * @returns Array of data rows for export
    */
   static override exportData(widget: IWidget): any[] {
     const series = (widget.config?.options as any)?.series?.[0];
-    
-    console.log('HeatmapChartBuilder.exportData - Widget config:', widget.config?.options);
-    console.log('HeatmapChartBuilder.exportData - Series:', series);
     
     if (!series?.data) {
       console.warn('HeatmapChartBuilder.exportData - No series data found');
       return [];
     }
-
-    console.log('HeatmapChartBuilder.exportData - Series data:', series.data);
 
     return series.data.map((point: any) => [
       point[0] || 'X',

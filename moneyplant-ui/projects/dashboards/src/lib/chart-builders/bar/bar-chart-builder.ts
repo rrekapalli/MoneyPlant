@@ -242,15 +242,14 @@ export class BarChartBuilder extends ApacheEchartBuilder<BarChartOptions, BarCha
   }
 
   /**
-   * Export bar chart data for Excel/CSV
+   * Export bar chart data for Excel/CSV export
+   * Extracts categories and their corresponding values
+   * @param widget - Widget containing bar chart data
+   * @returns Array of data rows for export
    */
   static override exportData(widget: IWidget): any[] {
     const series = (widget.config?.options as any)?.series?.[0];
     const xAxis = (widget.config?.options as any)?.xAxis;
-    
-    console.log('BarChartBuilder.exportData - Widget config:', widget.config?.options);
-    console.log('BarChartBuilder.exportData - Series:', series);
-    console.log('BarChartBuilder.exportData - XAxis:', xAxis);
     
     if (!series?.data) {
       console.warn('BarChartBuilder.exportData - No series data found');
@@ -270,9 +269,6 @@ export class BarChartBuilder extends ApacheEchartBuilder<BarChartOptions, BarCha
         categories = xAxis.data;
       }
     }
-
-    console.log('BarChartBuilder.exportData - Categories:', categories);
-    console.log('BarChartBuilder.exportData - Series data:', series.data);
 
     // If no categories found, create default ones
     if (categories.length === 0) {

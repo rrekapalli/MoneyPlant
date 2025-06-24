@@ -200,18 +200,17 @@ export class DashboardWithPdfExampleComponent {
   isEditMode = false;
 
   /**
-   * Basic PDF export
+   * Basic PDF export with default settings
+   * Exports the entire dashboard to PDF in portrait orientation
    */
   async exportToPdf(): Promise<void> {
     try {
-      console.log('Starting PDF export...');
       await this.dashboardContainer.exportToPdf({
         orientation: 'portrait',
         format: 'a4',
         filename: 'dashboard-export.pdf',
         title: 'Dashboard Report'
       });
-      console.log('PDF export completed successfully');
     } catch (error) {
       console.error('PDF export failed:', error);
       // Handle error (show toast, alert, etc.)
@@ -219,11 +218,11 @@ export class DashboardWithPdfExampleComponent {
   }
 
   /**
-   * Landscape PDF export
+   * Landscape PDF export with header and footer
+   * Exports the dashboard in landscape orientation with additional metadata
    */
   async exportToPdfLandscape(): Promise<void> {
     try {
-      console.log('Starting landscape PDF export...');
       await this.dashboardContainer.exportToPdf({
         orientation: 'landscape',
         format: 'a4',
@@ -232,18 +231,17 @@ export class DashboardWithPdfExampleComponent {
         includeHeader: true,
         includeFooter: true
       });
-      console.log('Landscape PDF export completed successfully');
     } catch (error) {
       console.error('Landscape PDF export failed:', error);
     }
   }
 
   /**
-   * High quality PDF export
+   * High quality PDF export with enhanced settings
+   * Uses A3 format and higher scale for better image quality
    */
   async exportToPdfHighQuality(): Promise<void> {
     try {
-      console.log('Starting high quality PDF export...');
       await this.dashboardContainer.exportToPdf({
         orientation: 'landscape',
         format: 'a3',
@@ -252,32 +250,31 @@ export class DashboardWithPdfExampleComponent {
         title: 'High Quality Dashboard Report',
         margin: 15
       });
-      console.log('High quality PDF export completed successfully');
     } catch (error) {
       console.error('High quality PDF export failed:', error);
     }
   }
 
   /**
-   * Export specific widget
+   * Export specific widget to PDF
+   * Exports a single widget identified by its ID
    */
   async exportWidget(): Promise<void> {
     try {
-      console.log('Starting widget export...');
       await this.dashboardContainer.exportWidgetToPdf('chart-1', {
         orientation: 'portrait',
         format: 'a4',
         filename: 'sales-chart.pdf',
         title: 'Sales Performance Chart'
       });
-      console.log('Widget export completed successfully');
     } catch (error) {
       console.error('Widget export failed:', error);
     }
   }
 
   /**
-   * Export with custom options
+   * Export with custom configuration options
+   * Demonstrates advanced PDF export settings
    */
   async exportWithCustomOptions(): Promise<void> {
     const options: PdfExportOptions = {
@@ -292,9 +289,7 @@ export class DashboardWithPdfExampleComponent {
     };
 
     try {
-      console.log('Starting custom PDF export...');
       await this.dashboardContainer.exportToPdf(options);
-      console.log('Custom PDF export completed successfully');
     } catch (error) {
       console.error('Custom PDF export failed:', error);
     }
@@ -302,6 +297,7 @@ export class DashboardWithPdfExampleComponent {
 
   /**
    * Export multiple widgets individually
+   * Exports each widget as a separate PDF file
    */
   async exportMultipleWidgets(): Promise<void> {
     const widgetIds = ['chart-1', 'chart-2', 'tile-1'];
@@ -312,7 +308,6 @@ export class DashboardWithPdfExampleComponent {
           filename: `widget-${widgetId}-${Date.now()}.pdf`,
           title: `Widget ${widgetId} Export`
         });
-        console.log(`Widget ${widgetId} exported successfully`);
       } catch (error) {
         console.error(`Failed to export widget ${widgetId}:`, error);
       }
@@ -321,6 +316,7 @@ export class DashboardWithPdfExampleComponent {
 
   /**
    * Export with different paper sizes
+   * Demonstrates export to various standard paper formats
    */
   async exportWithDifferentSizes(): Promise<void> {
     const sizes = ['a4', 'a3', 'letter', 'legal'] as const;
@@ -332,7 +328,6 @@ export class DashboardWithPdfExampleComponent {
           filename: `dashboard-${size}.pdf`,
           title: `Dashboard Export (${size.toUpperCase()})`
         });
-        console.log(`${size.toUpperCase()} export completed`);
       } catch (error) {
         console.error(`${size.toUpperCase()} export failed:`, error);
       }
@@ -341,6 +336,7 @@ export class DashboardWithPdfExampleComponent {
 
   /**
    * Export with minimal settings
+   * Exports without headers or footers for a clean look
    */
   async exportMinimal(): Promise<void> {
     try {
@@ -351,7 +347,6 @@ export class DashboardWithPdfExampleComponent {
         includeFooter: false,
         filename: 'dashboard-minimal.pdf'
       });
-      console.log('Minimal export completed');
     } catch (error) {
       console.error('Minimal export failed:', error);
     }

@@ -329,15 +329,14 @@ export class LineChartBuilder extends ApacheEchartBuilder<LineChartOptions, Line
   }
 
   /**
-   * Export line chart data for Excel/CSV
+   * Export line chart data for Excel/CSV export
+   * Extracts x-axis categories and their corresponding y-axis values
+   * @param widget - Widget containing line chart data
+   * @returns Array of data rows for export
    */
   static override exportData(widget: IWidget): any[] {
     const series = (widget.config?.options as any)?.series?.[0];
     const xAxis = (widget.config?.options as any)?.xAxis;
-    
-    console.log('LineChartBuilder.exportData - Widget config:', widget.config?.options);
-    console.log('LineChartBuilder.exportData - Series:', series);
-    console.log('LineChartBuilder.exportData - XAxis:', xAxis);
     
     if (!series?.data) {
       console.warn('LineChartBuilder.exportData - No series data found');
@@ -357,9 +356,6 @@ export class LineChartBuilder extends ApacheEchartBuilder<LineChartOptions, Line
         categories = xAxis.data;
       }
     }
-
-    console.log('LineChartBuilder.exportData - Categories:', categories);
-    console.log('LineChartBuilder.exportData - Series data:', series.data);
 
     // If no categories found, create default ones
     if (categories.length === 0) {
