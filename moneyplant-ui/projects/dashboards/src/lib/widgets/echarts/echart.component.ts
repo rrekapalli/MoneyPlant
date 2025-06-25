@@ -1,4 +1,4 @@
-import {Component, Input, EventEmitter} from '@angular/core';
+import {Component, Input, EventEmitter, ViewChild, ChangeDetectorRef} from '@angular/core';
 import {IWidget} from '../../entities/IWidget';
 import {CommonModule} from '@angular/common';
 import {NgxEchartsDirective, provideEchartsCore} from 'ngx-echarts';
@@ -15,6 +15,7 @@ import { IFilterValues } from '../../entities/IFilterValues';
     (chartInit)="onChartInit($event)"
     (chartClick)="onClick($event)"
     (chartDblClick)="onChartDblClick($event)"
+    #chart
   ></div>`,
   imports: [CommonModule, NgxEchartsDirective],
   providers: [provideEchartsCore({
@@ -25,8 +26,11 @@ export class EchartComponent {
   @Input() widget!: IWidget;
   @Input() onDataLoad!: EventEmitter<IWidget>;
   @Input() onUpdateFilter!: EventEmitter<any>;
+  @ViewChild('chart', { static: false }) chart!: NgxEchartsDirective;
 
   isSingleClick: boolean = true;
+  
+  constructor(private cdr: ChangeDetectorRef) {}
   
   get chartOptions() {
     return this.widget?.config?.options as EChartsOption;
@@ -97,7 +101,7 @@ export class EchartComponent {
     };
 
     // For pie charts, use the name as the filter key
-    if (clickedData.name && event.seriesType === 'pie') {
+    if (clickedData && typeof clickedData === 'object' && clickedData.name && event.seriesType === 'pie') {
       filterValue = {
         accessor: 'category',
         filterColumn: filterColumn,
@@ -106,13 +110,57 @@ export class EchartComponent {
         percentage: clickedData.value?.toString() || '0'
       };
     }
-    // For bar charts
-    else if (clickedData.name && event.seriesType === 'bar') {
+    // For bar charts - handle both object and primitive value cases
+    else if (event.seriesType === 'bar') {
+      let categoryName: string;
+      let value: any;
+      
+      if (clickedData && typeof clickedData === 'object' && clickedData.name) {
+        // If clickedData is an object with a name property
+        categoryName = clickedData.name;
+        value = clickedData.value || clickedData.name;
+      } else {
+        // If clickedData is just a value (number), we need to get the category from the x-axis
+        value = clickedData;
+        
+        // Try to get the category name from the chart options
+        const chartOptions = this.widget.config?.options as any;
+        
+        let xAxisData: string[] = [];
+        
+        // Try multiple ways to access x-axis data
+        if (chartOptions?.xAxis) {
+          if (Array.isArray(chartOptions.xAxis)) {
+            xAxisData = chartOptions.xAxis[0]?.data || [];
+          } else {
+            xAxisData = chartOptions.xAxis.data || [];
+          }
+        }
+        
+        // Also try to get from series data if available
+        if (xAxisData.length === 0 && chartOptions?.series?.[0]?.data) {
+          const seriesData = chartOptions.series[0].data;
+          if (Array.isArray(seriesData) && seriesData.length > 0) {
+            // If series data has objects with name property
+            if (typeof seriesData[0] === 'object' && seriesData[0].name) {
+              xAxisData = seriesData.map((item: any) => item.name);
+            }
+          }
+        }
+        
+        if (xAxisData && Array.isArray(xAxisData) && event.dataIndex !== undefined) {
+          categoryName = xAxisData[event.dataIndex];
+        } else {
+          // Fallback: use the value as the category name
+          categoryName = value?.toString() || 'Unknown';
+        }
+      }
+      
       filterValue = {
         accessor: 'category',
         filterColumn: filterColumn,
-        category: clickedData.name,
-        value: clickedData.value || clickedData.name,
+        category: categoryName,
+        value: value,
         seriesName: event.seriesName
       };
     }
@@ -121,14 +169,14 @@ export class EchartComponent {
       filterValue = {
         accessor: 'series',
         filterColumn: filterColumn,
-        series: event.seriesName || clickedData.name,
-        value: clickedData.value || clickedData.name,
-        xAxis: clickedData[0]?.toString(),
-        yAxis: clickedData[1]?.toString()
+        series: event.seriesName || (clickedData && typeof clickedData === 'object' ? clickedData.name : null),
+        value: clickedData && typeof clickedData === 'object' ? clickedData.value : clickedData,
+        xAxis: clickedData && Array.isArray(clickedData) ? clickedData[0]?.toString() : null,
+        yAxis: clickedData && Array.isArray(clickedData) ? clickedData[1]?.toString() : null
       };
     }
     // For scatter plots
-    else if (event.seriesType === 'scatter' && clickedData.value && Array.isArray(clickedData.value)) {
+    else if (event.seriesType === 'scatter' && clickedData && typeof clickedData === 'object' && clickedData.value && Array.isArray(clickedData.value)) {
       filterValue = {
         accessor: 'coordinates',
         filterColumn: filterColumn,
@@ -139,7 +187,7 @@ export class EchartComponent {
       };
     }
     // For other chart types, try to find meaningful properties
-    else {
+    else if (clickedData && typeof clickedData === 'object') {
       const keys = Object.keys(clickedData);
       if (keys.length > 0) {
         const key = keys[0];
@@ -151,8 +199,21 @@ export class EchartComponent {
           seriesName: event.seriesName
         };
       }
+    } else {
+      return null;
     }
 
     return filterValue.accessor !== 'unknown' ? filterValue : null;
+  }
+
+  /**
+   * Force chart update when widget data changes
+   */
+  forceChartUpdate(): void {
+    if (this.widget.chartInstance) {
+      this.widget.chartInstance.setOption(this.chartOptions);
+    }
+    // Force change detection
+    this.cdr.detectChanges();
   }
 }

@@ -49,20 +49,13 @@ export function updateRiskReturnData(
   // Apply filters if filter service is provided
   if (filterService) {
     const currentFilters = filterService.getFilterValues();
+    
     if (currentFilters.length > 0) {
-      // Filter by asset type
-      const assetTypeFilters = currentFilters.filter(filter => 
-        filter.accessor === 'category' || filter.filterColumn === 'assetType'
-      );
+      // Use the filter service's applyFiltersToData method
+      const filteredData = filterService.applyFiltersToData(data, currentFilters);
       
-      if (assetTypeFilters.length > 0) {
-        data = data.filter(item => {
-          return assetTypeFilters.some(filter => 
-            item.name === filter['category'] || 
-            item.name === filter['value'] ||
-            item.name === filter['assetType']
-          );
-        });
+      if (filteredData.length !== data.length) {
+        data = filteredData;
       }
     }
   }

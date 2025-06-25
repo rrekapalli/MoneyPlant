@@ -41,30 +41,108 @@ export function updateTestFilterData(
   newData?: PieChartData[], 
   filterService?: FilterService
 ): void {
-  let data = newData || TEST_FILTER_DATA;
+  // Use provided data or get from filter service
+  let dataToUse = newData;
   
-  // Apply filters if filter service is provided
-  if (filterService) {
+  if (!dataToUse && filterService) {
     const currentFilters = filterService.getFilterValues();
-    if (currentFilters.length > 0) {
-      // Filter the data based on category filters or filterColumn
-      const categoryFilters = currentFilters.filter(filter => 
-        filter.accessor === 'category' || filter.filterColumn === 'sector'
-      );
-      if (categoryFilters.length > 0) {
-        data = data.filter(item => {
-          return categoryFilters.some(filter => 
-            item.name === filter['category'] || 
-            item.name === filter['value'] ||
-            (item as any)['sector'] === filter['sector']
-          );
-        });
-      }
+    
+    if (currentFilters && currentFilters.length > 0) {
+      // Apply filters to the original data
+      dataToUse = filterService.applyFiltersToData(TEST_FILTER_DATA, currentFilters);
+    } else {
+      dataToUse = TEST_FILTER_DATA;
     }
+  } else if (!dataToUse) {
+    dataToUse = TEST_FILTER_DATA;
   }
-  
+
   // Update widget data
-  PieChartBuilder.updateData(widget, data);
+  widget.data = dataToUse;
+
+  // Update chart options with new data
+  if (widget.config?.options) {
+    const options = widget.config.options as any;
+    
+    // Create new options object to trigger change detection
+    const newOptions = {
+      ...options,
+      series: [
+        {
+          ...options.series[0],
+          data: dataToUse
+        }
+      ]
+    };
+    
+    widget.config.options = newOptions;
+  }
+
+  // Function to update the chart using multiple approaches
+  const updateChart = () => {
+    if (widget.chartInstance) {
+      try {
+        // Method 1: Direct setOption
+        widget.chartInstance.setOption(widget.config?.options as any, true);
+        return true;
+      } catch (error) {
+        try {
+          // Method 2: Force resize and update
+          widget.chartInstance.resize();
+          widget.chartInstance.setOption(widget.config?.options as any);
+          return true;
+        } catch (error2) {
+          return false;
+        }
+      }
+    } else {
+      return false;
+    }
+  };
+
+  // Try to update immediately
+  if (!updateChart()) {
+    // If chart instance is not available, try with increasing delays
+    const maxAttempts = 15; // Increased max attempts
+    let attempts = 0;
+    
+    const retryUpdate = () => {
+      attempts++;
+      
+      if (updateChart()) {
+        return;
+      }
+      
+      if (attempts < maxAttempts) {
+        const delay = Math.min(1000 * Math.pow(1.5, attempts - 1), 5000); // Exponential backoff with max 5s
+        setTimeout(retryUpdate, delay);
+      }
+    };
+    
+    // Start retry with initial delay
+    setTimeout(retryUpdate, 100);
+  }
+
+  // Force change detection by scheduling multiple cycles
+  setTimeout(() => {
+    // This will trigger Angular's change detection
+    if (widget.chartInstance) {
+      widget.chartInstance.resize();
+    }
+  }, 50);
+
+  setTimeout(() => {
+    if (widget.chartInstance) {
+      widget.chartInstance.setOption(widget.config?.options as any, true);
+    }
+  }, 150);
+
+  setTimeout(() => {
+    if (widget.chartInstance) {
+      widget.chartInstance.resize();
+      widget.chartInstance.setOption(widget.config?.options as any);
+    }
+  }, 300);
 }
 
 /**

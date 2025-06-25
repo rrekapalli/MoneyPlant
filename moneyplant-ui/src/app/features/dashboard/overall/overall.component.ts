@@ -278,39 +278,46 @@ export class OverallComponent implements OnInit, OnDestroy {
    * Handle filter values change from dashboard container
    */
   onFilterValuesChanged(filters: IFilterValues[]): void {
-    // Prevent recursive updates
     if (this.isUpdatingFilters) {
       return;
     }
-    
+
     this.isUpdatingFilters = true;
-    try {
-      this.filterService.setFilterValues(filters);
-      // Widget updates will be handled by the filter service subscription
-    } finally {
-      this.isUpdatingFilters = false;
-    }
+    
+    // Set filter values in the service
+    this.filterService.setFilterValues(filters);
+    
+    this.isUpdatingFilters = false;
   }
 
   /**
    * Update all widgets with current filters
    */
   private updateWidgetsWithFilters(filters?: IFilterValues[]): void {
-    if (!this.dashboardConfig?.widgets) {
+    if (this.isUpdatingFilters) {
       return;
     }
 
-    // Use provided filters or get from service
     const currentFilters = filters || this.filterService.getFilterValues();
+    
+    // Find all echart widgets
+    const echartWidgets = this.dashboardConfig.widgets.filter(widget => 
+      widget.config?.component === 'echart'
+    );
 
-    this.dashboardConfig.widgets.forEach(widget => {
-      if (widget.config.component === 'echart') {
-        this.updateWidgetWithFilters(widget, currentFilters);
-      }
+    echartWidgets.forEach(widget => {
+      this.updateWidgetWithFilters(widget, currentFilters);
     });
 
-    // Trigger change detection to update the UI
-    this.cdr.detectChanges();
+    // Trigger change detection with a delay to ensure all updates are complete
+    setTimeout(() => {
+      this.cdr.detectChanges();
+      
+      // Force another change detection after a short delay to catch any delayed updates
+      setTimeout(() => {
+        this.cdr.detectChanges();
+      }, 100);
+    }, 50);
   }
 
   /**

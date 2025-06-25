@@ -46,36 +46,73 @@ export function updateMonthlyIncomeExpensesData(
   filterService?: FilterService
 ): void {
   let data = newData || MONTHLY_DATA.map(d => d.value);
+  let categories = MONTHLY_CATEGORIES;
   
   // Apply filters if filter service is provided
   if (filterService) {
     const currentFilters = filterService.getFilterValues();
+    
     if (currentFilters.length > 0) {
-      // Filter by month
-      const monthFilters = currentFilters.filter(filter => 
-        filter.accessor === 'category' || filter.filterColumn === 'month'
-      );
+      // Use the filter service's applyFiltersToData method
+      const filteredData = filterService.applyFiltersToData(MONTHLY_DATA, currentFilters);
       
-      if (monthFilters.length > 0) {
-        const filteredIndices: number[] = [];
-        MONTHLY_DATA.forEach((item, index) => {
-          const shouldInclude = monthFilters.some(filter => 
-            item.name === filter['category'] || 
-            item.name === filter['value'] ||
-            item.name === filter['month']
-          );
-          if (shouldInclude) {
-            filteredIndices.push(index);
-          }
-        });
-        
-        data = filteredIndices.map(index => data[index]);
+      if (filteredData.length !== MONTHLY_DATA.length) {
+        // If filtering occurred, map the filtered data back to values and categories
+        data = filteredData.map(item => item.value);
+        categories = filteredData.map(item => item.name);
       }
     }
   }
   
-  // Update widget data
+  // Update widget data using BarChartBuilder
   BarChartBuilder.updateData(widget, data);
+  
+  // Also update the x-axis categories if they changed
+  if (widget.config?.options) {
+    const options = widget.config.options as any;
+    if (options.xAxis) {
+      // Handle both array and single object xAxis configurations
+      if (Array.isArray(options.xAxis)) {
+        options.xAxis[0].data = categories;
+      } else {
+        options.xAxis.data = categories;
+      }
+    }
+  }
+  
+  // Force chart update if chart instance is available
+  if (widget.chartInstance) {
+    try {
+      widget.chartInstance.setOption(widget.config?.options as any, true);
+    } catch (error) {
+      // Handle error silently
+    }
+  } else {
+    // Try to update with retry mechanism
+    const maxAttempts = 10;
+    let attempts = 0;
+    
+    const retryUpdate = () => {
+      attempts++;
+      
+      if (widget.chartInstance) {
+        try {
+          widget.chartInstance.setOption(widget.config?.options as any, true);
+          return;
+        } catch (error) {
+          // Handle error silently
+        }
+      }
+      
+      if (attempts < maxAttempts) {
+        const delay = Math.min(500 * Math.pow(1.5, attempts - 1), 2000);
+        setTimeout(retryUpdate, delay);
+      }
+    };
+    
+    // Start retry with initial delay
+    setTimeout(retryUpdate, 100);
+  }
 }
 
 /**

@@ -46,6 +46,7 @@ export function updateAssetAllocationData(
   // Apply filters if filter service is provided
   if (filterService) {
     const currentFilters = filterService.getFilterValues();
+    
     if (currentFilters.length > 0) {
       data = filterService.applyFiltersToData(data, currentFilters);
     }

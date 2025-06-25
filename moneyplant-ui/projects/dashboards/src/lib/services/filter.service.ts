@@ -235,16 +235,37 @@ export class FilterService {
   /**
    * Apply filters to data
    */
-  applyFiltersToData<T>(data: T[], filters: IFilterValues[]): T[] {
+  applyFiltersToData<T extends Record<string, any>>(data: T[], filters: IFilterValues[]): T[] {
     if (!filters || filters.length === 0) {
       return data;
     }
 
-    return data.filter(item => {
-      return filters.every(filter => {
+    // Check if any of the filters are relevant to this data
+    const relevantFilters = filters.filter(filter => {
+      // For category filters, check if any data item has a matching name
+      if (filter.accessor === 'category') {
+        return data.some(item => 
+          item['name'] === filter['category'] || 
+          item['category'] === filter['category']
+        );
+      }
+      // For other filter types, check if the filterColumn matches any data properties
+      const filterKey = filter.filterColumn || filter.accessor;
+      return data.some(item => item.hasOwnProperty(filterKey));
+    });
+
+    // If no relevant filters, return original data
+    if (relevantFilters.length === 0) {
+      return data;
+    }
+
+    const filteredData = data.filter(item => {
+      return relevantFilters.every(filter => {
         return this.matchesFilter(item, filter);
       });
     });
+
+    return filteredData;
   }
 
   /**
@@ -254,22 +275,30 @@ export class FilterService {
     // Use filterColumn if available, otherwise fall back to accessor
     const filterKey = filter.filterColumn || filter.accessor;
     
+    let result = false;
+    
     switch (filter.accessor) {
       case 'category':
-        return item.name === filter['category'] || item.category === filter['category'];
+        result = item.name === filter['category'] || item.category === filter['category'];
+        break;
       case 'series':
-        return item.seriesName === filter['series'] || item.series === filter['series'];
+        result = item.seriesName === filter['series'] || item.series === filter['series'];
+        break;
       case 'coordinates':
-        return item.value && 
+        result = item.value && 
                Array.isArray(item.value) && 
                item.value[0]?.toString() === filter['x'] && 
                item.value[1]?.toString() === filter['y'];
+        break;
       default:
         // For custom accessors, check if the property exists and matches
         // Use filterColumn if available, otherwise use accessor
         const propertyToCheck = filter.filterColumn || filter.accessor;
-        return item[propertyToCheck] === filter[filter.accessor] || 
+        result = item[propertyToCheck] === filter[filter.accessor] || 
                item[propertyToCheck]?.toString() === filter['value'];
+        break;
     }
+    
+    return result;
   }
 } 
