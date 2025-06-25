@@ -1,4 +1,4 @@
-import { IWidget, ScatterChartBuilder, ScatterChartData } from '@dashboards/public-api';
+import { IWidget, ScatterChartBuilder, ScatterChartData, FilterService } from '@dashboards/public-api';
 
 // Static data for risk vs return analysis
 export const RISK_RETURN_DATA: ScatterChartData[] = [
@@ -16,7 +16,7 @@ export const RISK_RETURN_COLORS = ['#5470c6', '#91cc75', '#fac858', '#ee6666', '
  * Create the risk vs return scatter chart widget
  */
 export function createRiskReturnWidget(): IWidget {
-  return ScatterChartBuilder.create()
+  const widget = ScatterChartBuilder.create()
     .setData(RISK_RETURN_DATA)
     .setHeader('Risk vs Return Analysis')
     .setPosition({ x: 6, y: 4, cols: 6, rows: 4 })
@@ -27,13 +27,47 @@ export function createRiskReturnWidget(): IWidget {
     .setColors(RISK_RETURN_COLORS)
     .setTooltip('item', '{b}: Risk {c[0]}, Return {c[1]}%')
     .build();
+    
+  // Add filterColumn configuration
+  if (widget.config) {
+    widget.config.filterColumn = 'assetType';
+  }
+  
+  return widget;
 }
 
 /**
- * Update risk vs return widget data
+ * Update risk vs return widget data with filtering support
  */
-export function updateRiskReturnData(widget: IWidget, newData?: ScatterChartData[]): void {
-  const data = newData || RISK_RETURN_DATA;
+export function updateRiskReturnData(
+  widget: IWidget, 
+  newData?: ScatterChartData[], 
+  filterService?: FilterService
+): void {
+  let data = newData || RISK_RETURN_DATA;
+  
+  // Apply filters if filter service is provided
+  if (filterService) {
+    const currentFilters = filterService.getFilterValues();
+    if (currentFilters.length > 0) {
+      // Filter by asset type
+      const assetTypeFilters = currentFilters.filter(filter => 
+        filter.accessor === 'category' || filter.filterColumn === 'assetType'
+      );
+      
+      if (assetTypeFilters.length > 0) {
+        data = data.filter(item => {
+          return assetTypeFilters.some(filter => 
+            item.name === filter['category'] || 
+            item.name === filter['value'] ||
+            item.name === filter['assetType']
+          );
+        });
+      }
+    }
+  }
+  
+  // Update widget data
   ScatterChartBuilder.updateData(widget, data);
 }
 

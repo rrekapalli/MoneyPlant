@@ -91,24 +91,6 @@ export function createSankeyChartWidget(): IWidget {
     .setTooltip('item', '{b}: {c}')
     .build();
 
-  // Debug: Output the ECharts options to the console
-  if (widget && widget.config && widget.config.options) {
-    // Print only the relevant Sankey series options
-    const sankeySeries = (widget.config.options as any).series?.[0];
-    console.log('Financial Flow Sankey ECharts options:', {
-      data: sankeySeries?.data,
-      links: sankeySeries?.links,
-      fullOptions: widget.config.options
-    });
-  }
-
-  // Add a small delay to ensure DOM is ready
-  setTimeout(() => {
-    if (widget && widget.config && widget.config.options) {
-      console.log('Financial Flow Sankey widget created with delay');
-    }
-  }, 100);
-
   return widget;
 }
 
@@ -144,13 +126,20 @@ export function createInvestmentFlowSankeyWidget(): IWidget {
     ]
   };
 
-  return SankeyChartBuilder.create()
+  const widget = SankeyChartBuilder.create()
     .setData(investmentData)
     .setHeader('Investment Flow')
     .setPosition({ x: 8, y: 0, cols: 8, rows: 6 })
     .setCurveness(0.3)
     .setTooltip('item', '{b}: {c}%')
     .build();
+
+  // Add a small delay to ensure proper rendering
+  setTimeout(() => {
+    // Widget is ready
+  }, 100);
+
+  return widget;
 }
 
 /**

@@ -1,5 +1,4 @@
-import { IWidget, PieChartBuilder, PieChartData, IFilterValues } from '@dashboards/public-api';
-import { FilterService } from '../../../../services/filter.service';
+import { IWidget, PieChartBuilder, PieChartData, IFilterValues, FilterService } from '@dashboards/public-api';
 
 // Test data that can be filtered
 export const TEST_FILTER_DATA: PieChartData[] = [
@@ -48,8 +47,6 @@ export function updateTestFilterData(
   if (filterService) {
     const currentFilters = filterService.getFilterValues();
     if (currentFilters.length > 0) {
-      console.log('Applying filters to test filter data:', currentFilters);
-      
       // Filter the data based on category filters or filterColumn
       const categoryFilters = currentFilters.filter(filter => 
         filter.accessor === 'category' || filter.filterColumn === 'sector'
@@ -63,8 +60,6 @@ export function updateTestFilterData(
           );
         });
       }
-      
-      console.log('Filtered test data:', data);
     }
   }
   

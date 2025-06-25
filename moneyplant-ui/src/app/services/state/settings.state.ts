@@ -29,44 +29,41 @@ export class SettingsStateService {
   public maxNotifications = computed(() => this.state().maxNotifications);
   
   constructor() {
-    // Log state changes for debugging
-    effect(() => {
-      console.log('Settings state updated:', this.state());
-    });
+    // State changes are handled silently
   }
   
   /**
    * Updates the state
-   * @param newState Partial state to update
+   * @param updates Partial state to update
    */
-  private updateState(newState: Partial<SettingsState>): void {
-    this.state.update(state => ({
-      ...state,
-      ...newState
+  private updateState(updates: Partial<SettingsState>): void {
+    this.state.update(currentState => ({
+      ...currentState,
+      ...updates
     }));
   }
   
   /**
-   * Set the notification retention time in minutes
-   * @param minutes Number of minutes to retain notifications
+   * Set notification retention time in minutes
+   * @param minutes Retention time in minutes (minimum 1)
    */
   setNotificationRetentionMinutes(minutes: number): void {
-    if (minutes < 1) {
-      console.warn('Notification retention time must be at least 1 minute. Setting to 1 minute.');
-      minutes = 1;
+    const validMinutes = Math.max(1, minutes);
+    if (validMinutes !== minutes) {
+      // Silently adjust to minimum value
     }
-    this.updateState({ notificationRetentionMinutes: minutes });
+    this.updateState({ notificationRetentionMinutes: validMinutes });
   }
   
   /**
-   * Set the maximum number of notifications to store
-   * @param max Maximum number of notifications
+   * Set maximum number of notifications to keep
+   * @param max Maximum number of notifications (minimum 1)
    */
   setMaxNotifications(max: number): void {
-    if (max < 1) {
-      console.warn('Maximum notifications must be at least 1. Setting to 1.');
-      max = 1;
+    const validMax = Math.max(1, max);
+    if (validMax !== max) {
+      // Silently adjust to minimum value
     }
-    this.updateState({ maxNotifications: max });
+    this.updateState({ maxNotifications: validMax });
   }
 }

@@ -62,10 +62,7 @@ export class PositionsStateService {
     private realApiService: ApiService,
     private mockApiService: MockApiService
   ) {
-    // Log state changes for debugging
-    effect(() => {
-      console.log('Positions state updated:', this.state());
-    });
+    // State changes are handled silently
   }
   
   /**

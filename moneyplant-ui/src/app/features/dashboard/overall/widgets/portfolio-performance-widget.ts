@@ -1,4 +1,4 @@
-import { IWidget, LineChartBuilder, LineChartData } from '@dashboards/public-api';
+import { IWidget, LineChartBuilder, LineChartData, FilterService } from '@dashboards/public-api';
 
 // Static data for portfolio performance
 export const PORTFOLIO_DATA: LineChartData[] = [
@@ -16,7 +16,7 @@ export const PORTFOLIO_CATEGORIES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
  * Create the portfolio performance line chart widget
  */
 export function createPortfolioPerformanceWidget(): IWidget {
-  return LineChartBuilder.create()
+  const widget = LineChartBuilder.create()
     .setData(PORTFOLIO_DATA.map(d => d.value))
     .setXAxisData(PORTFOLIO_CATEGORIES)
     .setHeader('Portfolio Performance')
@@ -29,13 +29,53 @@ export function createPortfolioPerformanceWidget(): IWidget {
     .setYAxisName('Portfolio Value ($)')
     .setTooltip('axis', '{b}: ${c}')
     .build();
+    
+  // Add filterColumn configuration
+  if (widget.config) {
+    widget.config.filterColumn = 'month';
+  }
+  
+  return widget;
 }
 
 /**
- * Update portfolio performance widget data
+ * Update portfolio performance widget data with filtering support
  */
-export function updatePortfolioPerformanceData(widget: IWidget, newData?: number[]): void {
-  const data = newData || PORTFOLIO_DATA.map(d => d.value);
+export function updatePortfolioPerformanceData(
+  widget: IWidget, 
+  newData?: number[], 
+  filterService?: FilterService
+): void {
+  let data = newData || PORTFOLIO_DATA.map(d => d.value);
+  
+  // Apply filters if filter service is provided
+  if (filterService) {
+    const currentFilters = filterService.getFilterValues();
+    if (currentFilters.length > 0) {
+      // Filter by month
+      const monthFilters = currentFilters.filter(filter => 
+        filter.accessor === 'category' || filter.filterColumn === 'month'
+      );
+      
+      if (monthFilters.length > 0) {
+        const filteredIndices: number[] = [];
+        PORTFOLIO_DATA.forEach((item, index) => {
+          const shouldInclude = monthFilters.some(filter => 
+            item.name === filter['category'] || 
+            item.name === filter['value'] ||
+            item.name === filter['month']
+          );
+          if (shouldInclude) {
+            filteredIndices.push(index);
+          }
+        });
+        
+        data = filteredIndices.map(index => data[index]);
+      }
+    }
+  }
+  
+  // Update widget data
   LineChartBuilder.updateData(widget, data);
 }
 

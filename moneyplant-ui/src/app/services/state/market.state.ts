@@ -80,10 +80,7 @@ export class MarketStateService {
     private realApiService: ApiService,
     private mockApiService: MockApiService
   ) {
-    // Log state changes for debugging
-    effect(() => {
-      console.log('Market state updated:', this.state());
-    });
+    // State changes are handled silently
   }
   
   /**

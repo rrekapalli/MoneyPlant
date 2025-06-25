@@ -1,4 +1,4 @@
-import { IWidget, BarChartBuilder, BarChartData } from '@dashboards/public-api';
+import { IWidget, BarChartBuilder, BarChartData, FilterService } from '@dashboards/public-api';
 
 // Static data for monthly income vs expenses
 export const MONTHLY_DATA: BarChartData[] = [
@@ -16,7 +16,7 @@ export const MONTHLY_CATEGORIES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
  * Create the monthly income vs expenses bar chart widget
  */
 export function createMonthlyIncomeExpensesWidget(): IWidget {
-  return BarChartBuilder.create()
+  const widget = BarChartBuilder.create()
     .setData(MONTHLY_DATA.map(d => d.value))
     .setCategories(MONTHLY_CATEGORIES)
     .setHeader('Monthly Income vs Expenses')
@@ -28,13 +28,53 @@ export function createMonthlyIncomeExpensesWidget(): IWidget {
     .setYAxisName('Amount ($)')
     .setTooltip('axis', '{b}: ${c}')
     .build();
+    
+  // Add filterColumn configuration
+  if (widget.config) {
+    widget.config.filterColumn = 'month';
+  }
+  
+  return widget;
 }
 
 /**
- * Update monthly income vs expenses widget data
+ * Update monthly income vs expenses widget data with filtering support
  */
-export function updateMonthlyIncomeExpensesData(widget: IWidget, newData?: number[]): void {
-  const data = newData || MONTHLY_DATA.map(d => d.value);
+export function updateMonthlyIncomeExpensesData(
+  widget: IWidget, 
+  newData?: number[], 
+  filterService?: FilterService
+): void {
+  let data = newData || MONTHLY_DATA.map(d => d.value);
+  
+  // Apply filters if filter service is provided
+  if (filterService) {
+    const currentFilters = filterService.getFilterValues();
+    if (currentFilters.length > 0) {
+      // Filter by month
+      const monthFilters = currentFilters.filter(filter => 
+        filter.accessor === 'category' || filter.filterColumn === 'month'
+      );
+      
+      if (monthFilters.length > 0) {
+        const filteredIndices: number[] = [];
+        MONTHLY_DATA.forEach((item, index) => {
+          const shouldInclude = monthFilters.some(filter => 
+            item.name === filter['category'] || 
+            item.name === filter['value'] ||
+            item.name === filter['month']
+          );
+          if (shouldInclude) {
+            filteredIndices.push(index);
+          }
+        });
+        
+        data = filteredIndices.map(index => data[index]);
+      }
+    }
+  }
+  
+  // Update widget data
   BarChartBuilder.updateData(widget, data);
 }
 

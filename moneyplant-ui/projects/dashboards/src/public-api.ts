@@ -10,6 +10,7 @@ export * from './lib/dashboard-container';
 // Services
 export * from './lib/services/pdf-export.service';
 export * from './lib/services/excel-export.service';
+export * from './lib/services/filter.service';
 
 // Examples
 export * from './lib/usage-examples/pdf-export-examples';

@@ -1,5 +1,4 @@
-import { IWidget, PieChartBuilder, PieChartData, IFilterValues } from '@dashboards/public-api';
-import { FilterService } from '../../../../services/filter.service';
+import { IWidget, PieChartBuilder, PieChartData, IFilterValues, FilterService } from '@dashboards/public-api';
 
 // Static data for asset allocation
 export const ASSET_ALLOCATION_DATA: PieChartData[] = [
@@ -48,9 +47,7 @@ export function updateAssetAllocationData(
   if (filterService) {
     const currentFilters = filterService.getFilterValues();
     if (currentFilters.length > 0) {
-      console.log('Applying filters to asset allocation data:', currentFilters);
       data = filterService.applyFiltersToData(data, currentFilters);
-      console.log('Filtered data:', data);
     }
   }
   

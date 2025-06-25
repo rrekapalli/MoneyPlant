@@ -53,10 +53,7 @@ export class WatchlistStateService {
     private realApiService: ApiService,
     private mockApiService: MockApiService
   ) {
-    // Log state changes for debugging
-    effect(() => {
-      console.log('Watchlist state updated:', this.state());
-    });
+    // State changes are handled silently
   }
   
   /**

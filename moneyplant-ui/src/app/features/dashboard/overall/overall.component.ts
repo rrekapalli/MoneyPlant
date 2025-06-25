@@ -69,9 +69,8 @@ import { DensityMapBuilder } from '@dashboards/public-api';
 // We'll use a dynamic import to load the world map data
 import('echarts-map-collection/custom/world.json').then((worldMapData) => {
   DensityMapBuilder.registerMap('world', worldMapData.default || worldMapData);
-  console.log('World map registered successfully');
 }).catch((error) => {
-  console.error('Failed to load world map data:', error);
+  // Handle world map loading error silently
 });
 
 // Example of registering a custom Hong Kong map (if you have the GeoJSON data)
@@ -203,7 +202,7 @@ import {
 import { createTestFilterWidget, updateTestFilterData } from './widgets/test-filter-widget';
 
 // Filter service
-import { FilterService } from '../../../services/filter.service';
+import { FilterService } from '@dashboards/public-api';
 
 import { v4 as uuidv4 } from 'uuid';
 import { ScrollPanelModule } from 'primeng/scrollpanel';
@@ -264,8 +263,14 @@ export class OverallComponent implements OnInit, OnDestroy {
     
     // Subscribe to filter service changes
     this.filterSubscription = this.filterService.filterValues$.subscribe(filters => {
-      console.log('Filter service updated:', filters);
       this.updateWidgetsWithFilters(filters);
+    });
+
+    // Register world map for density map charts
+    import('echarts-map-collection/custom/world.json').then((worldMapData) => {
+      DensityMapBuilder.registerMap('world', worldMapData.default || worldMapData);
+    }).catch((error) => {
+      // Handle world map loading error silently
     });
   }
 
@@ -275,11 +280,8 @@ export class OverallComponent implements OnInit, OnDestroy {
   onFilterValuesChanged(filters: IFilterValues[]): void {
     // Prevent recursive updates
     if (this.isUpdatingFilters) {
-      console.log('Skipping filter update - already updating filters');
       return;
     }
-
-    console.log('Dashboard filter values changed:', filters);
     
     this.isUpdatingFilters = true;
     try {
@@ -300,7 +302,6 @@ export class OverallComponent implements OnInit, OnDestroy {
 
     // Use provided filters or get from service
     const currentFilters = filters || this.filterService.getFilterValues();
-    console.log('Updating widgets with filters:', currentFilters);
 
     this.dashboardConfig.widgets.forEach(widget => {
       if (widget.config.component === 'echart') {
@@ -324,10 +325,25 @@ export class OverallComponent implements OnInit, OnDestroy {
     else if (widgetTitle === 'Test Filter Widget') {
       updateTestFilterData(widget, undefined, this.filterService);
     }
-    // Add more widget-specific filtering logic here
-    // else if (widgetTitle === 'Monthly Income vs Expenses') {
-    //   updateMonthlyIncomeExpensesData(widget, undefined, this.filterService);
-    // }
+    else if (widgetTitle === 'Monthly Income vs Expenses') {
+      updateMonthlyIncomeExpensesData(widget, undefined, this.filterService);
+    }
+    else if (widgetTitle === 'Portfolio Performance') {
+      updatePortfolioPerformanceData(widget, undefined, this.filterService);
+    }
+    else if (widgetTitle === 'Risk vs Return Analysis') {
+      updateRiskReturnData(widget, undefined, this.filterService);
+    }
+    // TODO: Add filtering support to other widgets
+    // - Savings Goal Progress
+    // - Spending Heatmap
+    // - Investment Distribution
+    // - Area Chart
+    // - Polar Chart
+    // - Stacked Area Chart
+    // - Treemap Chart
+    // - Sunburst Chart
+    // - Sankey Chart
   }
 
   /**
@@ -432,51 +448,31 @@ export class OverallComponent implements OnInit, OnDestroy {
    */
   public async exportDashboardToPdf(): Promise<void> {
     if (!this.dashboardContainer) {
-      console.error('Dashboard container reference not found');
       return;
     }
 
     this.isExportingPdf = true;
-    // Don't manually trigger change detection
-    // this.cdr.detectChanges();
 
     try {
-      console.log('Starting PDF export...');
-      console.log('Dashboard container:', this.dashboardContainer.nativeElement);
-      console.log('Number of widgets to export:', this.dashboardConfig.widgets.length);
-      console.log('Widgets:', this.dashboardConfig.widgets.map(w => ({
-        id: w.id,
-        title: w.config?.header?.title,
-        component: w.config?.component,
-        position: w.position
-      })));
-
-      const options: PdfExportOptions = {
-        orientation: 'landscape',
-        format: 'a4',
-        margin: 15,
-        filename: `financial-dashboard-${new Date().toISOString().split('T')[0]}.pdf`,
-        title: 'Financial Dashboard - MoneyPlant',
-        includeHeader: true,
-        includeFooter: true,
-        quality: 1,
-        scale: 2
-      };
-
       await this.pdfExportService.exportDashboardToPdf(
         this.dashboardContainer,
         this.dashboardConfig.widgets,
-        options
+        {
+          orientation: 'landscape',
+          format: 'a4',
+          margin: 15,
+          filename: `financial-dashboard-${new Date().toISOString().split('T')[0]}.pdf`,
+          title: 'Financial Dashboard - MoneyPlant',
+          includeHeader: true,
+          includeFooter: true,
+          quality: 1,
+          scale: 2
+        }
       );
-
-      console.log('Dashboard exported to PDF successfully');
     } catch (error) {
-      console.error('Error exporting dashboard to PDF:', error);
-      // You could add a toast notification here for user feedback
+      // Handle PDF export error silently
     } finally {
       this.isExportingPdf = false;
-      // Don't manually trigger change detection
-      // this.cdr.detectChanges();
     }
   }
 
@@ -485,41 +481,23 @@ export class OverallComponent implements OnInit, OnDestroy {
    */
   public async exportDashboardToExcel(): Promise<void> {
     this.isExportingExcel = true;
-    // Don't manually trigger change detection
-    // this.cdr.detectChanges();
 
     try {
-      console.log('Starting Excel export...');
-      console.log('Number of widgets to export:', this.dashboardConfig.widgets.length);
-      console.log('Widgets:', this.dashboardConfig.widgets.map(w => ({
-        id: w.id,
-        title: w.config?.header?.title,
-        component: w.config?.component,
-        position: w.position
-      })));
-
-      const options: ExcelExportOptions = {
-        filename: `financial-dashboard-data-${new Date().toISOString().split('T')[0]}.xlsx`,
-        includeHeaders: true,
-        includeTimestamp: true,
-        sheetNamePrefix: 'Widget',
-        autoColumnWidth: true,
-        includeWidgetTitles: true
-      };
-
       await this.excelExportService.exportDashboardToExcel(
         this.dashboardConfig.widgets,
-        options
+        {
+          filename: `financial-dashboard-data-${new Date().toISOString().split('T')[0]}.xlsx`,
+          includeHeaders: true,
+          includeTimestamp: true,
+          sheetNamePrefix: 'Widget',
+          autoColumnWidth: true,
+          includeWidgetTitles: true
+        }
       );
-
-      console.log('Dashboard data exported to Excel successfully');
     } catch (error) {
-      console.error('Error exporting dashboard to Excel:', error);
-      // You could add a toast notification here for user feedback
+      // Handle Excel export error silently
     } finally {
       this.isExportingExcel = false;
-      // Don't manually trigger change detection
-      // this.cdr.detectChanges();
     }
   }
 
@@ -529,7 +507,6 @@ export class OverallComponent implements OnInit, OnDestroy {
   public async updateWidget(widgetId: string, newData: any): Promise<void> {
     const widget = this.dashboardConfig.widgets.find(w => w.id === widgetId);
     if (!widget) {
-      console.error(`Widget with ID ${widgetId} not found`);
       return;
     }
 
@@ -546,15 +523,9 @@ export class OverallComponent implements OnInit, OnDestroy {
             chartOptions.series[0].data = filteredData;
           }
         }
-        
-        // Don't trigger change detection manually
-        // this.dashboardConfig.widgets = [...this.dashboardConfig.widgets];
-        // this.cdr.detectChanges();
-        
-        console.log(`Widget ${widgetId} updated with filtered data`);
       }
     } catch (error) {
-      console.error(`Error updating widget ${widgetId}:`, error);
+      // Handle widget update error silently
     }
   }
 
@@ -563,59 +534,52 @@ export class OverallComponent implements OnInit, OnDestroy {
    */
   public async updateMultipleWidgets(widgets: IWidget[], data: any[]): Promise<void> {
     try {
-      // Apply filters to the data
-      const filteredData = this.filterService.applyFiltersToData(data, this.filterService.getFilterValues());
-      
-      widgets.forEach(widget => {
-        if (widget.config.component === 'echart') {
-          const chartOptions = widget.config.options as any;
-          if (chartOptions.series && chartOptions.series.length > 0) {
-            chartOptions.series[0].data = filteredData;
+      widgets.forEach((widget, index) => {
+        if (data[index]) {
+          if (widget.config?.component === 'echart') {
+            // Update chart data based on chart type
+            const chartOptions = widget.config.options as any;
+            if (chartOptions && chartOptions.series) {
+              // Update series data
+              chartOptions.series.forEach((series: any, seriesIndex: number) => {
+                if (data[index][seriesIndex]) {
+                  series.data = data[index][seriesIndex];
+                }
+              });
+            }
           }
         }
       });
-      
-      // Don't trigger change detection manually
-      // this.dashboardConfig.widgets = [...this.dashboardConfig.widgets];
-      // this.cdr.detectChanges();
-      
-      console.log('Multiple widgets updated with filtered data');
     } catch (error) {
-      console.error('Error updating multiple widgets:', error);
+      // Handle multiple widget update error silently
     }
   }
 
   /**
-   * Update all charts with new data (simulated API call)
+   * Update all charts with new data
    */
   public async updateAllCharts(): Promise<void> {
     try {
-      console.log('Updating all charts...');
-      
       // Simulate API call to get updated data
       const updatedData = await this.getUpdatedChartData();
       
-      // Apply filters to the updated data
-      const filteredData = this.filterService.applyFiltersToData(updatedData, this.filterService.getFilterValues());
-      
-      // Update all chart widgets
-      this.dashboardConfig.widgets.forEach(widget => {
-        if (widget.config.component === 'echart') {
-          const chartOptions = widget.config.options as any;
-          if (chartOptions.series && chartOptions.series.length > 0) {
-            // Apply widget-specific filtering logic
-            this.updateWidgetWithFilters(widget, this.filterService.getFilterValues());
+      // Update each chart widget
+      this.dashboardConfig.widgets.forEach((widget, index) => {
+        if (widget.config?.component === 'echart' && updatedData[index]) {
+          if (widget.config?.options) {
+            const chartOptions = widget.config.options as any;
+            if (chartOptions.series) {
+              chartOptions.series.forEach((series: any, seriesIndex: number) => {
+                if (updatedData[index][seriesIndex]) {
+                  series.data = updatedData[index][seriesIndex];
+                }
+              });
+            }
           }
         }
       });
-      
-      // Don't trigger change detection manually
-      // this.dashboardConfig.widgets = [...this.dashboardConfig.widgets];
-      // this.cdr.detectChanges();
-      
-      console.log('All charts updated successfully');
     } catch (error) {
-      console.error('Error updating all charts:', error);
+      // Handle chart update error silently
     }
   }
 
@@ -638,18 +602,9 @@ export class OverallComponent implements OnInit, OnDestroy {
    * Clear all filters
    */
   public clearAllFilters(): void {
-    // Prevent recursive updates
-    if (this.isUpdatingFilters) {
-      console.log('Skipping clear filters - already updating filters');
-      return;
-    }
-
     this.isUpdatingFilters = true;
     try {
       this.filterService.clearAllFilters();
-      
-      // Don't update widgets immediately - let user interactions trigger updates
-      // this.updateWidgetsWithFilters();
     } finally {
       this.isUpdatingFilters = false;
     }

@@ -53,20 +53,17 @@ export class FeatureFlagStateService {
     private realApiService: ApiService,
     private mockApiService: MockApiService
   ) {
-    // Log state changes for debugging
-    effect(() => {
-      console.log('Feature flag state updated:', this.state());
-    });
+    // State changes are handled silently
   }
 
   /**
    * Updates the state
-   * @param newState Partial state to update
+   * @param updates Partial state to update
    */
-  private updateState(newState: Partial<FeatureFlagState>): void {
-    this.state.update(state => ({
-      ...state,
-      ...newState
+  private updateState(updates: Partial<FeatureFlagState>): void {
+    this.state.update(currentState => ({
+      ...currentState,
+      ...updates
     }));
   }
 
@@ -193,7 +190,6 @@ export class FeatureFlagStateService {
    * It will still make an API call, but changes won't be reflected in the static array.
    */
   createFeatureFlag(featureFlag: Omit<FeatureFlag, 'id'>): Observable<FeatureFlag> {
-    console.warn('createFeatureFlag: This method is not functional with the static array approach');
     this.setLoading(true);
     this.setError(null);
 
@@ -225,7 +221,6 @@ export class FeatureFlagStateService {
    * It will still make an API call, but changes won't be reflected in the static array.
    */
   updateFeatureFlag(id: string, featureFlag: Partial<FeatureFlag>): Observable<FeatureFlag> {
-    console.warn('updateFeatureFlag: This method is not functional with the static array approach');
     this.setLoading(true);
     this.setError(null);
 
@@ -261,7 +256,6 @@ export class FeatureFlagStateService {
    * It will still make an API call, but changes won't be reflected in the static array.
    */
   deleteFeatureFlag(id: string): Observable<void> {
-    console.warn('deleteFeatureFlag: This method is not functional with the static array approach');
     this.setLoading(true);
     this.setError(null);
 
@@ -295,7 +289,6 @@ export class FeatureFlagStateService {
    * It will still make an API call, but changes won't be reflected in the static array.
    */
   enableFeatureFlag(id: string): Observable<FeatureFlag> {
-    console.warn('enableFeatureFlag: This method is not functional with the static array approach');
     this.setLoading(true);
     this.setError(null);
 
@@ -331,7 +324,6 @@ export class FeatureFlagStateService {
    * It will still make an API call, but changes won't be reflected in the static array.
    */
   disableFeatureFlag(id: string): Observable<FeatureFlag> {
-    console.warn('disableFeatureFlag: This method is not functional with the static array approach');
     this.setLoading(true);
     this.setError(null);
 

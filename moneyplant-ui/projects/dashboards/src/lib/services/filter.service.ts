@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
-import { IFilterValues } from '@dashboards/public-api';
+import { IFilterValues } from '../entities/IFilterValues';
 
 export interface FilterEvent {
   widgetId: string;
@@ -59,7 +59,6 @@ export class FilterService {
       );
       
       if (isDuplicate) {
-        console.log('Filter already exists, skipping:', filterValue);
         return;
       }
       
@@ -79,9 +78,6 @@ export class FilterService {
       const currentEvents = this.filterEventsSubject.value;
       const updatedEvents = [...currentEvents, filterEvent];
       this.filterEventsSubject.next(updatedEvents);
-
-      console.log('Filter added:', filterValue);
-      console.log('Total filters:', updatedFilters);
     }
   }
 
