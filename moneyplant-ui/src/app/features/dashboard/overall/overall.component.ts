@@ -903,68 +903,65 @@ export class OverallComponent implements OnInit, OnDestroy {
     const filterWidget = createFilterWidget();
     const testFilterWidget = createTestFilterWidget();
 
-    // Adjust positions of all widgets to move them down by 1 row to accommodate the filter widget
-    const widgetsToAdjust = [
-      pieAssetAllocation,
-      barMonthlyIncomeVsExpenses,
-      linePortfolioPerformance,
-      scatterRiskVsReturn,
-      gaugeSavingsGoal,
-      heatmapSpending,
-      densityMapInvestment,
-      areaChart,
-      polarChart,
-      stackedAreaChart,
-      performanceStackedAreaChart,
-      marketTrendStackedAreaChart,
-      treemapChart,
-      expenseTreemap,
-      largeScaleTreemap,
-      sunburstChart,
-      organizationalSunburst,
-      largeScaleSunburst,
-      sankeyChart,
-      investmentFlowSankey,
-      budgetAllocationSankey,
-      minimalSankeyTest,
-      testFilterWidget
-    ];
 
-    // Move all widgets down by 1 row
-    widgetsToAdjust.forEach(widget => {
-      if (widget.position) {
-        widget.position.y += 1;
-      }
-    });
+    // Adjust positions of all widgets to move them down by 1 row to accommodate the filter widget
+    filterWidget.position = { x: 0, y: 0, cols: 12, rows: 1 };
+
+    densityMapInvestment.position = { x: 0, y: 1, cols: 8, rows: 8 };
+    pieAssetAllocation.position = { x: 9, y: 9, cols: 4, rows: 8 };
+    polarChart.position = { x: 9, y: 13, cols: 4, rows: 8 };
+    barMonthlyIncomeVsExpenses.position = { x: 0, y: 11, cols: 8, rows: 8 };
+
+  
+    // linePortfolioPerformance.position = { x: 0, y: 25, cols: 12, rows: 8 };
+    // scatterRiskVsReturn.position = { x: 0, y: 25, cols: 12, rows: 8 };
+    // gaugeSavingsGoal.position = { x: 0, y: 33, cols: 12, rows: 8 };
+    // heatmapSpending.position = { x: 0, y: 41, cols: 12, rows: 8 };
+    // areaChart.position = { x: 0, y: 49, cols: 12, rows: 8 };
+    
+    // stackedAreaChart.position = { x: 0, y: 65, cols: 12, rows: 8 };
+    // performanceStackedAreaChart.position = { x: 0, y: 73, cols: 12, rows: 8 };
+    // marketTrendStackedAreaChart.position = { x: 0, y: 81, cols: 12, rows: 8 };
+    // treemapChart.position = { x: 0, y: 89, cols: 12, rows: 8 };
+    // expenseTreemap.position = { x: 0, y: 97, cols: 12, rows: 8 };
+    // largeScaleTreemap.position = { x: 0, y: 105, cols: 12, rows: 8 };
+    // sunburstChart.position = { x: 0, y: 113, cols: 12, rows: 8 };
+    // organizationalSunburst.position = { x: 0, y: 121, cols: 12, rows: 8 };
+    // largeScaleSunburst.position = { x: 0, y: 129, cols: 12, rows: 8 };
+    // sankeyChart.position = { x: 0, y: 137, cols: 12, rows: 8 };
+    // investmentFlowSankey.position = { x: 0, y: 145, cols: 12, rows: 8 };
+    // budgetAllocationSankey.position = { x: 0, y: 153, cols: 12, rows: 8 };
+    // minimalSankeyTest.position = { x: 0, y: 161, cols: 12, rows: 8 };
+    // testFilterWidget.position = { x: 0, y: 169, cols: 12, rows: 8 };
 
     // Use the Fluent API to build the dashboard config
     this.dashboardConfig = StandardDashboardBuilder.createStandard()
       .setDashboardId('overall-dashboard')
       .setWidgets([
         filterWidget, // Filter widget at the top
-        pieAssetAllocation,
-        barMonthlyIncomeVsExpenses,
-        linePortfolioPerformance,
-        scatterRiskVsReturn,
-        gaugeSavingsGoal,
-        heatmapSpending,
         densityMapInvestment,
-        areaChart,
+        pieAssetAllocation,
         polarChart,
-        stackedAreaChart,
-        performanceStackedAreaChart,
-        marketTrendStackedAreaChart,
-        treemapChart,
-        expenseTreemap,
-        largeScaleTreemap,
-        sunburstChart,
-        organizationalSunburst,
-        largeScaleSunburst,
-        sankeyChart,
-        investmentFlowSankey,
-        budgetAllocationSankey,
-        minimalSankeyTest,
-        testFilterWidget
+        barMonthlyIncomeVsExpenses,
+        // linePortfolioPerformance,
+        // scatterRiskVsReturn,
+        // gaugeSavingsGoal,
+        // heatmapSpending,
+        // areaChart,
+        // stackedAreaChart,
+        // performanceStackedAreaChart,
+        // marketTrendStackedAreaChart,
+        // treemapChart,
+        // expenseTreemap,
+        // largeScaleTreemap,
+        // sunburstChart,
+        // organizationalSunburst,
+        // largeScaleSunburst,
+        // sankeyChart,
+        // investmentFlowSankey,
+        // budgetAllocationSankey,
+        // minimalSankeyTest,
+        // testFilterWidget
       ])
       .setEditMode(false)
       .build();
