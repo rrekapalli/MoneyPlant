@@ -304,26 +304,20 @@ export class OverallComponent implements OnInit, OnDestroy {
    * Get filtered data for a specific widget based on its requirements
    */
   private getFilteredDataForWidget(widgetTitle: string): any {
-    console.log(`Getting filtered data for widget: ${widgetTitle}`);
-    console.log('Available dashboard data rows:', this.dashboardData.length);
-    
     switch (widgetTitle) {
       case 'Asset Allocation':
         // Group by assetCategory and sum totalValue (for current month or all data)
         const assetData = this.groupByAndSum(this.dashboardData, 'assetCategory', 'totalValue');
-        console.log('Asset Allocation data:', assetData);
         return assetData;
         
       case 'Monthly Income vs Expenses':
         // Group by month and sum totalValue (for all asset categories)
         const monthlyData = this.groupByAndSum(this.dashboardData, 'month', 'totalValue');
-        console.log('Monthly Income vs Expenses data:', monthlyData);
         return monthlyData;
         
       case 'Portfolio Performance':
         // Group by month and sum totalValue (for all asset categories)
         const portfolioData = this.groupByAndSum(this.dashboardData, 'month', 'totalValue');
-        console.log('Portfolio Performance data:', portfolioData);
         return portfolioData;
         
       case 'Risk vs Return Analysis':
@@ -340,32 +334,27 @@ export class OverallComponent implements OnInit, OnDestroy {
           return acc;
         }, {} as Record<string, any>);
         const riskReturnResult = Object.values(groupedRiskReturn);
-        console.log('Risk vs Return data:', riskReturnResult);
         return riskReturnResult;
         
       case 'Investment Distribution by Region':
         // Group by market (country) and sum totalValue for map visualization
         const investmentData = this.groupByAndSum(this.dashboardData, 'market', 'totalValue');
-        console.log('Investment Distribution data:', investmentData);
         return investmentData;
         
       case 'Weekly Spending Heatmap':
         // Create heatmap data from the dashboard data
         // Group by month and assetCategory to create a heatmap
         const heatmapData = this.createHeatmapData(this.dashboardData);
-        console.log('Weekly Spending Heatmap data:', heatmapData);
         return heatmapData;
         
       case 'Revenue Trend':
         // Group by month and sum totalValue for area chart
         const revenueData = this.groupByAndSum(this.dashboardData, 'month', 'totalValue');
-        console.log('Revenue Trend data:', revenueData);
         return revenueData;
         
       case 'Financial Overview':
         // Create multi-series data for stacked area chart
         const financialData = this.createMultiSeriesData(this.dashboardData);
-        console.log('Financial Overview data:', financialData);
         return financialData;
         
       case 'Performance Monitoring':
@@ -374,73 +363,61 @@ export class OverallComponent implements OnInit, OnDestroy {
           name: `${row.month}-${row.assetCategory}`,
           value: row.totalValue
         }));
-        console.log('Performance Monitoring data:', performanceData);
         return performanceData;
         
       case 'Performance Metrics':
         // Create polar chart data from asset categories
         const polarData = this.createPolarData(this.dashboardData);
-        console.log('Performance Metrics data:', polarData);
         return polarData;
         
       case 'Financial Performance':
         // Create multi-series polar data
         const multiPolarData = this.createMultiSeriesPolarData(this.dashboardData);
-        console.log('Financial Performance data:', multiPolarData);
         return multiPolarData;
         
       case 'Business Metrics':
         // Create radar-style polar data
         const radarData = this.createRadarData(this.dashboardData);
-        console.log('Business Metrics data:', radarData);
         return radarData;
         
       case 'Portfolio Allocation':
         // Create multi-series data for stacked area chart
         const portfolioAllocationData = this.createMultiSeriesData(this.dashboardData);
-        console.log('Portfolio Allocation data:', portfolioAllocationData);
         return portfolioAllocationData;
         
       case 'Market Conditions':
         // Create multi-series data for market trends
         const marketData = this.createMarketTrendData(this.dashboardData);
-        console.log('Market Conditions data:', marketData);
         return marketData;
         
       case 'Portfolio Distribution':
         // Create treemap data from asset categories and markets
         const treemapData = this.createTreemapData(this.dashboardData);
-        console.log('Portfolio Distribution data:', treemapData);
         return treemapData;
         
       case 'Monthly Expenses':
         // Create alternative treemap data
         const expenseTreemapData = this.createExpenseTreemapData(this.dashboardData);
-        console.log('Monthly Expenses data:', expenseTreemapData);
         return expenseTreemapData;
         
       case 'Financial Overview Treemap':
         // Create large-scale treemap data
         const largeTreemapData = this.createLargeTreemapData(this.dashboardData);
-        console.log('Financial Overview Treemap data:', largeTreemapData);
         return largeTreemapData;
         
       case 'Organizational Structure':
         // Create sunburst data from asset categories
         const sunburstData = this.createSunburstData(this.dashboardData);
-        console.log('Organizational Structure data:', sunburstData);
         return sunburstData;
         
       case 'Financial Overview Sunburst':
         // Create large-scale sunburst data
         const largeSunburstData = this.createLargeSunburstData(this.dashboardData);
-        console.log('Financial Overview Sunburst data:', largeSunburstData);
         return largeSunburstData;
         
       case 'Test Filter Widget':
         // Group by assetCategory and sum totalValue (same as Asset Allocation)
         const testData = this.groupByAndSum(this.dashboardData, 'assetCategory', 'totalValue');
-        console.log('Test Filter Widget data:', testData);
         return testData;
         
       default:
@@ -978,16 +955,10 @@ export class OverallComponent implements OnInit, OnDestroy {
       return;
     }
 
-    console.log('=== Populating Widgets with Initial Data ===');
-    console.log('Total dashboard data rows:', this.dashboardData.length);
-    console.log('Sample dashboard data:', this.dashboardData.slice(0, 3));
-
     // Find all echart widgets and populate them with initial data
     const echartWidgets = this.dashboardConfig.widgets.filter(widget => 
       widget.config?.component === 'echart'
     );
-
-    console.log('Found echart widgets:', echartWidgets.length);
 
     echartWidgets.forEach(widget => {
       const widgetTitle = widget.config?.header?.title;
@@ -999,9 +970,6 @@ export class OverallComponent implements OnInit, OnDestroy {
       
       const initialData = this.getFilteredDataForWidget(widgetTitle);
       
-      console.log(`Widget: ${widgetTitle}`);
-      console.log('Initial data:', initialData);
-      
       if (initialData) {
         this.updateEchartWidget(widget, initialData);
       } else {
@@ -1012,7 +980,6 @@ export class OverallComponent implements OnInit, OnDestroy {
     // Trigger change detection to ensure widgets are updated
     setTimeout(() => {
       this.cdr.detectChanges();
-      console.log('Change detection triggered');
     }, 100);
   }
 

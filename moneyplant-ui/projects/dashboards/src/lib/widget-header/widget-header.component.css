@@ -8,6 +8,11 @@
   display: none;
 }
 
+/* Custom panel header padding for widget-header component */
+:host ::ng-deep .p-panel .p-panel-header {
+  padding: 0.5rem 1rem;
+}
+
 /* Widget Data Panel Styles */
 .widget-data-panel {
   padding: 1rem;
