@@ -138,9 +138,7 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
   static registerMap(mapName: string, geoJson: any): void {
     try {
       echarts.registerMap(mapName, geoJson);
-      console.log(`Map '${mapName}' registered successfully`);
     } catch (error) {
-      console.error(`Failed to register map '${mapName}':`, error);
     }
   }
 
@@ -492,7 +490,6 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
     const series = (widget.config?.options as any)?.series?.[0];
     
     if (!series?.data) {
-      console.warn('DensityMapBuilder.exportData - No series data found');
       return [];
     }
 
