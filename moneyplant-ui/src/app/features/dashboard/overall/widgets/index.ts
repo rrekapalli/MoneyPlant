@@ -12,6 +12,7 @@ export { createStackedAreaChartWidget as createNewStackedAreaChartWidget, create
 export { createTreemapChartWidget, createExpenseTreemapWidget, createLargeScaleTreemapWidget } from './treemap-chart-widget';
 export { createSunburstChartWidget, createOrganizationalSunburstWidget, createLargeScaleSunburstWidget } from './sunburst-chart-widget';
 export { createSankeyChartWidget, createInvestmentFlowSankeyWidget, createBudgetAllocationSankeyWidget, createMinimalSankeyChartWidget } from './sankey-chart-widget';
+export { createFilterWidget } from './filter-widget';
 
 // Data update functions
 export { updateAssetAllocationData } from './asset-allocation-widget';
@@ -27,6 +28,7 @@ export { updateStackedAreaChartData } from './stacked-area-chart-widget';
 export { updateTreemapChartData } from './treemap-chart-widget';
 export { updateSunburstChartData } from './sunburst-chart-widget';
 export { updateSankeyChartData } from './sankey-chart-widget';
+export { updateFilterData, addFilter, removeFilter, clearAllFilters, getFilterValues } from './filter-widget';
 
 // Data fetching functions
 export { getUpdatedAssetAllocationData } from './asset-allocation-widget';

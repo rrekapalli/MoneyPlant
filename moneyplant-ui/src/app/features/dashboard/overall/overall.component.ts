@@ -153,6 +153,7 @@ import {
   createInvestmentFlowSankeyWidget,
   createBudgetAllocationSankeyWidget,
   createMinimalSankeyChartWidget,
+  createFilterWidget,
   // Data update functions
   updateAssetAllocationData,
   updateMonthlyIncomeExpensesData,
@@ -269,11 +270,46 @@ export class OverallComponent implements OnInit {
     const investmentFlowSankey = createInvestmentFlowSankeyWidget();
     const budgetAllocationSankey = createBudgetAllocationSankeyWidget();
     const minimalSankeyTest = createMinimalSankeyChartWidget();
+    const filterWidget = createFilterWidget();
+
+    // Adjust positions of all widgets to move them down by 1 row to accommodate the filter widget
+    const widgetsToAdjust = [
+      pieAssetAllocation,
+      barMonthlyIncomeVsExpenses,
+      linePortfolioPerformance,
+      scatterRiskVsReturn,
+      gaugeSavingsGoal,
+      heatmapSpending,
+      densityMapInvestment,
+      areaChart,
+      polarChart,
+      stackedAreaChart,
+      performanceStackedAreaChart,
+      marketTrendStackedAreaChart,
+      treemapChart,
+      expenseTreemap,
+      largeScaleTreemap,
+      sunburstChart,
+      organizationalSunburst,
+      largeScaleSunburst,
+      sankeyChart,
+      investmentFlowSankey,
+      budgetAllocationSankey,
+      minimalSankeyTest
+    ];
+
+    // Move all widgets down by 1 row
+    widgetsToAdjust.forEach(widget => {
+      if (widget.position) {
+        widget.position.y += 1;
+      }
+    });
 
     // Use the Fluent API to build the dashboard config
     this.dashboardConfig = StandardDashboardBuilder.createStandard()
       .setDashboardId('overall-dashboard')
       .setWidgets([
+        filterWidget, // Filter widget at the top
         pieAssetAllocation,
         barMonthlyIncomeVsExpenses,
         linePortfolioPerformance,

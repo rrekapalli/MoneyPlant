@@ -6,9 +6,13 @@
       @for (item of filterValues; track item) {
         <button class="btn-wide mt-1 mb-1 mr-1 btn btn-outline-primary btn-sm chip"
                 (click)="clearFilter(item)">
-              {{ item.accessor | uppercase }} = {{ item[item.accessor] | uppercase }}
+          @if (item['widgetTitle']) {
+            {{ item['widgetTitle'] }}: {{ item['value'] }}
+          } @else {
+            {{ item.accessor | uppercase }}: {{ item['value'] }}
+          }
           <i class="pi pi-times-circle close-icon"></i>
-          </button>
+        </button>
       }
     </span>
     

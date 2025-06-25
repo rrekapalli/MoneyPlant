@@ -364,24 +364,91 @@ export class DashboardContainerComponent {
   }
 
   onUpdateFilter($event: any) {
+    console.log('onUpdateFilter called with event:', $event);
+    
     const filterWidget = this.widgets.find((item: IWidget) => item.config.component === 'filter');
-    const newFilterWidget = {...filterWidget};
-    if (newFilterWidget) {
-
-      if(Array.isArray( $event)) {
-        (newFilterWidget?.config?.options as IFilterOptions).values = $event
-      }
-      else if ((newFilterWidget?.config?.options as IFilterOptions).values as any) {
-        (newFilterWidget?.config?.options as IFilterOptions).values?.push({
-          accessor: $event.widget.config.state.accessor,
-          // [$event.widget.config.state.accessor]: $event.value,
-          ...$event.value
-        });
-      }
-
-
-      this.onUpdateWidget(newFilterWidget as IWidget);
+    if (!filterWidget) {
+      console.warn('Filter widget not found');
+      return;
     }
+    
+    const newFilterWidget = {...filterWidget};
+    
+    // Ensure the config and options structure exists with proper typing
+    if (!newFilterWidget.config) {
+      newFilterWidget.config = {
+        options: { values: [] } as IFilterOptions
+      };
+    } else if (!newFilterWidget.config.options) {
+      newFilterWidget.config.options = { values: [] } as IFilterOptions;
+    }
+    
+    // Ensure the values array exists
+    const filterOptions = newFilterWidget.config.options as IFilterOptions;
+    if (!filterOptions.values) {
+      filterOptions.values = [];
+    }
+
+    if(Array.isArray($event)) {
+      filterOptions.values = $event;
+    }
+    else if ($event && $event.value && $event.widget) {
+      // Handle chart click events
+      const clickedData = $event.value;
+      const sourceWidget = $event.widget;
+      
+      console.log('Clicked data:', clickedData);
+      console.log('Source widget:', sourceWidget);
+      
+      // Extract filter information from the clicked data
+      let filterValue: any = {};
+      
+      if (clickedData && typeof clickedData === 'object') {
+        // For pie charts, use the name as the filter key
+        if (clickedData.name) {
+          filterValue = {
+            accessor: 'category',
+            category: clickedData.name,
+            value: clickedData.value || clickedData.name
+          };
+        }
+        // For other chart types, try to extract meaningful data
+        else if (clickedData.seriesName) {
+          filterValue = {
+            accessor: 'series',
+            series: clickedData.seriesName,
+            value: clickedData.value || clickedData.seriesName
+          };
+        }
+        // For scatter plots or other data types
+        else {
+          // Try to find any meaningful property
+          const keys = Object.keys(clickedData);
+          if (keys.length > 0) {
+            const key = keys[0];
+            filterValue = {
+              accessor: key,
+              [key]: clickedData[key],
+              value: clickedData[key]
+            };
+          }
+        }
+        
+        // Add widget information
+        if (sourceWidget.config?.header?.title) {
+          filterValue.widgetTitle = sourceWidget.config.header.title;
+        }
+        
+        // Only add the filter if we have valid data
+        if (filterValue.accessor && filterValue.value) {
+          console.log('Adding filter:', filterValue);
+          filterOptions.values.push(filterValue);
+        }
+      }
+    }
+
+    console.log('Updated filter widget:', newFilterWidget);
+    this.onUpdateWidget(newFilterWidget as IWidget);
   }
 
   onDashboardSelectionChanged($event: any) {

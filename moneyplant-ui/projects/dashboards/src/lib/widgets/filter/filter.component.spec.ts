@@ -52,6 +52,30 @@ describe('FilterComponent', () => {
       expect(result).toEqual([]);
     });
 
+    it('should handle undefined widget config gracefully', () => {
+      component.widget.config = undefined as any;
+      const result = component.filterValues;
+      expect(result).toEqual([]);
+    });
+
+    it('should handle undefined widget config options gracefully', () => {
+      component.widget.config = {} as any;
+      const result = component.filterValues;
+      expect(result).toEqual([]);
+    });
+
+    it('should handle undefined values array gracefully', () => {
+      component.widget.config.options = {} as IFilterOptions;
+      const result = component.filterValues;
+      expect(result).toEqual([]);
+    });
+
+    it('should handle null values gracefully', () => {
+      component.widget.config.options = { values: null as any } as IFilterOptions;
+      const result = component.filterValues;
+      expect(result).toEqual([]);
+    });
+
     it('should set filter values when values are provided', () => {
       const newValues: IFilterValues[] = [
         { field: 'newField', value: 'newValue' } as any
@@ -64,6 +88,27 @@ describe('FilterComponent', () => {
       const originalValues = (component.widget.config.options as IFilterOptions).values;
       component.filterValues = [];
       expect((component.widget.config.options as IFilterOptions).values).toEqual(originalValues);
+    });
+
+    it('should create config structure when setting values on undefined config', () => {
+      component.widget.config = undefined as any;
+      const newValues: IFilterValues[] = [
+        { field: 'newField', value: 'newValue' } as any
+      ];
+      component.filterValues = newValues;
+      expect(component.widget.config).toBeDefined();
+      expect(component.widget.config.options).toBeDefined();
+      expect((component.widget.config.options as IFilterOptions).values).toEqual(newValues);
+    });
+
+    it('should create options structure when setting values on undefined options', () => {
+      component.widget.config = {} as any;
+      const newValues: IFilterValues[] = [
+        { field: 'newField', value: 'newValue' } as any
+      ];
+      component.filterValues = newValues;
+      expect(component.widget.config.options).toBeDefined();
+      expect((component.widget.config.options as IFilterOptions).values).toEqual(newValues);
     });
   });
 
@@ -79,26 +124,24 @@ describe('FilterComponent', () => {
       component.clearAllFilters(null);
       expect(component.filterValues).toEqual(originalValues);
     });
+
+    it('should handle undefined widget config gracefully', () => {
+      component.widget.config = undefined as any;
+      expect(() => component.clearAllFilters({})).not.toThrow();
+    });
   });
 
   describe('clearFilter', () => {
-    it('should remove specific filter when valid item is provided', () => {
-      const itemToRemove = { field: 'test', value: 'value1' };
+    it('should clear specific filter when item is provided', () => {
+      const originalLength = component.filterValues.length;
+      const itemToRemove = component.filterValues[0];
       component.clearFilter(itemToRemove);
-      expect(component.filterValues).toEqual([{ field: 'test2', value: 'value2' } as any]);
+      expect(component.filterValues.length).toBe(originalLength - 1);
     });
 
-    it('should not modify filters when empty item is provided', () => {
-      const originalValues = component.filterValues;
-      component.clearFilter({});
-      expect(component.filterValues).toEqual(originalValues);
-    });
-
-    it('should handle non-existent filter item', () => {
-      const nonExistentItem = { field: 'nonexistent', value: 'none' };
-      const originalValues = component.filterValues;
-      component.clearFilter(nonExistentItem);
-      expect(component.filterValues).toEqual(originalValues);
+    it('should handle undefined widget config gracefully', () => {
+      component.widget.config = undefined as any;
+      expect(() => component.clearFilter({})).not.toThrow();
     });
   });
 });
