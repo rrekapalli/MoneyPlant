@@ -14,6 +14,9 @@ export { createSunburstChartWidget, createOrganizationalSunburstWidget, createLa
 export { createSankeyChartWidget, createInvestmentFlowSankeyWidget, createBudgetAllocationSankeyWidget, createMinimalSankeyChartWidget } from './sankey-chart-widget';
 export { createFilterWidget } from './filter-widget';
 
+// Dashboard data
+export { DashboardDataRow, INITIAL_DASHBOARD_DATA } from './dashboard-data';
+
 // Data update functions
 export { updateAssetAllocationData } from './asset-allocation-widget';
 export { updateMonthlyIncomeExpensesData } from './monthly-income-expenses-widget';
