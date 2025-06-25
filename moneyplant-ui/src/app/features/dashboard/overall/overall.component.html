@@ -11,6 +11,13 @@
   </p-button>
   
   <p-button 
+    label="Clear All Filters" 
+    icon="pi pi-times" 
+    (onClick)="clearAllFilters()"
+    styleClass="p-button-sm p-button-warning">
+  </p-button>
+  
+  <p-button 
     label="Export to PDF" 
     icon="pi pi-file-pdf" 
     (onClick)="exportDashboardToPdf()"
@@ -33,9 +40,11 @@
   <div class="dashboard-container" #dashboardContainer>
     <!-- Dashboard Container Component -->
     <vis-dashboard-container 
+      #dashboardContainerComponent
       [widgets]="dashboardConfig.widgets" 
       [options]="dashboardConfig.config"
-      [dashboardId]="dashboardConfig.dashboardId">
+      [dashboardId]="dashboardConfig.dashboardId"
+      (filterValuesChanged)="onFilterValuesChanged($event)">
     </vis-dashboard-container>
   </div>
 </p-scrollPanel>

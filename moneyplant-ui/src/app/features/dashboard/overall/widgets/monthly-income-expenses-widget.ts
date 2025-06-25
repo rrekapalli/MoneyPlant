@@ -1,26 +1,17 @@
-import { IWidget, BarChartBuilder, BarChartData } from '@dashboards/public-api';
+import { IWidget, BarChartBuilder, BarChartData, FilterService } from '@dashboards/public-api';
 
-// Static data for monthly income vs expenses
-export const MONTHLY_DATA: BarChartData[] = [
-  { name: 'Jan', value: 8500 },
-  { name: 'Feb', value: 9200 },
-  { name: 'Mar', value: 7800 },
-  { name: 'Apr', value: 9500 },
-  { name: 'May', value: 8800 },
-  { name: 'Jun', value: 10200 }
-];
-
+// Default categories for monthly data
 export const MONTHLY_CATEGORIES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
 
 /**
  * Create the monthly income vs expenses bar chart widget
  */
 export function createMonthlyIncomeExpensesWidget(): IWidget {
-  return BarChartBuilder.create()
-    .setData(MONTHLY_DATA.map(d => d.value))
+  const widget = BarChartBuilder.create()
+    .setData([]) // Data will be populated from shared dashboard data
     .setCategories(MONTHLY_CATEGORIES)
     .setHeader('Monthly Income vs Expenses')
-    .setPosition({ x: 4, y: 0, cols: 6, rows: 4 })
+    .setPosition({ x: 4, y: 0, cols: 6, rows: 8 })
     .setTitle('Monthly Income vs Expenses', 'Last 6 Months')
     .setColors(['#5470c6'])
     .setBarWidth('60%')
@@ -28,14 +19,96 @@ export function createMonthlyIncomeExpensesWidget(): IWidget {
     .setYAxisName('Amount ($)')
     .setTooltip('axis', '{b}: ${c}')
     .build();
+    
+  // Add filterColumn configuration
+  if (widget.config) {
+    widget.config.filterColumn = 'month';
+  }
+  
+  return widget;
 }
 
 /**
- * Update monthly income vs expenses widget data
+ * Update monthly income vs expenses widget data with filtering support
  */
-export function updateMonthlyIncomeExpensesData(widget: IWidget, newData?: number[]): void {
-  const data = newData || MONTHLY_DATA.map(d => d.value);
+export function updateMonthlyIncomeExpensesData(
+  widget: IWidget, 
+  newData?: number[], 
+  filterService?: FilterService
+): void {
+  let data = newData || [];
+  let categories = MONTHLY_CATEGORIES;
+  
+  // If newData is provided, use it directly (from shared dashboard data)
+  // Otherwise, apply filters if filter service is provided
+  if (!newData && filterService) {
+    const currentFilters = filterService.getFilterValues();
+    
+    if (currentFilters.length > 0) {
+      // Use the filter service's applyFiltersToData method
+      const filteredData = filterService.applyFiltersToData([], currentFilters);
+      
+      if (filteredData.length > 0) {
+        // Map the filtered data back to values and categories
+        data = filteredData.map((item: any) => item.value);
+        categories = filteredData.map((item: any) => item.name);
+      }
+    }
+  } else if (newData) {
+    // If newData is provided, we need to reconstruct categories based on the data length
+    // This is a simplified approach - in a real scenario, you might want to pass categories separately
+    categories = newData.map((_, index) => MONTHLY_CATEGORIES[index] || `Month ${index + 1}`);
+  }
+  
+  // Update widget data using BarChartBuilder
   BarChartBuilder.updateData(widget, data);
+  
+  // Also update the x-axis categories if they changed
+  if (widget.config?.options) {
+    const options = widget.config.options as any;
+    if (options.xAxis) {
+      // Handle both array and single object xAxis configurations
+      if (Array.isArray(options.xAxis)) {
+        options.xAxis[0].data = categories;
+      } else {
+        options.xAxis.data = categories;
+      }
+    }
+  }
+  
+  // Force chart update if chart instance is available
+  if (widget.chartInstance) {
+    try {
+      widget.chartInstance.setOption(widget.config?.options as any, true);
+    } catch (error) {
+      console.error('Error updating Monthly Income/Expenses chart:', error);
+    }
+  } else {
+    // Try to update with retry mechanism
+    const maxAttempts = 10;
+    let attempts = 0;
+    
+    const retryUpdate = () => {
+      attempts++;
+      
+      if (widget.chartInstance) {
+        try {
+          widget.chartInstance.setOption(widget.config?.options as any, true);
+          return;
+        } catch (error) {
+          console.error('Error updating Monthly Income/Expenses chart on retry:', error);
+        }
+      }
+      
+      if (attempts < maxAttempts) {
+        const delay = Math.min(500 * Math.pow(1.5, attempts - 1), 2000);
+        setTimeout(retryUpdate, delay);
+      }
+    };
+    
+    // Start retry with initial delay
+    setTimeout(retryUpdate, 100);
+  }
 }
 
 /**

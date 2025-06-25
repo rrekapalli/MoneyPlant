@@ -78,7 +78,6 @@ export class WatchlistComponent implements OnInit {
         this.watchlists = data;
       },
       error: (error) => {
-        console.error('Error loading watchlists', error);
         // Fallback to sample data if API is not available
         this.loadSampleData();
       }
@@ -97,7 +96,7 @@ export class WatchlistComponent implements OnInit {
         }
       },
       error: (error) => {
-        console.error(`Error loading watchlist with id ${id}`, error);
+        // Handle error (e.g., show a notification)
       }
     });
   }
@@ -143,7 +142,6 @@ export class WatchlistComponent implements OnInit {
         this.activeTabIndex = this.watchlists.length - 1;
       },
       error: (error) => {
-        console.error('Error creating watchlist', error);
         // Handle error (e.g., show a notification)
       }
     });
@@ -174,7 +172,6 @@ export class WatchlistComponent implements OnInit {
         this.watchlists[this.activeTabIndex] = updated;
       },
       error: (error) => {
-        console.error('Error updating watchlist', error);
         // Handle error (e.g., show a notification)
       }
     });
@@ -203,7 +200,6 @@ export class WatchlistComponent implements OnInit {
         }
       },
       error: (error) => {
-        console.error('Error deleting watchlist', error);
         // Handle error (e.g., show a notification)
       }
     });
@@ -224,7 +220,6 @@ export class WatchlistComponent implements OnInit {
         this.watchlists[this.activeTabIndex] = updated;
       },
       error: (error) => {
-        console.error('Error adding symbol', error);
         // Handle error (e.g., show a notification)
       }
     });
@@ -241,7 +236,6 @@ export class WatchlistComponent implements OnInit {
         this.watchlists[this.activeTabIndex] = updated;
       },
       error: (error) => {
-        console.error('Error removing symbol', error);
         // Handle error (e.g., show a notification)
       }
     });
@@ -271,7 +265,6 @@ export class WatchlistComponent implements OnInit {
         this.isSearching = false;
       },
       error: (error) => {
-        console.error('Error searching stocks', error);
         this.isSearching = false;
         // Handle error (e.g., show a notification)
       }
@@ -296,7 +289,6 @@ export class WatchlistComponent implements OnInit {
         this.searchQuery = '';
       },
       error: (error) => {
-        console.error('Error adding symbol', error);
         // Handle error (e.g., show a notification)
       }
     });

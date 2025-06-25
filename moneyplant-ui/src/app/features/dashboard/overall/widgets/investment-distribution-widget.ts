@@ -1,12 +1,17 @@
 import { IWidget, DensityMapBuilder, DensityMapData } from '@dashboards/public-api';
 
-// Static data for investment distribution by region
+// Static data for investment distribution by region (world-wide)
 export const INVESTMENT_DISTRIBUTION_DATA: DensityMapData[] = [
-  { name: 'Hong Kong Island', value: 100 },
-  { name: 'Kowloon', value: 80 },
-  { name: 'New Territories', value: 60 },
-  { name: 'Lantau Island', value: 30 },
-  { name: 'Lamma Island', value: 20 }
+  { name: 'United States', value: 100 },
+  { name: 'China', value: 85 },
+  { name: 'Japan', value: 70 },
+  { name: 'Germany', value: 65 },
+  { name: 'United Kingdom', value: 60 },
+  { name: 'France', value: 55 },
+  { name: 'Canada', value: 50 },
+  { name: 'Australia', value: 45 },
+  { name: 'Brazil', value: 40 },
+  { name: 'India', value: 35 }
 ];
 
 /**
@@ -14,16 +19,16 @@ export const INVESTMENT_DISTRIBUTION_DATA: DensityMapData[] = [
  */
 export function createInvestmentDistributionWidget(): IWidget {
   return DensityMapBuilder.create()
-    .setData(INVESTMENT_DISTRIBUTION_DATA)
-    .setMap('HK')
+    .setData([]) // Data will be populated from shared dashboard data
+    .setMap('world')
     .setHeader('Investment Distribution by Region')
-    .setPosition({ x: 0, y: 8, cols: 6, rows: 4 })
-    .setTitle('Investment Distribution by Region', 'Hong Kong')
+    .setPosition({ x: 0, y: 8, cols: 6, rows: 8 })
+    .setTitle('Investment Distribution by Region', 'Global')
     .setVisualMap(0, 100, ['#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8'])
     .setRoam(true)
     .setZoom(1.0)
-    .setCenter([2, 1])
-    .setLabelShow(true, 'inside', '{b}\n{c}%')
+    .setCenter([0, 0])
+    .setConditionalLabels(true, 'inside', '{b}\n{c}%', true)
     .setAreaColor('#f5f5f5')
     .setBorderColor('#999', 0.5)
     .setEmphasisColor('#b8e186')
@@ -48,11 +53,16 @@ export async function getUpdatedInvestmentDistributionData(): Promise<DensityMap
   await new Promise(resolve => setTimeout(resolve, 1000));
   
   return [
-    { name: 'Hong Kong Island', value: 90 },
-    { name: 'Kowloon', value: 85 },
-    { name: 'New Territories', value: 70 },
-    { name: 'Lantau Island', value: 45 },
-    { name: 'Lamma Island', value: 35 }
+    { name: 'United States', value: 95 },
+    { name: 'China', value: 90 },
+    { name: 'Japan', value: 75 },
+    { name: 'Germany', value: 70 },
+    { name: 'United Kingdom', value: 65 },
+    { name: 'France', value: 60 },
+    { name: 'Canada', value: 55 },
+    { name: 'Australia', value: 50 },
+    { name: 'Brazil', value: 45 },
+    { name: 'India', value: 40 }
   ];
 }
 
@@ -61,10 +71,15 @@ export async function getUpdatedInvestmentDistributionData(): Promise<DensityMap
  */
 export function getAlternativeInvestmentDistributionData(): DensityMapData[] {
   return [
-    { name: 'Hong Kong Island', value: 95 },
-    { name: 'Kowloon', value: 90 },
-    { name: 'New Territories', value: 75 },
-    { name: 'Lantau Island', value: 50 },
-    { name: 'Lamma Island', value: 40 }
+    { name: 'United States', value: 90 },
+    { name: 'China', value: 95 },
+    { name: 'Japan', value: 80 },
+    { name: 'Germany', value: 75 },
+    { name: 'United Kingdom', value: 70 },
+    { name: 'France', value: 65 },
+    { name: 'Canada', value: 60 },
+    { name: 'Australia', value: 55 },
+    { name: 'Brazil', value: 50 },
+    { name: 'India', value: 45 }
   ];
 } 

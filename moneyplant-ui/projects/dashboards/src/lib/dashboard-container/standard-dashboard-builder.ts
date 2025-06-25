@@ -1,5 +1,14 @@
 import { GridsterConfig, GridType, DisplayGrid } from 'angular-gridster2';
 import { DashboardContainerBuilder, DashboardConfig } from './dashboard-container-builder';
+import { 
+  DESKTOP_GRID_SETTINGS, 
+  MOBILE_GRID_SETTINGS, 
+  TABLET_GRID_SETTINGS, 
+  LARGE_DESKTOP_GRID_SETTINGS,
+  LAYOUT_PRESETS,
+  SCREEN_BREAKPOINTS,
+  getGridSettingsForScreenSize
+} from './dashboard-constants';
 
 /**
  * Standard Dashboard Container Builder
@@ -21,12 +30,12 @@ export class StandardDashboardBuilder extends DashboardContainerBuilder<Gridster
       resizable: {
         enabled: false,
       },
-      maxCols: 12,
-      minCols: 1,
-      maxRows: 50,
-      minRows: 1,
-      fixedColWidth: 100,
-      fixedRowHeight: 100,
+      maxCols: DESKTOP_GRID_SETTINGS.MAX_COLS,
+      minCols: DESKTOP_GRID_SETTINGS.MIN_COLS,
+      maxRows: DESKTOP_GRID_SETTINGS.MAX_ROWS,
+      minRows: DESKTOP_GRID_SETTINGS.MIN_ROWS,
+      fixedColWidth: DESKTOP_GRID_SETTINGS.FIXED_COL_WIDTH,
+      fixedRowHeight: DESKTOP_GRID_SETTINGS.FIXED_ROW_HEIGHT,
       enableEmptyCellClick: false,
       enableEmptyCellContextMenu: false,
       enableEmptyCellDrop: false,
@@ -34,7 +43,7 @@ export class StandardDashboardBuilder extends DashboardContainerBuilder<Gridster
       emptyCellDragMaxCols: 50,
       emptyCellDragMaxRows: 50,
       ignoreMarginInRow: false,
-      mobileBreakpoint: 640,
+      mobileBreakpoint: DESKTOP_GRID_SETTINGS.MOBILE_BREAKPOINT,
     };
   }
 
@@ -63,7 +72,7 @@ export class StandardDashboardBuilder extends DashboardContainerBuilder<Gridster
   /**
    * Set responsive configuration
    */
-  setResponsive(breakpoint: number = 640): this {
+  setResponsive(breakpoint: number = DESKTOP_GRID_SETTINGS.MOBILE_BREAKPOINT): this {
     return this.setMobileBreakpoint(breakpoint);
   }
 
@@ -72,9 +81,9 @@ export class StandardDashboardBuilder extends DashboardContainerBuilder<Gridster
    */
   setCompactLayout(): this {
     return this
-      .setOuterMargin(false)
-      .setFixedColWidth(80)
-      .setFixedRowHeight(80);
+      .setOuterMargin(LAYOUT_PRESETS.COMPACT.OUTER_MARGIN)
+      .setFixedColWidth(LAYOUT_PRESETS.COMPACT.FIXED_COL_WIDTH)
+      .setFixedRowHeight(LAYOUT_PRESETS.COMPACT.FIXED_ROW_HEIGHT);
   }
 
   /**
@@ -82,9 +91,9 @@ export class StandardDashboardBuilder extends DashboardContainerBuilder<Gridster
    */
   setSpaciousLayout(): this {
     return this
-      .setOuterMargin(true)
-      .setFixedColWidth(120)
-      .setFixedRowHeight(120);
+      .setOuterMargin(LAYOUT_PRESETS.SPACIOUS.OUTER_MARGIN)
+      .setFixedColWidth(LAYOUT_PRESETS.SPACIOUS.FIXED_COL_WIDTH)
+      .setFixedRowHeight(LAYOUT_PRESETS.SPACIOUS.FIXED_ROW_HEIGHT);
   }
 
   /**
@@ -110,30 +119,56 @@ export class StandardDashboardBuilder extends DashboardContainerBuilder<Gridster
   setFixedLayout(): this {
     return this
       .setGridType(GridType.Fit)
-      .setMaxCols(12)
-      .setMinCols(12);
+      .setMaxCols(DESKTOP_GRID_SETTINGS.MAX_COLS)
+      .setMinCols(DESKTOP_GRID_SETTINGS.MAX_COLS);
   }
 
   /**
    * Configure for mobile devices
    */
   setMobileOptimized(): this {
+    const settings = MOBILE_GRID_SETTINGS;
     return this
-      .setMobileBreakpoint(768)
-      .setMaxCols(6)
-      .setFixedColWidth(60)
-      .setFixedRowHeight(60);
+      .setMobileBreakpoint(settings.MOBILE_BREAKPOINT)
+      .setMaxCols(settings.MAX_COLS)
+      .setFixedColWidth(settings.FIXED_COL_WIDTH)
+      .setFixedRowHeight(settings.FIXED_ROW_HEIGHT);
+  }
+
+  /**
+   * Configure for tablet devices
+   */
+  setTabletOptimized(): this {
+    const settings = TABLET_GRID_SETTINGS;
+    return this
+      .setMobileBreakpoint(settings.MOBILE_BREAKPOINT)
+      .setMaxCols(settings.MAX_COLS)
+      .setFixedColWidth(settings.FIXED_COL_WIDTH)
+      .setFixedRowHeight(settings.FIXED_ROW_HEIGHT);
   }
 
   /**
    * Configure for desktop devices
    */
   setDesktopOptimized(): this {
+    const settings = DESKTOP_GRID_SETTINGS;
     return this
-      .setMaxCols(12)
-      .setFixedColWidth(100)
-      .setFixedRowHeight(100)
-      .setMobileBreakpoint(1024);
+      .setMaxCols(settings.MAX_COLS)
+      .setFixedColWidth(settings.FIXED_COL_WIDTH)
+      .setFixedRowHeight(settings.FIXED_ROW_HEIGHT)
+      .setMobileBreakpoint(SCREEN_BREAKPOINTS.DESKTOP);
+  }
+
+  /**
+   * Configure for large desktop devices
+   */
+  setLargeDesktopOptimized(): this {
+    const settings = LARGE_DESKTOP_GRID_SETTINGS;
+    return this
+      .setMaxCols(settings.MAX_COLS)
+      .setFixedColWidth(settings.FIXED_COL_WIDTH)
+      .setFixedRowHeight(settings.FIXED_ROW_HEIGHT)
+      .setMobileBreakpoint(settings.MOBILE_BREAKPOINT);
   }
 
   /**
@@ -176,9 +211,9 @@ export class StandardDashboardBuilder extends DashboardContainerBuilder<Gridster
    * Set custom item size constraints
    */
   setItemSizeConstraints(
-    minCols: number = 1,
-    maxCols: number = 12,
-    minRows: number = 1,
+    minCols: number = DESKTOP_GRID_SETTINGS.MIN_COLS,
+    maxCols: number = DESKTOP_GRID_SETTINGS.MAX_COLS,
+    minRows: number = DESKTOP_GRID_SETTINGS.MIN_ROWS,
     maxRows: number = 50
   ): this {
     return this
@@ -186,6 +221,21 @@ export class StandardDashboardBuilder extends DashboardContainerBuilder<Gridster
       .setMaxCols(maxCols)
       .setMinRows(minRows)
       .setMaxRows(maxRows);
+  }
+
+  /**
+   * Set grid settings for a specific screen size
+   */
+  setScreenSize(screenSize: 'MOBILE' | 'TABLET' | 'DESKTOP' | 'LARGE_DESKTOP'): this {
+    const settings = getGridSettingsForScreenSize(screenSize);
+    return this
+      .setMaxCols(settings.MAX_COLS)
+      .setMinCols(settings.MIN_COLS)
+      .setMaxRows(settings.MAX_ROWS)
+      .setMinRows(settings.MIN_ROWS)
+      .setFixedColWidth(settings.FIXED_COL_WIDTH)
+      .setFixedRowHeight(settings.FIXED_ROW_HEIGHT)
+      .setMobileBreakpoint(settings.MOBILE_BREAKPOINT);
   }
 
   /**
@@ -198,13 +248,13 @@ export class StandardDashboardBuilder extends DashboardContainerBuilder<Gridster
       .setOuterMargin(true)
       .setDraggable(false)
       .setResizable(false)
-      .setMaxCols(12)
-      .setMinCols(1)
-      .setMaxRows(50)
-      .setMinRows(1)
-      .setFixedColWidth(100)
-      .setFixedRowHeight(100)
-      .setMobileBreakpoint(640);
+      .setMaxCols(DESKTOP_GRID_SETTINGS.MAX_COLS)
+      .setMinCols(DESKTOP_GRID_SETTINGS.MIN_COLS)
+      .setMaxRows(DESKTOP_GRID_SETTINGS.MAX_ROWS)
+      .setMinRows(DESKTOP_GRID_SETTINGS.MIN_ROWS)
+      .setFixedColWidth(DESKTOP_GRID_SETTINGS.FIXED_COL_WIDTH)
+      .setFixedRowHeight(DESKTOP_GRID_SETTINGS.FIXED_ROW_HEIGHT)
+      .setMobileBreakpoint(DESKTOP_GRID_SETTINGS.MOBILE_BREAKPOINT);
   }
 
   /**
@@ -213,13 +263,13 @@ export class StandardDashboardBuilder extends DashboardContainerBuilder<Gridster
   static createEditMode(): StandardDashboardBuilder {
     return new StandardDashboardBuilder()
       .enableEditMode()
-      .setMaxCols(12)
-      .setMinCols(1)
-      .setMaxRows(50)
-      .setMinRows(1)
-      .setFixedColWidth(100)
-      .setFixedRowHeight(100)
-      .setMobileBreakpoint(640);
+      .setMaxCols(DESKTOP_GRID_SETTINGS.MAX_COLS)
+      .setMinCols(DESKTOP_GRID_SETTINGS.MIN_COLS)
+      .setMaxRows(DESKTOP_GRID_SETTINGS.MAX_ROWS)
+      .setMinRows(DESKTOP_GRID_SETTINGS.MIN_ROWS)
+      .setFixedColWidth(DESKTOP_GRID_SETTINGS.FIXED_COL_WIDTH)
+      .setFixedRowHeight(DESKTOP_GRID_SETTINGS.FIXED_ROW_HEIGHT)
+      .setMobileBreakpoint(DESKTOP_GRID_SETTINGS.MOBILE_BREAKPOINT);
   }
 
   /**
@@ -227,8 +277,17 @@ export class StandardDashboardBuilder extends DashboardContainerBuilder<Gridster
    */
   static createMobile(): StandardDashboardBuilder {
     return new StandardDashboardBuilder()
-      .setMobileOptimized()
+      .setScreenSize('MOBILE')
       .setCompactLayout();
+  }
+
+  /**
+   * Create a builder instance for tablet devices
+   */
+  static createTablet(): StandardDashboardBuilder {
+    return new StandardDashboardBuilder()
+      .setScreenSize('TABLET')
+      .setSpaciousLayout();
   }
 
   /**
@@ -236,7 +295,16 @@ export class StandardDashboardBuilder extends DashboardContainerBuilder<Gridster
    */
   static createDesktop(): StandardDashboardBuilder {
     return new StandardDashboardBuilder()
-      .setDesktopOptimized()
+      .setScreenSize('DESKTOP')
+      .setSpaciousLayout();
+  }
+
+  /**
+   * Create a builder instance for large desktop devices
+   */
+  static createLargeDesktop(): StandardDashboardBuilder {
+    return new StandardDashboardBuilder()
+      .setScreenSize('LARGE_DESKTOP')
       .setSpaciousLayout();
   }
 
@@ -259,8 +327,8 @@ export class StandardDashboardBuilder extends DashboardContainerBuilder<Gridster
   /**
    * Export dashboard to PDF (placeholder - will be overridden by component)
    */
-  private async exportToPdf(options: any = {}): Promise<void> {
+  override exportToPdf(options: any = {}): Promise<void> {
     // This is a placeholder - the actual implementation will be provided by the component
-    throw new Error('Export to PDF method must be implemented by the dashboard component');
+    return Promise.reject(new Error('Export to PDF method must be implemented by the dashboard component'));
   }
 } 

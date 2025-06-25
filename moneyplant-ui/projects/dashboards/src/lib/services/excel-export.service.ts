@@ -9,8 +9,14 @@ import {
   ScatterChartBuilder, 
   GaugeChartBuilder, 
   HeatmapChartBuilder, 
-  DensityMapBuilder 
-} from '../chart-builders';
+  DensityMapBuilder,
+  AreaChartBuilder,
+  PolarChartBuilder,
+  StackedAreaChartBuilder,
+  TreemapChartBuilder,
+  SunburstChartBuilder,
+  SankeyChartBuilder
+} from '../echart-chart-builders';
 
 /**
  * Configuration options for Excel export functionality
@@ -237,7 +243,7 @@ export class ExcelExportService {
    */
   private getDataExtractor(widget: IWidget): WidgetDataExtractor | null {
     const component = widget.config?.component;
-    const chartType = (widget.config?.options as any)?.chartType;
+    const chartType = (widget.config?.options as any)?.series?.[0]?.type;
 
     // Handle different widget types
     if (component === 'echart' && chartType) {
@@ -310,15 +316,115 @@ export class ExcelExportService {
           getHeaders: (widget: IWidget) => HeatmapChartBuilder.getExportHeaders(widget),
           getSheetName: (widget: IWidget) => HeatmapChartBuilder.getExportSheetName(widget)
         };
-      case 'densitymap':
+      case 'map':
         return {
           extractData: (widget: IWidget) => DensityMapBuilder.exportData(widget),
           getHeaders: (widget: IWidget) => DensityMapBuilder.getExportHeaders(widget),
           getSheetName: (widget: IWidget) => DensityMapBuilder.getExportSheetName(widget)
         };
+      case 'treemap':
+        return {
+          extractData: (widget: IWidget) => TreemapChartBuilder.exportData(widget),
+          getHeaders: (widget: IWidget) => TreemapChartBuilder.getExportHeaders(widget),
+          getSheetName: (widget: IWidget) => TreemapChartBuilder.getExportSheetName(widget)
+        };
+      case 'sunburst':
+        return {
+          extractData: (widget: IWidget) => SunburstChartBuilder.exportData(widget),
+          getHeaders: (widget: IWidget) => SunburstChartBuilder.getExportHeaders(widget),
+          getSheetName: (widget: IWidget) => SunburstChartBuilder.getExportSheetName(widget)
+        };
+      case 'sankey':
+        return {
+          extractData: (widget: IWidget) => SankeyChartBuilder.exportData(widget),
+          getHeaders: (widget: IWidget) => SankeyChartBuilder.getExportHeaders(widget),
+          getSheetName: (widget: IWidget) => SankeyChartBuilder.getExportSheetName(widget)
+        };
       default:
-        return this.getGenericDataExtractor();
+        // For special chart types that are line charts with specific properties
+        return this.getSpecialChartDataExtractor(chartType);
     }
+  }
+
+  /**
+   * Get data extractor for special chart types that are line charts with specific properties
+   * @param chartType - The chart type string
+   * @returns WidgetDataExtractor for the special chart type
+   */
+  private getSpecialChartDataExtractor(chartType: string): WidgetDataExtractor {
+    // This method will be called for line charts that need special handling
+    // based on their properties like areaStyle, coordinateSystem, stack, etc.
+    return {
+      extractData: (widget: IWidget) => {
+        const options = widget.config?.options as any;
+        const series = options?.series?.[0];
+        
+        // Check for area chart (line with areaStyle)
+        if (series?.type === 'line' && series?.areaStyle) {
+          if (series?.stack) {
+            // Stacked area chart
+            return StackedAreaChartBuilder.exportData(widget);
+          } else {
+            // Regular area chart
+            return AreaChartBuilder.exportData(widget);
+          }
+        }
+        
+        // Check for polar chart (line with polar coordinate system)
+        if (series?.type === 'line' && series?.coordinateSystem === 'polar') {
+          return PolarChartBuilder.exportData(widget);
+        }
+        
+        // Default to line chart
+        return LineChartBuilder.exportData(widget);
+      },
+      getHeaders: (widget: IWidget) => {
+        const options = widget.config?.options as any;
+        const series = options?.series?.[0];
+        
+        // Check for area chart (line with areaStyle)
+        if (series?.type === 'line' && series?.areaStyle) {
+          if (series?.stack) {
+            // Stacked area chart
+            return StackedAreaChartBuilder.getExportHeaders(widget);
+          } else {
+            // Regular area chart
+            return AreaChartBuilder.getExportHeaders(widget);
+          }
+        }
+        
+        // Check for polar chart (line with polar coordinate system)
+        if (series?.type === 'line' && series?.coordinateSystem === 'polar') {
+          return PolarChartBuilder.getExportHeaders(widget);
+        }
+        
+        // Default to line chart
+        return LineChartBuilder.getExportHeaders(widget);
+      },
+      getSheetName: (widget: IWidget) => {
+        const options = widget.config?.options as any;
+        const series = options?.series?.[0];
+        
+        // Check for area chart (line with areaStyle)
+        if (series?.type === 'line' && series?.areaStyle) {
+          if (series?.stack) {
+            // Stacked area chart
+            return StackedAreaChartBuilder.getExportSheetName(widget);
+          } else {
+            // Regular area chart
+            return AreaChartBuilder.getExportSheetName(widget);
+          }
+        }
+        
+        // Check for polar chart (line with polar coordinate system)
+        if (series?.type === 'line' && series?.coordinateSystem === 'polar') {
+          return PolarChartBuilder.getExportSheetName(widget);
+        }
+        
+        // Default to line chart
+        return LineChartBuilder.getExportSheetName(widget);
+      }
+    };
   }
 
   /**

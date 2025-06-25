@@ -1,36 +1,49 @@
 @if (filterValues && filterValues.length > 0) {
   <div class="filter-component">
-    <span class="ml-1 mr-1">Applied Filter(s):</span>
-
-    <span>
+    <span class="filter-label">Applied Filters</span>
+    <div class="filter-badges">
       @for (item of filterValues; track item) {
-        <button class="btn-wide mt-1 mb-1 mr-1 btn btn-outline-primary btn-sm chip"
-                (click)="clearFilter(item)">
-              {{ item.accessor | uppercase }} = {{ item[item.accessor] | uppercase }}
-          <i class="pi pi-times-circle close-icon"></i>
-          </button>
+        <button class="btn-wide btn btn-outline-primary btn-sm chip"
+                (click)="clearFilter(item)"
+                [title]="'Remove ' + (item.filterColumn || item.accessor || item['widgetTitle']) + ' filter'">
+          <i class="pi pi-tag filter-badge-icon"></i>
+          @if (item.filterColumn || item.accessor) {
+            <span class="filter-key">{{ (item.filterColumn || item.accessor) | uppercase }}</span>
+            <span class="filter-separator">:</span>
+            <span class="filter-value">{{ item['value'] }}</span>
+          } @else if (item['widgetTitle']) {
+            <span class="filter-key">{{ item['widgetTitle'] }}</span>
+            <span class="filter-separator">:</span>
+            <span class="filter-value">{{ item['value'] }}</span>
+          } @else {
+            <span class="filter-key">{{ item.accessor | uppercase }}</span>
+            <span class="filter-separator">=</span>
+            <span class="filter-value">{{ item['value'] }}</span>
+          }
+          <i class="pi pi-times close-icon" title="Remove filter"></i>
+        </button>
       }
-    </span>
-    
-    <button class="btn-wide ml-2 mt-1 mb-1 mr-1 btn-outline-warning btn-sm chip" 
-      (click)="clearAllFilters(true)">
-      Clear All
-    </button>
-    
-    <!-- <button class="btn-wide ml-1 mt-1 mb-1 mr-1 btn btn-outline-warning btn-sm chip"
-            (click)="chartOptions.callBackFunc(filters)">
-      Add Annotation
-    </button>
-
-    <button class="btn-wide ml-1 mt-1 mb-1 mr-1 btn btn-outline-warning btn-sm chip"
-            (click)="chartOptions.onClickViewOdata(filters)">
-      View Data
-    </button> -->
-    
+    </div>
+    <div class="filter-actions">
+      <button class="btn-wide btn btn-outline-warning btn-sm chip clear-all-btn" 
+        (click)="clearAllFilters(true)"
+        title="Clear all applied filters">
+        <i class="pi pi-trash"></i>
+        <span>Clear All</span>
+      </button>
+    </div>
   </div>
 } @else {
-  <div class="filter-component pt-2 pb-1">
-    Please click on any chart element to slice and dice data. You can use annotations to save a specific state of
-    dashboard after applying filters.
+  <div class="filter-component empty-state">
+    <div class="empty-state-content">
+      <i class="pi pi-info-circle empty-state-icon"></i>
+      <div class="empty-state-text">
+        <p class="empty-state-title">No Filters Applied</p>
+        <p class="empty-state-description">
+          Click on any chart element to slice and dice data. You can use annotations to save a specific state of
+          dashboard after applying filters.
+        </p>
+      </div>
+    </div>
   </div>
 }
