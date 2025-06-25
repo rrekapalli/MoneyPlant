@@ -17,14 +17,13 @@
             <span class="filter-value">{{ item['value'] }}</span>
           } @else {
             <span class="filter-key">{{ item.accessor | uppercase }}</span>
-            <span class="filter-separator">:</span>
+            <span class="filter-separator">=</span>
             <span class="filter-value">{{ item['value'] }}</span>
           }
           <i class="pi pi-times close-icon" title="Remove filter"></i>
         </button>
       }
     </div>
-    
     <div class="filter-actions">
       <button class="btn-wide btn btn-outline-warning btn-sm chip clear-all-btn" 
         (click)="clearAllFilters(true)"
