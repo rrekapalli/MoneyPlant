@@ -259,8 +259,8 @@ export class StandardDashboardBuilder extends DashboardContainerBuilder<Gridster
   /**
    * Export dashboard to PDF (placeholder - will be overridden by component)
    */
-  private async exportToPdf(options: any = {}): Promise<void> {
+  override exportToPdf(options: any = {}): Promise<void> {
     // This is a placeholder - the actual implementation will be provided by the component
-    throw new Error('Export to PDF method must be implemented by the dashboard component');
+    return Promise.reject(new Error('Export to PDF method must be implemented by the dashboard component'));
   }
 } 

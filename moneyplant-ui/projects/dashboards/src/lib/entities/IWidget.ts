@@ -43,6 +43,12 @@ export interface IWidget extends GridsterItem {
     /** Widget-specific options based on the component type */
     options: EChartsOption | IFilterOptions | ITileOptions | IMarkdownCellOptions | ICodeCellOptions | ITableOptions;
     
+    /** Data accessor key for retrieving values */
+    accessor?: string;
+    
+    /** Filter column/property to use when applying filters (falls back to accessor if not specified) */
+    filterColumn?: string;
+    
     /** Event handlers */
     events?: {
       /** Callback function when chart options change

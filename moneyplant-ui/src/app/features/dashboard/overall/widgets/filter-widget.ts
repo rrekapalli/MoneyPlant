@@ -49,6 +49,7 @@ export function removeFilter(widget: IWidget, filterToRemove: IFilterValues): vo
     if (filterOptions.values) {
       const index = filterOptions.values.findIndex(filter => 
         filter.accessor === filterToRemove.accessor && 
+        filter.filterColumn === filterToRemove.filterColumn &&
         filter[filter.accessor] === filterToRemove[filter.accessor]
       );
       if (index !== -1) {

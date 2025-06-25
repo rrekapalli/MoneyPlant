@@ -1,4 +1,5 @@
-import { IWidget, PieChartBuilder, PieChartData } from '@dashboards/public-api';
+import { IWidget, PieChartBuilder, PieChartData, IFilterValues } from '@dashboards/public-api';
+import { FilterService } from '../../../../services/filter.service';
 
 // Static data for asset allocation
 export const ASSET_ALLOCATION_DATA: PieChartData[] = [
@@ -15,7 +16,7 @@ export const ASSET_ALLOCATION_COLORS = ['#5470c6', '#91cc75', '#fac858', '#ee666
  * Create the asset allocation pie chart widget
  */
 export function createAssetAllocationWidget(): IWidget {
-  return PieChartBuilder.create()
+  const widget = PieChartBuilder.create()
     .setData(ASSET_ALLOCATION_DATA)
     .setHeader('Asset Allocation')
     .setPosition({ x: 0, y: 0, cols: 4, rows: 4 })
@@ -24,13 +25,36 @@ export function createAssetAllocationWidget(): IWidget {
     .setLabelFormatter('{b}: {c} ({d}%)')
     .setTooltip('item', '{b}: ${c} ({d}%)')
     .build();
+    
+  // Add filterColumn configuration
+  if (widget.config) {
+    widget.config.filterColumn = 'assetCategory';
+  }
+  
+  return widget;
 }
 
 /**
- * Update asset allocation widget data
+ * Update asset allocation widget data with filtering support
  */
-export function updateAssetAllocationData(widget: IWidget, newData?: PieChartData[]): void {
-  const data = newData || ASSET_ALLOCATION_DATA;
+export function updateAssetAllocationData(
+  widget: IWidget, 
+  newData?: PieChartData[], 
+  filterService?: FilterService
+): void {
+  let data = newData || ASSET_ALLOCATION_DATA;
+  
+  // Apply filters if filter service is provided
+  if (filterService) {
+    const currentFilters = filterService.getFilterValues();
+    if (currentFilters.length > 0) {
+      console.log('Applying filters to asset allocation data:', currentFilters);
+      data = filterService.applyFiltersToData(data, currentFilters);
+      console.log('Filtered data:', data);
+    }
+  }
+  
+  // Update widget data
   PieChartBuilder.updateData(widget, data);
 }
 
@@ -63,10 +87,27 @@ export function getAlternativeAssetAllocationData(): PieChartData[] {
   ];
 } 
 
-  /**
-   * Alternative method showing direct widget.setData() usage
-   * (if the widget has the setData method implemented)
-   */
-  export function updatePieChartDataDirect(widget: IWidget, newData: PieChartData[]): void {
-    PieChartBuilder.updateData(widget, newData);
-  } 
+/**
+ * Alternative method showing direct widget.setData() usage
+ * (if the widget has the setData method implemented)
+ */
+export function updatePieChartDataDirect(widget: IWidget, newData: PieChartData[]): void {
+  PieChartBuilder.updateData(widget, newData);
+}
+
+/**
+ * Create filter value from asset allocation click data
+ */
+export function createAssetAllocationFilter(clickedData: any): IFilterValues | null {
+  if (!clickedData || !clickedData.name) {
+    return null;
+  }
+
+  return {
+    accessor: 'category',
+    filterColumn: 'assetCategory',
+    assetCategory: clickedData.name,
+    value: clickedData.name,
+    percentage: clickedData.value?.toString() || '0'
+  };
+} 

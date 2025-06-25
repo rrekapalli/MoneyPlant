@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef, ElementRef, ViewChild } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, ElementRef, ViewChild, ChangeDetectionStrategy, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
@@ -126,7 +126,8 @@ import {
   PdfExportOptions,
   // Excel Export Service
   ExcelExportService,
-  ExcelExportOptions
+  ExcelExportOptions,
+  IFilterValues
 } from '@dashboards/public-api';
 
 // Import widget creation functions
@@ -198,9 +199,16 @@ import {
   getAlternativeSankeyChartData
 } from './widgets';
 
+// Import test filter widget directly
+import { createTestFilterWidget, updateTestFilterData } from './widgets/test-filter-widget';
+
+// Filter service
+import { FilterService } from '../../../services/filter.service';
+
 import { v4 as uuidv4 } from 'uuid';
 import { ScrollPanelModule } from 'primeng/scrollpanel';
 import { updatePieChartDataDirect } from './widgets/asset-allocation-widget';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-overall',
@@ -219,8 +227,9 @@ import { updatePieChartDataDirect } from './widgets/asset-allocation-widget';
   ],
   templateUrl: './overall.component.html',
   styleUrls: ['./overall.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class OverallComponent implements OnInit {
+export class OverallComponent implements OnInit, OnDestroy {
   // Dashboard config (Fluent API)
   dashboardConfig!: DashboardConfig;
   
@@ -230,17 +239,95 @@ export class OverallComponent implements OnInit {
   // Excel export loading state
   isExportingExcel = false;
 
+  // Flag to prevent recursive filter updates
+  private isUpdatingFilters = false;
+
+  // Debounce mechanism for widget updates
+  private widgetUpdateTimeout?: any;
+  private filterSubscription?: Subscription;
+
   // Reference to dashboard container for PDF export
   @ViewChild('dashboardContainer', { static: false }) dashboardContainer!: ElementRef<HTMLElement>;
+
+  // Reference to dashboard container component
+  @ViewChild(DashboardContainerComponent, { static: false }) dashboardContainerComponent!: DashboardContainerComponent;
 
   constructor(
     private cdr: ChangeDetectorRef,
     private pdfExportService: PdfExportService,
-    private excelExportService: ExcelExportService
+    private excelExportService: ExcelExportService,
+    private filterService: FilterService
   ) {}
 
   ngOnInit(): void {
     this.initializeDashboardConfig();
+    
+    // Subscribe to filter service changes
+    this.filterSubscription = this.filterService.filterValues$.subscribe(filters => {
+      console.log('Filter service updated:', filters);
+      this.updateWidgetsWithFilters(filters);
+    });
+  }
+
+  /**
+   * Handle filter values change from dashboard container
+   */
+  onFilterValuesChanged(filters: IFilterValues[]): void {
+    // Prevent recursive updates
+    if (this.isUpdatingFilters) {
+      console.log('Skipping filter update - already updating filters');
+      return;
+    }
+
+    console.log('Dashboard filter values changed:', filters);
+    
+    this.isUpdatingFilters = true;
+    try {
+      this.filterService.setFilterValues(filters);
+      // Widget updates will be handled by the filter service subscription
+    } finally {
+      this.isUpdatingFilters = false;
+    }
+  }
+
+  /**
+   * Update all widgets with current filters
+   */
+  private updateWidgetsWithFilters(filters?: IFilterValues[]): void {
+    if (!this.dashboardConfig?.widgets) {
+      return;
+    }
+
+    // Use provided filters or get from service
+    const currentFilters = filters || this.filterService.getFilterValues();
+    console.log('Updating widgets with filters:', currentFilters);
+
+    this.dashboardConfig.widgets.forEach(widget => {
+      if (widget.config.component === 'echart') {
+        this.updateWidgetWithFilters(widget, currentFilters);
+      }
+    });
+
+    // Trigger change detection to update the UI
+    this.cdr.detectChanges();
+  }
+
+  /**
+   * Update a specific widget with filters
+   */
+  private updateWidgetWithFilters(widget: IWidget, filters: IFilterValues[]): void {
+    const widgetTitle = widget.config?.header?.title;
+    
+    if (widgetTitle === 'Asset Allocation') {
+      updateAssetAllocationData(widget, undefined, this.filterService);
+    }
+    else if (widgetTitle === 'Test Filter Widget') {
+      updateTestFilterData(widget, undefined, this.filterService);
+    }
+    // Add more widget-specific filtering logic here
+    // else if (widgetTitle === 'Monthly Income vs Expenses') {
+    //   updateMonthlyIncomeExpensesData(widget, undefined, this.filterService);
+    // }
   }
 
   /**
@@ -271,6 +358,7 @@ export class OverallComponent implements OnInit {
     const budgetAllocationSankey = createBudgetAllocationSankeyWidget();
     const minimalSankeyTest = createMinimalSankeyChartWidget();
     const filterWidget = createFilterWidget();
+    const testFilterWidget = createTestFilterWidget();
 
     // Adjust positions of all widgets to move them down by 1 row to accommodate the filter widget
     const widgetsToAdjust = [
@@ -295,7 +383,8 @@ export class OverallComponent implements OnInit {
       sankeyChart,
       investmentFlowSankey,
       budgetAllocationSankey,
-      minimalSankeyTest
+      minimalSankeyTest,
+      testFilterWidget
     ];
 
     // Move all widgets down by 1 row
@@ -331,7 +420,8 @@ export class OverallComponent implements OnInit {
         sankeyChart,
         investmentFlowSankey,
         budgetAllocationSankey,
-        minimalSankeyTest
+        minimalSankeyTest,
+        testFilterWidget
       ])
       .setEditMode(false)
       .build();
@@ -347,7 +437,8 @@ export class OverallComponent implements OnInit {
     }
 
     this.isExportingPdf = true;
-    this.cdr.detectChanges();
+    // Don't manually trigger change detection
+    // this.cdr.detectChanges();
 
     try {
       console.log('Starting PDF export...');
@@ -384,7 +475,8 @@ export class OverallComponent implements OnInit {
       // You could add a toast notification here for user feedback
     } finally {
       this.isExportingPdf = false;
-      this.cdr.detectChanges();
+      // Don't manually trigger change detection
+      // this.cdr.detectChanges();
     }
   }
 
@@ -393,7 +485,8 @@ export class OverallComponent implements OnInit {
    */
   public async exportDashboardToExcel(): Promise<void> {
     this.isExportingExcel = true;
-    this.cdr.detectChanges();
+    // Don't manually trigger change detection
+    // this.cdr.detectChanges();
 
     try {
       console.log('Starting Excel export...');
@@ -425,140 +518,159 @@ export class OverallComponent implements OnInit {
       // You could add a toast notification here for user feedback
     } finally {
       this.isExportingExcel = false;
-      this.cdr.detectChanges();
+      // Don't manually trigger change detection
+      // this.cdr.detectChanges();
     }
   }
 
   /**
-   * Utility method to update multiple widgets at once
+   * Update a single widget with new data
+   */
+  public async updateWidget(widgetId: string, newData: any): Promise<void> {
+    const widget = this.dashboardConfig.widgets.find(w => w.id === widgetId);
+    if (!widget) {
+      console.error(`Widget with ID ${widgetId} not found`);
+      return;
+    }
+
+    try {
+      // Apply filters to the new data
+      const filteredData = this.filterService.applyFiltersToData([newData], this.filterService.getFilterValues());
+      
+      if (filteredData.length > 0) {
+        // Update the widget with filtered data
+        if (widget.config.component === 'echart') {
+          // For chart widgets, update the series data
+          const chartOptions = widget.config.options as any;
+          if (chartOptions.series && chartOptions.series.length > 0) {
+            chartOptions.series[0].data = filteredData;
+          }
+        }
+        
+        // Don't trigger change detection manually
+        // this.dashboardConfig.widgets = [...this.dashboardConfig.widgets];
+        // this.cdr.detectChanges();
+        
+        console.log(`Widget ${widgetId} updated with filtered data`);
+      }
+    } catch (error) {
+      console.error(`Error updating widget ${widgetId}:`, error);
+    }
+  }
+
+  /**
+   * Update multiple widgets with new data
    */
   public async updateMultipleWidgets(widgets: IWidget[], data: any[]): Promise<void> {
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Apply filters to the data
+      const filteredData = this.filterService.applyFiltersToData(data, this.filterService.getFilterValues());
       
-      // Update each widget with corresponding data using chart builders
-      widgets.forEach((widget, index) => {
-        if (data[index]) {
-          const series = (widget.config.options as any)?.series?.[0];
-          const chartType = series?.type;
-          const hasAreaStyle = series?.areaStyle;
-          const coordinateSystem = series?.coordinateSystem;
-          const hasStack = series?.stack;
-          
-          // Use chart builders to update data based on chart type
-          if (chartType === 'pie') {
-            PieChartBuilder.updateData(widget, data[index]);
-          } else if (chartType === 'bar') {
-            BarChartBuilder.updateData(widget, data[index]);
-          } else if (chartType === 'line' && coordinateSystem === 'polar') {
-            // Polar chart (line chart with polar coordinate system)
-            PolarChartBuilder.updateData(widget, data[index]);
-          } else if (chartType === 'line' && hasAreaStyle && hasStack) {
-            // Stacked area chart (line chart with area style and stack)
-            StackedAreaChartBuilder.updateData(widget, data[index]);
-          } else if (chartType === 'line' && hasAreaStyle) {
-            // Area chart (line chart with area style)
-            AreaChartBuilder.updateData(widget, data[index]);
-          } else if (chartType === 'line') {
-            LineChartBuilder.updateData(widget, data[index]);
-          } else if (chartType === 'scatter') {
-            ScatterChartBuilder.updateData(widget, data[index]);
-          } else if (chartType === 'gauge') {
-            GaugeChartBuilder.updateData(widget, data[index]);
-          } else if (chartType === 'heatmap') {
-            HeatmapChartBuilder.updateData(widget, data[index]);
-          } else if (chartType === 'map') {
-            DensityMapBuilder.updateData(widget, data[index]);
-          } else if (chartType === 'treemap') {
-            TreemapChartBuilder.updateData(widget, data[index]);
-          } else if (chartType === 'sunburst') {
-            SunburstChartBuilder.updateData(widget, data[index]);
-          } else if (chartType === 'sankey') {
-            SankeyChartBuilder.updateData(widget, data[index]);
-          } else {
-            WidgetBuilder.setData(widget, data[index]);
+      widgets.forEach(widget => {
+        if (widget.config.component === 'echart') {
+          const chartOptions = widget.config.options as any;
+          if (chartOptions.series && chartOptions.series.length > 0) {
+            chartOptions.series[0].data = filteredData;
           }
         }
       });
       
-      // Trigger change detection once for all updates
-      this.cdr.detectChanges();
-      console.log(`Updated ${widgets.length} widgets successfully`);
+      // Don't trigger change detection manually
+      // this.dashboardConfig.widgets = [...this.dashboardConfig.widgets];
+      // this.cdr.detectChanges();
+      
+      console.log('Multiple widgets updated with filtered data');
     } catch (error) {
       console.error('Error updating multiple widgets:', error);
     }
   }
 
   /**
-   * Example of updating all chart widgets with appropriate data
+   * Update all charts with new data (simulated API call)
    */
   public async updateAllCharts(): Promise<void> {
-    // Get all echart widgets
-    const chartWidgets = this.dashboardConfig.widgets.filter(w => w.config.component === 'echart');
-    console.log('Found chart widgets:', chartWidgets.length);
-    
-    // Create appropriate data for each chart type using chart builders
-    const chartData: any[] = [];
-    chartWidgets.forEach(widget => {
-      const series = (widget.config.options as any)?.series?.[0];
-      const chartType = series?.type;
-      const hasAreaStyle = series?.areaStyle;
-      const coordinateSystem = series?.coordinateSystem;
-      const hasStack = series?.stack;
-      console.log('Widget chart type:', chartType, 'hasAreaStyle:', hasAreaStyle, 'coordinateSystem:', coordinateSystem, 'hasStack:', hasStack);
+    try {
+      console.log('Updating all charts...');
       
-      // Use chart builders to determine appropriate data
-      let data: any;
-      if (chartType === 'line' && coordinateSystem === 'polar') {
-        // Polar chart (line chart with polar coordinate system)
-        data = getAlternativePolarChartData();
-      } else if (chartType === 'line' && hasAreaStyle && hasStack) {
-        // Stacked area chart (line chart with area style and stack)
-        data = getAlternativeStackedAreaChartData();
-      } else if (chartType === 'line' && hasAreaStyle) {
-        // Area chart (line chart with area style)
-        data = getAlternativeAreaChartData();
-      } else {
-        switch (chartType) {
-          case 'pie':
-            data = getAlternativeAssetAllocationData();
-            break;
-          case 'bar':
-            data = getAlternativeMonthlyData();
-            break;
-          case 'line':
-            data = getAlternativePortfolioData();
-            break;
-          case 'scatter':
-            data = getAlternativeRiskReturnData();
-            break;
-          case 'gauge':
-            data = getAlternativeSavingsGoalData();
-            break;
-          case 'heatmap':
-            data = getAlternativeSpendingHeatmapData();
-            break;
-          case 'map':
-            data = getAlternativeInvestmentDistributionData();
-            break;
-          case 'treemap':
-            data = getAlternativeTreemapChartData();
-            break;
-          case 'sunburst':
-            data = getAlternativeSunburstChartData();
-            break;
-          case 'sankey':
-            data = getAlternativeSankeyChartData();
-            break;
-          default:
-            data = [];
-            console.warn('Unknown chart type:', chartType);
+      // Simulate API call to get updated data
+      const updatedData = await this.getUpdatedChartData();
+      
+      // Apply filters to the updated data
+      const filteredData = this.filterService.applyFiltersToData(updatedData, this.filterService.getFilterValues());
+      
+      // Update all chart widgets
+      this.dashboardConfig.widgets.forEach(widget => {
+        if (widget.config.component === 'echart') {
+          const chartOptions = widget.config.options as any;
+          if (chartOptions.series && chartOptions.series.length > 0) {
+            // Apply widget-specific filtering logic
+            this.updateWidgetWithFilters(widget, this.filterService.getFilterValues());
+          }
         }
-      }
-      chartData.push(data);
-    });
+      });
+      
+      // Don't trigger change detection manually
+      // this.dashboardConfig.widgets = [...this.dashboardConfig.widgets];
+      // this.cdr.detectChanges();
+      
+      console.log('All charts updated successfully');
+    } catch (error) {
+      console.error('Error updating all charts:', error);
+    }
+  }
+
+  /**
+   * Simulate getting updated chart data from API
+   */
+  private async getUpdatedChartData(): Promise<any[]> {
+    // Simulate API call delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
     
-    await this.updateMultipleWidgets(chartWidgets, chartData);
+    // Return mock updated data
+    return [
+      { name: 'Updated Data 1', value: Math.random() * 100 },
+      { name: 'Updated Data 2', value: Math.random() * 100 },
+      { name: 'Updated Data 3', value: Math.random() * 100 }
+    ];
+  }
+
+  /**
+   * Clear all filters
+   */
+  public clearAllFilters(): void {
+    // Prevent recursive updates
+    if (this.isUpdatingFilters) {
+      console.log('Skipping clear filters - already updating filters');
+      return;
+    }
+
+    this.isUpdatingFilters = true;
+    try {
+      this.filterService.clearAllFilters();
+      
+      // Don't update widgets immediately - let user interactions trigger updates
+      // this.updateWidgetsWithFilters();
+    } finally {
+      this.isUpdatingFilters = false;
+    }
+  }
+
+  /**
+   * Get current filter values
+   */
+  public getCurrentFilters(): IFilterValues[] {
+    return this.filterService.getFilterValues();
+  }
+
+  ngOnDestroy(): void {
+    // Cleanup code when component is destroyed
+    if (this.widgetUpdateTimeout) {
+      clearTimeout(this.widgetUpdateTimeout);
+    }
+    
+    // Unsubscribe from filter service
+    if (this.filterSubscription) {
+      this.filterSubscription.unsubscribe();
+    }
   }
 }

@@ -11,6 +11,13 @@
   </p-button>
   
   <p-button 
+    label="Clear All Filters" 
+    icon="pi pi-times" 
+    (onClick)="clearAllFilters()"
+    styleClass="p-button-sm p-button-warning">
+  </p-button>
+  
+  <p-button 
     label="Export to PDF" 
     icon="pi pi-file-pdf" 
     (onClick)="exportDashboardToPdf()"
@@ -29,13 +36,24 @@
   </p-button>
 </div>
 
+<!-- Filter Status Display -->
+<div class="filter-status" *ngIf="getCurrentFilters().length > 0">
+  <p-message 
+    severity="info" 
+    text="Active filters: {{ getCurrentFilters().length }} filter(s) applied"
+    styleClass="p-message-sm">
+  </p-message>
+</div>
+
 <p-scrollPanel [style]="{ height: '100%', width: '100%', 'overflow-x': 'hidden', 'overflow': 'auto' }">
   <div class="dashboard-container" #dashboardContainer>
     <!-- Dashboard Container Component -->
     <vis-dashboard-container 
+      #dashboardContainerComponent
       [widgets]="dashboardConfig.widgets" 
       [options]="dashboardConfig.config"
-      [dashboardId]="dashboardConfig.dashboardId">
+      [dashboardId]="dashboardConfig.dashboardId"
+      (filterValuesChanged)="onFilterValuesChanged($event)">
     </vis-dashboard-container>
   </div>
 </p-scrollPanel>

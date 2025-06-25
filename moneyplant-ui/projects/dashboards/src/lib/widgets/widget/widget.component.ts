@@ -65,14 +65,28 @@ export class WidgetComponent {
 
   private originalWidget: IWidget | null = null;
   private tableWidget: IWidget | null = null;
+  private cachedCurrentWidget: any = null;
+  private lastWidgetId: string | null = null;
+  private lastViewMode: string | null = null;
 
   /**
    * Get the current widget configuration for dynamic component rendering
    * @returns Object containing component class and input properties
    */
   get currentWidget() {
+    // Check if we need to update the cache
+    const currentWidgetId = this.widget?.id;
+    const currentViewMode = this.viewMode;
+    
+    if (this.cachedCurrentWidget && 
+        this.lastWidgetId === currentWidgetId && 
+        this.lastViewMode === currentViewMode) {
+      return this.cachedCurrentWidget;
+    }
+    
+    // Update cache
     const widgetToRender = this.getWidgetForCurrentMode();
-    return {
+    this.cachedCurrentWidget = {
       component: onGetWidget(widgetToRender),
       inputs: {
         widget: widgetToRender,
@@ -80,6 +94,11 @@ export class WidgetComponent {
         onUpdateFilter: this.onUpdateFilter,
       },
     };
+    
+    this.lastWidgetId = currentWidgetId;
+    this.lastViewMode = currentViewMode;
+    
+    return this.cachedCurrentWidget;
   }
 
   /**

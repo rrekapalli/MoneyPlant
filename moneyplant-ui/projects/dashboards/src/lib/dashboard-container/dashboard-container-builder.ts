@@ -236,7 +236,8 @@ export abstract class DashboardContainerBuilder<T extends GridsterConfig = Grids
       dashboardId: this.dashboardId,
       isEditMode: this.isEditMode,
       chartHeight: this.chartHeight,
-      defaultChartHeight: this.defaultChartHeight
+      defaultChartHeight: this.defaultChartHeight,
+      exportToPdf: this.exportToPdf.bind(this)
     };
   }
 
@@ -328,6 +329,11 @@ export abstract class DashboardContainerBuilder<T extends GridsterConfig = Grids
     const aspectAdjustment = Math.abs(1 - aspectRatio) * 0.5;
 
     return baseZoom - (zoomAdjustment * 0.1) - aspectAdjustment;
+  }
+
+  exportToPdf(options?: PdfExportOptions): Promise<void> {
+    // This is a placeholder - the actual implementation will be provided by the component
+    return Promise.reject(new Error('Export to PDF method must be implemented by the dashboard component'));
   }
 }
 

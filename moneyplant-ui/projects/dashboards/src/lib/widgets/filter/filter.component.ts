@@ -42,11 +42,14 @@ export class FilterComponent {
 
   clearAllFilters(item: any) {
     if (item) {
+      // Clear local widget state
       this.filterValues = [];
       if (this.widget?.config?.options) {
         (this.widget.config.options as IFilterOptions).values = [];
       }
-      this.onUpdateFilter.emit([])
+      
+      // Emit empty array to notify dashboard container to clear all filters
+      this.onUpdateFilter.emit([]);
     }
   }
 
@@ -56,6 +59,7 @@ export class FilterComponent {
       if (this.widget?.config?.options) {
         (this.widget.config.options as IFilterOptions).values = this.filterValues;
       }
+      
       this.onUpdateFilter.emit(this.filterValues);
     }
   }

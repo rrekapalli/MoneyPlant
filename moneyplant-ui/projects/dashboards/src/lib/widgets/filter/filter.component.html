@@ -6,7 +6,9 @@
       @for (item of filterValues; track item) {
         <button class="btn-wide mt-1 mb-1 mr-1 btn btn-outline-primary btn-sm chip"
                 (click)="clearFilter(item)">
-          @if (item['widgetTitle']) {
+          @if (item.filterColumn || item.accessor) {
+            {{ (item.filterColumn || item.accessor) | uppercase }}: {{ item['value'] }}
+          } @else if (item['widgetTitle']) {
             {{ item['widgetTitle'] }}: {{ item['value'] }}
           } @else {
             {{ item.accessor | uppercase }}: {{ item['value'] }}

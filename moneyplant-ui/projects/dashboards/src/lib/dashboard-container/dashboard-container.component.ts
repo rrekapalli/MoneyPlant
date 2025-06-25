@@ -64,6 +64,7 @@ export class DashboardContainerComponent {
   @Output() containerTouchChanged: EventEmitter<any> = new EventEmitter<any>();
   @Output() editModeStringChange: EventEmitter<string> = new EventEmitter<string>();
   @Output() changesMade: EventEmitter<string> = new EventEmitter<string>();
+  @Output() filterValuesChanged: EventEmitter<IFilterValues[]> = new EventEmitter<IFilterValues[]>();
 
   availableDashboards: any[] = [];
   //selectedDashboardId: string = '';
@@ -143,27 +144,40 @@ export class DashboardContainerComponent {
    */
   public updateDashboardConfig(updates: Partial<DashboardConfig>): void {
     if (updates.config) {
-      this.dashboardBuilder.setCustomConfig(updates.config);
+      this.mergedOptions = { ...this.mergedOptions, ...updates.config };
     }
+    
     if (updates.widgets) {
-      this.dashboardBuilder.setWidgets(updates.widgets);
+      this.widgets = updates.widgets;
     }
+    
     if (updates.filterValues) {
-      this.dashboardBuilder.setFilterValues(updates.filterValues);
+      this.filterValues = updates.filterValues;
     }
+    
     if (updates.dashboardId) {
-      this.dashboardBuilder.setDashboardId(updates.dashboardId);
+      this.dashboardId = updates.dashboardId;
     }
+    
     if (updates.isEditMode !== undefined) {
-      this.dashboardBuilder.setEditMode(updates.isEditMode);
+      this.isEditMode = updates.isEditMode;
     }
+    
     if (updates.chartHeight) {
-      this.dashboardBuilder.setChartHeight(updates.chartHeight);
+      this.chartHeight = updates.chartHeight;
     }
-
-    // Rebuild and apply
-    const newConfig = this.dashboardBuilder.build();
-    this.applyDashboardConfig(newConfig);
+    
+    // Update the dashboard builder with new configuration
+    this.dashboardBuilder = StandardDashboardBuilder.createStandard()
+      .setWidgets(this.widgets)
+      .setFilterValues(this.filterValues)
+      .setDashboardId(this.dashboardId)
+      .setEditMode(this.isEditMode)
+      .setChartHeight(this.chartHeight)
+      .setDefaultChartHeight(this.defaultChartHeight);
+    
+    // Apply the updated configuration
+    this.applyDashboardConfig(this.dashboardBuilder.build());
   }
 
   /**
@@ -237,111 +251,83 @@ export class DashboardContainerComponent {
   }
 
   /**
-   * Get the dashboard builder instance for advanced configuration
+   * Get the dashboard builder instance
    */
   public getBuilder(): StandardDashboardBuilder {
     return this.dashboardBuilder;
   }
 
   async onDataLoad(widget: IWidget) {
-    const filterWidget = this.widgets.find(
-      (item: IWidget) => item.config.component === 'filter'
-    );
-    let widgetData: any = (widget.config.options as EChartsOption).series;
-    let seriesData: any;
-    this.filterValues = (filterWidget?.config?.options as IFilterOptions)?.values;
-
-    // Danger Zone: Do NOT Touch the if conditions below
-    if (widgetData) {
-      if(Array.isArray(widgetData) && widgetData.length > 0) {
-        seriesData = widgetData.map((item: any) => {
-          return {
-            x: {
-              table: {
-                id: item.encode?.x?.split('.')[0],
-                name: item.encode?.x?.split('.')[1],
-              },
-              column: {
-                id: item.encode?.x?.split('.')[2],
-                name: item.encode?.x?.split('.')[3],
-              },
-            },
-            y: {
-              table: {
-                id: item.encode?.y?.split('.')[0],
-                name: item.encode?.y?.split('.')[1],
-              },
-              column: {
-                id: item.encode?.y?.split('.')[2],
-                name: item.encode?.y?.split('.')[3],
-              },
-            },
-          };
-        });
-      } else {
-        seriesData = {};
-      }
-    }
+    console.log('onDataLoad called for widget:', widget);
     
-    try {
-      widget.chartInstance?.showLoading();
-
-      if(widget.config.events?.onChartOptions) {
-        const filter = widget.config.state?.isOdataQuery === true ? this.getFilterParams() : this.filterValues 
-        widget?.config?.events?.onChartOptions(widget,widget.chartInstance ?? undefined , filter  )
-      }
-    } catch (error) {
-      console.error('Error in onDataLoad for widget:', widget.id, error);
-    } finally {
-      // Always hide loading regardless of success or error
-      widget.chartInstance?.hideLoading();
+    // Update the widget in the widgets array
+    const widgetIndex = this.widgets.findIndex(w => w.id === widget.id);
+    if (widgetIndex !== -1) {
+      this.widgets[widgetIndex] = widget;
+      // Don't trigger change detection here as it might cause loops
+      // this.widgets = [...this.widgets]; // Removed
     }
+
+    // Don't apply filters here as it might cause loops
+    // if (this.filterValues.length > 0) {
+    //   console.log('Applying existing filters to widget:', widget.id);
+    //   this.applyFiltersToWidget(widget);
+    // }
+  }
+
+  /**
+   * Apply filters to a specific widget
+   */
+  private applyFiltersToWidget(widget: IWidget): void {
+    // This method will be called when filters change
+    // Widgets can implement their own filtering logic here
+    console.log('Applying filters to widget:', widget.id, 'Filters:', this.filterValues);
+    
+    // Emit event for parent components to handle
+    this.filterValuesChanged.emit(this.filterValues);
   }
 
   getFilterParams() {
-    let params = '';
-    if (this.filterValues.length !== 0) {
-      const filtersParams: any = [];
-      this.filterValues.map((item: any) => {
-        filtersParams.push({
-          [item.accessor]: item[item.accessor]
-        });
-      });
-      const filter = {and: filtersParams};
-      params = buildQuery({filter});
-      params = params.replace('?$', '').replace('=', '') + '/';
-    }
-    return params;
+    const filterParams: any = {};
+    
+    this.filterValues.forEach((filter: IFilterValues) => {
+      // Use filterColumn if available, otherwise fall back to accessor
+      const filterKey = filter.filterColumn || filter.accessor;
+      if (filterKey && filter[filter.accessor]) {
+        filterParams[filterKey] = filter[filter.accessor];
+      }
+    });
+    
+    return filterParams;
   }
 
   onUpdateWidget(widget: IWidget) {
-    this.widgets = this.widgets.map((w: IWidget) => {
-      if (w.id === widget.id) {
-        return { ...w, ...widget };
-      }
-      return w;
-    });
+    console.log('onUpdateWidget called for widget:', widget);
+    
+    // Update the widget in the widgets array
+    const widgetIndex = this.widgets.findIndex(w => w.id === widget.id);
+    if (widgetIndex !== -1) {
+      this.widgets[widgetIndex] = widget;
+      // Don't trigger change detection here as it might cause loops
+      // this.widgets = [...this.widgets]; // Removed
+    }
   }
 
   onWidgetResize(
     item: GridsterItem,
     itemComponent: GridsterItemComponentInterface
   ) {
+    console.log('Widget resized:', item);
     DashboardContainerComponent.containerTouched = true;
     DashboardContainerComponent.editModeString =
       '[Edit Mode - Pending Changes]';
-
-    const widget = this.widgets.find(w => 
-      w.position.x == item.x && w.position.y == item.y 
-      && ((w.position.cols == item.cols && w.position.rows == item.rows) 
-      || (w['size']?.cols == item.cols && w['size']?.rows == item.rows)));
-
-    if(widget) {
-      widget.height = this.calculateChartHeight(item.cols, item.rows);
-      if(widget.chartInstance) {
-        widget.chartInstance.resize();
-      }
-      this.widgets = [...this.widgets];
+    
+    // Update the widget in the widgets array
+    const widgetIndex = this.widgets.findIndex(w => w.id === item['id']);
+    if (widgetIndex !== -1) {
+      this.widgets[widgetIndex] = { ...this.widgets[widgetIndex], ...item };
+      // Don't trigger change detection here as it might cause loops
+      // this.widgets = [...this.widgets]; // Removed
     }
   }
 
@@ -390,32 +376,50 @@ export class DashboardContainerComponent {
     }
 
     if(Array.isArray($event)) {
+      // Handle array events (Clear All or Set Filters)
       filterOptions.values = $event;
+      this.filterValues = $event;
+      
+      // If it's an empty array, it means "Clear All" was clicked
+      if ($event.length === 0) {
+        console.log('Clearing all filters');
+        // Clear the dashboard builder filter values
+        this.dashboardBuilder.setFilterValues([]);
+        // Clear local filter values array
+        this.filterValues = [];
+      }
     }
     else if ($event && $event.value && $event.widget) {
       // Handle chart click events
       const clickedData = $event.value;
       const sourceWidget = $event.widget;
+      const filterValue = $event.filterValue; // New filter value from echart component
       
       console.log('Clicked data:', clickedData);
       console.log('Source widget:', sourceWidget);
+      console.log('Filter value:', filterValue);
       
-      // Extract filter information from the clicked data
-      let filterValue: any = {};
+      // Use the filter value from echart component if available, otherwise create one
+      let finalFilterValue: any = filterValue;
       
-      if (clickedData && typeof clickedData === 'object') {
-        // For pie charts, use the name as the filter key
+      if (!finalFilterValue && clickedData && typeof clickedData === 'object') {
+        // Get the filter column from source widget config, fallback to accessor
+        const filterColumn = sourceWidget.config?.filterColumn || sourceWidget.config?.accessor || 'unknown';
+        
+        // Fallback to creating filter value from clicked data
         if (clickedData.name) {
-          filterValue = {
+          finalFilterValue = {
             accessor: 'category',
+            filterColumn: filterColumn,
             category: clickedData.name,
             value: clickedData.value || clickedData.name
           };
         }
         // For other chart types, try to extract meaningful data
         else if (clickedData.seriesName) {
-          filterValue = {
+          finalFilterValue = {
             accessor: 'series',
+            filterColumn: filterColumn,
             series: clickedData.seriesName,
             value: clickedData.value || clickedData.seriesName
           };
@@ -426,8 +430,9 @@ export class DashboardContainerComponent {
           const keys = Object.keys(clickedData);
           if (keys.length > 0) {
             const key = keys[0];
-            filterValue = {
+            finalFilterValue = {
               accessor: key,
+              filterColumn: filterColumn,
               [key]: clickedData[key],
               value: clickedData[key]
             };
@@ -436,19 +441,32 @@ export class DashboardContainerComponent {
         
         // Add widget information
         if (sourceWidget.config?.header?.title) {
-          filterValue.widgetTitle = sourceWidget.config.header.title;
+          finalFilterValue.widgetTitle = sourceWidget.config.header.title;
         }
-        
-        // Only add the filter if we have valid data
-        if (filterValue.accessor && filterValue.value) {
-          console.log('Adding filter:', filterValue);
-          filterOptions.values.push(filterValue);
+        if (sourceWidget.id) {
+          finalFilterValue.widgetId = sourceWidget.id;
         }
+      }
+      
+      // Only add the filter if we have valid data
+      if (finalFilterValue && finalFilterValue.accessor && finalFilterValue.value) {
+        console.log('Adding filter:', finalFilterValue);
+        filterOptions.values.push(finalFilterValue);
+        this.filterValues.push(finalFilterValue);
       }
     }
 
     console.log('Updated filter widget:', newFilterWidget);
-    this.onUpdateWidget(newFilterWidget as IWidget);
+    console.log('Updated filter values:', this.filterValues);
+    
+    // Update the dashboard configuration with new filter values
+    this.dashboardBuilder.setFilterValues(this.filterValues);
+    
+    // Emit filter values change event to trigger widget updates
+    this.filterValuesChanged.emit(this.filterValues);
+    
+    // Don't call onUpdateWidget here as it might cause loops
+    // this.onUpdateWidget(newFilterWidget as IWidget);
   }
 
   onDashboardSelectionChanged($event: any) {
@@ -536,7 +554,7 @@ export class DashboardContainerComponent {
    */
   onToggleViewMode(event: {widgetId: string, viewMode: 'chart' | 'table'}) {
     this.widgetViewModes.set(event.widgetId, event.viewMode);
-    // Trigger change detection
-    this.widgets = [...this.widgets];
+    // Don't trigger change detection here as it might cause loops
+    // this.widgets = [...this.widgets]; // Removed
   }
 }
