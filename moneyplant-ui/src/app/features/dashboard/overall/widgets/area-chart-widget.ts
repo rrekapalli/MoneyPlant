@@ -36,7 +36,7 @@ export function createAreaChartWidget(): IWidget {
     .setTooltip('axis', '{b}: ${c}K')
     .setLegend('horizontal', 'bottom')
     .setHeader('Revenue Trend')
-    .setPosition({ x: 6, y: 0, cols: 6, rows: 4 })
+    .setPosition({ x: 6, y: 0, cols: 6, rows: 8 })
     .build();
 }
 

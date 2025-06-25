@@ -12,7 +12,7 @@ export function createSavingsGoalWidget(): IWidget {
   return GaugeChartBuilder.create()
     .setData([]) // Data will be populated from shared dashboard data
     .setHeader('Savings Goal Progress')
-    .setPosition({ x: 12, y: 8, cols: 4, rows: 4 })
+    .setPosition({ x: 12, y: 8, cols: 4, rows: 8 })
     .setTitle('Savings Goal Progress', 'Target: $50,000')
     .setRange(0, 50000)
     .setRadius('60%')

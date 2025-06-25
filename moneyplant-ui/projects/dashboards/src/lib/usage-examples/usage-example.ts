@@ -2,6 +2,13 @@ import { StandardDashboardBuilder, DashboardContainerComponent } from '../dashbo
 import { IWidget } from '../entities/IWidget';
 import { IFilterValues } from '../entities/IFilterValues';
 import { GridType, DisplayGrid } from 'angular-gridster2';
+import { 
+  DESKTOP_GRID_SETTINGS, 
+  MOBILE_GRID_SETTINGS, 
+  TABLET_GRID_SETTINGS, 
+  LARGE_DESKTOP_GRID_SETTINGS,
+  SCREEN_BREAKPOINTS
+} from '../dashboard-container/dashboard-constants';
 
 /**
  * Example service for managing dashboard configurations
@@ -130,9 +137,9 @@ export class DashboardConfigurationService {
 export class DashboardUsageExamples {
 
   /**
-   * Example 1: Basic dashboard setup in a component
+   * Example 1: Basic dashboard
    */
-  static basicDashboardSetup(): any {
+  static basicDashboard(): any {
     return StandardDashboardBuilder.createStandard()
       .setDashboardId('basic-dashboard')
       .setWidgets([])
@@ -145,7 +152,7 @@ export class DashboardUsageExamples {
    */
   static editModeDashboard(): any {
     return StandardDashboardBuilder.createEditMode()
-      .setDashboardId('edit-dashboard')
+      .setDashboardId('edit-mode-dashboard')
       .setWidgets([])
       .setFilterValues([])
       .build();
@@ -163,24 +170,22 @@ export class DashboardUsageExamples {
   }
 
   /**
-   * Example 4: Desktop optimized dashboard
+   * Example 4: Tablet optimized dashboard
    */
-  static desktopDashboard(): any {
-    return StandardDashboardBuilder.createDesktop()
-      .setDashboardId('desktop-dashboard')
+  static tabletDashboard(): any {
+    return StandardDashboardBuilder.createTablet()
+      .setDashboardId('tablet-dashboard')
       .setWidgets([])
       .setFilterValues([])
       .build();
   }
 
   /**
-   * Example 5: Responsive dashboard
+   * Example 5: Desktop optimized dashboard
    */
-  static responsiveDashboard(): any {
-    return StandardDashboardBuilder.createStandard()
-      .setDashboardId('responsive-dashboard')
-      .setResponsive(768)
-      .setFluidLayout()
+  static desktopDashboard(): any {
+    return StandardDashboardBuilder.createDesktop()
+      .setDashboardId('desktop-dashboard')
       .setWidgets([])
       .setFilterValues([])
       .build();
@@ -203,7 +208,7 @@ export class DashboardUsageExamples {
       .setMinRows(1)
       .setFixedColWidth(80)
       .setFixedRowHeight(80)
-      .setMobileBreakpoint(768)
+      .setMobileBreakpoint(SCREEN_BREAKPOINTS.TABLET)
       .setWidgets([])
       .setFilterValues([])
       .setEditMode(true)
@@ -229,7 +234,7 @@ export class DashboardUsageExamples {
       .setMinRows(2)
       .setFixedColWidth(90)
       .setFixedRowHeight(90)
-      .setMobileBreakpoint(1024)
+      .setMobileBreakpoint(SCREEN_BREAKPOINTS.DESKTOP)
       .enableEmptyCellInteractions()
       .setItemSizeConstraints(2, 8, 2, 10)
       .setWidgets([])
@@ -241,26 +246,29 @@ export class DashboardUsageExamples {
   }
 
   /**
-   * Example 8: Compact layout dashboard
+   * Example 8: Responsive dashboard
    */
-  static compactDashboard(): any {
+  static responsiveDashboard(): any {
     return StandardDashboardBuilder.createStandard()
-      .setDashboardId('compact-dashboard')
-      .setCompactLayout()
-      .setGridDimensions(24, 50)
+      .setDashboardId('responsive-dashboard')
+      .setResponsive(SCREEN_BREAKPOINTS.TABLET)
+      .setGridType(GridType.VerticalFixed)
+      .setDisplayGrid(DisplayGrid.None)
+      .setOuterMargin(true)
+      .setDraggable(false)
+      .setResizable(false)
       .setWidgets([])
       .setFilterValues([])
       .build();
   }
 
   /**
-   * Example 9: Spacious layout dashboard
+   * Example 9: Compact layout dashboard
    */
-  static spaciousDashboard(): any {
+  static compactLayoutDashboard(): any {
     return StandardDashboardBuilder.createStandard()
-      .setDashboardId('spacious-dashboard')
-      .setSpaciousLayout()
-      .setGridDimensions(8, 30)
+      .setDashboardId('compact-layout-dashboard')
+      .setCompactLayout()
       .setWidgets([])
       .setFilterValues([])
       .build();
@@ -283,7 +291,7 @@ export class DashboardUsageExamples {
       .setMinRows(1)
       .setFixedColWidth(60)
       .setFixedRowHeight(60)
-      .setMobileBreakpoint(480)
+      .setMobileBreakpoint(SCREEN_BREAKPOINTS.MOBILE)
       .enableEmptyCellInteractions()
       .setEmptyCellConfig({
         enableEmptyCellClick: true,
@@ -433,7 +441,7 @@ export class DashboardComponentMethods {
       .setMinRows(2)
       .setFixedColWidth(90)
       .setFixedRowHeight(90)
-      .setMobileBreakpoint(1024)
+      .setMobileBreakpoint(SCREEN_BREAKPOINTS.DESKTOP)
       .enableEmptyCellInteractions()
       .setItemSizeConstraints(2, 8, 2, 10)
       .setEditMode(true)
@@ -445,22 +453,19 @@ export class DashboardComponentMethods {
   }
 
   /**
-   * Create a responsive dashboard configuration
+   * Set responsive configuration
    */
-  static setResponsiveConfiguration(
-    dashboardContainer: DashboardContainerComponent,
-    dashboardId: string,
-    widgets: IWidget[],
-    filterValues: IFilterValues[],
-    isEditMode: boolean
-  ): void {
+  static setResponsiveConfiguration(dashboardContainer: DashboardContainerComponent): void {
     const responsiveConfig = StandardDashboardBuilder.createStandard()
-      .setDashboardId(dashboardId)
-      .setResponsive(768)
-      .setFluidLayout()
-      .setWidgets(widgets)
-      .setFilterValues(filterValues)
-      .setEditMode(isEditMode)
+      .setDashboardId('responsive-dashboard')
+      .setResponsive(SCREEN_BREAKPOINTS.TABLET)
+      .setGridType(GridType.VerticalFixed)
+      .setDisplayGrid(DisplayGrid.None)
+      .setOuterMargin(true)
+      .setDraggable(false)
+      .setResizable(false)
+      .setWidgets([])
+      .setFilterValues([])
       .build();
 
     dashboardContainer.updateDashboardConfig(responsiveConfig);
@@ -488,7 +493,7 @@ export class DashboardComponentMethods {
       .setMinRows(1)
       .setFixedColWidth(60)
       .setFixedRowHeight(60)
-      .setMobileBreakpoint(480)
+      .setMobileBreakpoint(SCREEN_BREAKPOINTS.MOBILE)
       .enableEmptyCellInteractions()
       .setEmptyCellConfig({
         enableEmptyCellClick: true,

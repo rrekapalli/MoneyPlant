@@ -11,7 +11,7 @@ export function createMonthlyIncomeExpensesWidget(): IWidget {
     .setData([]) // Data will be populated from shared dashboard data
     .setCategories(MONTHLY_CATEGORIES)
     .setHeader('Monthly Income vs Expenses')
-    .setPosition({ x: 4, y: 0, cols: 6, rows: 4 })
+    .setPosition({ x: 4, y: 0, cols: 6, rows: 8 })
     .setTitle('Monthly Income vs Expenses', 'Last 6 Months')
     .setColors(['#5470c6'])
     .setBarWidth('60%')

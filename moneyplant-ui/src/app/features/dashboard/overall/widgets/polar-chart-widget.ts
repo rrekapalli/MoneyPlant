@@ -33,7 +33,7 @@ export function createPolarChartWidget(): IWidget {
     .setTooltip('item', '{b}: {c}')
     .setLegend('horizontal', 'bottom')
     .setHeader('Performance Metrics')
-    .setPosition({ x: 0, y: 8, cols: 6, rows: 4 })
+    .setPosition({ x: 0, y: 8, cols: 6, rows: 8 })
     .build();
 }
 
@@ -55,7 +55,7 @@ export function createMultiSeriesPolarChartWidget(): IWidget {
     .setTooltip('item', '{b}: {c}')
     .setLegend('horizontal', 'bottom')
     .setHeader('Financial Performance')
-    .setPosition({ x: 6, y: 8, cols: 6, rows: 4 })
+    .setPosition({ x: 6, y: 8, cols: 6, rows: 8 })
     .build();
 }
 
@@ -77,7 +77,7 @@ export function createRadarPolarChartWidget(): IWidget {
     .setTooltip('item', '{b}: {c}%')
     .setLegend('horizontal', 'bottom')
     .setHeader('Business Metrics')
-    .setPosition({ x: 0, y: 12, cols: 8, rows: 4 })
+    .setPosition({ x: 0, y: 12, cols: 8, rows: 8 })
     .build();
 }
 

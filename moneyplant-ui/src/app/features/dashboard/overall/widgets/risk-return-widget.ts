@@ -10,7 +10,7 @@ export function createRiskReturnWidget(): IWidget {
   const widget = ScatterChartBuilder.create()
     .setData([]) // Data will be populated from shared dashboard data
     .setHeader('Risk vs Return Analysis')
-    .setPosition({ x: 6, y: 4, cols: 6, rows: 4 })
+    .setPosition({ x: 6, y: 4, cols: 6, rows: 8 })
     .setTitle('Risk vs Return Analysis', 'Portfolio Components')
     .setXAxisName('Risk (Volatility)')
     .setYAxisName('Return (%)')

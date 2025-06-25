@@ -12,8 +12,7 @@ export function createFilterWidget(): IWidget {
   return new WidgetBuilder()
     .setId('filter-widget')
     .setComponent('filter')
-    .setHeader('Active Filters')
-    .setPosition({ x: 0, y: 0, cols: 12, rows: 1 })
+    .setPosition({ x: 0, y: 0, cols: 12, rows: 2 })
     .setFilterOptions(filterOptions)
     .build();
 }

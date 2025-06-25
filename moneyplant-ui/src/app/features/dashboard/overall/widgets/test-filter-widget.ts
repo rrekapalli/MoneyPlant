@@ -18,7 +18,7 @@ export function createTestFilterWidget(): IWidget {
   const widget = PieChartBuilder.create()
     .setData(TEST_FILTER_DATA)
     .setHeader('Test Filter Widget')
-    .setPosition({ x: 8, y: 1, cols: 4, rows: 4 })
+    .setPosition({ x: 8, y: 1, cols: 4, rows: 8 })
     .setColors(TEST_FILTER_COLORS)
     .setRadius(['40%', '70%'])
     .setLabelFormatter('{b}: {c} ({d}%)')

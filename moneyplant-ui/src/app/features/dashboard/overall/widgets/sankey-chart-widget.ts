@@ -59,7 +59,7 @@ export function createMinimalSankeyChartWidget(): IWidget {
     .setId(uuidv4())
     .setComponent('echart')
     .setHeader('Minimal Test')
-    .setPosition({ x: 16, y: 10, cols: 6, rows: 4 })
+    .setPosition({ x: 16, y: 10, cols: 6, rows: 8 })
     .setEChartsOptions({
       series: [{
         type: 'sankey',
@@ -86,7 +86,7 @@ export function createSankeyChartWidget(): IWidget {
   const widget = SankeyChartBuilder.create()
     .setData(SANKEY_CHART_DATA)
     .setHeader('Financial Flow')
-    .setPosition({ x: 0, y: 0, cols: 8, rows: 6 })
+    .setPosition({ x: 0, y: 0, cols: 8, rows: 8 })
     .setCurveness(0.5)
     .setTooltip('item', '{b}: {c}')
     .build();
@@ -129,7 +129,7 @@ export function createInvestmentFlowSankeyWidget(): IWidget {
   const widget = SankeyChartBuilder.create()
     .setData(investmentData)
     .setHeader('Investment Flow')
-    .setPosition({ x: 8, y: 0, cols: 8, rows: 6 })
+    .setPosition({ x: 8, y: 0, cols: 8, rows: 8 })
     .setCurveness(0.3)
     .setTooltip('item', '{b}: {c}%')
     .build();
@@ -181,7 +181,7 @@ export function createBudgetAllocationSankeyWidget(): IWidget {
   return SankeyChartBuilder.create()
     .setData(budgetData)
     .setHeader('Budget Allocation')
-    .setPosition({ x: 0, y: 6, cols: 8, rows: 6 })
+    .setPosition({ x: 0, y: 6, cols: 8, rows: 8 })
     .setCurveness(0.4)
     .setTooltip('item', '{b}: {c}%')
     .build();

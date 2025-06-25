@@ -22,7 +22,7 @@ export function createInvestmentDistributionWidget(): IWidget {
     .setData([]) // Data will be populated from shared dashboard data
     .setMap('world')
     .setHeader('Investment Distribution by Region')
-    .setPosition({ x: 0, y: 8, cols: 6, rows: 4 })
+    .setPosition({ x: 0, y: 8, cols: 6, rows: 8 })
     .setTitle('Investment Distribution by Region', 'Global')
     .setVisualMap(0, 100, ['#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8'])
     .setRoam(true)

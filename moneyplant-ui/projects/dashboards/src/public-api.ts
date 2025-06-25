@@ -7,6 +7,9 @@ export * from './lib/widget-config/widget-config.component';
 // Dashboard Container Builders
 export * from './lib/dashboard-container';
 
+// Dashboard Constants
+export * from './lib/dashboard-container/dashboard-constants';
+
 // Services
 export * from './lib/services/pdf-export.service';
 export * from './lib/services/excel-export.service';

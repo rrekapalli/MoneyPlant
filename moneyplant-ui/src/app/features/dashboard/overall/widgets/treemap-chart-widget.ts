@@ -132,7 +132,7 @@ export function createTreemapChartWidget(): IWidget {
     .setNodeClick('zoomToNode')
     .setTooltip('item', '{b}: {c}%')
     .setHeader('Portfolio Distribution')
-    .setPosition({ x: 0, y: 8, cols: 6, rows: 4 })
+    .setPosition({ x: 0, y: 8, cols: 6, rows: 8 })
     .build();
 }
 
@@ -165,7 +165,7 @@ export function createExpenseTreemapWidget(): IWidget {
     .setNodeClick('zoomToNode')
     .setTooltip('item', '{b}: ${c}K')
     .setHeader('Monthly Expenses')
-    .setPosition({ x: 6, y: 8, cols: 6, rows: 4 })
+    .setPosition({ x: 6, y: 8, cols: 6, rows: 8 })
     .build();
 }
 
@@ -198,7 +198,7 @@ export function createLargeScaleTreemapWidget(): IWidget {
     .setNodeClick('zoomToNode')
     .setTooltip('item', '{b}: {c}%')
     .setHeader('Financial Overview Treemap')
-    .setPosition({ x: 0, y: 12, cols: 8, rows: 4 })
+    .setPosition({ x: 0, y: 12, cols: 8, rows: 8 })
     .build();
 }
 

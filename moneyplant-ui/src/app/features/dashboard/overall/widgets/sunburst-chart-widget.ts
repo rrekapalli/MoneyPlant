@@ -113,7 +113,7 @@ export function createSunburstChartWidget(): IWidget {
     .setTooltip('item', '{b}: {c}%')
     .setLegend('vertical', 'left')
     .setHeader('Portfolio Allocation')
-    .setPosition({ x: 8, y: 0, cols: 4, rows: 4 })
+    .setPosition({ x: 8, y: 0, cols: 4, rows: 8 })
     .build();
 }
 
@@ -150,7 +150,7 @@ export function createOrganizationalSunburstWidget(): IWidget {
     .setTooltip('item', '{b}: {c}%')
     .setLegend('vertical', 'right')
     .setHeader('Organizational Structure')
-    .setPosition({ x: 12, y: 0, cols: 4, rows: 4 })
+    .setPosition({ x: 12, y: 0, cols: 4, rows: 8 })
     .build();
 }
 
@@ -187,7 +187,7 @@ export function createLargeScaleSunburstWidget(): IWidget {
     .setTooltip('item', '{b}: {c}%')
     .setLegend('horizontal', 'bottom')
     .setHeader('Financial Overview Sunburst')
-    .setPosition({ x: 0, y: 4, cols: 6, rows: 4 })
+    .setPosition({ x: 0, y: 4, cols: 6, rows: 8 })
     .build();
 }
 

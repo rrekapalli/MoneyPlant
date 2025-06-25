@@ -36,13 +36,15 @@
   </p-button>
 </div>
 
-<!-- Filter Status Display -->
+<!-- Enhanced Filter Status Display -->
 <div class="filter-status" *ngIf="getCurrentFilters().length > 0">
-  <p-message 
-    severity="info" 
-    text="Active filters: {{ getCurrentFilters().length }} filter(s) applied"
-    styleClass="p-message-sm">
-  </p-message>
+  <div class="filter-status-content">
+    <i class="pi pi-filter" style="color: #1976d2; margin-right: 0.5rem;"></i>
+    <span class="filter-status-text">
+      Active Filters
+      <span class="filter-count">{{ getCurrentFilters().length }}</span>
+    </span>
+  </div>
 </div>
 
 <p-scrollPanel [style]="{ height: '100%', width: '100%', 'overflow-x': 'hidden', 'overflow': 'auto' }">

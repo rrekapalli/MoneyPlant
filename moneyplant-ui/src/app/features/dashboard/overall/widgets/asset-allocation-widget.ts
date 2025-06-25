@@ -10,7 +10,7 @@ export function createAssetAllocationWidget(): IWidget {
   const widget = PieChartBuilder.create()
     .setData([]) // Data will be populated from shared dashboard data
     .setHeader('Asset Allocation')
-    .setPosition({ x: 0, y: 0, cols: 4, rows: 4 })
+    .setPosition({ x: 0, y: 0, cols: 4, rows: 8 })
     .setColors(ASSET_ALLOCATION_COLORS)
     .setRadius(['40%', '70%'])
     .setLabelFormatter('{b}: {c} ({d}%)')

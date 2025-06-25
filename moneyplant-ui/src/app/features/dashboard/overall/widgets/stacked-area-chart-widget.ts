@@ -38,7 +38,7 @@ export function createStackedAreaChartWidget(): IWidget {
     .setTooltip('axis', '{b}: ${c}K')
     .setLegend('horizontal', 'bottom')
     .setHeader('Financial Overview')
-    .setPosition({ x: 0, y: 0, cols: 8, rows: 4 })
+    .setPosition({ x: 0, y: 0, cols: 8, rows: 8 })
     .build();
 }
 
@@ -59,7 +59,7 @@ export function createPerformanceStackedAreaChartWidget(): IWidget {
     .setTooltip('axis', '{b}: {c}%')
     .setLegend('horizontal', 'bottom')
     .setHeader('Portfolio Allocation')
-    .setPosition({ x: 0, y: 4, cols: 8, rows: 4 })
+    .setPosition({ x: 0, y: 4, cols: 8, rows: 8 })
     .build();
 }
 
@@ -80,7 +80,7 @@ export function createMarketTrendStackedAreaChartWidget(): IWidget {
     .setTooltip('axis', '{b}: {c}%')
     .setLegend('horizontal', 'bottom')
     .setHeader('Market Conditions')
-    .setPosition({ x: 8, y: 0, cols: 4, rows: 4 })
+    .setPosition({ x: 8, y: 0, cols: 4, rows: 8 })
     .build();
 }
 

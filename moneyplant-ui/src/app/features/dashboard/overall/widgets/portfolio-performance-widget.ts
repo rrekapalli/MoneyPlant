@@ -11,7 +11,7 @@ export function createPortfolioPerformanceWidget(): IWidget {
     .setData([]) // Data will be populated from shared dashboard data
     .setXAxisData(PORTFOLIO_CATEGORIES)
     .setHeader('Portfolio Performance')
-    .setPosition({ x: 0, y: 4, cols: 6, rows: 4 })
+    .setPosition({ x: 0, y: 4, cols: 6, rows: 8 })
     .setTitle('Portfolio Performance', 'Last 6 Months')
     .setSmooth(true)
     .setAreaStyle('#5470c6', 0.3)
