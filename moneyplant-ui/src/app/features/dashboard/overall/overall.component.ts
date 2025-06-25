@@ -343,6 +343,100 @@ export class OverallComponent implements OnInit, OnDestroy {
         console.log('Risk vs Return data:', riskReturnResult);
         return riskReturnResult;
         
+      case 'Investment Distribution by Region':
+        // Group by market (country) and sum totalValue for map visualization
+        const investmentData = this.groupByAndSum(this.dashboardData, 'market', 'totalValue');
+        console.log('Investment Distribution data:', investmentData);
+        return investmentData;
+        
+      case 'Weekly Spending Heatmap':
+        // Create heatmap data from the dashboard data
+        // Group by month and assetCategory to create a heatmap
+        const heatmapData = this.createHeatmapData(this.dashboardData);
+        console.log('Weekly Spending Heatmap data:', heatmapData);
+        return heatmapData;
+        
+      case 'Revenue Trend':
+        // Group by month and sum totalValue for area chart
+        const revenueData = this.groupByAndSum(this.dashboardData, 'month', 'totalValue');
+        console.log('Revenue Trend data:', revenueData);
+        return revenueData;
+        
+      case 'Financial Overview':
+        // Create multi-series data for stacked area chart
+        const financialData = this.createMultiSeriesData(this.dashboardData);
+        console.log('Financial Overview data:', financialData);
+        return financialData;
+        
+      case 'Performance Monitoring':
+        // Use all data points for large-scale area chart
+        const performanceData = this.dashboardData.map(row => ({
+          name: `${row.month}-${row.assetCategory}`,
+          value: row.totalValue
+        }));
+        console.log('Performance Monitoring data:', performanceData);
+        return performanceData;
+        
+      case 'Performance Metrics':
+        // Create polar chart data from asset categories
+        const polarData = this.createPolarData(this.dashboardData);
+        console.log('Performance Metrics data:', polarData);
+        return polarData;
+        
+      case 'Financial Performance':
+        // Create multi-series polar data
+        const multiPolarData = this.createMultiSeriesPolarData(this.dashboardData);
+        console.log('Financial Performance data:', multiPolarData);
+        return multiPolarData;
+        
+      case 'Business Metrics':
+        // Create radar-style polar data
+        const radarData = this.createRadarData(this.dashboardData);
+        console.log('Business Metrics data:', radarData);
+        return radarData;
+        
+      case 'Portfolio Allocation':
+        // Create multi-series data for stacked area chart
+        const portfolioAllocationData = this.createMultiSeriesData(this.dashboardData);
+        console.log('Portfolio Allocation data:', portfolioAllocationData);
+        return portfolioAllocationData;
+        
+      case 'Market Conditions':
+        // Create multi-series data for market trends
+        const marketData = this.createMarketTrendData(this.dashboardData);
+        console.log('Market Conditions data:', marketData);
+        return marketData;
+        
+      case 'Portfolio Distribution':
+        // Create treemap data from asset categories and markets
+        const treemapData = this.createTreemapData(this.dashboardData);
+        console.log('Portfolio Distribution data:', treemapData);
+        return treemapData;
+        
+      case 'Monthly Expenses':
+        // Create alternative treemap data
+        const expenseTreemapData = this.createExpenseTreemapData(this.dashboardData);
+        console.log('Monthly Expenses data:', expenseTreemapData);
+        return expenseTreemapData;
+        
+      case 'Financial Overview Treemap':
+        // Create large-scale treemap data
+        const largeTreemapData = this.createLargeTreemapData(this.dashboardData);
+        console.log('Financial Overview Treemap data:', largeTreemapData);
+        return largeTreemapData;
+        
+      case 'Organizational Structure':
+        // Create sunburst data from asset categories
+        const sunburstData = this.createSunburstData(this.dashboardData);
+        console.log('Organizational Structure data:', sunburstData);
+        return sunburstData;
+        
+      case 'Financial Overview Sunburst':
+        // Create large-scale sunburst data
+        const largeSunburstData = this.createLargeSunburstData(this.dashboardData);
+        console.log('Financial Overview Sunburst data:', largeSunburstData);
+        return largeSunburstData;
+        
       case 'Test Filter Widget':
         // Group by assetCategory and sum totalValue (same as Asset Allocation)
         const testData = this.groupByAndSum(this.dashboardData, 'assetCategory', 'totalValue');
@@ -369,6 +463,299 @@ export class OverallComponent implements OnInit, OnDestroy {
     }, {} as Record<string, number>);
 
     return Object.entries(grouped).map(([name, value]) => ({ name, value }));
+  }
+
+  /**
+   * Helper method to create heatmap data from dashboard data
+   */
+  private createHeatmapData(data: DashboardDataRow[]): Array<{ value: [number, number, number]; name: string }> {
+    // Get unique months and asset categories
+    const months = [...new Set(data.map(row => row.month))];
+    const categories = [...new Set(data.map(row => row.assetCategory))];
+    
+    // Create month to index mapping
+    const monthIndexMap = months.reduce((acc, month, index) => {
+      acc[month] = index;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    // Create category to index mapping
+    const categoryIndexMap = categories.reduce((acc, category, index) => {
+      acc[category] = index;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    // Group data by month and category
+    const groupedData = data.reduce((acc, row) => {
+      const key = `${row.month}-${row.assetCategory}`;
+      if (!acc[key]) {
+        acc[key] = 0;
+      }
+      acc[key] += row.totalValue;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    // Convert to heatmap format
+    const heatmapData: Array<{ value: [number, number, number]; name: string }> = [];
+    
+    Object.entries(groupedData).forEach(([key, value]) => {
+      const [month, category] = key.split('-');
+      const xIndex = monthIndexMap[month];
+      const yIndex = categoryIndexMap[category];
+      
+      if (xIndex !== undefined && yIndex !== undefined) {
+        heatmapData.push({
+          value: [xIndex, yIndex, value],
+          name: key
+        });
+      }
+    });
+    
+    return heatmapData;
+  }
+
+  /**
+   * Helper method to create multi-series data for stacked area charts
+   */
+  private createMultiSeriesData(data: DashboardDataRow[]): Array<{ name: string; data: number[] }> {
+    // Group by asset category and month
+    const categories = [...new Set(data.map(row => row.assetCategory))];
+    const months = [...new Set(data.map(row => row.month))];
+    
+    return categories.map(category => {
+      const categoryData = data.filter(row => row.assetCategory === category);
+      const dataByMonth = months.map(month => {
+        const monthData = categoryData.find(row => row.month === month);
+        return monthData ? monthData.totalValue : 0;
+      });
+      
+      return {
+        name: category,
+        data: dataByMonth
+      };
+    });
+  }
+
+  /**
+   * Helper method to create polar chart data
+   */
+  private createPolarData(data: DashboardDataRow[]): number[] {
+    // Group by asset category and sum totalValue
+    const groupedData = data.reduce((acc, row) => {
+      if (!acc[row.assetCategory]) {
+        acc[row.assetCategory] = 0;
+      }
+      acc[row.assetCategory] += row.totalValue;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    return Object.values(groupedData);
+  }
+
+  /**
+   * Helper method to create multi-series polar data
+   */
+  private createMultiSeriesPolarData(data: DashboardDataRow[]): Array<{ name: string; data: number[] }> {
+    // Create multiple series based on markets
+    const markets = [...new Set(data.map(row => row.market))];
+    const categories = [...new Set(data.map(row => row.assetCategory))];
+    
+    return markets.map(market => {
+      const marketData = data.filter(row => row.market === market);
+      const dataByCategory = categories.map(category => {
+        const categoryData = marketData.find(row => row.assetCategory === category);
+        return categoryData ? categoryData.totalValue : 0;
+      });
+      
+      return {
+        name: market,
+        data: dataByCategory
+      };
+    });
+  }
+
+  /**
+   * Helper method to create radar data
+   */
+  private createRadarData(data: DashboardDataRow[]): number[] {
+    // Create radar data from asset categories
+    const categories = [...new Set(data.map(row => row.assetCategory))];
+    return categories.map(category => {
+      const categoryData = data.filter(row => row.assetCategory === category);
+      return categoryData.reduce((sum, row) => sum + row.totalValue, 0);
+    });
+  }
+
+  /**
+   * Helper method to create market trend data
+   */
+  private createMarketTrendData(data: DashboardDataRow[]): Array<{ name: string; data: number[] }> {
+    // Create market trend series
+    const months = [...new Set(data.map(row => row.month))];
+    const markets = [...new Set(data.map(row => row.market))];
+    
+    return markets.map(market => {
+      const marketData = data.filter(row => row.market === market);
+      const dataByMonth = months.map(month => {
+        const monthData = marketData.find(row => row.month === month);
+        return monthData ? monthData.totalValue : 0;
+      });
+      
+      return {
+        name: market,
+        data: dataByMonth
+      };
+    });
+  }
+
+  /**
+   * Helper method to create treemap data
+   */
+  private createTreemapData(data: DashboardDataRow[]): Array<{ name: string; value: number; children?: Array<{ name: string; value: number }> }> {
+    // Group by market and asset category
+    const markets = [...new Set(data.map(row => row.market))];
+    
+    return markets.map(market => {
+      const marketData = data.filter(row => row.market === market);
+      const categories = [...new Set(marketData.map(row => row.assetCategory))];
+      
+      const children = categories.map(category => {
+        const categoryData = marketData.filter(row => row.assetCategory === category);
+        const value = categoryData.reduce((sum, row) => sum + row.totalValue, 0);
+        return { name: category, value };
+      });
+      
+      const totalValue = children.reduce((sum, child) => sum + child.value, 0);
+      
+      return {
+        name: market,
+        value: totalValue,
+        children
+      };
+    });
+  }
+
+  /**
+   * Helper method to create expense treemap data
+   */
+  private createExpenseTreemapData(data: DashboardDataRow[]): Array<{ name: string; value: number; children?: Array<{ name: string; value: number }> }> {
+    // Create expense categories from asset categories
+    const categories = [...new Set(data.map(row => row.assetCategory))];
+    
+    return categories.map(category => {
+      const categoryData = data.filter(row => row.assetCategory === category);
+      const markets = [...new Set(categoryData.map(row => row.market))];
+      
+      const children = markets.map(market => {
+        const marketData = categoryData.filter(row => row.market === market);
+        const value = marketData.reduce((sum, row) => sum + row.totalValue, 0);
+        return { name: market, value };
+      });
+      
+      const totalValue = children.reduce((sum, child) => sum + child.value, 0);
+      
+      return {
+        name: category,
+        value: totalValue,
+        children
+      };
+    });
+  }
+
+  /**
+   * Helper method to create large treemap data
+   */
+  private createLargeTreemapData(data: DashboardDataRow[]): Array<{ name: string; value: number; children?: Array<{ name: string; value: number; children?: Array<{ name: string; value: number }> }> }> {
+    // Create hierarchical data structure
+    const markets = [...new Set(data.map(row => row.market))];
+    
+    return markets.map(market => {
+      const marketData = data.filter(row => row.market === market);
+      const categories = [...new Set(marketData.map(row => row.assetCategory))];
+      
+      const categoryChildren = categories.map(category => {
+        const categoryData = marketData.filter(row => row.assetCategory === category);
+        const months = [...new Set(categoryData.map(row => row.month))];
+        
+        const monthChildren = months.map(month => {
+          const monthData = categoryData.find(row => row.month === month);
+          return { name: month, value: monthData ? monthData.totalValue : 0 };
+        });
+        
+        const categoryValue = monthChildren.reduce((sum, child) => sum + child.value, 0);
+        
+        return {
+          name: category,
+          value: categoryValue,
+          children: monthChildren
+        };
+      });
+      
+      const marketValue = categoryChildren.reduce((sum, child) => sum + child.value, 0);
+      
+      return {
+        name: market,
+        value: marketValue,
+        children: categoryChildren
+      };
+    });
+  }
+
+  /**
+   * Helper method to create sunburst data
+   */
+  private createSunburstData(data: DashboardDataRow[]): Array<{ name: string; value?: number; children?: Array<{ name: string; value: number }> }> {
+    // Create hierarchical sunburst data
+    const markets = [...new Set(data.map(row => row.market))];
+    
+    return markets.map(market => {
+      const marketData = data.filter(row => row.market === market);
+      const categories = [...new Set(marketData.map(row => row.assetCategory))];
+      
+      const children = categories.map(category => {
+        const categoryData = marketData.filter(row => row.assetCategory === category);
+        const value = categoryData.reduce((sum, row) => sum + row.totalValue, 0);
+        return { name: category, value };
+      });
+      
+      return {
+        name: market,
+        children
+      };
+    });
+  }
+
+  /**
+   * Helper method to create large sunburst data
+   */
+  private createLargeSunburstData(data: DashboardDataRow[]): Array<{ name: string; value?: number; children?: Array<{ name: string; value?: number; children?: Array<{ name: string; value: number }> }> }> {
+    // Create more detailed hierarchical sunburst data
+    const markets = [...new Set(data.map(row => row.market))];
+    
+    return markets.map(market => {
+      const marketData = data.filter(row => row.market === market);
+      const categories = [...new Set(marketData.map(row => row.assetCategory))];
+      
+      const categoryChildren = categories.map(category => {
+        const categoryData = marketData.filter(row => row.assetCategory === category);
+        const months = [...new Set(categoryData.map(row => row.month))];
+        
+        const monthChildren = months.map(month => {
+          const monthData = categoryData.find(row => row.month === month);
+          return { name: month, value: monthData ? monthData.totalValue : 0 };
+        });
+        
+        return {
+          name: category,
+          children: monthChildren
+        };
+      });
+      
+      return {
+        name: market,
+        children: categoryChildren
+      };
+    });
   }
 
   /**

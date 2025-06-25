@@ -108,7 +108,7 @@ export const alternativeTreemapData: TreemapData[] = [
  */
 export function createTreemapChartWidget(): IWidget {
   return TreemapChartBuilder.create()
-    .setData(sampleTreemapData)
+    .setData([]) // Data will be populated from shared dashboard data
     .setTitle('Portfolio Distribution', 'By Sector and Company')
     .setBreadcrumb(true, '10%', '10%', '10%', '10%')
     .setItemStyle('#fff', 1, 1)
@@ -141,7 +141,7 @@ export function createTreemapChartWidget(): IWidget {
  */
 export function createExpenseTreemapWidget(): IWidget {
   return TreemapChartBuilder.create()
-    .setData(alternativeTreemapData)
+    .setData([]) // Data will be populated from shared dashboard data
     .setTitle('Monthly Expenses', 'By Category and Subcategory')
     .setBreadcrumb(true, '10%', '10%', '10%', '10%')
     .setItemStyle('#fff', 1, 1)
@@ -173,64 +173,12 @@ export function createExpenseTreemapWidget(): IWidget {
  * Create a large-scale treemap chart widget for performance demonstration
  */
 export function createLargeScaleTreemapWidget(): IWidget {
-  // Generate large dataset for performance demonstration
-  const largeDataset: TreemapData[] = [
-    {
-      name: 'Large Category 1',
-      value: 30,
-      children: Array.from({ length: 20 }, (_, i) => ({
-        name: `Item ${i + 1}`,
-        value: Math.floor(Math.random() * 10) + 1,
-        children: Array.from({ length: 5 }, (_, j) => ({
-          name: `Sub-item ${i + 1}-${j + 1}`,
-          value: Math.floor(Math.random() * 5) + 1
-        }))
-      }))
-    },
-    {
-      name: 'Large Category 2',
-      value: 25,
-      children: Array.from({ length: 15 }, (_, i) => ({
-        name: `Item ${i + 21}`,
-        value: Math.floor(Math.random() * 10) + 1,
-        children: Array.from({ length: 3 }, (_, j) => ({
-          name: `Sub-item ${i + 21}-${j + 1}`,
-          value: Math.floor(Math.random() * 5) + 1
-        }))
-      }))
-    },
-    {
-      name: 'Large Category 3',
-      value: 20,
-      children: Array.from({ length: 10 }, (_, i) => ({
-        name: `Item ${i + 36}`,
-        value: Math.floor(Math.random() * 10) + 1
-      }))
-    },
-    {
-      name: 'Large Category 4',
-      value: 15,
-      children: Array.from({ length: 8 }, (_, i) => ({
-        name: `Item ${i + 46}`,
-        value: Math.floor(Math.random() * 10) + 1
-      }))
-    },
-    {
-      name: 'Large Category 5',
-      value: 10,
-      children: Array.from({ length: 5 }, (_, i) => ({
-        name: `Item ${i + 54}`,
-        value: Math.floor(Math.random() * 10) + 1
-      }))
-    }
-  ];
-
   return TreemapChartBuilder.create()
-    .setData(largeDataset)
-    .setTitle('Large Dataset Treemap', 'Performance demonstration with 100+ nodes')
-    .setBreadcrumb(true, '10%', '10%', '10%', '10%')
+    .setData([]) // Data will be populated from shared dashboard data
+    .setTitle('Financial Overview Treemap', 'Complete Portfolio Breakdown')
+    .setBreadcrumb(true, '8%', '8%', '8%', '8%')
     .setItemStyle('#fff', 1, 1)
-    .setLabelFormatter('{b}')
+    .setLabelFormatter('{b}\n{c}%')
     .setLevels([
       {
         itemStyle: { borderColor: '#777', borderWidth: 0, gapWidth: 1 },
@@ -238,19 +186,19 @@ export function createLargeScaleTreemapWidget(): IWidget {
       },
       {
         itemStyle: { borderColor: '#555', borderWidth: 3, gapWidth: 1 },
-        label: { show: true, formatter: '{b}' }
+        label: { show: true, formatter: '{b}\n{c}%' }
       },
       {
         itemStyle: { borderColor: '#555', borderWidth: 2, gapWidth: 1 },
-        label: { show: false }
+        label: { show: true, formatter: '{b}\n{c}%' }
       }
     ])
-    .setEmphasis(5, 0, 'rgba(0, 0, 0, 0.3)')
+    .setEmphasis(8, 0, 'rgba(0, 0, 0, 0.5)')
     .setRoam(true)
     .setNodeClick('zoomToNode')
-    .setTooltip('item', '{b}: {c}')
-    .setHeader('Large Dataset Treemap')
-    .setPosition({ x: 0, y: 12, cols: 12, rows: 4 })
+    .setTooltip('item', '{b}: {c}%')
+    .setHeader('Financial Overview Treemap')
+    .setPosition({ x: 0, y: 12, cols: 8, rows: 4 })
     .build();
 }
 

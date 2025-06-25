@@ -19,7 +19,7 @@ export const INVESTMENT_DISTRIBUTION_DATA: DensityMapData[] = [
  */
 export function createInvestmentDistributionWidget(): IWidget {
   return DensityMapBuilder.create()
-    .setData(INVESTMENT_DISTRIBUTION_DATA)
+    .setData([]) // Data will be populated from shared dashboard data
     .setMap('world')
     .setHeader('Investment Distribution by Region')
     .setPosition({ x: 0, y: 8, cols: 6, rows: 4 })

@@ -26,7 +26,7 @@ export const sampleStackedAreaChartXAxis = ['Jan', 'Feb', 'Mar', 'Apr', 'May', '
  */
 export function createStackedAreaChartWidget(): IWidget {
   return StackedAreaChartBuilder.create()
-    .setMultiSeriesData(sampleStackedAreaChartData)
+    .setMultiSeriesData([]) // Data will be populated from shared dashboard data
     .setXAxisData(sampleStackedAreaChartXAxis)
     .setTitle('Financial Overview', 'Revenue vs Expenses vs Profit')
     .setSmooth(true)
@@ -46,23 +46,8 @@ export function createStackedAreaChartWidget(): IWidget {
  * Create a performance stacked area chart widget
  */
 export function createPerformanceStackedAreaChartWidget(): IWidget {
-  const performanceData: StackedAreaSeriesData[] = [
-    {
-      name: 'Stocks',
-      data: [45, 52, 48, 61, 55, 68, 72, 65, 78, 82, 75, 88]
-    },
-    {
-      name: 'Bonds',
-      data: [25, 28, 22, 35, 30, 42, 38, 32, 45, 48, 40, 52]
-    },
-    {
-      name: 'Cash',
-      data: [15, 18, 12, 25, 20, 32, 28, 22, 35, 38, 30, 42]
-    }
-  ];
-
   return StackedAreaChartBuilder.create()
-    .setMultiSeriesData(performanceData)
+    .setMultiSeriesData([]) // Data will be populated from shared dashboard data
     .setXAxisData(sampleStackedAreaChartXAxis)
     .setTitle('Portfolio Allocation', 'Asset Class Distribution')
     .setSmooth(true)
@@ -82,23 +67,8 @@ export function createPerformanceStackedAreaChartWidget(): IWidget {
  * Create a market trend stacked area chart widget
  */
 export function createMarketTrendStackedAreaChartWidget(): IWidget {
-  const marketData: StackedAreaSeriesData[] = [
-    {
-      name: 'Bull Market',
-      data: [60, 65, 70, 75, 80, 85, 90, 85, 80, 75, 70, 65]
-    },
-    {
-      name: 'Bear Market',
-      data: [20, 15, 10, 5, 0, 0, 0, 5, 10, 15, 20, 25]
-    },
-    {
-      name: 'Sideways',
-      data: [20, 20, 20, 20, 20, 15, 10, 10, 10, 10, 10, 10]
-    }
-  ];
-
   return StackedAreaChartBuilder.create()
-    .setMultiSeriesData(marketData)
+    .setMultiSeriesData([]) // Data will be populated from shared dashboard data
     .setXAxisData(sampleStackedAreaChartXAxis)
     .setTitle('Market Conditions', 'Market Trend Analysis')
     .setSmooth(true)

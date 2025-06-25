@@ -6,15 +6,15 @@ export const SAVINGS_GOAL_DATA: GaugeChartData[] = [
 ];
 
 /**
- * Create the savings goal gauge chart widget
+ * Create the savings goal gauge widget
  */
 export function createSavingsGoalWidget(): IWidget {
   return GaugeChartBuilder.create()
-    .setData(SAVINGS_GOAL_DATA)
+    .setData([]) // Data will be populated from shared dashboard data
     .setHeader('Savings Goal Progress')
-    .setPosition({ x: 10, y: 0, cols: 4, rows: 4 })
-    .setTitle('Savings Goal Progress', 'Current Year')
-    .setRange(0, 100)
+    .setPosition({ x: 12, y: 8, cols: 4, rows: 4 })
+    .setTitle('Savings Goal Progress', 'Target: $50,000')
+    .setRange(0, 50000)
     .setRadius('60%')
     .setCenter(['50%', '60%'])
     .setProgress(true, 10)

@@ -26,7 +26,7 @@ export const sampleAreaChartXAxis = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', '
  */
 export function createAreaChartWidget(): IWidget {
   return AreaChartBuilder.create()
-    .setData(sampleAreaChartData.map(item => item.value))
+    .setData([]) // Data will be populated from shared dashboard data
     .setXAxisData(sampleAreaChartXAxis)
     .setTitle('Monthly Revenue Trend', 'Last 12 months')
     .setSmooth(true)
@@ -44,14 +44,8 @@ export function createAreaChartWidget(): IWidget {
  * Create a stacked area chart widget for financial data
  */
 export function createStackedAreaChartWidget(): IWidget {
-  const multiSeriesData = [
-    { name: 'Revenue', data: [120, 132, 101, 134, 90, 230, 210, 182, 191, 234, 290, 330] },
-    { name: 'Expenses', data: [80, 92, 71, 94, 60, 180, 160, 132, 141, 184, 240, 280] },
-    { name: 'Profit', data: [40, 40, 30, 40, 30, 50, 50, 50, 50, 50, 50, 50] }
-  ];
-
   return AreaChartBuilder.create()
-    .setData(multiSeriesData)
+    .setData([]) // Data will be populated from shared dashboard data
     .setXAxisData(sampleAreaChartXAxis)
     .setTitle('Financial Overview', 'Revenue vs Expenses vs Profit')
     .setSmooth(true)
@@ -70,15 +64,9 @@ export function createStackedAreaChartWidget(): IWidget {
  * Create a large-scale area chart widget for performance monitoring
  */
 export function createLargeScaleAreaChartWidget(): IWidget {
-  // Generate large dataset for performance demonstration
-  const largeDataset = Array.from({ length: 500 }, (_, i) => ({
-    name: `Point ${i + 1}`,
-    value: Math.random() * 100 + Math.sin(i * 0.1) * 20 + 50
-  }));
-
   return AreaChartBuilder.create()
-    .setData(largeDataset.map(item => item.value))
-    .setXAxisData(largeDataset.map(item => item.name))
+    .setData([]) // Data will be populated from shared dashboard data
+    .setXAxisData([]) // Will be populated from data
     .setTitle('Performance Monitoring', '500 data points with sampling')
     .setSmooth(true)
     .setSampling('average')

@@ -85,7 +85,7 @@ export const ALTERNATIVE_SUNBURST_DATA: SunburstChartData[] = [
  */
 export function createSunburstChartWidget(): IWidget {
   return SunburstChartBuilder.create()
-    .setData(SUNBURST_DATA)
+    .setData([]) // Data will be populated from shared dashboard data
     .setTitle('Portfolio Allocation', 'Hierarchical View')
     .setRadius(['20%', '90%'])
     .setCenter(['50%', '50%'])
@@ -122,7 +122,7 @@ export function createSunburstChartWidget(): IWidget {
  */
 export function createOrganizationalSunburstWidget(): IWidget {
   return SunburstChartBuilder.create()
-    .setData(ALTERNATIVE_SUNBURST_DATA)
+    .setData([]) // Data will be populated from shared dashboard data
     .setTitle('Organizational Structure', 'Department Distribution')
     .setRadius(['15%', '85%'])
     .setCenter(['50%', '50%'])
@@ -159,8 +159,8 @@ export function createOrganizationalSunburstWidget(): IWidget {
  */
 export function createLargeScaleSunburstWidget(): IWidget {
   return SunburstChartBuilder.create()
-    .setData(SUNBURST_DATA)
-    .setTitle('Financial Overview', 'Complete Portfolio Breakdown')
+    .setData([]) // Data will be populated from shared dashboard data
+    .setTitle('Financial Overview Sunburst', 'Complete Portfolio Breakdown')
     .setRadius(['10%', '95%'])
     .setCenter(['50%', '50%'])
     .setLabelFormatter('{b}')
@@ -186,7 +186,7 @@ export function createLargeScaleSunburstWidget(): IWidget {
     ])
     .setTooltip('item', '{b}: {c}%')
     .setLegend('horizontal', 'bottom')
-    .setHeader('Financial Overview')
+    .setHeader('Financial Overview Sunburst')
     .setPosition({ x: 0, y: 4, cols: 6, rows: 4 })
     .build();
 }

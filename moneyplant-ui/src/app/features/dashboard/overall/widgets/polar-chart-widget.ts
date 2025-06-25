@@ -20,7 +20,7 @@ export const samplePolarChartData: PolarChartData[] = [
  */
 export function createPolarChartWidget(): IWidget {
   return PolarChartBuilder.create()
-    .setData(samplePolarChartData.map(item => item.value))
+    .setData([]) // Data will be populated from shared dashboard data
     .setTitle('Performance Metrics', '360-degree view')
     .setPolarCenter(['50%', '50%'])
     .setPolarRadius(['30%', '80%'])
@@ -41,14 +41,8 @@ export function createPolarChartWidget(): IWidget {
  * Create a multi-series polar chart widget for financial data
  */
 export function createMultiSeriesPolarChartWidget(): IWidget {
-  const multiSeriesData = [
-    { name: 'Current', data: [80, 65, 90, 75, 85, 70, 95, 60] },
-    { name: 'Target', data: [90, 75, 95, 85, 90, 80, 100, 70] },
-    { name: 'Previous', data: [70, 55, 80, 65, 75, 60, 85, 50] }
-  ];
-
   return PolarChartBuilder.create()
-    .setData(multiSeriesData)
+    .setData([]) // Data will be populated from shared dashboard data
     .setTitle('Financial Performance', 'Current vs Target vs Previous')
     .setPolarCenter(['50%', '50%'])
     .setPolarRadius(['25%', '75%'])
@@ -69,17 +63,8 @@ export function createMultiSeriesPolarChartWidget(): IWidget {
  * Create a radar-style polar chart widget
  */
 export function createRadarPolarChartWidget(): IWidget {
-  const radarData = [
-    { name: 'Revenue', value: 85 },
-    { name: 'Profit', value: 70 },
-    { name: 'Growth', value: 90 },
-    { name: 'Efficiency', value: 75 },
-    { name: 'Innovation', value: 80 },
-    { name: 'Market Share', value: 65 }
-  ];
-
   return PolarChartBuilder.create()
-    .setData(radarData.map(item => item.value))
+    .setData([]) // Data will be populated from shared dashboard data
     .setTitle('Business Metrics', 'Radar view of key performance indicators')
     .setPolarCenter(['50%', '50%'])
     .setPolarRadius(['20%', '70%'])
