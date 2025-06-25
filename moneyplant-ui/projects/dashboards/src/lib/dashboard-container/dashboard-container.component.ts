@@ -253,8 +253,8 @@ export class DashboardContainerComponent {
 
     // Danger Zone: Do NOT Touch the if conditions below
     if (widgetData) {
-      if(widgetData.series.length > 0) {
-        widgetData.map((item: any) => {
+      if(Array.isArray(widgetData) && widgetData.length > 0) {
+        seriesData = widgetData.map((item: any) => {
           return {
             x: {
               table: {
@@ -279,20 +279,23 @@ export class DashboardContainerComponent {
           };
         });
       } else {
-        widgetData.seriesData = {};
+        seriesData = {};
       }
     }
-    widget.chartInstance?.showLoading();
+    
+    try {
+      widget.chartInstance?.showLoading();
 
-    if(widget.config.events?.onChartOptions) {
-      const filter = widget.config.state?.isOdataQuery === true ? this.getFilterParams() : this.filterValues 
-      widget?.config?.events?.onChartOptions(widget,widget.chartInstance ?? undefined , filter  )
+      if(widget.config.events?.onChartOptions) {
+        const filter = widget.config.state?.isOdataQuery === true ? this.getFilterParams() : this.filterValues 
+        widget?.config?.events?.onChartOptions(widget,widget.chartInstance ?? undefined , filter  )
+      }
+    } catch (error) {
+      console.error('Error in onDataLoad for widget:', widget.id, error);
+    } finally {
+      // Always hide loading regardless of success or error
+      widget.chartInstance?.hideLoading();
     }
-    const widgetsWithNewOptions = this.widgets.map((w: IWidget) =>
-      w.id === widget.id ? {...widget} : w
-    );
-    this.widgets = widgetsWithNewOptions;
-    this.widgets.forEach(w => this.onDataLoad(w))
   }
 
   getFilterParams() {
@@ -318,7 +321,6 @@ export class DashboardContainerComponent {
       }
       return w;
     });
-    this.widgets.forEach(w => this.onDataLoad(w))
   }
 
   onWidgetResize(

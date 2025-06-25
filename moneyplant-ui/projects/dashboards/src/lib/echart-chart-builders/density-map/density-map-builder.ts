@@ -71,22 +71,6 @@ export interface DensityMapOptions extends EChartsOption {
       color?: string;
     };
   };
-  geo?: {
-    map?: string;
-    roam?: boolean;
-    zoom?: number;
-    center?: [number, number];
-    itemStyle?: {
-      areaColor?: string;
-      borderColor?: string;
-      borderWidth?: number;
-    };
-    emphasis?: {
-      itemStyle?: {
-        areaColor?: string;
-      };
-    };
-  };
   series?: DensityMapSeriesOptions[];
 }
 
@@ -172,22 +156,6 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
           color: '#333',
         },
       },
-      geo: {
-        map: 'HK',
-        roam: false,
-        zoom: 1,
-        center: [114.1694, 22.3193],
-        itemStyle: {
-          areaColor: '#eee',
-          borderColor: '#999',
-          borderWidth: 0.5,
-        },
-        emphasis: {
-          itemStyle: {
-            areaColor: '#b8e186',
-          },
-        },
-      },
     };
   }
 
@@ -253,7 +221,6 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
   setMap(mapName: string): this {
     this.mapName = mapName;
     this.seriesOptions.map = mapName;
-    (this.chartOptions as any).geo.map = mapName;
     return this;
   }
 
@@ -263,7 +230,6 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
   setRoam(roam: boolean): this {
     this.roamEnabled = roam;
     this.seriesOptions.roam = roam;
-    (this.chartOptions as any).geo.roam = roam;
     return this;
   }
 
@@ -273,7 +239,6 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
   setZoom(zoom: number): this {
     this.zoomLevel = zoom;
     this.seriesOptions.zoom = zoom;
-    (this.chartOptions as any).geo.zoom = zoom;
     return this;
   }
 
@@ -283,7 +248,6 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
   setCenter(center: [number, number]): this {
     this.centerCoords = center;
     this.seriesOptions.center = center;
-    (this.chartOptions as any).geo.center = center;
     return this;
   }
 
@@ -337,7 +301,6 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
       ...this.seriesOptions.itemStyle,
       areaColor: color,
     };
-    (this.chartOptions as any).geo.itemStyle.areaColor = color;
     return this;
   }
 
@@ -350,8 +313,6 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
       borderColor: color,
       borderWidth: width,
     };
-    (this.chartOptions as any).geo.itemStyle.borderColor = color;
-    (this.chartOptions as any).geo.itemStyle.borderWidth = width;
     return this;
   }
 
@@ -366,7 +327,6 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
         shadowColor: 'rgba(0, 0, 0, 0.5)',
       },
     };
-    (this.chartOptions as any).geo.emphasis.itemStyle.areaColor = color;
     return this;
   }
 
