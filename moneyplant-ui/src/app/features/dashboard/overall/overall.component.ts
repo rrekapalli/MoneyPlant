@@ -62,6 +62,30 @@ echarts.use([
   CanvasRenderer
 ]);
 
+// Register built-in maps and custom maps
+import { DensityMapBuilder } from '@dashboards/public-api';
+
+// Register the world map with ECharts
+// We'll use a dynamic import to load the world map data
+import('echarts-map-collection/custom/world.json').then((worldMapData) => {
+  DensityMapBuilder.registerMap('world', worldMapData.default || worldMapData);
+  console.log('World map registered successfully');
+}).catch((error) => {
+  console.error('Failed to load world map data:', error);
+});
+
+// Example of registering a custom Hong Kong map (if you have the GeoJSON data)
+// You can uncomment and modify this if you have Hong Kong GeoJSON data
+/*
+const hongKongGeoJson = {
+  "type": "FeatureCollection",
+  "features": [
+    // Your Hong Kong GeoJSON data here
+  ]
+};
+DensityMapBuilder.registerMap('HK', hongKongGeoJson);
+*/
+
 // Import dashboard modules and chart builders
 import { 
   IWidget,
@@ -74,7 +98,6 @@ import {
   ScatterChartBuilder,
   GaugeChartBuilder,
   HeatmapChartBuilder,
-  DensityMapBuilder,
   AreaChartBuilder,
   PolarChartBuilder,
   StackedAreaChartBuilder,
