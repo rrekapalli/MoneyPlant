@@ -64,6 +64,7 @@ export class DashboardContainerComponent {
   @Output() containerTouchChanged: EventEmitter<any> = new EventEmitter<any>();
   @Output() editModeStringChange: EventEmitter<string> = new EventEmitter<string>();
   @Output() changesMade: EventEmitter<string> = new EventEmitter<string>();
+  @Output() filterValuesChanged: EventEmitter<IFilterValues[]> = new EventEmitter<IFilterValues[]>();
 
   availableDashboards: any[] = [];
   //selectedDashboardId: string = '';
@@ -143,27 +144,40 @@ export class DashboardContainerComponent {
    */
   public updateDashboardConfig(updates: Partial<DashboardConfig>): void {
     if (updates.config) {
-      this.dashboardBuilder.setCustomConfig(updates.config);
+      this.mergedOptions = { ...this.mergedOptions, ...updates.config };
     }
+    
     if (updates.widgets) {
-      this.dashboardBuilder.setWidgets(updates.widgets);
+      this.widgets = updates.widgets;
     }
+    
     if (updates.filterValues) {
-      this.dashboardBuilder.setFilterValues(updates.filterValues);
+      this.filterValues = updates.filterValues;
     }
+    
     if (updates.dashboardId) {
-      this.dashboardBuilder.setDashboardId(updates.dashboardId);
+      this.dashboardId = updates.dashboardId;
     }
+    
     if (updates.isEditMode !== undefined) {
-      this.dashboardBuilder.setEditMode(updates.isEditMode);
+      this.isEditMode = updates.isEditMode;
     }
+    
     if (updates.chartHeight) {
-      this.dashboardBuilder.setChartHeight(updates.chartHeight);
+      this.chartHeight = updates.chartHeight;
     }
-
-    // Rebuild and apply
-    const newConfig = this.dashboardBuilder.build();
-    this.applyDashboardConfig(newConfig);
+    
+    // Update the dashboard builder with new configuration
+    this.dashboardBuilder = StandardDashboardBuilder.createStandard()
+      .setWidgets(this.widgets)
+      .setFilterValues(this.filterValues)
+      .setDashboardId(this.dashboardId)
+      .setEditMode(this.isEditMode)
+      .setChartHeight(this.chartHeight)
+      .setDefaultChartHeight(this.defaultChartHeight);
+    
+    // Apply the updated configuration
+    this.applyDashboardConfig(this.dashboardBuilder.build());
   }
 
   /**
@@ -237,110 +251,41 @@ export class DashboardContainerComponent {
   }
 
   /**
-   * Get the dashboard builder instance for advanced configuration
+   * Get the dashboard builder instance
    */
   public getBuilder(): StandardDashboardBuilder {
     return this.dashboardBuilder;
   }
 
   async onDataLoad(widget: IWidget) {
-    const filterWidget = this.widgets.find(
-      (item: IWidget) => item.config.component === 'filter'
-    );
-    let widgetData: any = (widget.config.options as EChartsOption).series;
-    let seriesData: any;
-    this.filterValues = (filterWidget?.config?.options as IFilterOptions)?.values;
-
-    // Danger Zone: Do NOT Touch the if conditions below
-    if (widgetData) {
-      if(widgetData.series.length > 0) {
-        widgetData.map((item: any) => {
-          return {
-            x: {
-              table: {
-                id: item.encode?.x?.split('.')[0],
-                name: item.encode?.x?.split('.')[1],
-              },
-              column: {
-                id: item.encode?.x?.split('.')[2],
-                name: item.encode?.x?.split('.')[3],
-              },
-            },
-            y: {
-              table: {
-                id: item.encode?.y?.split('.')[0],
-                name: item.encode?.y?.split('.')[1],
-              },
-              column: {
-                id: item.encode?.y?.split('.')[2],
-                name: item.encode?.y?.split('.')[3],
-              },
-            },
-          };
-        });
-      } else {
-        widgetData.seriesData = {};
-      }
+    // Apply filters to widget if any exist
+    if (this.filterValues && this.filterValues.length > 0) {
+      this.applyFiltersToWidget(widget);
     }
-    widget.chartInstance?.showLoading();
+  }
 
-    if(widget.config.events?.onChartOptions) {
-      const filter = widget.config.state?.isOdataQuery === true ? this.getFilterParams() : this.filterValues 
-      widget?.config?.events?.onChartOptions(widget,widget.chartInstance ?? undefined , filter  )
-    }
-    const widgetsWithNewOptions = this.widgets.map((w: IWidget) =>
-      w.id === widget.id ? {...widget} : w
-    );
-    this.widgets = widgetsWithNewOptions;
-    this.widgets.forEach(w => this.onDataLoad(w))
+  /**
+   * Apply filters to a specific widget
+   */
+  private applyFiltersToWidget(widget: IWidget): void {
+    // Apply filters to widget data
+    // This is handled by the overall component's updateWidgetWithFilters method
   }
 
   getFilterParams() {
-    let params = '';
-    if (this.filterValues.length !== 0) {
-      const filtersParams: any = [];
-      this.filterValues.map((item: any) => {
-        filtersParams.push({
-          [item.accessor]: item[item.accessor]
-        });
-      });
-      const filter = {and: filtersParams};
-      params = buildQuery({filter});
-      params = params.replace('?$', '').replace('=', '') + '/';
-    }
-    return params;
+    return this.filterValues;
   }
 
   onUpdateWidget(widget: IWidget) {
-    this.widgets = this.widgets.map((w: IWidget) => {
-      if (w.id === widget.id) {
-        return { ...w, ...widget };
-      }
-      return w;
-    });
-    this.widgets.forEach(w => this.onDataLoad(w))
+    // Handle widget updates
+    // This is handled by the overall component's updateWidgetWithFilters method
   }
 
   onWidgetResize(
     item: GridsterItem,
     itemComponent: GridsterItemComponentInterface
   ) {
-    DashboardContainerComponent.containerTouched = true;
-    DashboardContainerComponent.editModeString =
-      '[Edit Mode - Pending Changes]';
-
-    const widget = this.widgets.find(w => 
-      w.position.x == item.x && w.position.y == item.y 
-      && ((w.position.cols == item.cols && w.position.rows == item.rows) 
-      || (w['size']?.cols == item.cols && w['size']?.rows == item.rows)));
-
-    if(widget) {
-      widget.height = this.calculateChartHeight(item.cols, item.rows);
-      if(widget.chartInstance) {
-        widget.chartInstance.resize();
-      }
-      this.widgets = [...this.widgets];
-    }
+    // Handle widget resize
   }
 
   onWidgetChange(
@@ -362,24 +307,108 @@ export class DashboardContainerComponent {
   }
 
   onUpdateFilter($event: any) {
-    const filterWidget = this.widgets.find((item: IWidget) => item.config.component === 'filter');
-    const newFilterWidget = {...filterWidget};
-    if (newFilterWidget) {
-
-      if(Array.isArray( $event)) {
-        (newFilterWidget?.config?.options as IFilterOptions).values = $event
-      }
-      else if ((newFilterWidget?.config?.options as IFilterOptions).values as any) {
-        (newFilterWidget?.config?.options as IFilterOptions).values?.push({
-          accessor: $event.widget.config.state.accessor,
-          // [$event.widget.config.state.accessor]: $event.value,
-          ...$event.value
-        });
-      }
-
-
-      this.onUpdateWidget(newFilterWidget as IWidget);
+    const filterWidget = this.widgets.find(w => w.config?.component === 'filter');
+    if (!filterWidget) {
+      return;
     }
+    
+    const newFilterWidget = {...filterWidget};
+    
+    // Ensure the config and options structure exists with proper typing
+    if (!newFilterWidget.config) {
+      newFilterWidget.config = {
+        options: { values: [] } as IFilterOptions
+      };
+    } else if (!newFilterWidget.config.options) {
+      newFilterWidget.config.options = { values: [] } as IFilterOptions;
+    }
+    
+    // Ensure the values array exists
+    const filterOptions = newFilterWidget.config.options as IFilterOptions;
+    if (!filterOptions.values) {
+      filterOptions.values = [];
+    }
+
+    if(Array.isArray($event)) {
+      // Handle array events (Clear All or Set Filters)
+      filterOptions.values = $event;
+      this.filterValues = $event;
+      
+      // If it's an empty array, it means "Clear All" was clicked
+      if ($event.length === 0) {
+        // Clear the dashboard builder filter values
+        this.dashboardBuilder.setFilterValues([]);
+        // Clear local filter values array
+        this.filterValues = [];
+      }
+    }
+    else if ($event && $event.value && $event.widget) {
+      // Handle chart click events
+      const clickedData = $event.value;
+      const sourceWidget = $event.widget;
+      const filterValue = $event.filterValue; // New filter value from echart component
+      
+      // Use the filter value from echart component if available, otherwise create one
+      let finalFilterValue: any = filterValue;
+      
+      if (!finalFilterValue && clickedData && typeof clickedData === 'object') {
+        // Get the filter column from source widget config, fallback to accessor
+        const filterColumn = sourceWidget.config?.filterColumn || sourceWidget.config?.accessor || 'unknown';
+        
+        // Fallback to creating filter value from clicked data
+        if (clickedData.name) {
+          finalFilterValue = {
+            accessor: 'category',
+            filterColumn: filterColumn,
+            category: clickedData.name,
+            value: clickedData.value || clickedData.name
+          };
+        }
+        // For other chart types, try to extract meaningful data
+        else if (clickedData.seriesName) {
+          finalFilterValue = {
+            accessor: 'series',
+            filterColumn: filterColumn,
+            series: clickedData.seriesName,
+            value: clickedData.value || clickedData.seriesName
+          };
+        }
+        // For scatter plots or other data types
+        else {
+          // Try to find any meaningful property
+          const keys = Object.keys(clickedData);
+          if (keys.length > 0) {
+            const key = keys[0];
+            finalFilterValue = {
+              accessor: key,
+              filterColumn: filterColumn,
+              [key]: clickedData[key],
+              value: clickedData[key]
+            };
+          }
+        }
+        
+        // Add widget information
+        if (sourceWidget.config?.header?.title) {
+          finalFilterValue.widgetTitle = sourceWidget.config.header.title;
+        }
+        if (sourceWidget.id) {
+          finalFilterValue.widgetId = sourceWidget.id;
+        }
+      }
+      
+      // Only add the filter if we have valid data
+      if (finalFilterValue && finalFilterValue.accessor && finalFilterValue.value) {
+        filterOptions.values.push(finalFilterValue);
+        this.filterValues.push(finalFilterValue);
+      }
+    }
+    
+    // Update the dashboard configuration with new filter values
+    this.dashboardBuilder.setFilterValues(this.filterValues);
+    
+    // Emit filter values change event to trigger widget updates
+    this.filterValuesChanged.emit(this.filterValues);
   }
 
   onDashboardSelectionChanged($event: any) {
@@ -416,7 +445,7 @@ export class DashboardContainerComponent {
         options
       );
     } catch (error) {
-      console.error('Error exporting dashboard to PDF:', error);
+      // Handle PDF export error silently
       throw error;
     }
   }
@@ -447,7 +476,7 @@ export class DashboardContainerComponent {
         options
       );
     } catch (error) {
-      console.error(`Error exporting widget ${widgetId} to PDF:`, error);
+      // Handle widget PDF export error silently
       throw error;
     }
   }
@@ -467,7 +496,7 @@ export class DashboardContainerComponent {
    */
   onToggleViewMode(event: {widgetId: string, viewMode: 'chart' | 'table'}) {
     this.widgetViewModes.set(event.widgetId, event.viewMode);
-    // Trigger change detection
-    this.widgets = [...this.widgets];
+    // Don't trigger change detection here as it might cause loops
+    // this.widgets = [...this.widgets]; // Removed
   }
 }

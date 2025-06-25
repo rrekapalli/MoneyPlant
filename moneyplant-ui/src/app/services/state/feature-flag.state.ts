@@ -1,8 +1,10 @@
 import { Injectable, computed, effect, signal } from '@angular/core';
 import { Observable, of, tap } from 'rxjs';
 import { ApiService } from '../apis/api.base';
+import { MockApiService } from '../apis/mock-api.service';
 import { FeatureFlag } from '../entities/feature-flag';
 import { enabledFeatures } from '../../../environments/enabled-features';
+import { environment } from '../../../environments/environment';
 
 /**
  * Interface for the feature flag state
@@ -42,21 +44,26 @@ export class FeatureFlagStateService {
   public error = computed(() => this.state().error);
   public lastUpdated = computed(() => this.state().lastUpdated);
 
-  constructor(private apiService: ApiService) {
-    // Log state changes for debugging
-    effect(() => {
-      console.log('Feature flag state updated:', this.state());
-    });
+  // Choose the appropriate API service based on environment
+  private get apiService(): ApiService | MockApiService {
+    return environment.useMockData ? this.mockApiService : this.realApiService;
+  }
+
+  constructor(
+    private realApiService: ApiService,
+    private mockApiService: MockApiService
+  ) {
+    // State changes are handled silently
   }
 
   /**
    * Updates the state
-   * @param newState Partial state to update
+   * @param updates Partial state to update
    */
-  private updateState(newState: Partial<FeatureFlagState>): void {
-    this.state.update(state => ({
-      ...state,
-      ...newState
+  private updateState(updates: Partial<FeatureFlagState>): void {
+    this.state.update(currentState => ({
+      ...currentState,
+      ...updates
     }));
   }
 
@@ -183,7 +190,6 @@ export class FeatureFlagStateService {
    * It will still make an API call, but changes won't be reflected in the static array.
    */
   createFeatureFlag(featureFlag: Omit<FeatureFlag, 'id'>): Observable<FeatureFlag> {
-    console.warn('createFeatureFlag: This method is not functional with the static array approach');
     this.setLoading(true);
     this.setError(null);
 
@@ -215,7 +221,6 @@ export class FeatureFlagStateService {
    * It will still make an API call, but changes won't be reflected in the static array.
    */
   updateFeatureFlag(id: string, featureFlag: Partial<FeatureFlag>): Observable<FeatureFlag> {
-    console.warn('updateFeatureFlag: This method is not functional with the static array approach');
     this.setLoading(true);
     this.setError(null);
 
@@ -251,7 +256,6 @@ export class FeatureFlagStateService {
    * It will still make an API call, but changes won't be reflected in the static array.
    */
   deleteFeatureFlag(id: string): Observable<void> {
-    console.warn('deleteFeatureFlag: This method is not functional with the static array approach');
     this.setLoading(true);
     this.setError(null);
 
@@ -285,7 +289,6 @@ export class FeatureFlagStateService {
    * It will still make an API call, but changes won't be reflected in the static array.
    */
   enableFeatureFlag(id: string): Observable<FeatureFlag> {
-    console.warn('enableFeatureFlag: This method is not functional with the static array approach');
     this.setLoading(true);
     this.setError(null);
 
@@ -321,7 +324,6 @@ export class FeatureFlagStateService {
    * It will still make an API call, but changes won't be reflected in the static array.
    */
   disableFeatureFlag(id: string): Observable<FeatureFlag> {
-    console.warn('disableFeatureFlag: This method is not functional with the static array approach');
     this.setLoading(true);
     this.setError(null);
 

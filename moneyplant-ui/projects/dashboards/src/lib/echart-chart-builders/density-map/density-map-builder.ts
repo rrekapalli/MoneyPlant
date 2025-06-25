@@ -1,6 +1,7 @@
 import { IWidget, WidgetBuilder } from '../../../public-api';
 import { EChartsOption } from 'echarts';
 import { ApacheEchartBuilder } from '../apache-echart-builder';
+import * as echarts from 'echarts/core';
 
 export interface DensityMapData {
   name: string;
@@ -71,22 +72,6 @@ export interface DensityMapOptions extends EChartsOption {
       color?: string;
     };
   };
-  geo?: {
-    map?: string;
-    roam?: boolean;
-    zoom?: number;
-    center?: [number, number];
-    itemStyle?: {
-      areaColor?: string;
-      borderColor?: string;
-      borderWidth?: number;
-    };
-    emphasis?: {
-      itemStyle?: {
-        areaColor?: string;
-      };
-    };
-  };
   series?: DensityMapSeriesOptions[];
 }
 
@@ -126,10 +111,10 @@ export interface DensityMapOptions extends EChartsOption {
  */
 export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, DensityMapSeriesOptions> {
   protected override seriesOptions: DensityMapSeriesOptions;
-  private mapName: string = 'HK';
+  private mapName: string = 'world';
   private roamEnabled: boolean = false;
   private zoomLevel: number = 1;
-  private centerCoords: [number, number] = [114.1694, 22.3193];
+  private centerCoords: [number, number] = [0, 0];
   private visualMapRange: [number, number] = [0, 100];
   private visualMapColors: string[] = ['#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8'];
 
@@ -143,6 +128,40 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
    */
   static create(): DensityMapBuilder {
     return new DensityMapBuilder();
+  }
+
+  /**
+   * Register a custom map with ECharts
+   * @param mapName - Name of the map
+   * @param geoJson - GeoJSON data for the map
+   */
+  static registerMap(mapName: string, geoJson: any): void {
+    try {
+      echarts.registerMap(mapName, geoJson);
+    } catch (error) {
+    }
+  }
+
+  /**
+   * Get available built-in maps
+   */
+  static getAvailableMaps(): string[] {
+    return [
+      'world',
+      'china',
+      'usa',
+      'japan',
+      'uk',
+      'france',
+      'germany',
+      'italy',
+      'spain',
+      'russia',
+      'canada',
+      'australia',
+      'brazil',
+      'india'
+    ];
   }
 
   /**
@@ -172,22 +191,6 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
           color: '#333',
         },
       },
-      geo: {
-        map: 'HK',
-        roam: false,
-        zoom: 1,
-        center: [114.1694, 22.3193],
-        itemStyle: {
-          areaColor: '#eee',
-          borderColor: '#999',
-          borderWidth: 0.5,
-        },
-        emphasis: {
-          itemStyle: {
-            areaColor: '#b8e186',
-          },
-        },
-      },
     };
   }
 
@@ -205,10 +208,10 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
     return {
       name: 'Density Map',
       type: 'map',
-      map: 'HK',
+      map: 'world',
       roam: false,
       zoom: 1,
-      center: [114.1694, 22.3193],
+      center: [0, 0],
       label: {
         show: false,
         position: 'inside',
@@ -253,7 +256,6 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
   setMap(mapName: string): this {
     this.mapName = mapName;
     this.seriesOptions.map = mapName;
-    (this.chartOptions as any).geo.map = mapName;
     return this;
   }
 
@@ -263,7 +265,6 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
   setRoam(roam: boolean): this {
     this.roamEnabled = roam;
     this.seriesOptions.roam = roam;
-    (this.chartOptions as any).geo.roam = roam;
     return this;
   }
 
@@ -273,7 +274,6 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
   setZoom(zoom: number): this {
     this.zoomLevel = zoom;
     this.seriesOptions.zoom = zoom;
-    (this.chartOptions as any).geo.zoom = zoom;
     return this;
   }
 
@@ -283,7 +283,6 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
   setCenter(center: [number, number]): this {
     this.centerCoords = center;
     this.seriesOptions.center = center;
-    (this.chartOptions as any).geo.center = center;
     return this;
   }
 
@@ -330,6 +329,48 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
   }
 
   /**
+   * Set conditional labels that only show when data exists
+   * @param show - Whether to show labels
+   * @param position - Label position ('inside', 'outside', etc.)
+   * @param formatter - Label formatter (default: '{b}\n{c}')
+   * @param showOnlyWithData - Whether to show labels only for regions with data
+   */
+  setConditionalLabels(
+    show: boolean = true, 
+    position: string = 'inside', 
+    formatter?: string,
+    showOnlyWithData: boolean = true
+  ): this {
+    if (showOnlyWithData) {
+      this.seriesOptions.label = {
+        show: true,
+        position,
+        formatter: (params: any) => {
+          // Only show label if the region has valid numeric data (including zero)
+          const hasValidData = typeof params.value === 'number' && isFinite(params.value);
+          if (hasValidData) {
+            return formatter
+              ? formatter.replace('{b}', params.name).replace('{c}', params.value.toString())
+              : `${params.name}\n${params.value}`;
+          }
+          return '';
+        },
+        fontSize: 12,
+        color: '#333',
+      };
+    } else {
+      this.seriesOptions.label = {
+        show,
+        position,
+        formatter: formatter || '{b}\n{c}',
+        fontSize: 12,
+        color: '#333',
+      };
+    }
+    return this;
+  }
+
+  /**
    * Set area color for regions with no data
    */
   setAreaColor(color: string): this {
@@ -337,7 +378,6 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
       ...this.seriesOptions.itemStyle,
       areaColor: color,
     };
-    (this.chartOptions as any).geo.itemStyle.areaColor = color;
     return this;
   }
 
@@ -350,8 +390,6 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
       borderColor: color,
       borderWidth: width,
     };
-    (this.chartOptions as any).geo.itemStyle.borderColor = color;
-    (this.chartOptions as any).geo.itemStyle.borderWidth = width;
     return this;
   }
 
@@ -366,7 +404,6 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
         shadowColor: 'rgba(0, 0, 0, 0.5)',
       },
     };
-    (this.chartOptions as any).geo.emphasis.itemStyle.areaColor = color;
     return this;
   }
 
@@ -453,7 +490,6 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
     const series = (widget.config?.options as any)?.series?.[0];
     
     if (!series?.data) {
-      console.warn('DensityMapBuilder.exportData - No series data found');
       return [];
     }
 

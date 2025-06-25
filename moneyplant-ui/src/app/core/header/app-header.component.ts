@@ -62,7 +62,7 @@ export class AppHeaderComponent implements OnInit, OnDestroy {
     // Force refresh notifications to ensure UI starts with latest data
     this.loadNotifications(true).subscribe({
       error: (err) => {
-        console.error('Failed to load initial notifications:', err);
+        // Handle error silently
       }
     });
   }
@@ -102,13 +102,12 @@ export class AppHeaderComponent implements OnInit, OnDestroy {
     // Subscribe to it
     this.notificationsSubscription = notificationsObservable.subscribe({
       next: (notifications) => {
-        console.log('Notifications loaded successfully:', notifications.length);
         // No need to manually update the component's notifications property
         // as it's already bound to the signal from NotificationsStateService
         // which is automatically updated when the state changes
       },
       error: (err) => {
-        console.error('Failed to load notifications:', err);
+        // Handle error silently
       }
     });
 
@@ -125,16 +124,14 @@ export class AppHeaderComponent implements OnInit, OnDestroy {
     event.stopPropagation();
     this.notificationsState.markAsRead(id).subscribe({
       next: (updatedNotification) => {
-        console.log('Notification marked as read successfully:', updatedNotification.id);
         // No need to manually update the component's notifications property
         // as it's already bound to the signal from NotificationsStateService
       },
       error: (err) => {
-        console.error('Failed to mark notification as read:', err);
         // Force refresh notifications to ensure UI is in sync with server
         this.loadNotifications(true).subscribe({
           error: (refreshErr) => {
-            console.error('Failed to refresh notifications after mark as read error:', refreshErr);
+            // Handle error silently
           }
         });
       }
@@ -147,16 +144,14 @@ export class AppHeaderComponent implements OnInit, OnDestroy {
   markAllAsRead() {
     this.notificationsState.markAllAsRead().subscribe({
       next: () => {
-        console.log('All notifications marked as read successfully');
         // No need to manually update the component's notifications property
         // as it's already bound to the signal from NotificationsStateService
       },
       error: (err) => {
-        console.error('Failed to mark all notifications as read:', err);
         // Force refresh notifications to ensure UI is in sync with server
         this.loadNotifications(true).subscribe({
           error: (refreshErr) => {
-            console.error('Failed to refresh notifications after mark all as read error:', refreshErr);
+            // Handle error silently
           }
         });
       }
@@ -188,20 +183,15 @@ export class AppHeaderComponent implements OnInit, OnDestroy {
     // Then delete the notification from the server
     this.notificationsState.deleteNotification(id).subscribe({
       next: () => {
-        console.log('Notification deleted successfully on server:', id);
-
         // No need to force refresh since we're using optimistic updates
         // The UI is already updated before the API call completes
       },
       error: (err) => {
-        console.error('Failed to delete notification on server:', err);
-
         // Even though the API call failed, the notification is already removed from the UI
         // due to optimistic updates in the NotificationsStateService
 
-        // Log the error for debugging but don't show error to user
+        // Handle error silently but don't show error to user
         // This provides a better user experience
-        console.warn(`Notification with ID ${id} was removed from UI but may still exist on server`);
 
         // Optionally, we could refresh notifications to ensure UI is in sync with server
         // but this is not necessary for most cases and might confuse the user
@@ -224,16 +214,14 @@ export class AppHeaderComponent implements OnInit, OnDestroy {
     // Mark the notification as read directly
     this.notificationsState.markAsRead(notification.id).subscribe({
       next: (updatedNotification) => {
-        console.log('Notification marked as read successfully:', updatedNotification.id);
         // No need to manually update the component's notifications property
         // as it's already bound to the signal from NotificationsStateService
       },
       error: (err) => {
-        console.error('Failed to mark notification as read:', err);
         // Force refresh notifications to ensure UI is in sync with server
         this.loadNotifications(true).subscribe({
           error: (refreshErr) => {
-            console.error('Failed to refresh notifications after navigation error:', refreshErr);
+            // Handle error silently
           }
         });
       }

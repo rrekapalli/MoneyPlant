@@ -27,11 +27,11 @@ export const HEATMAP_Y_AXIS = ['Food', 'Transport', 'Entertainment'];
  */
 export function createSpendingHeatmapWidget(): IWidget {
   return HeatmapChartBuilder.create()
-    .setData(SPENDING_HEATMAP_DATA)
+    .setData([]) // Data will be populated from shared dashboard data
     .setXAxisData(HEATMAP_X_AXIS)
     .setYAxisData(HEATMAP_Y_AXIS)
     .setHeader('Weekly Spending Heatmap')
-    .setPosition({ x: 6, y: 8, cols: 8, rows: 4 })
+    .setPosition({ x: 6, y: 8, cols: 8, rows: 8 })
     .setTitle('Weekly Spending Heatmap', 'By Category')
     .setVisualMap(0, 1500, ['#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8', '#ffffcc', '#fee090', '#fdae61', '#f46d43', '#d73027', '#a50026'])
     .setXAxisName('Days')

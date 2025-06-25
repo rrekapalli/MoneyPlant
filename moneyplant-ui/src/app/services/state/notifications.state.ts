@@ -1,8 +1,10 @@
 import { Injectable, OnDestroy, computed, effect, signal } from '@angular/core';
 import { Observable, tap, interval, Subscription } from 'rxjs';
 import { ApiService } from '../apis/api.base';
+import { MockApiService } from '../apis/mock-api.service';
 import { Notification } from '../entities/notification';
 import { SettingsStateService } from './settings.state';
+import { environment } from '../../../environments/environment';
 
 /**
  * Interface for the notifications state
@@ -47,15 +49,17 @@ export class NotificationsStateService implements OnDestroy {
   // Cleanup interval subscription
   private cleanupSubscription: Subscription | null = null;
 
+  // Choose the appropriate API service based on environment
+  private get apiService(): ApiService | MockApiService {
+    return environment.useMockData ? this.mockApiService : this.realApiService;
+  }
+
   constructor(
-    private apiService: ApiService,
+    private realApiService: ApiService,
+    private mockApiService: MockApiService,
     private settingsState: SettingsStateService
   ) {
-    // Log state changes for debugging
-    effect(() => {
-      console.log('Notifications state updated:', this.state());
-    });
-
+    // State changes are handled silently
     // Set up automatic cleanup of old notifications
     this.setupNotificationCleanup();
   }
@@ -64,13 +68,8 @@ export class NotificationsStateService implements OnDestroy {
    * Set up automatic cleanup of old notifications
    */
   private setupNotificationCleanup(): void {
-    // Clean up any existing subscription
-    if (this.cleanupSubscription) {
-      this.cleanupSubscription.unsubscribe();
-    }
-
-    // Run cleanup every minute
-    this.cleanupSubscription = interval(60000).subscribe(() => {
+    // Clean up notifications every 5 minutes
+    this.cleanupSubscription = interval(5 * 60 * 1000).subscribe(() => {
       this.cleanupOldNotifications();
     });
   }
@@ -301,20 +300,10 @@ export class NotificationsStateService implements OnDestroy {
           // API call succeeded, update loading state and timestamp
           this.setLoading(false);
           this.updateTimestamp();
-          console.log(`Successfully deleted notification with ID ${id} from server`);
         },
         error: (err) => {
-          console.error(`Error deleting notification with ID ${id}:`, err);
-
-          // Even if the API call fails, keep the notification removed from the UI
-          // This provides a better user experience than showing an error
-          // The next time notifications are refreshed, it will sync with the server
-
           this.setLoading(false);
           this.setError(err.message || `Failed to delete notification with ID ${id}`);
-
-          // Log the error for debugging
-          console.warn(`Notification with ID ${id} was removed from UI but may still exist on the server`);
         }
       })
     );

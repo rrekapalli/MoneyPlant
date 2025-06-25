@@ -1,14 +1,19 @@
-import { DensityMapBuilder, DensityMapData } from './density-map-builder';
+import { DensityMapBuilder, DensityMapData } from '@dashboards/public-api';
 
 /**
- * Example data for Hong Kong population density
+ * Example data for world population density
  */
-export const hongKongDensityData: DensityMapData[] = [
-  { name: 'Hong Kong Island', value: 100 },
-  { name: 'Kowloon', value: 80 },
-  { name: 'New Territories', value: 60 },
-  { name: 'Lantau Island', value: 30 },
-  { name: 'Lamma Island', value: 20 },
+export const worldDensityData: DensityMapData[] = [
+  { name: 'China', value: 100 },
+  { name: 'India', value: 95 },
+  { name: 'United States', value: 85 },
+  { name: 'Indonesia', value: 75 },
+  { name: 'Brazil', value: 70 },
+  { name: 'Pakistan', value: 65 },
+  { name: 'Nigeria', value: 60 },
+  { name: 'Bangladesh', value: 55 },
+  { name: 'Russia', value: 50 },
+  { name: 'Mexico', value: 45 }
 ];
 
 /**
@@ -34,30 +39,30 @@ export const chinaDensityData: DensityMapData[] = [
 ];
 
 /**
- * Basic Hong Kong density map example
+ * Basic world density map example
  */
-export function createBasicHongKongMap() {
+export function createBasicWorldMap() {
   return DensityMapBuilder.create()
-    .setData(hongKongDensityData)
-    .setMap('HK')
-    .setHeader('Hong Kong Population Density')
+    .setData(worldDensityData)
+    .setMap('world')
+    .setHeader('World Population Density')
     .setPosition({ x: 0, y: 0, cols: 6, rows: 4 })
     .build();
 }
 
 /**
- * Advanced Hong Kong density map with custom styling
+ * Advanced world density map with custom styling
  */
-export function createAdvancedHongKongMap() {
+export function createAdvancedWorldMap() {
   return DensityMapBuilder.create()
-    .setData(hongKongDensityData)
-    .setMap('HK')
-    .setTitle('Hong Kong Population Density', '2023 Data')
+    .setData(worldDensityData)
+    .setMap('world')
+    .setTitle('World Population Density', '2023 Data')
     .setVisualMap(0, 100, ['#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8'])
     .setRoam(true)
     .setZoom(1.2)
-    .setCenter([114.1694, 22.3193])
-    .setLabelShow(true, 'inside', '{b}\n{c}')
+    .setCenter([0, 0])
+    .setConditionalLabels(true, 'inside', '{b}\n{c}', true)
     .setAreaColor('#f5f5f5')
     .setBorderColor('#999', 0.5)
     .setEmphasisColor('#b8e186')
@@ -69,12 +74,58 @@ export function createAdvancedHongKongMap() {
 }
 
 /**
+ * World density map with conditional labels (only show for countries with data)
+ */
+export function createWorldMapWithConditionalLabels() {
+  return DensityMapBuilder.create()
+    .setData(worldDensityData)
+    .setMap('world')
+    .setTitle('World Population Density', 'Countries with Data Only')
+    .setVisualMap(0, 100, ['#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8'])
+    .setRoam(true)
+    .setZoom(1.2)
+    .setCenter([0, 0])
+    .setConditionalLabels(true, 'inside', '{b}\n{c}M', true)
+    .setAreaColor('#f8f9fa')
+    .setBorderColor('#dee2e6', 0.5)
+    .setEmphasisColor('#28a745')
+    .setShadow(10, 'rgba(0, 0, 0, 0.3)')
+    .setTooltip('item', '{b}: {c} million people')
+    .setHeader('Population Density (Data Only)')
+    .setPosition({ x: 0, y: 0, cols: 8, rows: 6 })
+    .build();
+}
+
+/**
+ * World density map with all labels (for comparison)
+ */
+export function createWorldMapWithAllLabels() {
+  return DensityMapBuilder.create()
+    .setData(worldDensityData)
+    .setMap('world')
+    .setTitle('World Population Density', 'All Countries')
+    .setVisualMap(0, 100, ['#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8'])
+    .setRoam(true)
+    .setZoom(1.2)
+    .setCenter([0, 0])
+    .setConditionalLabels(true, 'inside', '{b}\n{c}M', false)
+    .setAreaColor('#f8f9fa')
+    .setBorderColor('#dee2e6', 0.5)
+    .setEmphasisColor('#28a745')
+    .setShadow(10, 'rgba(0, 0, 0, 0.3)')
+    .setTooltip('item', '{b}: {c} million people')
+    .setHeader('Population Density (All Countries)')
+    .setPosition({ x: 0, y: 0, cols: 8, rows: 6 })
+    .build();
+}
+
+/**
  * US density map example
  */
 export function createUSMap() {
   return DensityMapBuilder.create()
     .setData(usDensityData)
-    .setMap('US')
+    .setMap('usa')
     .setTitle('US Population Density', 'State-wise distribution')
     .setVisualMap(0, 100, ['#fee5d9', '#fcae91', '#fb6a4a', '#de2d26', '#a50f15'])
     .setRoam(true)
@@ -93,7 +144,7 @@ export function createUSMap() {
 export function createChinaMap() {
   return DensityMapBuilder.create()
     .setData(chinaDensityData)
-    .setMap('CN')
+    .setMap('china')
     .setTitle('China Population Density', 'Province-wise distribution')
     .setVisualMap(0, 100, ['#f7fcf5', '#e5f5e0', '#c7e9c0', '#a1d99b', '#74c476'])
     .setRoam(true)
@@ -111,13 +162,13 @@ export function createChinaMap() {
  */
 export function createInteractiveDensityMap() {
   return DensityMapBuilder.create()
-    .setData(hongKongDensityData)
-    .setMap('HK')
+    .setData(worldDensityData)
+    .setMap('world')
     .setTitle('Interactive Population Density', 'Hover for details')
     .setVisualMap(0, 100, ['#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8'])
     .setRoam(true)
     .setZoom(1.5)
-    .setCenter([114.1694, 22.3193])
+    .setCenter([0, 0])
     .setLabelShow(true, 'inside', '{b}')
     .setAreaColor('#f8f9fa')
     .setBorderColor('#dee2e6', 1)
@@ -146,8 +197,8 @@ export function createInteractiveDensityMap() {
  */
 export function createMinimalDensityMap() {
   return DensityMapBuilder.create()
-    .setData(hongKongDensityData.slice(0, 3))
-    .setMap('HK')
+    .setData(worldDensityData.slice(0, 3))
+    .setMap('world')
     .setVisualMap(0, 100, ['#313695', '#74add1', '#e0f3f8'])
     .setRoam(false)
     .setZoom(1.0)
