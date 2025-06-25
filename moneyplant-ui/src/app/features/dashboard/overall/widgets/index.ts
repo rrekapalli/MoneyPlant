@@ -60,11 +60,11 @@ export { getAlternativeTreemapChartData } from './treemap-chart-widget';
 export { getAlternativeSunburstChartData } from './sunburst-chart-widget';
 export { getAlternativeSankeyChartData } from './sankey-chart-widget';
 
-// Static data exports
-export { ASSET_ALLOCATION_DATA, ASSET_ALLOCATION_COLORS } from './asset-allocation-widget';
-export { MONTHLY_DATA, MONTHLY_CATEGORIES } from './monthly-income-expenses-widget';
-export { PORTFOLIO_DATA, PORTFOLIO_CATEGORIES } from './portfolio-performance-widget';
-export { RISK_RETURN_DATA, RISK_RETURN_COLORS } from './risk-return-widget';
+// Static data exports (keeping only what still exists)
+export { ASSET_ALLOCATION_COLORS } from './asset-allocation-widget';
+export { MONTHLY_CATEGORIES } from './monthly-income-expenses-widget';
+export { PORTFOLIO_CATEGORIES } from './portfolio-performance-widget';
+export { RISK_RETURN_COLORS } from './risk-return-widget';
 export { SAVINGS_GOAL_DATA } from './savings-goal-widget';
 export { SPENDING_HEATMAP_DATA, HEATMAP_X_AXIS, HEATMAP_Y_AXIS } from './spending-heatmap-widget';
 export { INVESTMENT_DISTRIBUTION_DATA } from './investment-distribution-widget';

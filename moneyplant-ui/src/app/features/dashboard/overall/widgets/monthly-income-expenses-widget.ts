@@ -1,15 +1,6 @@
 import { IWidget, BarChartBuilder, BarChartData, FilterService } from '@dashboards/public-api';
 
-// Static data for monthly income vs expenses
-export const MONTHLY_DATA: BarChartData[] = [
-  { name: 'Jan', value: 8500 },
-  { name: 'Feb', value: 9200 },
-  { name: 'Mar', value: 7800 },
-  { name: 'Apr', value: 9500 },
-  { name: 'May', value: 8800 },
-  { name: 'Jun', value: 10200 }
-];
-
+// Default categories for monthly data
 export const MONTHLY_CATEGORIES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
 
 /**
@@ -17,7 +8,7 @@ export const MONTHLY_CATEGORIES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
  */
 export function createMonthlyIncomeExpensesWidget(): IWidget {
   const widget = BarChartBuilder.create()
-    .setData(MONTHLY_DATA.map(d => d.value))
+    .setData([]) // Data will be populated from shared dashboard data
     .setCategories(MONTHLY_CATEGORIES)
     .setHeader('Monthly Income vs Expenses')
     .setPosition({ x: 4, y: 0, cols: 6, rows: 4 })
@@ -45,23 +36,28 @@ export function updateMonthlyIncomeExpensesData(
   newData?: number[], 
   filterService?: FilterService
 ): void {
-  let data = newData || MONTHLY_DATA.map(d => d.value);
+  let data = newData || [];
   let categories = MONTHLY_CATEGORIES;
   
-  // Apply filters if filter service is provided
-  if (filterService) {
+  // If newData is provided, use it directly (from shared dashboard data)
+  // Otherwise, apply filters if filter service is provided
+  if (!newData && filterService) {
     const currentFilters = filterService.getFilterValues();
     
     if (currentFilters.length > 0) {
       // Use the filter service's applyFiltersToData method
-      const filteredData = filterService.applyFiltersToData(MONTHLY_DATA, currentFilters);
+      const filteredData = filterService.applyFiltersToData([], currentFilters);
       
-      if (filteredData.length !== MONTHLY_DATA.length) {
-        // If filtering occurred, map the filtered data back to values and categories
-        data = filteredData.map(item => item.value);
-        categories = filteredData.map(item => item.name);
+      if (filteredData.length > 0) {
+        // Map the filtered data back to values and categories
+        data = filteredData.map((item: any) => item.value);
+        categories = filteredData.map((item: any) => item.name);
       }
     }
+  } else if (newData) {
+    // If newData is provided, we need to reconstruct categories based on the data length
+    // This is a simplified approach - in a real scenario, you might want to pass categories separately
+    categories = newData.map((_, index) => MONTHLY_CATEGORIES[index] || `Month ${index + 1}`);
   }
   
   // Update widget data using BarChartBuilder
@@ -85,7 +81,7 @@ export function updateMonthlyIncomeExpensesData(
     try {
       widget.chartInstance.setOption(widget.config?.options as any, true);
     } catch (error) {
-      // Handle error silently
+      console.error('Error updating Monthly Income/Expenses chart:', error);
     }
   } else {
     // Try to update with retry mechanism
@@ -100,7 +96,7 @@ export function updateMonthlyIncomeExpensesData(
           widget.chartInstance.setOption(widget.config?.options as any, true);
           return;
         } catch (error) {
-          // Handle error silently
+          console.error('Error updating Monthly Income/Expenses chart on retry:', error);
         }
       }
       

@@ -1,15 +1,6 @@
 import { IWidget, LineChartBuilder, LineChartData, FilterService } from '@dashboards/public-api';
 
-// Static data for portfolio performance
-export const PORTFOLIO_DATA: LineChartData[] = [
-  { name: 'Jan', value: 100000 },
-  { name: 'Feb', value: 105000 },
-  { name: 'Mar', value: 102000 },
-  { name: 'Apr', value: 108000 },
-  { name: 'May', value: 112000 },
-  { name: 'Jun', value: 115000 }
-];
-
+// Default categories for portfolio performance
 export const PORTFOLIO_CATEGORIES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
 
 /**
@@ -17,7 +8,7 @@ export const PORTFOLIO_CATEGORIES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
  */
 export function createPortfolioPerformanceWidget(): IWidget {
   const widget = LineChartBuilder.create()
-    .setData(PORTFOLIO_DATA.map(d => d.value))
+    .setData([]) // Data will be populated from shared dashboard data
     .setXAxisData(PORTFOLIO_CATEGORIES)
     .setHeader('Portfolio Performance')
     .setPosition({ x: 0, y: 4, cols: 6, rows: 4 })
@@ -46,23 +37,28 @@ export function updatePortfolioPerformanceData(
   newData?: number[], 
   filterService?: FilterService
 ): void {
-  let data = newData || PORTFOLIO_DATA.map(d => d.value);
+  let data = newData || [];
   let categories = PORTFOLIO_CATEGORIES;
   
-  // Apply filters if filter service is provided
-  if (filterService) {
+  // If newData is provided, use it directly (from shared dashboard data)
+  // Otherwise, apply filters if filter service is provided
+  if (!newData && filterService) {
     const currentFilters = filterService.getFilterValues();
     
     if (currentFilters.length > 0) {
       // Use the filter service's applyFiltersToData method
-      const filteredData = filterService.applyFiltersToData(PORTFOLIO_DATA, currentFilters);
+      const filteredData = filterService.applyFiltersToData([], currentFilters);
       
-      if (filteredData.length !== PORTFOLIO_DATA.length) {
-        // If filtering occurred, map the filtered data back to values and categories
-        data = filteredData.map(item => item.value);
-        categories = filteredData.map(item => item.name);
+      if (filteredData.length > 0) {
+        // Map the filtered data back to values and categories
+        data = filteredData.map((item: any) => item.value);
+        categories = filteredData.map((item: any) => item.name);
       }
     }
+  } else if (newData) {
+    // If newData is provided, we need to reconstruct categories based on the data length
+    // This is a simplified approach - in a real scenario, you might want to pass categories separately
+    categories = newData.map((_, index) => PORTFOLIO_CATEGORIES[index] || `Month ${index + 1}`);
   }
   
   // Update widget data using LineChartBuilder

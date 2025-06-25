@@ -1,14 +1,6 @@
 import { IWidget, PieChartBuilder, PieChartData, IFilterValues, FilterService } from '@dashboards/public-api';
 
-// Static data for asset allocation
-export const ASSET_ALLOCATION_DATA: PieChartData[] = [
-  { value: 45, name: 'Stocks' },
-  { value: 25, name: 'Bonds' },
-  { value: 15, name: 'Cash' },
-  { value: 10, name: 'Real Estate' },
-  { value: 5, name: 'Commodities' },
-];
-
+// Default colors for asset allocation
 export const ASSET_ALLOCATION_COLORS = ['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de'];
 
 /**
@@ -16,7 +8,7 @@ export const ASSET_ALLOCATION_COLORS = ['#5470c6', '#91cc75', '#fac858', '#ee666
  */
 export function createAssetAllocationWidget(): IWidget {
   const widget = PieChartBuilder.create()
-    .setData(ASSET_ALLOCATION_DATA)
+    .setData([]) // Data will be populated from shared dashboard data
     .setHeader('Asset Allocation')
     .setPosition({ x: 0, y: 0, cols: 4, rows: 4 })
     .setColors(ASSET_ALLOCATION_COLORS)
@@ -41,10 +33,11 @@ export function updateAssetAllocationData(
   newData?: PieChartData[], 
   filterService?: FilterService
 ): void {
-  let data = newData || ASSET_ALLOCATION_DATA;
+  let data = newData || [];
   
-  // Apply filters if filter service is provided
-  if (filterService) {
+  // If newData is provided, use it directly (from shared dashboard data)
+  // Otherwise, apply filters if filter service is provided
+  if (!newData && filterService) {
     const currentFilters = filterService.getFilterValues();
     
     if (currentFilters.length > 0) {
@@ -54,6 +47,40 @@ export function updateAssetAllocationData(
   
   // Update widget data
   PieChartBuilder.updateData(widget, data);
+  
+  // Force chart update if chart instance is available
+  if (widget.chartInstance) {
+    try {
+      widget.chartInstance.setOption(widget.config?.options as any, true);
+    } catch (error) {
+      console.error('Error updating Asset Allocation chart:', error);
+    }
+  } else {
+    // Try to update with retry mechanism
+    const maxAttempts = 10;
+    let attempts = 0;
+    
+    const retryUpdate = () => {
+      attempts++;
+      
+      if (widget.chartInstance) {
+        try {
+          widget.chartInstance.setOption(widget.config?.options as any, true);
+          return;
+        } catch (error) {
+          console.error('Error updating Asset Allocation chart on retry:', error);
+        }
+      }
+      
+      if (attempts < maxAttempts) {
+        const delay = Math.min(500 * Math.pow(1.5, attempts - 1), 2000);
+        setTimeout(retryUpdate, delay);
+      }
+    };
+    
+    // Start retry with initial delay
+    setTimeout(retryUpdate, 100);
+  }
 }
 
 /**
@@ -62,27 +89,28 @@ export function updateAssetAllocationData(
 export async function getUpdatedAssetAllocationData(): Promise<PieChartData[]> {
   // Simulate API call delay
   await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  return [
-    { value: 50, name: 'Stocks' },
-    { value: 20, name: 'Bonds' },
-    { value: 20, name: 'Cash' },
-    { value: 8, name: 'Real Estate' },
-    { value: 2, name: 'Commodities' },
-  ];
+  return [];
+  // return [
+  //   { value: 50, name: 'Stocks' },
+  //   { value: 20, name: 'Bonds' },
+  //   { value: 20, name: 'Cash' },
+  //   { value: 8, name: 'Real Estate' },
+  //   { value: 2, name: 'Commodities' },
+  // ];
 }
 
 /**
  * Get alternative asset allocation data for testing
  */
 export function getAlternativeAssetAllocationData(): PieChartData[] {
-  return [
-    { value: 60, name: 'Stocks' },
-    { value: 15, name: 'Bonds' },
-    { value: 15, name: 'Cash' },
-    { value: 7, name: 'Real Estate' },
-    { value: 3, name: 'Commodities' },
-  ];
+  return [];
+  // return [
+  //   { value: 60, name: 'Stocks' },
+  //   { value: 15, name: 'Bonds' },
+  //   { value: 15, name: 'Cash' },
+  //   { value: 7, name: 'Real Estate' },
+  //   { value: 3, name: 'Commodities' },
+  // ];
 } 
 
 /**
@@ -102,7 +130,7 @@ export function createAssetAllocationFilter(clickedData: any): IFilterValues | n
   }
 
   return {
-    accessor: 'category',
+    accessor: 'assetCategory',
     filterColumn: 'assetCategory',
     assetCategory: clickedData.name,
     value: clickedData.name,

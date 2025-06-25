@@ -1,15 +1,6 @@
 import { IWidget, ScatterChartBuilder, ScatterChartData, FilterService } from '@dashboards/public-api';
 
-// Static data for risk vs return analysis
-export const RISK_RETURN_DATA: ScatterChartData[] = [
-  { value: [0.05, 0.08], name: 'Bonds' },
-  { value: [0.12, 0.15], name: 'Stocks' },
-  { value: [0.08, 0.10], name: 'REITs' },
-  { value: [0.15, 0.20], name: 'Small Cap' },
-  { value: [0.20, 0.25], name: 'Emerging Markets' },
-  { value: [0.03, 0.05], name: 'Cash' }
-];
-
+// Default colors for risk return analysis
 export const RISK_RETURN_COLORS = ['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de', '#3ba272'];
 
 /**
@@ -17,7 +8,7 @@ export const RISK_RETURN_COLORS = ['#5470c6', '#91cc75', '#fac858', '#ee6666', '
  */
 export function createRiskReturnWidget(): IWidget {
   const widget = ScatterChartBuilder.create()
-    .setData(RISK_RETURN_DATA)
+    .setData([]) // Data will be populated from shared dashboard data
     .setHeader('Risk vs Return Analysis')
     .setPosition({ x: 6, y: 4, cols: 6, rows: 4 })
     .setTitle('Risk vs Return Analysis', 'Portfolio Components')
@@ -44,7 +35,7 @@ export function updateRiskReturnData(
   newData?: ScatterChartData[], 
   filterService?: FilterService
 ): void {
-  let data = newData || RISK_RETURN_DATA;
+  let data = newData || [];
   
   // Apply filters if filter service is provided
   if (filterService) {
@@ -54,7 +45,7 @@ export function updateRiskReturnData(
       // Use the filter service's applyFiltersToData method
       const filteredData = filterService.applyFiltersToData(data, currentFilters);
       
-      if (filteredData.length !== data.length) {
+      if (filteredData.length > 0) {
         data = filteredData;
       }
     }
