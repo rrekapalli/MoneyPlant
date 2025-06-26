@@ -82,7 +82,8 @@ import {
   // Excel Export Service
   ExcelExportService,
   ExcelExportOptions,
-  IFilterValues
+  IFilterValues,
+  ITileOptions
 } from '@dashboards/public-api';
 
 // Import widget creation functions
@@ -110,6 +111,7 @@ import {
   createBudgetAllocationSankeyWidget,
   createMinimalSankeyChartWidget,
   createFilterWidget,
+  createMetricTiles,
   // Dashboard data
   DashboardDataRow,
   INITIAL_DASHBOARD_DATA
@@ -225,6 +227,9 @@ export class OverallComponent implements OnInit, OnDestroy {
       this.updateWidgetWithFilters(widget, currentFilters);
     });
 
+    // Update metric tiles with filtered data
+    this.updateMetricTilesWithFilters(currentFilters);
+
     // Trigger change detection with a delay to ensure all updates are complete
     setTimeout(() => {
       this.cdr.detectChanges();
@@ -234,6 +239,37 @@ export class OverallComponent implements OnInit, OnDestroy {
         this.cdr.detectChanges();
       }, 100);
     }, 50);
+  }
+
+  /**
+   * Update metric tiles with filtered data
+   */
+  private updateMetricTilesWithFilters(filters: IFilterValues[]): void {
+    // Find all tile widgets
+    const tileWidgets = this.dashboardConfig.widgets.filter(widget => 
+      widget.config?.component === 'tile'
+    );
+
+    // Create new metric tiles with filtered data
+    const updatedMetricTiles = createMetricTiles(this.dashboardData);
+
+    // Update each tile widget with new data
+    tileWidgets.forEach((widget, index) => {
+      if (index < updatedMetricTiles.length) {
+        const updatedTile = updatedMetricTiles[index];
+        
+        // Check if this tile should update on data change
+        const tileOptions = widget.config?.options as ITileOptions;
+        const shouldUpdate = tileOptions?.updateOnDataChange !== false;
+        
+        if (shouldUpdate) {
+          // Update the widget's options with new tile data
+          if (widget.config?.options) {
+            Object.assign(widget.config.options, updatedTile.config?.options);
+          }
+        }
+      }
+    });
   }
 
   /**
@@ -879,43 +915,29 @@ export class OverallComponent implements OnInit, OnDestroy {
     const minimalSankeyTest = createMinimalSankeyChartWidget();
     const filterWidget = createFilterWidget();
     const testFilterWidget = createTestFilterWidget();
+    const metricTiles = createMetricTiles(INITIAL_DASHBOARD_DATA);
 
+    // Position metric tiles at row 0 (top of dashboard)
+    // Metric tiles are already positioned at y: 0 in the createMetricTiles function
 
-    // Adjust positions of all widgets to move them down by 1 row to accommodate the filter widget
-    filterWidget.position = { x: 0, y: 0, cols: 12, rows: 1 };
+    // Position filter widget at row 1 (below metric tiles)
+    filterWidget.position = { x: 0, y: 2, cols: 12, rows: 1 };
 
-    densityMapInvestment.position = { x: 0, y: 1, cols: 8, rows: 8 };
-    pieAssetAllocation.position = { x: 9, y: 9, cols: 4, rows: 8 };
-    polarChart.position = { x: 9, y: 13, cols: 4, rows: 8 };
-    barMonthlyIncomeVsExpenses.position = { x: 0, y: 11, cols: 8, rows: 8 };
-
-  
-    // linePortfolioPerformance.position = { x: 0, y: 25, cols: 12, rows: 8 };
-    // scatterRiskVsReturn.position = { x: 0, y: 25, cols: 12, rows: 8 };
-    // gaugeSavingsGoal.position = { x: 0, y: 33, cols: 12, rows: 8 };
-    // heatmapSpending.position = { x: 0, y: 41, cols: 12, rows: 8 };
-    // areaChart.position = { x: 0, y: 49, cols: 12, rows: 8 };
-    
-    // stackedAreaChart.position = { x: 0, y: 65, cols: 12, rows: 8 };
-    // performanceStackedAreaChart.position = { x: 0, y: 73, cols: 12, rows: 8 };
-    // marketTrendStackedAreaChart.position = { x: 0, y: 81, cols: 12, rows: 8 };
-    // treemapChart.position = { x: 0, y: 89, cols: 12, rows: 8 };
-    // expenseTreemap.position = { x: 0, y: 97, cols: 12, rows: 8 };
-    // largeScaleTreemap.position = { x: 0, y: 105, cols: 12, rows: 8 };
-    // sunburstChart.position = { x: 0, y: 113, cols: 12, rows: 8 };
-    // organizationalSunburst.position = { x: 0, y: 121, cols: 12, rows: 8 };
-    // largeScaleSunburst.position = { x: 0, y: 129, cols: 12, rows: 8 };
-    // sankeyChart.position = { x: 0, y: 137, cols: 12, rows: 8 };
-    // investmentFlowSankey.position = { x: 0, y: 145, cols: 12, rows: 8 };
-    // budgetAllocationSankey.position = { x: 0, y: 153, cols: 12, rows: 8 };
-    // minimalSankeyTest.position = { x: 0, y: 161, cols: 12, rows: 8 };
-    // testFilterWidget.position = { x: 0, y: 169, cols: 12, rows: 8 };
+    // Position other widgets starting from row 2 (below filter)
+    densityMapInvestment.position = { x: 0, y: 3, cols: 8, rows: 8 };
+    pieAssetAllocation.position = { x: 9, y: 11, cols: 4, rows: 8 };
+    polarChart.position = { x: 9, y: 15, cols: 4, rows: 8 };
+    barMonthlyIncomeVsExpenses.position = { x: 0, y: 13, cols: 8, rows: 8 };
 
     // Use the Fluent API to build the dashboard config
     this.dashboardConfig = StandardDashboardBuilder.createStandard()
       .setDashboardId('overall-dashboard')
       .setWidgets([
-        filterWidget, // Filter widget at the top
+        // Metric tiles at the top (row 0)
+        ...metricTiles,
+        // Filter widget below tiles (row 1)
+        filterWidget,
+        // Other widgets starting from row 2
         densityMapInvestment,
         pieAssetAllocation,
         polarChart,
@@ -976,6 +998,9 @@ export class OverallComponent implements OnInit, OnDestroy {
         console.warn(`No initial data found for widget: ${widgetTitle}`);
       }
     });
+
+    // Populate metric tiles with initial data
+    this.updateMetricTilesWithFilters([]);
 
     // Trigger change detection to ensure widgets are updated
     setTimeout(() => {

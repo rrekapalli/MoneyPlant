@@ -12,8 +12,14 @@ export interface ITileOptions {
   changeType: 'positive' | 'negative' | 'neutral';
   /** Icon identifier to display */
   icon: string;
-  /** Color theme for the tile */
+  /** Color theme for the tile text */
   color: string;
+  /** Background color for the tile */
+  backgroundColor?: string;
   /** Description text for the tile */
   description: string;
+  /** Background opacity for the tile (0-1) */
+  backgroundOpacity?: number;
+  /** Whether the tile should update when data/filters change */
+  updateOnDataChange?: boolean;
 }
