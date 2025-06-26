@@ -1,6 +1,5 @@
 import { Component, ViewChild } from '@angular/core';
 import { DashboardContainerComponent } from '../dashboard-container/dashboard-container.component';
-import { PdfExportOptions } from '../services/pdf-export.service';
 import { IWidget } from '../entities/IWidget';
 
 @Component({
@@ -276,24 +275,24 @@ export class DashboardWithPdfExampleComponent {
    * Export with custom configuration options
    * Demonstrates advanced PDF export settings
    */
-  async exportWithCustomOptions(): Promise<void> {
-    const options: PdfExportOptions = {
-      orientation: 'landscape',
-      format: 'a3',
-      margin: 20,
-      filename: `dashboard-${Date.now()}.pdf`,
-      title: 'Custom Dashboard Export',
-      includeHeader: true,
-      includeFooter: true,
-      scale: 2
-    };
+  // async exportWithCustomOptions(): Promise<void> {
+  //   const options: PdfExportOptions = {
+  //     orientation: 'landscape',
+  //     format: 'a3',
+  //     margin: 20,
+  //     filename: `dashboard-${Date.now()}.pdf`,
+  //     title: 'Custom Dashboard Export',
+  //     includeHeader: true,
+  //     includeFooter: true,
+  //     scale: 2
+  //   };
 
-    try {
-      await this.dashboardContainer.exportToPdf(options);
-    } catch (error) {
-      console.error('Custom PDF export failed:', error);
-    }
-  }
+  //   try {
+  //     await this.dashboardContainer.exportToPdf(options);
+  //   } catch (error) {
+  //     console.error('Custom PDF export failed:', error);
+  //   }
+  // }
 
   /**
    * Export multiple widgets individually

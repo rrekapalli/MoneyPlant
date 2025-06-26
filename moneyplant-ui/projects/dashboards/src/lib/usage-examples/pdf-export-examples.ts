@@ -1,6 +1,5 @@
 import { Component, ViewChild } from '@angular/core';
 import { DashboardContainerComponent } from '../dashboard-container/dashboard-container.component';
-import { PdfExportOptions } from '../services/pdf-export.service';
 
 /**
  * Example component demonstrating various PDF export capabilities

@@ -1,4 +1,4 @@
-import { IWidget, BarChartBuilder, BarChartData, FilterService } from '@dashboards/public-api';
+import { IWidget, BarChartBuilder, BarChartData, FilterService, IFilterValues } from '@dashboards/public-api';
 
 // Default categories for monthly data
 export const MONTHLY_CATEGORIES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
@@ -7,8 +7,14 @@ export const MONTHLY_CATEGORIES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
  * Create the monthly income vs expenses bar chart widget
  */
 export function createMonthlyIncomeExpensesWidget(): IWidget {
+  // Create data with both name and value properties for proper filtering
+  const initialData: BarChartData[] = MONTHLY_CATEGORIES.map(month => ({
+    name: month,
+    value: 0
+  }));
+
   const widget = BarChartBuilder.create()
-    .setData([]) // Data will be populated from shared dashboard data
+    .setData(initialData) // Use structured data instead of empty array
     .setCategories(MONTHLY_CATEGORIES)
     .setHeader('Monthly Income vs Expenses')
     .setPosition({ x: 4, y: 0, cols: 6, rows: 8 })
@@ -20,7 +26,7 @@ export function createMonthlyIncomeExpensesWidget(): IWidget {
     .setTooltip('axis', '{b}: ${c}')
     .build();
     
-  // Add filterColumn configuration
+  // Add filterColumn configuration - filter by month names (series.name)
   if (widget.config) {
     widget.config.filterColumn = 'month';
   }
@@ -36,32 +42,40 @@ export function updateMonthlyIncomeExpensesData(
   newData?: number[], 
   filterService?: FilterService
 ): void {
-  let data = newData || [];
+  let structuredData: BarChartData[] = [];
   let categories = MONTHLY_CATEGORIES;
   
-  // If newData is provided, use it directly (from shared dashboard data)
-  // Otherwise, apply filters if filter service is provided
-  if (!newData && filterService) {
+  // If newData is provided, convert to structured format with month names
+  if (newData) {
+    structuredData = newData.map((value, index) => ({
+      name: MONTHLY_CATEGORIES[index] || `Month ${index + 1}`,
+      value: value
+    }));
+  } else {
+    // Create default structure with zero values
+    structuredData = MONTHLY_CATEGORIES.map(month => ({
+      name: month,
+      value: 0
+    }));
+  }
+  
+  // If filter service is provided, apply filters
+  if (filterService) {
     const currentFilters = filterService.getFilterValues();
     
     if (currentFilters.length > 0) {
       // Use the filter service's applyFiltersToData method
-      const filteredData = filterService.applyFiltersToData([], currentFilters);
+      const filteredData = filterService.applyFiltersToData(structuredData, currentFilters);
       
       if (filteredData.length > 0) {
-        // Map the filtered data back to values and categories
-        data = filteredData.map((item: any) => item.value);
+        structuredData = filteredData;
         categories = filteredData.map((item: any) => item.name);
       }
     }
-  } else if (newData) {
-    // If newData is provided, we need to reconstruct categories based on the data length
-    // This is a simplified approach - in a real scenario, you might want to pass categories separately
-    categories = newData.map((_, index) => MONTHLY_CATEGORIES[index] || `Month ${index + 1}`);
   }
   
   // Update widget data using BarChartBuilder
-  BarChartBuilder.updateData(widget, data);
+  BarChartBuilder.updateData(widget, structuredData);
   
   // Also update the x-axis categories if they changed
   if (widget.config?.options) {
@@ -126,4 +140,29 @@ export async function getUpdatedMonthlyData(): Promise<number[]> {
  */
 export function getAlternativeMonthlyData(): number[] {
   return [9000, 9500, 8000, 9800, 9000, 10500];
+}
+
+/**
+ * Create filter value from monthly income expenses widget click data
+ * This ensures filtering uses month names (series.name) rather than values
+ */
+export function createMonthlyIncomeExpensesFilter(clickedData: any, event: any): IFilterValues | null {
+  if (!event || event.dataIndex === undefined) {
+    return null;
+  }
+
+  // Get the month name from the x-axis categories using the dataIndex
+  const monthName = MONTHLY_CATEGORIES[event.dataIndex];
+  
+  if (!monthName) {
+    return null;
+  }
+
+  return {
+    accessor: 'month',
+    filterColumn: 'month',
+    month: monthName,
+    value: monthName, // Use month name as the value for filtering
+    amount: clickedData?.toString() || '0'
+  };
 } 

@@ -11,26 +11,9 @@ vis-dashboard-container {
   min-height: 0;
 }
 
-.dashboard-title {
-  font-size: 1.2rem;
-  font-weight: 600;
-  color: #495057;
-  margin-bottom: 1rem;
-  text-align: left;
-}
 
-/* Test controls styling */
-.test-controls {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-  align-items: center;
-  flex-wrap: wrap;
-}
 
-.test-controls p-button {
-  margin-right: 0.5rem;
-}
+
 
 /* Enhanced Filter Status Display */
 .filter-status {
@@ -183,9 +166,8 @@ vis-dashboard-container {
 
   /* Responsive adjustments */
   @media (max-width: 768px) {
-    .dashboard-title {
-      font-size: 1.25rem;
-      margin-bottom: 1rem;
-    }
+    /* Dashboard title responsiveness is now handled by dashboard header component */
   }
 }
+
+

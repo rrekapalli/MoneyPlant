@@ -301,4 +301,193 @@ export class FilterService {
     
     return result;
   }
+
+  /**
+   * Apply filters to data using highlighting mode
+   * Instead of removing data, this marks data as highlighted or filtered
+   */
+  applyHighlightingFiltersToData<T extends Record<string, any>>(
+    data: T[], 
+    filters: IFilterValues[],
+    options?: {
+      filteredOpacity?: number;
+      highlightedOpacity?: number;
+      highlightColor?: string;
+      filteredColor?: string;
+    }
+  ): (T & { _filterState?: 'highlighted' | 'filtered' | 'normal' })[] {
+    if (!filters || filters.length === 0) {
+      // No filters, return all data as normal
+      return data.map(item => ({ ...item, _filterState: 'normal' as const }));
+    }
+
+    const defaultOptions = {
+      filteredOpacity: 0.3,
+      highlightedOpacity: 1.0,
+      highlightColor: undefined,
+      filteredColor: '#cccccc'
+    };
+
+    const mergedOptions = { ...defaultOptions, ...options };
+
+    return data.map(item => {
+      // Check if this item matches any filter
+      const matchesAnyFilter = filters.some(filter => this.matchesFilter(item, filter));
+      
+      if (matchesAnyFilter) {
+        return { 
+          ...item, 
+          _filterState: 'highlighted' as const,
+          _visualOptions: {
+            opacity: mergedOptions.highlightedOpacity,
+            color: mergedOptions.highlightColor
+          }
+        };
+      } else {
+        return { 
+          ...item, 
+          _filterState: 'filtered' as const,
+          _visualOptions: {
+            opacity: mergedOptions.filteredOpacity,
+            color: mergedOptions.filteredColor
+          }
+        };
+      }
+    });
+  }
+
+  /**
+   * Convert highlighting data to ECharts format
+   */
+  applyHighlightingToEChartsData(
+    data: any[], 
+    filters: IFilterValues[],
+    chartType: 'pie' | 'bar' | 'line' | 'scatter' | 'other' = 'other',
+    options?: {
+      filteredOpacity?: number;
+      highlightedOpacity?: number;
+      highlightColor?: string;
+      filteredColor?: string;
+    }
+  ): any {
+    if (!filters || filters.length === 0) {
+      return data;
+    }
+
+    const defaultOptions = {
+      filteredOpacity: 0.3,
+      highlightedOpacity: 1.0,
+      highlightColor: undefined,
+      filteredColor: '#cccccc'
+    };
+
+    const mergedOptions = { ...defaultOptions, ...options };
+
+    // For pie charts
+    if (chartType === 'pie') {
+      return data.map((item, index) => {
+        const matchesAnyFilter = filters.some(filter => {
+          // Check if this pie slice matches the filter
+          return this.matchesPieSliceFilter(item, filter);
+        });
+
+        if (matchesAnyFilter) {
+          return {
+            ...item,
+            itemStyle: {
+              ...item.itemStyle,
+              opacity: mergedOptions.highlightedOpacity,
+              borderWidth: 3,
+              borderColor: mergedOptions.highlightColor || '#ff6b6b'
+            }
+          };
+        } else {
+          return {
+            ...item,
+            itemStyle: {
+              ...item.itemStyle,
+              opacity: mergedOptions.filteredOpacity,
+              color: mergedOptions.filteredColor
+            }
+          };
+        }
+      });
+    }
+
+    // For bar charts
+    if (chartType === 'bar') {
+      return data.map(item => {
+        const matchesAnyFilter = filters.some(filter => {
+          return this.matchesBarDataFilter(item, filter);
+        });
+
+        if (matchesAnyFilter) {
+          return {
+            ...item,
+            itemStyle: {
+              ...item.itemStyle,
+              opacity: mergedOptions.highlightedOpacity,
+              borderWidth: 2,
+              borderColor: mergedOptions.highlightColor || '#ff6b6b'
+            }
+          };
+        } else {
+          return {
+            ...item,
+            itemStyle: {
+              ...item.itemStyle,
+              opacity: mergedOptions.filteredOpacity,
+              color: mergedOptions.filteredColor
+            }
+          };
+        }
+      });
+    }
+
+    // For other chart types, return original data with opacity adjustments
+    return data;
+  }
+
+  /**
+   * Check if a pie slice matches a filter
+   */
+  private matchesPieSliceFilter(item: any, filter: IFilterValues): boolean {
+    if (!item || !filter) {
+      return false;
+    }
+
+    // Check by name (most common for pie charts)
+    if (item.name && filter['value']) {
+      const itemName = item.name.toString().toLowerCase();
+      const filterValue = filter['value'].toString().toLowerCase();
+      if (itemName === filterValue) return true;
+    }
+
+    // Check by category if available
+    if (item.name && filter['category']) {
+      const itemName = item.name.toString().toLowerCase();
+      const filterCategory = filter['category'].toString().toLowerCase();
+      if (itemName === filterCategory) return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Check if bar chart data matches a filter
+   */
+  private matchesBarDataFilter(item: any, filter: IFilterValues): boolean {
+    if (!item || !filter) return false;
+
+    // For bar charts, check if the item name matches filter category or value
+    if (item.name && filter['category']) {
+      return item.name.toString().toLowerCase() === filter['category'].toString().toLowerCase();
+    }
+
+    if (item.name && filter['value']) {
+      return item.name.toString().toLowerCase() === filter['value'].toString().toLowerCase();
+    }
+
+    return false;
+  }
 } 

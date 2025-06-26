@@ -1,7 +1,7 @@
 import { GridsterConfig, GridType, DisplayGrid } from 'angular-gridster2';
 import { IWidget } from '../entities/IWidget';
 import { IFilterValues } from '../entities/IFilterValues';
-import { PdfExportOptions } from '../services/pdf-export.service';
+// import { PdfExportOptions } from '../services/pdf-export.service';
 
 /**
  * Abstract base class for Dashboard Container builders
@@ -226,6 +226,48 @@ export abstract class DashboardContainerBuilder<T extends GridsterConfig = Grids
   }
 
   /**
+   * Set the filter visualization configuration for the dashboard
+   * @param config Filter visualization configuration
+   * @returns The builder instance for method chaining
+   */
+  setFilterVisualization(config: {
+    enableHighlighting?: boolean;
+    defaultFilteredOpacity?: number;
+    defaultHighlightedOpacity?: number;
+    defaultHighlightColor?: string;
+    defaultFilteredColor?: string;
+  }): this {
+    (this as any).filterVisualization = config;
+    return this;
+  }
+
+  /**
+   * Enable highlighting mode for filters
+   * @param enabled Whether to enable highlighting mode
+   * @param options Optional styling options
+   * @returns The builder instance for method chaining
+   */
+  enableFilterHighlighting(
+    enabled: boolean = true, 
+    options?: {
+      filteredOpacity?: number;
+      highlightedOpacity?: number;
+      highlightColor?: string;
+      filteredColor?: string;
+    }
+  ): this {
+    const config = {
+      enableHighlighting: enabled,
+      defaultFilteredOpacity: options?.filteredOpacity || 0.3,
+      defaultHighlightedOpacity: options?.highlightedOpacity || 1.0,
+      defaultHighlightColor: options?.highlightColor || '#ff6b6b',
+      defaultFilteredColor: options?.filteredColor || '#cccccc'
+    };
+    
+    return this.setFilterVisualization(config);
+  }
+
+  /**
    * Build the dashboard container configuration
    */
   build(): DashboardConfig {
@@ -237,7 +279,7 @@ export abstract class DashboardContainerBuilder<T extends GridsterConfig = Grids
       isEditMode: this.isEditMode,
       chartHeight: this.chartHeight,
       defaultChartHeight: this.defaultChartHeight,
-      exportToPdf: this.exportToPdf.bind(this)
+      // exportToPdf: this.exportToPdf.bind(this)
     };
   }
 
@@ -331,10 +373,10 @@ export abstract class DashboardContainerBuilder<T extends GridsterConfig = Grids
     return baseZoom - (zoomAdjustment * 0.1) - aspectAdjustment;
   }
 
-  exportToPdf(options?: PdfExportOptions): Promise<void> {
-    // This is a placeholder - the actual implementation will be provided by the component
-    return Promise.reject(new Error('Export to PDF method must be implemented by the dashboard component'));
-  }
+  // exportToPdf(options?: PdfExportOptions): Promise<void> {
+  //   // This is a placeholder - the actual implementation will be provided by the component
+  //   return Promise.reject(new Error('Export to PDF method must be implemented by the dashboard component'));
+  // }
 }
 
 /**
@@ -348,5 +390,19 @@ export interface DashboardConfig {
   isEditMode: boolean;
   chartHeight: number;
   defaultChartHeight: number;
-  exportToPdf?: (options?: PdfExportOptions) => Promise<void>;
+  // exportToPdf?: (options?: PdfExportOptions) => Promise<void>;
+  
+  /** Global filter visualization configuration for the entire dashboard */
+  filterVisualization?: {
+    /** Whether to enable highlighting mode globally for all widgets */
+    enableHighlighting?: boolean;
+    /** Default opacity for filtered-out (greyed) data (0-1) */
+    defaultFilteredOpacity?: number;
+    /** Default opacity for highlighted (selected) data (0-1) */
+    defaultHighlightedOpacity?: number;
+    /** Default color overlay for highlighted data */
+    defaultHighlightColor?: string;
+    /** Default color overlay for filtered data */
+    defaultFilteredColor?: string;
+  };
 } 

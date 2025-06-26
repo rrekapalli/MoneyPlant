@@ -1,6 +1,7 @@
 // Components
 export * from './lib/widgets/widget/widget-builder';
 export * from './lib/dashboard-container/dashboard-container.component';
+export * from './lib/dashboard-header';
 export * from './lib/widget-header/widget-header.component';
 export * from './lib/widget-config/widget-config.component';
 
@@ -11,13 +12,10 @@ export * from './lib/dashboard-container';
 export * from './lib/dashboard-container/dashboard-constants';
 
 // Services
-export * from './lib/services/pdf-export.service';
 export * from './lib/services/excel-export.service';
 export * from './lib/services/filter.service';
 
 // Examples
-export * from './lib/usage-examples/pdf-export-examples';
-export * from './lib/usage-examples/usage-example-with-pdf';
 export * from './lib/usage-examples/usage-example';
 export * from './lib/usage-examples/dashboard-container-examples';
 export * from './lib/usage-examples/areaChart-examples';
