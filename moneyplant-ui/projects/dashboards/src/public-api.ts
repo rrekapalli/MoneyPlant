@@ -22,6 +22,7 @@ export * from './lib/usage-examples/usage-example';
 export * from './lib/usage-examples/dashboard-container-examples';
 export * from './lib/usage-examples/areaChart-examples';
 export * from './lib/usage-examples/polarChart-examples';
+export * from './lib/usage-examples/tile-examples';
 
 // Config
 export * from './lib/formly-configs/form-options';
@@ -47,5 +48,5 @@ export * from './lib/echart-chart-builders';
 export * from './lib/widgets/echarts/echart.component';
 export * from './lib/widgets/filter/filter.component';
 export * from './lib/widgets/table/table.component';
-export * from './lib/widgets/tile/tile.component';
+export * from './lib/widgets/tile';
 export * from './lib/widgets/markdown-cell/markdown-cell.component';

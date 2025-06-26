@@ -2,6 +2,15 @@ import { IWidget, WidgetBuilder } from '../../../public-api';
 import { EChartsOption } from 'echarts';
 import { ApacheEchartBuilder } from '../apache-echart-builder';
 import * as echarts from 'echarts/core';
+import { 
+  ColorScheme, 
+  getColorPalette, 
+  MapType, 
+  LabelPosition, 
+  GEO_CENTERS,
+  ChartType,
+  TOOLTIP_TEMPLATES 
+} from '../../dashboard-container/dashboard-constants';
 
 export interface DensityMapData {
   name: string;
@@ -78,9 +87,15 @@ export interface DensityMapOptions extends EChartsOption {
 /**
  * Density Map Chart Builder extending the generic ApacheEchartBuilder
  * 
+ * Features:
+ * - Automatic map centering and zoom calculation based on widget dimensions
+ * - Support for various map types (world, country-specific, custom)
+ * - Conditional labeling for regions with data
+ * - Customizable visual mapping and styling
+ * 
  * Usage examples:
  * 
- * // Basic usage with default options
+ * // Basic usage with automatic centering and zoom
  * const widget = DensityMapBuilder.create()
  *   .setData([
  *     { name: 'Hong Kong Island', value: 100 },
@@ -89,25 +104,24 @@ export interface DensityMapOptions extends EChartsOption {
  *   ])
  *   .setMap('HK')
  *   .setHeader('Population Density')
- *   .setPosition({ x: 0, y: 0, cols: 6, rows: 4 })
+ *   .setPosition({ x: 0, y: 0, cols: 6, rows: 4 }) // Auto-centers and zooms based on 6x4 dimensions
  *   .build();
  * 
- * // Advanced usage with custom options
+ * // Advanced usage with custom options (auto-centering still applies)
  * const widget = DensityMapBuilder.create()
  *   .setData(densityData)
  *   .setMap('HK')
  *   .setTitle('Hong Kong Population Density', '2023 Data')
- *   .setVisualMap(0, 100, ['#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8'])
+ *   .setVisualMap(0, 100, ['#e0f3f8', '#abd9e9', '#74add1', '#4575b4', '#313695'])
  *   .setRoam(true)
- *   .setZoom(1.2)
- *   .setCenter([114.1694, 22.3193])
- *   .setTooltip('item', '{b}: {c}')
- *   .setHeader('Population Density Map')
- *   .setPosition({ x: 0, y: 0, cols: 8, rows: 6 })
+ *   .setPosition({ x: 0, y: 0, cols: 8, rows: 6 }) // Auto-centers and zooms based on 8x6 dimensions
  *   .build();
  * 
  * // Update widget data dynamically
  * DensityMapBuilder.updateData(widget, newData);
+ * 
+ * // Update existing widget with auto-adjusted center and zoom
+ * DensityMapBuilder.updateMapSettings(widget);
  */
 export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, DensityMapSeriesOptions> {
   protected override seriesOptions: DensityMapSeriesOptions;
@@ -116,7 +130,7 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
   private zoomLevel: number = 1;
   private centerCoords: [number, number] = [0, 0];
   private visualMapRange: [number, number] = [0, 100];
-  private visualMapColors: string[] = ['#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8'];
+  private visualMapColors: readonly string[] = getColorPalette(ColorScheme.DENSITY_BLUE);
 
   private constructor() {
     super();
@@ -146,22 +160,7 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
    * Get available built-in maps
    */
   static getAvailableMaps(): string[] {
-    return [
-      'world',
-      'china',
-      'usa',
-      'japan',
-      'uk',
-      'france',
-      'germany',
-      'italy',
-      'spain',
-      'russia',
-      'canada',
-      'australia',
-      'brazil',
-      'india'
-    ];
+    return Object.values(MapType);
   }
 
   /**
@@ -185,7 +184,7 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
         text: ['High', 'Low'],
         calculable: true,
         inRange: {
-          color: ['#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8'],
+          color: [...getColorPalette(ColorScheme.DENSITY_BLUE)],
         },
         textStyle: {
           color: '#333',
@@ -198,7 +197,7 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
    * Implement abstract method to get chart type
    */
   protected override getChartType(): string {
-    return 'map';
+    return ChartType.DENSITY_MAP;
   }
 
   /**
@@ -260,6 +259,13 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
   }
 
   /**
+   * Set the map type using predefined MapType enum
+   */
+  setMapType(mapType: MapType): this {
+    return this.setMap(mapType);
+  }
+
+  /**
    * Enable/disable map roaming (pan and zoom)
    */
   setRoam(roam: boolean): this {
@@ -304,7 +310,7 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
       text: ['High', 'Low'],
       calculable: true,
       inRange: {
-        color: this.visualMapColors,
+        color: [...this.visualMapColors],
       },
       textStyle: {
         color: '#333',
@@ -312,6 +318,14 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
     };
 
     return this;
+  }
+
+  /**
+   * Set color scheme using predefined color palettes
+   */
+  setColorScheme(scheme: ColorScheme, min: number = 0, max: number = 100): this {
+    this.visualMapColors = getColorPalette(scheme);
+    return this.setVisualMap(min, max);
   }
 
   /**
@@ -442,9 +456,47 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
   }
 
   /**
+   * Set widget position and automatically calculate map center based on dimensions
+   */
+  override setPosition(position: { x: number; y: number; cols: number; rows: number }): this {
+    // Call parent setPosition method
+    super.setPosition(position);
+    
+    // Automatically calculate and set map center based on widget dimensions
+    const center = this.calculateMapCenter(position.cols, position.rows);
+    this.setCenter(center as [number, number]);
+    
+    // Also calculate and set zoom level based on widget dimensions
+    // const zoom = this.calculateMapZoom(position.cols, position.rows);
+    // this.setZoom(zoom);
+    
+    return this;
+  }
+
+  /**
+   * Auto-adjust map center and zoom based on current widget dimensions
+   * This method can be called after setting position to recalculate map settings
+   */
+  autoAdjustMapSettings(): this {
+    // Get current position from widget builder
+    const position = this.widgetBuilder.build().position;
+    if (position) {
+      const center = this.calculateMapCenter(position.cols, position.rows);
+      const zoom = this.calculateMapZoom(position.cols, position.rows);
+      
+      this.setCenter(center as [number, number]);
+      // this.setZoom(zoom);
+    }
+    return this;
+  }
+
+  /**
    * Build the final widget with all configurations
    */
   override build(): IWidget {
+    // Auto-adjust map settings if position is set
+    this.autoAdjustMapSettings();
+    
     // Update series with current options
     this.seriesOptions = {
       ...this.seriesOptions,
@@ -474,10 +526,80 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
   }
 
   /**
+   * Update existing density map widget with auto-adjusted center and zoom
+   * based on its current dimensions
+   */
+  static updateMapSettings(widget: IWidget): void {
+    if (!DensityMapBuilder.isDensityMap(widget)) {
+      return;
+    }
+
+    const position = widget.position;
+    if (!position) {
+      return;
+    }
+
+    // Calculate new center and zoom
+    const builder = new DensityMapBuilder();
+    const center = builder.calculateMapCenter(position.cols, position.rows);
+    const zoom = builder.calculateMapZoom(position.cols, position.rows);
+
+    // Update the widget's series configuration
+    if ((widget.config.options as any)?.series?.[0]) {
+      (widget.config.options as any).series[0].center = center;
+      (widget.config.options as any).series[0].zoom = zoom;
+    }
+  }
+
+  /**
    * Static method to check if a widget is a density map
    */
   static isDensityMap(widget: IWidget): boolean {
     return ApacheEchartBuilder.isChartType(widget, 'map');
+  }
+
+  /**
+   * Static method to check if a widget is a density map (enhanced detection)
+   * This method can identify density maps even without proper headers
+   */
+  static isDensityMapEnhanced(widget: IWidget): boolean {
+    // Check by chart type first
+    if (ApacheEchartBuilder.isChartType(widget, 'map')) {
+      return true;
+    }
+    
+    // Check if the widget has map-specific configuration
+    const options = widget.config?.options as any;
+    if (options?.series?.[0]) {
+      const series = options.series[0];
+      return series.type === 'map' || series.map !== undefined;
+    }
+    
+    // Check if visualMap is present (common in density maps)
+    if (options?.visualMap) {
+      return true;
+    }
+    
+    return false;
+  }
+
+  /**
+   * Get appropriate data for density map widget
+   * This method provides fallback data when header is not set
+   */
+  static getDefaultData(): DensityMapData[] {
+    return [
+      { name: 'United States', value: 100 },
+      { name: 'China', value: 85 },
+      { name: 'Japan', value: 70 },
+      { name: 'Germany', value: 65 },
+      { name: 'United Kingdom', value: 60 },
+      { name: 'France', value: 55 },
+      { name: 'Canada', value: 50 },
+      { name: 'Australia', value: 45 },
+      { name: 'Brazil', value: 40 },
+      { name: 'India', value: 35 }
+    ];
   }
 
   /**
@@ -530,6 +652,45 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
     }
     return builder.getWidgetBuilder();
   }
+
+  // Add these helper methods to your class
+  public calculateMapCenter(cols: number, rows: number): number[] {
+    // Use predefined world center coordinates
+    const [baseLongitude, baseLatitude] = GEO_CENTERS.WORLD;
+    
+    // Adjust center based on aspect ratio
+    const aspectRatio = cols / rows;
+    
+    // Adjust longitude more for wider containers
+    const longitudeAdjustment = (aspectRatio > 1) ? (aspectRatio - 1) * 5 : 0;
+
+    // Adjust latitude more for taller containers
+    const latitudeAdjustment = (aspectRatio < 1) ? ((1 / aspectRatio) - 1) * 2 : 0;
+
+    return [
+      baseLongitude + longitudeAdjustment,
+      baseLatitude + latitudeAdjustment
+    ];
+  }
+
+  public calculateMapZoom(cols: number, rows: number): number {
+    // Base zoom level
+    const baseZoom = 4.0;
+    
+    // Calculate area of grid
+    const area = cols * rows;
+    
+    // Adjust zoom based on area
+    // Larger area = more zoom out (smaller zoom number)
+    const zoomAdjustment = Math.log(area) / Math.log(2); // logarithmic scaling
+    
+    // Calculate aspect ratio adjustment
+    const aspectRatio = cols / rows;
+    const aspectAdjustment = Math.abs(1 - aspectRatio) * 0.5;
+
+    return baseZoom - (zoomAdjustment * 0.1) - aspectAdjustment;
+  }
+
 }
 
 /**

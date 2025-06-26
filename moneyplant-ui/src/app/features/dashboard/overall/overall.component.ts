@@ -82,7 +82,8 @@ import {
   // Excel Export Service
   ExcelExportService,
   ExcelExportOptions,
-  IFilterValues
+  IFilterValues,
+  ITileOptions
 } from '@dashboards/public-api';
 
 // Import widget creation functions
@@ -110,6 +111,7 @@ import {
   createBudgetAllocationSankeyWidget,
   createMinimalSankeyChartWidget,
   createFilterWidget,
+  createMetricTiles,
   // Dashboard data
   DashboardDataRow,
   INITIAL_DASHBOARD_DATA
@@ -225,6 +227,9 @@ export class OverallComponent implements OnInit, OnDestroy {
       this.updateWidgetWithFilters(widget, currentFilters);
     });
 
+    // Update metric tiles with filtered data
+    this.updateMetricTilesWithFilters(currentFilters);
+
     // Trigger change detection with a delay to ensure all updates are complete
     setTimeout(() => {
       this.cdr.detectChanges();
@@ -234,6 +239,37 @@ export class OverallComponent implements OnInit, OnDestroy {
         this.cdr.detectChanges();
       }, 100);
     }, 50);
+  }
+
+  /**
+   * Update metric tiles with filtered data
+   */
+  private updateMetricTilesWithFilters(filters: IFilterValues[]): void {
+    // Find all tile widgets
+    const tileWidgets = this.dashboardConfig.widgets.filter(widget => 
+      widget.config?.component === 'tile'
+    );
+
+    // Create new metric tiles with filtered data
+    const updatedMetricTiles = createMetricTiles(this.dashboardData);
+
+    // Update each tile widget with new data
+    tileWidgets.forEach((widget, index) => {
+      if (index < updatedMetricTiles.length) {
+        const updatedTile = updatedMetricTiles[index];
+        
+        // Check if this tile should update on data change
+        const tileOptions = widget.config?.options as ITileOptions;
+        const shouldUpdate = tileOptions?.updateOnDataChange !== false;
+        
+        if (shouldUpdate) {
+          // Update the widget's options with new tile data
+          if (widget.config?.options) {
+            Object.assign(widget.config.options, updatedTile.config?.options);
+          }
+        }
+      }
+    });
   }
 
   /**
@@ -744,16 +780,21 @@ export class OverallComponent implements OnInit, OnDestroy {
     }
 
     const widgetTitle = widget.config?.header?.title;
-    if (!widgetTitle) {
-      console.warn(`Widget ${widget.id} has no title defined`);
-      return;
+    
+    // Try to get filtered data by widget title first
+    let filteredData = null;
+    if (widgetTitle) {
+      filteredData = this.getFilteredDataForWidget(widgetTitle);
     }
-
-    // Get filtered data for this specific widget
-    const filteredData = this.getFilteredDataForWidget(widgetTitle);
+    
+    // If no data found by title, try to detect chart type and provide appropriate data
+    if (!filteredData) {
+      console.warn(`Widget ${widget.id} has no title defined or no matching data. Attempting to detect chart type for filtering...`);
+      filteredData = this.getDataByChartType(widget);
+    }
     
     if (!filteredData) {
-      console.warn(`No filtered data available for widget: ${widgetTitle}`);
+      console.warn(`No filtered data available for widget: ${widget.id} (title: ${widgetTitle})`);
       return;
     }
 
@@ -879,43 +920,29 @@ export class OverallComponent implements OnInit, OnDestroy {
     const minimalSankeyTest = createMinimalSankeyChartWidget();
     const filterWidget = createFilterWidget();
     const testFilterWidget = createTestFilterWidget();
+    const metricTiles = createMetricTiles(INITIAL_DASHBOARD_DATA);
 
+    // Position metric tiles at row 0 (top of dashboard)
+    // Metric tiles are already positioned at y: 0 in the createMetricTiles function
 
-    // Adjust positions of all widgets to move them down by 1 row to accommodate the filter widget
-    filterWidget.position = { x: 0, y: 0, cols: 12, rows: 1 };
+    // Position filter widget at row 1 (below metric tiles)
+    filterWidget.position = { x: 0, y: 2, cols: 12, rows: 1 };
 
-    densityMapInvestment.position = { x: 0, y: 1, cols: 8, rows: 8 };
-    pieAssetAllocation.position = { x: 9, y: 9, cols: 4, rows: 8 };
-    polarChart.position = { x: 9, y: 13, cols: 4, rows: 8 };
-    barMonthlyIncomeVsExpenses.position = { x: 0, y: 11, cols: 8, rows: 8 };
-
-  
-    // linePortfolioPerformance.position = { x: 0, y: 25, cols: 12, rows: 8 };
-    // scatterRiskVsReturn.position = { x: 0, y: 25, cols: 12, rows: 8 };
-    // gaugeSavingsGoal.position = { x: 0, y: 33, cols: 12, rows: 8 };
-    // heatmapSpending.position = { x: 0, y: 41, cols: 12, rows: 8 };
-    // areaChart.position = { x: 0, y: 49, cols: 12, rows: 8 };
-    
-    // stackedAreaChart.position = { x: 0, y: 65, cols: 12, rows: 8 };
-    // performanceStackedAreaChart.position = { x: 0, y: 73, cols: 12, rows: 8 };
-    // marketTrendStackedAreaChart.position = { x: 0, y: 81, cols: 12, rows: 8 };
-    // treemapChart.position = { x: 0, y: 89, cols: 12, rows: 8 };
-    // expenseTreemap.position = { x: 0, y: 97, cols: 12, rows: 8 };
-    // largeScaleTreemap.position = { x: 0, y: 105, cols: 12, rows: 8 };
-    // sunburstChart.position = { x: 0, y: 113, cols: 12, rows: 8 };
-    // organizationalSunburst.position = { x: 0, y: 121, cols: 12, rows: 8 };
-    // largeScaleSunburst.position = { x: 0, y: 129, cols: 12, rows: 8 };
-    // sankeyChart.position = { x: 0, y: 137, cols: 12, rows: 8 };
-    // investmentFlowSankey.position = { x: 0, y: 145, cols: 12, rows: 8 };
-    // budgetAllocationSankey.position = { x: 0, y: 153, cols: 12, rows: 8 };
-    // minimalSankeyTest.position = { x: 0, y: 161, cols: 12, rows: 8 };
-    // testFilterWidget.position = { x: 0, y: 169, cols: 12, rows: 8 };
+    // Position other widgets starting from row 2 (below filter)
+    densityMapInvestment.position = { x: 0, y: 3, cols: 8, rows: 8 };
+    pieAssetAllocation.position = { x: 9, y: 11, cols: 4, rows: 8 };
+    polarChart.position = { x: 9, y: 15, cols: 4, rows: 8 };
+    barMonthlyIncomeVsExpenses.position = { x: 0, y: 13, cols: 8, rows: 8 };
 
     // Use the Fluent API to build the dashboard config
     this.dashboardConfig = StandardDashboardBuilder.createStandard()
       .setDashboardId('overall-dashboard')
       .setWidgets([
-        filterWidget, // Filter widget at the top
+        // Metric tiles at the top (row 0)
+        ...metricTiles,
+        // Filter widget below tiles (row 1)
+        filterWidget,
+        // Other widgets starting from row 2
         densityMapInvestment,
         pieAssetAllocation,
         polarChart,
@@ -963,24 +990,122 @@ export class OverallComponent implements OnInit, OnDestroy {
     echartWidgets.forEach(widget => {
       const widgetTitle = widget.config?.header?.title;
       
-      if (!widgetTitle) {
-        console.warn(`Widget ${widget.id} has no title defined`);
-        return;
+      // Try to get data by widget title first
+      let initialData = null;
+      if (widgetTitle) {
+        initialData = this.getFilteredDataForWidget(widgetTitle);
       }
       
-      const initialData = this.getFilteredDataForWidget(widgetTitle);
+      // If no data found by title, try to detect chart type and provide appropriate data
+      if (!initialData) {
+        console.warn(`Widget ${widget.id} has no title defined or no matching data. Attempting to detect chart type...`);
+        initialData = this.getDataByChartType(widget);
+      }
       
       if (initialData) {
         this.updateEchartWidget(widget, initialData);
       } else {
-        console.warn(`No initial data found for widget: ${widgetTitle}`);
+        console.warn(`No data found for widget: ${widget.id} (title: ${widgetTitle})`);
       }
     });
+
+    // Populate metric tiles with initial data
+    this.updateMetricTilesWithFilters([]);
 
     // Trigger change detection to ensure widgets are updated
     setTimeout(() => {
       this.cdr.detectChanges();
     }, 100);
+  }
+
+  /**
+   * Get data for widget based on chart type detection
+   */
+  private getDataByChartType(widget: IWidget): any {
+    const chartOptions = widget.config?.options as any;
+    
+    if (!chartOptions?.series?.[0]) {
+      return null;
+    }
+    
+    const seriesType = chartOptions.series[0].type;
+    const mapType = chartOptions.series[0].map;
+    
+    // Detect chart type and provide appropriate data
+    switch (seriesType) {
+      case 'map':
+        // This is a density/choropleth map - provide investment distribution data
+        console.log(`Detected density map widget (map: ${mapType}), providing investment distribution data`);
+        return this.groupByAndSum(this.dashboardData, 'market', 'totalValue');
+        
+      case 'pie':
+        // This is a pie chart - provide asset allocation data
+        console.log('Detected pie chart widget, providing asset allocation data');
+        return this.groupByAndSum(this.dashboardData, 'assetCategory', 'totalValue');
+        
+      case 'bar':
+        // This is a bar chart - provide monthly data
+        console.log('Detected bar chart widget, providing monthly data');
+        return this.groupByAndSum(this.dashboardData, 'month', 'totalValue');
+        
+      case 'line':
+        // This is a line chart - provide portfolio performance data
+        console.log('Detected line chart widget, providing portfolio performance data');
+        return this.groupByAndSum(this.dashboardData, 'month', 'totalValue');
+        
+      case 'scatter':
+        // This is a scatter chart - provide risk vs return data
+        console.log('Detected scatter chart widget, providing risk vs return data');
+        const riskReturnData = this.dashboardData.filter(row => row.riskValue !== undefined && row.returnValue !== undefined);
+        const groupedRiskReturn = riskReturnData.reduce((acc, row) => {
+          if (!acc[row.assetCategory]) {
+            acc[row.assetCategory] = {
+              name: row.assetCategory,
+              value: [row.riskValue!, row.returnValue!]
+            };
+          }
+          return acc;
+        }, {} as Record<string, any>);
+        return Object.values(groupedRiskReturn);
+        
+      case 'heatmap':
+        // This is a heatmap - provide heatmap data
+        console.log('Detected heatmap widget, providing heatmap data');
+        return this.createHeatmapData(this.dashboardData);
+        
+      case 'gauge':
+        // This is a gauge chart - provide simple numeric data
+        console.log('Detected gauge widget, providing gauge data');
+        const totalValue = this.dashboardData.reduce((sum, row) => sum + row.totalValue, 0);
+        return [{ name: 'Progress', value: Math.min(totalValue / 10, 100) }]; // Scale to percentage
+        
+      case 'treemap':
+        // This is a treemap - provide treemap data
+        console.log('Detected treemap widget, providing treemap data');
+        return this.createTreemapData(this.dashboardData);
+        
+      case 'sunburst':
+        // This is a sunburst chart - provide sunburst data
+        console.log('Detected sunburst widget, providing sunburst data');
+        return this.createSunburstData(this.dashboardData);
+        
+      case 'sankey':
+        // This is a sankey diagram - provide default sankey data
+        console.log('Detected sankey widget, providing default sankey data');
+        return {
+          nodes: [
+            { name: 'Income' }, { name: 'Expenses' }, { name: 'Savings' }
+          ],
+          links: [
+            { source: 'Income', target: 'Expenses', value: 70 },
+            { source: 'Income', target: 'Savings', value: 30 }
+          ]
+        };
+        
+      default:
+        console.warn(`Unknown chart type: ${seriesType}`);
+        return null;
+    }
   }
 
   /**

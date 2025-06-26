@@ -13,6 +13,7 @@ export { createTreemapChartWidget, createExpenseTreemapWidget, createLargeScaleT
 export { createSunburstChartWidget, createOrganizationalSunburstWidget, createLargeScaleSunburstWidget } from './sunburst-chart-widget';
 export { createSankeyChartWidget, createInvestmentFlowSankeyWidget, createBudgetAllocationSankeyWidget, createMinimalSankeyChartWidget } from './sankey-chart-widget';
 export { createFilterWidget } from './filter-widget';
+export { createMetricTiles, createAlternativeMetricTiles } from './metric-tiles';
 
 // Dashboard data
 export { DashboardDataRow, INITIAL_DASHBOARD_DATA } from './dashboard-data';
