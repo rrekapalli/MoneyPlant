@@ -1,4 +1,4 @@
-import { DensityMapBuilder, DensityMapData } from '@dashboards/public-api';
+import { DensityMapBuilder, DensityMapData, ColorScheme, MapType } from '@dashboards/public-api';
 import { IWidget } from '../entities/IWidget';
 
 /**
@@ -57,9 +57,9 @@ export function createBasicWorldMap() {
 export function createAdvancedWorldMap() {
   return DensityMapBuilder.create()
     .setData(worldDensityData)
-    .setMap('world')
+    .setMapType(MapType.WORLD)
     .setTitle('World Population Density', '2023 Data')
-    .setVisualMap(0, 100, ['#e0f3f8', '#abd9e9', '#74add1', '#4575b4', '#313695'])
+    .setColorScheme(ColorScheme.DENSITY_BLUE, 0, 100)
     .setRoam(true)
     .setZoom(1.2)
     .setCenter([0, 0])
@@ -126,9 +126,9 @@ export function createWorldMapWithAllLabels() {
 export function createUSMap() {
   return DensityMapBuilder.create()
     .setData(usDensityData)
-    .setMap('usa')
+    .setMapType(MapType.USA)
     .setTitle('US Population Density', 'State-wise distribution')
-    .setVisualMap(0, 100, ['#fee5d9', '#fcae91', '#fb6a4a', '#de2d26', '#a50f15'])
+    .setColorScheme(ColorScheme.DENSITY_RED, 0, 100)
     .setRoam(true)
     .setZoom(1.0)
     .setCenter([-98.5795, 39.8283])
@@ -145,9 +145,9 @@ export function createUSMap() {
 export function createChinaMap() {
   return DensityMapBuilder.create()
     .setData(chinaDensityData)
-    .setMap('china')
+    .setMapType(MapType.CHINA)
     .setTitle('China Population Density', 'Province-wise distribution')
-    .setVisualMap(0, 100, ['#f7fcf5', '#e5f5e0', '#c7e9c0', '#a1d99b', '#74c476'])
+    .setColorScheme(ColorScheme.DENSITY_GREEN, 0, 100)
     .setRoam(true)
     .setZoom(1.1)
     .setCenter([104.1954, 35.8617])
@@ -356,5 +356,68 @@ export function testDensityMapDetection() {
       isDetectedAsMapEnhanced: DensityMapBuilder.isDensityMapEnhanced(widgetWithoutHeader),
       hasHeader: !!widgetWithoutHeader.config?.header?.title
     }
+  };
+}
+
+/**
+ * Demonstrate different color schemes available for density maps
+ */
+export function createColorSchemeExamples() {
+  const sampleData = worldDensityData.slice(0, 5);
+  
+  return {
+    // Blue scheme (default) - good for general data
+    blueScheme: DensityMapBuilder.create()
+      .setData(sampleData)
+      .setMapType(MapType.WORLD)
+      .setColorScheme(ColorScheme.DENSITY_BLUE, 0, 100)
+      .setHeader('Blue Color Scheme')
+      .setPosition({ x: 0, y: 0, cols: 4, rows: 3 })
+      .build(),
+
+    // Green scheme - good for positive metrics (growth, health, etc.)
+    greenScheme: DensityMapBuilder.create()
+      .setData(sampleData)
+      .setMapType(MapType.WORLD)
+      .setColorScheme(ColorScheme.DENSITY_GREEN, 0, 100)
+      .setHeader('Green Color Scheme')
+      .setPosition({ x: 4, y: 0, cols: 4, rows: 3 })
+      .build(),
+
+    // Red scheme - good for negative metrics (risk, temperature, alerts)
+    redScheme: DensityMapBuilder.create()
+      .setData(sampleData)
+      .setMapType(MapType.WORLD)
+      .setColorScheme(ColorScheme.DENSITY_RED, 0, 100)
+      .setHeader('Red Color Scheme')
+      .setPosition({ x: 8, y: 0, cols: 4, rows: 3 })
+      .build(),
+
+    // Purple scheme - good for unique metrics
+    purpleScheme: DensityMapBuilder.create()
+      .setData(sampleData)
+      .setMapType(MapType.WORLD)
+      .setColorScheme(ColorScheme.DENSITY_PURPLE, 0, 100)
+      .setHeader('Purple Color Scheme')
+      .setPosition({ x: 0, y: 3, cols: 4, rows: 3 })
+      .build(),
+
+    // Orange scheme - good for warning levels
+    orangeScheme: DensityMapBuilder.create()
+      .setData(sampleData)
+      .setMapType(MapType.WORLD)
+      .setColorScheme(ColorScheme.DENSITY_ORANGE, 0, 100)
+      .setHeader('Orange Color Scheme')
+      .setPosition({ x: 4, y: 3, cols: 4, rows: 3 })
+      .build(),
+
+    // Grayscale scheme - good for print or accessibility
+    grayscaleScheme: DensityMapBuilder.create()
+      .setData(sampleData)
+      .setMapType(MapType.WORLD)
+      .setColorScheme(ColorScheme.GRAYSCALE, 0, 100)
+      .setHeader('Grayscale Color Scheme')
+      .setPosition({ x: 8, y: 3, cols: 4, rows: 3 })
+      .build()
   };
 } 

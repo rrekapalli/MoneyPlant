@@ -2,6 +2,15 @@ import { IWidget, WidgetBuilder } from '../../../public-api';
 import { EChartsOption } from 'echarts';
 import { ApacheEchartBuilder } from '../apache-echart-builder';
 import * as echarts from 'echarts/core';
+import { 
+  ColorScheme, 
+  getColorPalette, 
+  MapType, 
+  LabelPosition, 
+  GEO_CENTERS,
+  ChartType,
+  TOOLTIP_TEMPLATES 
+} from '../../dashboard-container/dashboard-constants';
 
 export interface DensityMapData {
   name: string;
@@ -121,7 +130,7 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
   private zoomLevel: number = 1;
   private centerCoords: [number, number] = [0, 0];
   private visualMapRange: [number, number] = [0, 100];
-  private visualMapColors: string[] = ['#e0f3f8', '#abd9e9', '#74add1', '#4575b4', '#313695'];
+  private visualMapColors: readonly string[] = getColorPalette(ColorScheme.DENSITY_BLUE);
 
   private constructor() {
     super();
@@ -151,22 +160,7 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
    * Get available built-in maps
    */
   static getAvailableMaps(): string[] {
-    return [
-      'world',
-      'china',
-      'usa',
-      'japan',
-      'uk',
-      'france',
-      'germany',
-      'italy',
-      'spain',
-      'russia',
-      'canada',
-      'australia',
-      'brazil',
-      'india'
-    ];
+    return Object.values(MapType);
   }
 
   /**
@@ -190,7 +184,7 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
         text: ['High', 'Low'],
         calculable: true,
         inRange: {
-          color: ['#e0f3f8', '#abd9e9', '#74add1', '#4575b4', '#313695'],
+          color: [...getColorPalette(ColorScheme.DENSITY_BLUE)],
         },
         textStyle: {
           color: '#333',
@@ -203,7 +197,7 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
    * Implement abstract method to get chart type
    */
   protected override getChartType(): string {
-    return 'map';
+    return ChartType.DENSITY_MAP;
   }
 
   /**
@@ -265,6 +259,13 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
   }
 
   /**
+   * Set the map type using predefined MapType enum
+   */
+  setMapType(mapType: MapType): this {
+    return this.setMap(mapType);
+  }
+
+  /**
    * Enable/disable map roaming (pan and zoom)
    */
   setRoam(roam: boolean): this {
@@ -309,7 +310,7 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
       text: ['High', 'Low'],
       calculable: true,
       inRange: {
-        color: this.visualMapColors,
+        color: [...this.visualMapColors],
       },
       textStyle: {
         color: '#333',
@@ -317,6 +318,14 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
     };
 
     return this;
+  }
+
+  /**
+   * Set color scheme using predefined color palettes
+   */
+  setColorScheme(scheme: ColorScheme, min: number = 0, max: number = 100): this {
+    this.visualMapColors = getColorPalette(scheme);
+    return this.setVisualMap(min, max);
   }
 
   /**
@@ -646,9 +655,8 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
 
   // Add these helper methods to your class
   public calculateMapCenter(cols: number, rows: number): number[] {
-    // Base center coordinates (0, -30) - shifted south for better world map view
-    const baseLongitude = 0;
-    const baseLatitude = 30;
+    // Use predefined world center coordinates
+    const [baseLongitude, baseLatitude] = GEO_CENTERS.WORLD;
     
     // Adjust center based on aspect ratio
     const aspectRatio = cols / rows;

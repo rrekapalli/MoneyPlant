@@ -1,4 +1,4 @@
-import { IWidget, DensityMapBuilder, DensityMapData } from '@dashboards/public-api';
+import { IWidget, DensityMapBuilder, DensityMapData, ColorScheme, MapType } from '@dashboards/public-api';
 
 // Static data for investment distribution by region (world-wide)
 export const INVESTMENT_DISTRIBUTION_DATA: DensityMapData[] = [
@@ -20,11 +20,11 @@ export const INVESTMENT_DISTRIBUTION_DATA: DensityMapData[] = [
 export function createInvestmentDistributionWidget(): IWidget {
   return DensityMapBuilder.create()
     .setData([]) // Data will be populated from shared dashboard data
-    .setMap('world')
+    .setMapType(MapType.WORLD)
     //.setHeader('Investment Distribution by Country')
     .setPosition({ x: 0, y: 8, cols: 6, rows: 8 })
     .setTitle('Investment Distribution by Country', 'Global')
-    .setVisualMap(0, 100, ['#e0f3f8', '#abd9e9', '#74add1', '#4575b4', '#313695'])
+    .setColorScheme(ColorScheme.DENSITY_BLUE, 0, 100)
     .setRoam(true)
     .setZoom(1.0)
     .setCenter([0, 0])
