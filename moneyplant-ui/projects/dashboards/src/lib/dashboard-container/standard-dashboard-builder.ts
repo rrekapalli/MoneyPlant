@@ -320,6 +320,7 @@ export class StandardDashboardBuilder extends DashboardContainerBuilder<Gridster
       isEditMode: this.isEditMode,
       chartHeight: this.chartHeight,
       defaultChartHeight: this.defaultChartHeight,
+      filterVisualization: (this as any).filterVisualization,
       exportToPdf: this.exportToPdf.bind(this)
     };
   }

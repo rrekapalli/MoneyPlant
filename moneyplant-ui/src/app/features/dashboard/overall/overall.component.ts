@@ -157,6 +157,10 @@ export class OverallComponent implements OnInit, OnDestroy {
   private widgetUpdateTimeout?: any;
   private filterSubscription?: Subscription;
 
+  // Filter highlighting mode control
+  public isHighlightingEnabled: boolean = true;
+  public highlightingOpacity: number = 0.25;
+
   // Reference to dashboard container for PDF export
   @ViewChild('dashboardContainer', { static: false }) dashboardContainer!: ElementRef<HTMLElement>;
 
@@ -282,8 +286,17 @@ export class OverallComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Apply filters to the flat dataset using custom logic for our data structure
-    this.dashboardData = this.applyFiltersToFlatData(INITIAL_DASHBOARD_DATA, filters);
+    // Check if highlighting mode is enabled
+    const highlightingEnabled = this.dashboardConfig?.filterVisualization?.enableHighlighting;
+    
+    if (highlightingEnabled) {
+      // In highlighting mode, keep the full dataset available
+      // Individual widgets will handle their own filtering/highlighting
+      this.dashboardData = [...INITIAL_DASHBOARD_DATA];
+    } else {
+      // In traditional mode, filter the main dataset
+      this.dashboardData = this.applyFiltersToFlatData(INITIAL_DASHBOARD_DATA, filters);
+    }
   }
 
   /**
@@ -337,7 +350,35 @@ export class OverallComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Get filtered data for a specific widget from the original dataset with filters applied
+   * Used for non-source widgets in highlighting mode
+   */
+  private getFilteredDataForWidgetFromOriginalData(widgetTitle: string, filters: IFilterValues[]): any {
+    // Apply filters to original data first
+    const filteredData = this.applyFiltersToFlatData(INITIAL_DASHBOARD_DATA, filters);
+    
+    // Then process the filtered data for the specific widget
+    switch (widgetTitle) {
+      case 'Asset Allocation':
+        return this.groupByAndSum(filteredData, 'assetCategory', 'totalValue');
+      case 'Monthly Income vs Expenses':
+        return this.groupByAndSum(filteredData, 'month', 'totalValue');
+      case 'Portfolio Performance':
+        return this.groupByAndSum(filteredData, 'month', 'totalValue');
+      case 'Investment Distribution by Region':
+        return this.groupByAndSum(filteredData, 'market', 'totalValue');
+      case 'Test Filter Widget':
+        return this.groupByAndSum(filteredData, 'assetCategory', 'totalValue');
+      default:
+        // For other widget types, return the filtered data as-is
+        return filteredData;
+    }
+  }
+
+  /**
    * Get filtered data for a specific widget based on its requirements
+   * In highlighting mode, this uses the full dataset (filtering happens at widget level)
+   * In traditional mode, this uses the pre-filtered dashboard data
    */
   private getFilteredDataForWidget(widgetTitle: string): any {
     switch (widgetTitle) {
@@ -781,26 +822,85 @@ export class OverallComponent implements OnInit, OnDestroy {
 
     const widgetTitle = widget.config?.header?.title;
     
-    // Try to get filtered data by widget title first
-    let filteredData = null;
+    // Check if this widget is the source of any filter (where the click originated)
+    const isSourceWidget = filters.some(filter => {
+      const widgetIdMatch = filter['widgetId'] === widget.id;
+      const widgetTitleMatch = filter['widgetTitle'] === widgetTitle;
+      return widgetIdMatch || widgetTitleMatch;
+    });
+    
+    // Check if highlighting mode is enabled
+    const highlightingEnabled = this.dashboardConfig?.filterVisualization?.enableHighlighting;
+    
+    // Try to get base data by widget title first
+    let baseData = null;
     if (widgetTitle) {
-      filteredData = this.getFilteredDataForWidget(widgetTitle);
+      if (highlightingEnabled && !isSourceWidget && filters.length > 0) {
+        // For non-source widgets in highlighting mode, get data from original dataset and apply filtering
+        baseData = this.getFilteredDataForWidgetFromOriginalData(widgetTitle, filters);
+      } else {
+        // For source widgets or traditional mode, use the normal data retrieval
+        baseData = this.getFilteredDataForWidget(widgetTitle);
+      }
     }
     
     // If no data found by title, try to detect chart type and provide appropriate data
-    if (!filteredData) {
+    if (!baseData) {
       console.warn(`Widget ${widget.id} has no title defined or no matching data. Attempting to detect chart type for filtering...`);
-      filteredData = this.getDataByChartType(widget);
+      baseData = this.getDataByChartType(widget);
     }
     
-    if (!filteredData) {
-      console.warn(`No filtered data available for widget: ${widget.id} (title: ${widgetTitle})`);
+    if (!baseData) {
+      console.warn(`No base data available for widget: ${widget.id} (title: ${widgetTitle})`);
       return;
+    }
+
+    let processedData = baseData;
+    
+    if (highlightingEnabled && filters.length > 0 && isSourceWidget) {
+      // Apply highlighting ONLY to the source widget (where the filter was clicked)
+      const chartOptions = widget.config?.options as any;
+      let chartType: 'pie' | 'bar' | 'line' | 'scatter' | 'other' = 'other';
+      
+      // Detect chart type from widget configuration
+      if (chartOptions?.series?.[0]?.type) {
+        chartType = chartOptions.series[0].type;
+      }
+      
+      // Get highlighting options from dashboard config
+      const visualOptions = {
+        filteredOpacity: this.dashboardConfig.filterVisualization?.defaultFilteredOpacity || 0.25,
+        highlightedOpacity: this.dashboardConfig.filterVisualization?.defaultHighlightedOpacity || 1.0,
+        highlightColor: this.dashboardConfig.filterVisualization?.defaultHighlightColor || '#ff6b6b',
+        filteredColor: this.dashboardConfig.filterVisualization?.defaultFilteredColor || '#e0e0e0'
+      };
+
+      // Apply highlighting to the data
+      processedData = this.filterService.applyHighlightingToEChartsData(
+        baseData, 
+        filters, 
+        chartType,
+        visualOptions
+      );
+    } else if (filters.length > 0) {
+      // Use traditional filtering for other widgets (non-source widgets)
+      processedData = this.filterService.applyFiltersToData(baseData, filters);
+      
+      // If all data is filtered out and we have filters, show empty state
+      if (processedData.length === 0) {
+        processedData = [{
+          name: 'No data matches filter',
+          value: 0,
+          itemStyle: {
+            color: '#cccccc'
+          }
+        }];
+      }
     }
 
     // Update widget data based on component type
     if (widget.config.component === 'echart') {
-      this.updateEchartWidget(widget, filteredData);
+      this.updateEchartWidget(widget, processedData);
     }
   }
 
@@ -934,9 +1034,16 @@ export class OverallComponent implements OnInit, OnDestroy {
     polarChart.position = { x: 9, y: 15, cols: 4, rows: 8 };
     barMonthlyIncomeVsExpenses.position = { x: 0, y: 13, cols: 8, rows: 8 };
 
-    // Use the Fluent API to build the dashboard config
+    // Use the Fluent API to build the dashboard config with filter highlighting enabled
     this.dashboardConfig = StandardDashboardBuilder.createStandard()
       .setDashboardId('overall-dashboard')
+      // Enable filter highlighting mode with custom styling
+      .enableFilterHighlighting(true, {
+        filteredOpacity: 0.25,
+        highlightedOpacity: 1.0,
+        highlightColor: '#ff6b6b',
+        filteredColor: '#e0e0e0'
+      })
       .setWidgets([
         // Metric tiles at the top (row 0)
         ...metricTiles,
@@ -965,7 +1072,7 @@ export class OverallComponent implements OnInit, OnDestroy {
         // investmentFlowSankey,
         // budgetAllocationSankey,
         // minimalSankeyTest,
-        // testFilterWidget
+        testFilterWidget  // Enable test filter widget to demo highlighting
       ])
       .setEditMode(false)
       .build();
@@ -1226,6 +1333,88 @@ export class OverallComponent implements OnInit, OnDestroy {
    */
   public getCurrentFilters(): IFilterValues[] {
     return this.filterService.getFilterValues();
+  }
+
+  /**
+   * Toggle filter highlighting mode
+   */
+  public toggleHighlightingMode(): void {
+    this.isHighlightingEnabled = !this.isHighlightingEnabled;
+    this.updateDashboardHighlightingConfig();
+    
+    // Re-apply current filters with new highlighting mode
+    const currentFilters = this.getCurrentFilters();
+    this.updateWidgetsWithFilters(currentFilters);
+    
+    console.log(`🎨 Filter highlighting mode ${this.isHighlightingEnabled ? 'enabled' : 'disabled'}`);
+    
+    // Force change detection to update UI
+    this.cdr.detectChanges();
+  }
+
+  /**
+   * Update highlighting opacity and refresh widgets
+   */
+  public updateHighlightingOpacity(opacity: number): void {
+    this.highlightingOpacity = Math.max(0.1, Math.min(1.0, opacity));
+    this.updateDashboardHighlightingConfig();
+    
+    // Re-apply current filters with new opacity
+    const currentFilters = this.getCurrentFilters();
+    this.updateWidgetsWithFilters(currentFilters);
+    
+    console.log(`🎛️ Highlighting opacity updated to ${Math.round(this.highlightingOpacity * 100)}%`);
+    
+    // Force change detection to update UI
+    this.cdr.detectChanges();
+  }
+
+  /**
+   * Update dashboard configuration with current highlighting settings
+   */
+  private updateDashboardHighlightingConfig(): void {
+    if (this.dashboardConfig?.filterVisualization) {
+      this.dashboardConfig.filterVisualization.enableHighlighting = this.isHighlightingEnabled;
+      this.dashboardConfig.filterVisualization.defaultFilteredOpacity = this.highlightingOpacity;
+      
+      console.log(`📊 Dashboard highlighting config updated:`, {
+        enabled: this.isHighlightingEnabled,
+        opacity: this.highlightingOpacity
+      });
+    }
+  }
+
+  /**
+   * Get highlighting status message for UI
+   */
+  public getHighlightingStatusMessage(): string {
+    if (this.isHighlightingEnabled) {
+      return `Highlighting Mode: ON - Source widgets highlighted (${Math.round(this.highlightingOpacity * 100)}% opacity), others filtered`;
+    } else {
+      return 'Highlighting Mode: OFF - All widgets use traditional filtering';
+    }
+  }
+
+  /**
+   * Demo method to show different highlighting configurations
+   */
+  public setHighlightingPreset(preset: 'subtle' | 'medium' | 'strong'): void {
+    let opacity: number;
+    
+    switch (preset) {
+      case 'subtle':
+        opacity = 0.4;
+        break;
+      case 'medium':
+        opacity = 0.25;
+        break;
+      case 'strong':
+        opacity = 0.1;
+        break;
+    }
+    
+    this.updateHighlightingOpacity(opacity);
+    console.log(`✨ Applied ${preset} highlighting preset (opacity: ${Math.round(opacity * 100)}%)`);
   }
 
   ngOnDestroy(): void {

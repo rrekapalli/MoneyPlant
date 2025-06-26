@@ -36,6 +36,42 @@
   </p-button>
 </div>
 
+<!-- Filter Highlighting Controls -->
+<div class="highlighting-controls">
+  <div class="highlighting-status">
+    <span class="status-label">{{ getHighlightingStatusMessage() }}</span>
+  </div>
+  
+  <div class="highlighting-buttons">
+    <p-button 
+      [label]="isHighlightingEnabled ? 'Disable Highlighting' : 'Enable Highlighting'"
+      [icon]="isHighlightingEnabled ? 'pi pi-eye-slash' : 'pi pi-eye'"
+      (onClick)="toggleHighlightingMode()"
+      [styleClass]="isHighlightingEnabled ? 'p-button-sm p-button-outlined' : 'p-button-sm'">
+    </p-button>
+
+    @if (isHighlightingEnabled) {
+      <p-button 
+        label="Subtle (40%)" 
+        (onClick)="setHighlightingPreset('subtle')"
+        styleClass="p-button-sm p-button-outlined">
+      </p-button>
+      
+      <p-button 
+        label="Medium (25%)" 
+        (onClick)="setHighlightingPreset('medium')"
+        styleClass="p-button-sm p-button-outlined">
+      </p-button>
+      
+      <p-button 
+        label="Strong (10%)" 
+        (onClick)="setHighlightingPreset('strong')"
+        styleClass="p-button-sm p-button-outlined">
+      </p-button>
+    }
+  </div>
+</div>
+
 <p-scrollPanel [style]="{ height: '100%', width: '100%', 'overflow-x': 'hidden', 'overflow': 'auto' }">
   <div class="dashboard-container" #dashboardContainer>
     <!-- Dashboard Container Component -->
