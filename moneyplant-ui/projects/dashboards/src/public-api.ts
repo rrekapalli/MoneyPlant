@@ -13,6 +13,7 @@ export * from './lib/dashboard-container/dashboard-constants';
 
 // Services
 export * from './lib/services/pdf-export.service';
+export * from './lib/services/pdf-export-worker.service';
 export * from './lib/services/excel-export.service';
 export * from './lib/services/filter.service';
 

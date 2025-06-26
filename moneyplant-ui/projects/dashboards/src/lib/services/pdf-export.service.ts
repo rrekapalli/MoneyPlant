@@ -47,6 +47,9 @@ export class PdfExportService {
     widgets: IWidget[],
     options: PdfExportOptions = {}
   ): Promise<void> {
+    const exportStartTime = performance.now();
+    const startTimestamp = new Date().toLocaleTimeString();
+    
     const {
       orientation = 'portrait',
       format = 'a4',
@@ -60,29 +63,47 @@ export class PdfExportService {
     } = options;
 
     try {
-      // Wait for all charts to be fully rendered before capture
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      console.log(`🚀 [${startTimestamp}] Starting PDF export with ${widgets.length} widgets...`);
+      console.log(`📊 Export configuration: ${orientation} ${format}, scale=${scale}, quality=${quality}`);
+      
+      // Shorter wait for chart rendering - original was too long
+      console.log(`⏳ [${new Date().toLocaleTimeString()}] Waiting for charts to render...`);
+      const renderWaitStart = performance.now();
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      const renderWaitTime = performance.now() - renderWaitStart;
+      console.log(`✅ Chart rendering wait completed in ${renderWaitTime.toFixed(2)}ms`);
 
       // Create PDF document with specified settings
+      console.log(`📄 [${new Date().toLocaleTimeString()}] Creating PDF document...`);
+      const pdfCreateStart = performance.now();
       const pdf = new jsPDF({
         orientation,
         unit: 'mm',
         format
       });
+      const pdfCreateTime = performance.now() - pdfCreateStart;
 
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
       const contentWidth = pageWidth - (margin * 2);
       const contentHeight = pageHeight - (margin * 2);
+      
+      console.log(`✅ PDF document created in ${pdfCreateTime.toFixed(2)}ms (${pageWidth}x${pageHeight}mm, content: ${contentWidth}x${contentHeight}mm)`);
 
       let currentY = margin;
 
       // Add header if requested
       if (includeHeader) {
+        console.log(`📋 [${new Date().toLocaleTimeString()}] Adding header...`);
+        const headerStart = performance.now();
         currentY = this.addHeader(pdf, title, pageWidth, margin, currentY);
+        const headerTime = performance.now() - headerStart;
+        console.log(`✅ Header added in ${headerTime.toFixed(2)}ms`);
       }
 
       // Export widgets using basic layout
+      console.log(`🔄 [${new Date().toLocaleTimeString()}] Starting widget export process...`);
+      const widgetsStart = performance.now();
       currentY = await this.exportWidgets(
         pdf,
         dashboardElement,
@@ -94,17 +115,40 @@ export class PdfExportService {
         quality,
         scale
       );
+      const widgetsTime = performance.now() - widgetsStart;
+      console.log(`✅ Widget export completed in ${widgetsTime.toFixed(2)}ms`);
 
       // Add footer if requested
       if (includeFooter) {
+        console.log(`📄 [${new Date().toLocaleTimeString()}] Adding footer...`);
+        const footerStart = performance.now();
         this.addFooter(pdf, pageWidth, pageHeight, margin);
+        const footerTime = performance.now() - footerStart;
+        console.log(`✅ Footer added in ${footerTime.toFixed(2)}ms`);
       }
 
       // Save the PDF file
+      console.log(`💾 [${new Date().toLocaleTimeString()}] Saving PDF as: ${filename}`);
+      const saveStart = performance.now();
       pdf.save(filename);
+      const saveTime = performance.now() - saveStart;
+      
+      const totalTime = performance.now() - exportStartTime;
+      const endTimestamp = new Date().toLocaleTimeString();
+      
+      console.log(`✅ PDF saved in ${saveTime.toFixed(2)}ms`);
+      console.log(`🎉 [${endTimestamp}] PDF export completed successfully!`);
+      console.log(`⏱️ Total export time: ${totalTime.toFixed(2)}ms (${(totalTime/1000).toFixed(2)}s)`);
+      console.log(`📈 Performance breakdown:`);
+      console.log(`   - Render wait: ${renderWaitTime.toFixed(2)}ms (${((renderWaitTime/totalTime)*100).toFixed(1)}%)`);
+      console.log(`   - PDF creation: ${pdfCreateTime.toFixed(2)}ms (${((pdfCreateTime/totalTime)*100).toFixed(1)}%)`);
+      console.log(`   - Widget processing: ${widgetsTime.toFixed(2)}ms (${((widgetsTime/totalTime)*100).toFixed(1)}%)`);
+      console.log(`   - Save operation: ${saveTime.toFixed(2)}ms (${((saveTime/totalTime)*100).toFixed(1)}%)`);
 
     } catch (error) {
-      console.error('Error exporting dashboard to PDF:', error);
+      const errorTime = performance.now() - exportStartTime;
+      const errorTimestamp = new Date().toLocaleTimeString();
+      console.error(`❌ [${errorTimestamp}] Error exporting dashboard to PDF after ${errorTime.toFixed(2)}ms:`, error);
       throw new Error('Failed to export dashboard to PDF');
     }
   }
@@ -121,6 +165,9 @@ export class PdfExportService {
     widgets: IWidget[],
     options: PdfExportOptions = {}
   ): Promise<void> {
+    const exportStartTime = performance.now();
+    const startTimestamp = new Date().toLocaleTimeString();
+    
     const {
       orientation = 'landscape',
       format = 'a4',
@@ -134,29 +181,47 @@ export class PdfExportService {
     } = options;
 
     try {
-      // Wait for all charts to be fully rendered before capture
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      console.log(`🚀 [${startTimestamp}] [INTELLIGENT] Starting PDF export with ${widgets.length} widgets...`);
+      console.log(`📊 [INTELLIGENT] Export configuration: ${orientation} ${format}, scale=${scale}, quality=${quality}`);
+      
+      // Shorter wait for chart rendering - original was too long
+      console.log(`⏳ [${new Date().toLocaleTimeString()}] [INTELLIGENT] Waiting for charts to render...`);
+      const renderWaitStart = performance.now();
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      const renderWaitTime = performance.now() - renderWaitStart;
+      console.log(`✅ [INTELLIGENT] Chart rendering wait completed in ${renderWaitTime.toFixed(2)}ms`);
 
       // Create PDF document with specified settings
+      console.log(`📄 [${new Date().toLocaleTimeString()}] [INTELLIGENT] Creating PDF document...`);
+      const pdfCreateStart = performance.now();
       const pdf = new jsPDF({
         orientation,
         unit: 'mm',
         format
       });
+      const pdfCreateTime = performance.now() - pdfCreateStart;
 
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
       const contentWidth = pageWidth - (margin * 2);
       const contentHeight = pageHeight - (margin * 2);
+      
+      console.log(`✅ [INTELLIGENT] PDF document created in ${pdfCreateTime.toFixed(2)}ms (${pageWidth}x${pageHeight}mm, content: ${contentWidth}x${contentHeight}mm)`);
 
       let currentY = margin;
 
       // Add header if requested
       if (includeHeader) {
+        console.log(`📋 [${new Date().toLocaleTimeString()}] [INTELLIGENT] Adding header...`);
+        const headerStart = performance.now();
         currentY = this.addHeader(pdf, title, pageWidth, margin, currentY);
+        const headerTime = performance.now() - headerStart;
+        console.log(`✅ [INTELLIGENT] Header added in ${headerTime.toFixed(2)}ms`);
       }
 
       // Export widgets using intelligent layout
+      console.log(`🔄 [${new Date().toLocaleTimeString()}] [INTELLIGENT] Starting widget export process...`);
+      const widgetsStart = performance.now();
       currentY = await this.exportWidgetsIntelligent(
         pdf,
         dashboardElement,
@@ -168,17 +233,40 @@ export class PdfExportService {
         quality,
         scale
       );
+      const widgetsTime = performance.now() - widgetsStart;
+      console.log(`✅ [INTELLIGENT] Widget export completed in ${widgetsTime.toFixed(2)}ms`);
 
       // Add footer if requested
       if (includeFooter) {
+        console.log(`📄 [${new Date().toLocaleTimeString()}] [INTELLIGENT] Adding footer...`);
+        const footerStart = performance.now();
         this.addFooter(pdf, pageWidth, pageHeight, margin);
+        const footerTime = performance.now() - footerStart;
+        console.log(`✅ [INTELLIGENT] Footer added in ${footerTime.toFixed(2)}ms`);
       }
 
       // Save the PDF file
+      console.log(`💾 [${new Date().toLocaleTimeString()}] [INTELLIGENT] Saving PDF as: ${filename}`);
+      const saveStart = performance.now();
       pdf.save(filename);
+      const saveTime = performance.now() - saveStart;
+      
+      const totalTime = performance.now() - exportStartTime;
+      const endTimestamp = new Date().toLocaleTimeString();
+      
+      console.log(`✅ [INTELLIGENT] PDF saved in ${saveTime.toFixed(2)}ms`);
+      console.log(`🎉 [${endTimestamp}] [INTELLIGENT] PDF export completed successfully!`);
+      console.log(`⏱️ [INTELLIGENT] Total export time: ${totalTime.toFixed(2)}ms (${(totalTime/1000).toFixed(2)}s)`);
+      console.log(`📈 [INTELLIGENT] Performance breakdown:`);
+      console.log(`   - Render wait: ${renderWaitTime.toFixed(2)}ms (${((renderWaitTime/totalTime)*100).toFixed(1)}%)`);
+      console.log(`   - PDF creation: ${pdfCreateTime.toFixed(2)}ms (${((pdfCreateTime/totalTime)*100).toFixed(1)}%)`);
+      console.log(`   - Widget processing: ${widgetsTime.toFixed(2)}ms (${((widgetsTime/totalTime)*100).toFixed(1)}%)`);
+      console.log(`   - Save operation: ${saveTime.toFixed(2)}ms (${((saveTime/totalTime)*100).toFixed(1)}%)`);
 
     } catch (error) {
-      console.error('Error exporting dashboard to PDF:', error);
+      const errorTime = performance.now() - exportStartTime;
+      const errorTimestamp = new Date().toLocaleTimeString();
+      console.error(`❌ [${errorTimestamp}] [INTELLIGENT] Error exporting dashboard to PDF after ${errorTime.toFixed(2)}ms:`, error);
       throw new Error('Failed to export dashboard to PDF');
     }
   }
@@ -242,17 +330,42 @@ export class PdfExportService {
     scale: number
   ): Promise<number> {
     let currentY = startY;
+    const startTime = performance.now();
+    
+    console.log(`⏱️ Starting widget export at ${new Date().toLocaleTimeString()}`);
 
-    for (const widget of widgets) {
+    // Process widgets one by one with delays to prevent UI blocking
+    for (let i = 0; i < widgets.length; i++) {
+      const widget = widgets[i];
+      const widgetStartTime = performance.now();
+      
       try {
+        console.log(`📊 [${new Date().toLocaleTimeString()}] Processing widget ${i + 1} of ${widgets.length}: ${widget.id}`);
+        
+        // Yield control to the UI thread before processing each widget
+        const delayStart = performance.now();
+        await new Promise(resolve => setTimeout(resolve, 50));
+        const delayTime = performance.now() - delayStart;
+        
         // Find the widget element in the DOM
+        const findStart = performance.now();
         const widgetElement = this.findWidgetElement(dashboardElement, widget.id);
+        const findTime = performance.now() - findStart;
         
         if (!widgetElement) {
+          console.warn(`⚠️ [${new Date().toLocaleTimeString()}] Widget element not found for ${widget.id} (search took ${findTime.toFixed(2)}ms)`);
           continue; // Skip if widget element not found
         }
 
-        // Create canvas from widget element
+        console.log(`🔍 Found widget element for ${widget.id} in ${findTime.toFixed(2)}ms`);
+
+        // Add a small delay before html2canvas to ensure DOM is stable
+        await new Promise(resolve => requestAnimationFrame(resolve));
+        
+        console.log(`📸 [${new Date().toLocaleTimeString()}] Capturing widget ${widget.id} with html2canvas...`);
+        
+        // Create canvas from widget element - this is the CPU-intensive part
+        const canvasStart = performance.now();
         const canvas = await html2canvas(widgetElement, {
           scale,
           useCORS: true,
@@ -260,28 +373,56 @@ export class PdfExportService {
           backgroundColor: '#ffffff',
           logging: false
         });
+        const canvasTime = performance.now() - canvasStart;
+
+        console.log(`✅ Canvas created for widget ${widget.id} in ${canvasTime.toFixed(2)}ms, size: ${canvas.width}x${canvas.height}`);
+
+        // Yield control again after canvas creation
+        const postCanvasDelayStart = performance.now();
+        await new Promise(resolve => setTimeout(resolve, 25));
+        const postCanvasDelayTime = performance.now() - postCanvasDelayStart;
 
         // Calculate image dimensions to fit content width
+        const calcStart = performance.now();
         const imgWidth = contentWidth;
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        const calcTime = performance.now() - calcStart;
 
         // Add new page if needed
         if (currentY + imgHeight > contentHeight) {
           pdf.addPage();
           currentY = margin;
+          console.log(`📄 Added new page for widget ${widget.id}`);
         }
 
         // Convert canvas to image and add to PDF
+        const pdfStart = performance.now();
         const imgData = canvas.toDataURL('image/png', quality);
         pdf.addImage(imgData, 'PNG', margin, currentY, imgWidth, imgHeight);
+        const pdfTime = performance.now() - pdfStart;
 
         currentY += imgHeight + 10; // Add spacing between widgets
+        
+        const widgetTotalTime = performance.now() - widgetStartTime;
+        
+        console.log(`✅ [${new Date().toLocaleTimeString()}] Widget ${widget.id} completed in ${widgetTotalTime.toFixed(2)}ms`);
+        console.log(`   📊 Breakdown: Delay=${delayTime.toFixed(1)}ms, Find=${findTime.toFixed(1)}ms, Canvas=${canvasTime.toFixed(1)}ms, PDF=${pdfTime.toFixed(1)}ms, PostDelay=${postCanvasDelayTime.toFixed(1)}ms`);
 
       } catch (error) {
-        console.error(`Error exporting widget ${widget.id}:`, error);
+        const widgetErrorTime = performance.now() - widgetStartTime;
+        console.error(`❌ [${new Date().toLocaleTimeString()}] Error exporting widget ${widget.id} after ${widgetErrorTime.toFixed(2)}ms:`, error);
         // Continue with next widget
       }
+      
+      // Yield control after each widget to keep UI responsive
+      await new Promise(resolve => setTimeout(resolve, 25));
     }
+
+    const totalTime = performance.now() - startTime;
+    const avgTimePerWidget = totalTime / widgets.length;
+    
+    console.log(`🏁 [${new Date().toLocaleTimeString()}] All widgets exported in ${totalTime.toFixed(2)}ms`);
+    console.log(`📈 Average time per widget: ${avgTimePerWidget.toFixed(2)}ms`);
 
     return currentY;
   }
@@ -314,18 +455,43 @@ export class PdfExportService {
     let currentY = startY;
     let currentRow = 0;
     let currentCol = 0;
-    const maxCols = 2; // Maximum columns per row
+    const maxCols = 2;
+    const startTime = performance.now();
+    
+    console.log(`⏱️ [INTELLIGENT] Starting widget export at ${new Date().toLocaleTimeString()}`);
 
-    for (const widget of widgets) {
+    // Process widgets one by one with delays to prevent UI blocking
+    for (let i = 0; i < widgets.length; i++) {
+      const widget = widgets[i];
+      const widgetStartTime = performance.now();
+      
       try {
+        console.log(`📊 [${new Date().toLocaleTimeString()}] [INTELLIGENT] Processing widget ${i + 1} of ${widgets.length}: ${widget.id}`);
+        
+        // Yield control to the UI thread before processing each widget
+        const delayStart = performance.now();
+        await new Promise(resolve => setTimeout(resolve, 50));
+        const delayTime = performance.now() - delayStart;
+        
         // Find the widget element in the DOM
+        const findStart = performance.now();
         const widgetElement = this.findWidgetElement(dashboardElement, widget.id);
+        const findTime = performance.now() - findStart;
         
         if (!widgetElement) {
+          console.warn(`⚠️ [${new Date().toLocaleTimeString()}] [INTELLIGENT] Widget element not found for ${widget.id} (search took ${findTime.toFixed(2)}ms)`);
           continue; // Skip if widget element not found
         }
 
-        // Create canvas from widget element
+        console.log(`🔍 [INTELLIGENT] Found widget element for ${widget.id} in ${findTime.toFixed(2)}ms`);
+
+        // Add a small delay before html2canvas to ensure DOM is stable
+        await new Promise(resolve => requestAnimationFrame(resolve));
+        
+        console.log(`📸 [${new Date().toLocaleTimeString()}] [INTELLIGENT] Capturing widget ${widget.id} with html2canvas...`);
+
+        // Create canvas from widget element - this is the CPU-intensive part
+        const canvasStart = performance.now();
         const canvas = await html2canvas(widgetElement, {
           scale,
           useCORS: true,
@@ -333,10 +499,20 @@ export class PdfExportService {
           backgroundColor: '#ffffff',
           logging: false
         });
+        const canvasTime = performance.now() - canvasStart;
+
+        console.log(`✅ [INTELLIGENT] Canvas created for widget ${widget.id} in ${canvasTime.toFixed(2)}ms, size: ${canvas.width}x${canvas.height}`);
+
+        // Yield control again after canvas creation
+        const postCanvasDelayStart = performance.now();
+        await new Promise(resolve => setTimeout(resolve, 25));
+        const postCanvasDelayTime = performance.now() - postCanvasDelayStart;
 
         // Calculate widget dimensions
+        const calcStart = performance.now();
         const widgetWidth = contentWidth / maxCols - 5; // 5mm spacing between widgets
         const widgetHeight = (canvas.height * widgetWidth) / canvas.width;
+        const calcTime = performance.now() - calcStart;
 
         // Check if we need a new page
         if (currentY + widgetHeight > contentHeight) {
@@ -344,15 +520,20 @@ export class PdfExportService {
           currentY = margin;
           currentRow = 0;
           currentCol = 0;
+          console.log(`📄 [INTELLIGENT] Added new page for widget ${widget.id}`);
         }
 
         // Calculate position based on grid
+        const layoutStart = performance.now();
         const x = margin + (currentCol * (widgetWidth + 5));
         const y = currentY;
+        const layoutTime = performance.now() - layoutStart;
 
         // Convert canvas to image and add to PDF
+        const pdfStart = performance.now();
         const imgData = canvas.toDataURL('image/png', quality);
         pdf.addImage(imgData, 'PNG', x, y, widgetWidth, widgetHeight);
+        const pdfTime = performance.now() - pdfStart;
 
         // Update grid position
         currentCol++;
@@ -361,12 +542,28 @@ export class PdfExportService {
           currentRow++;
           currentY += widgetHeight + 10; // Add spacing between rows
         }
+        
+        const widgetTotalTime = performance.now() - widgetStartTime;
+        
+        console.log(`✅ [${new Date().toLocaleTimeString()}] [INTELLIGENT] Widget ${widget.id} completed in ${widgetTotalTime.toFixed(2)}ms`);
+        console.log(`   📊 [INTELLIGENT] Breakdown: Delay=${delayTime.toFixed(1)}ms, Find=${findTime.toFixed(1)}ms, Canvas=${canvasTime.toFixed(1)}ms, Layout=${layoutTime.toFixed(1)}ms, PDF=${pdfTime.toFixed(1)}ms, PostDelay=${postCanvasDelayTime.toFixed(1)}ms`);
+        console.log(`   📐 [INTELLIGENT] Grid position: Col=${currentCol}, Row=${currentRow}, Position=(${x.toFixed(1)}, ${y.toFixed(1)})`);
 
       } catch (error) {
-        console.error(`Error exporting widget ${widget.id}:`, error);
+        const widgetErrorTime = performance.now() - widgetStartTime;
+        console.error(`❌ [${new Date().toLocaleTimeString()}] [INTELLIGENT] Error exporting widget ${widget.id} after ${widgetErrorTime.toFixed(2)}ms:`, error);
         // Continue with next widget
       }
+      
+      // Yield control after each widget to keep UI responsive
+      await new Promise(resolve => setTimeout(resolve, 25));
     }
+
+    const totalTime = performance.now() - startTime;
+    const avgTimePerWidget = totalTime / widgets.length;
+    
+    console.log(`🏁 [${new Date().toLocaleTimeString()}] [INTELLIGENT] All widgets exported in ${totalTime.toFixed(2)}ms`);
+    console.log(`📈 [INTELLIGENT] Average time per widget: ${avgTimePerWidget.toFixed(2)}ms`);
 
     return currentY;
   }
@@ -466,10 +663,14 @@ export class PdfExportService {
     } = options;
 
     try {
-      // Wait for chart to be fully rendered
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      console.log(`🚀 Starting single widget PDF export: ${widget.id}`);
+      
+      // Shorter wait for chart to be fully rendered
+      console.log('⏳ Waiting for widget to render...');
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       // Create PDF document
+      console.log('📄 Creating PDF document...');
       const pdf = new jsPDF({
         orientation,
         unit: 'mm',
@@ -485,8 +686,14 @@ export class PdfExportService {
 
       // Add header if requested
       if (includeHeader) {
+        console.log('📋 Adding header...');
         currentY = this.addHeader(pdf, title, pageWidth, margin, currentY);
       }
+
+      // Add a small delay before html2canvas to ensure DOM is stable
+      await new Promise(resolve => requestAnimationFrame(resolve));
+      
+      console.log(`📸 Capturing widget ${widget.id} with html2canvas...`);
 
       // Create canvas from widget element
       const canvas = await html2canvas(widgetElement.nativeElement, {
@@ -497,24 +704,34 @@ export class PdfExportService {
         logging: false
       });
 
+      console.log(`Canvas created for widget ${widget.id}, size: ${canvas.width}x${canvas.height}`);
+
+      // Yield control after canvas creation
+      await new Promise(resolve => setTimeout(resolve, 25));
+
       // Calculate image dimensions
       const imgWidth = contentWidth;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
       // Convert canvas to image and add to PDF
+      console.log('📄 Adding widget to PDF...');
       const imgData = canvas.toDataURL('image/png', quality);
       pdf.addImage(imgData, 'PNG', margin, currentY, imgWidth, imgHeight);
 
       // Add footer if requested
       if (includeFooter) {
+        console.log('📄 Adding footer...');
         this.addFooter(pdf, pageWidth, pageHeight, margin);
       }
 
       // Save the PDF
+      console.log(`💾 Saving widget PDF as: ${filename}`);
       pdf.save(filename);
+      
+      console.log(`✅ Widget PDF export completed successfully: ${widget.id}`);
 
     } catch (error) {
-      console.error('Error exporting widget to PDF:', error);
+      console.error(`❌ Error exporting widget ${widget.id} to PDF:`, error);
       throw new Error('Failed to export widget to PDF');
     }
   }

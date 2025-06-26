@@ -4,21 +4,48 @@
   </div>
   
   <div class="dashboard-header-right">
-    <!-- Three-dot menu for dashboard actions -->
-    <p-button #menuButton
-              [outlined]="true" 
-              class="p-button-sm" 
-              type="button" 
-              icon="pi pi-ellipsis-v"
-              (click)="menu.toggle($event)"
-              [loading]="isExportingPdf || isExportingExcel">
-    </p-button>
+    <!-- Custom Menu (Working Solution) -->
+    <div class="custom-menu-container">
+      <button class="custom-menu-button" (click)="toggleCustomMenu()">
+        <i class="pi pi-ellipsis-v"></i>
+      </button>
+      
+      <div class="custom-menu" *ngIf="showCustomMenu">
+        <div class="custom-menu-item" (click)="testCustomClick('excel')"
+             [class.loading]="isExportingExcel">
+          <i class="pi pi-file-excel" *ngIf="!isExportingExcel"></i>
+          <i class="pi pi-spin pi-spinner" *ngIf="isExportingExcel"></i>
+          {{ isExportingExcel ? 'Exporting Excel...' : 'Export to Excel' }}
+        </div>
+        <div class="custom-menu-separator"></div>
+        <div class="custom-menu-item" (click)="testCustomClick('toggle')">
+          <i class="pi" [class.pi-eye-slash]="isHighlightingEnabled" [class.pi-eye]="!isHighlightingEnabled"></i>
+          {{ isHighlightingEnabled ? 'Disable' : 'Enable' }} Highlighting
+        </div>
+        <div class="custom-menu-separator" *ngIf="isHighlightingEnabled"></div>
+        <div class="custom-menu-item" *ngIf="isHighlightingEnabled" (click)="testCustomClick('subtle')">
+          <i class="pi pi-circle"></i>
+          Subtle (40%)
+        </div>
+        <div class="custom-menu-item" *ngIf="isHighlightingEnabled" (click)="testCustomClick('medium')">
+          <i class="pi pi-circle"></i>
+          Medium (25%)
+        </div>
+        <div class="custom-menu-item" *ngIf="isHighlightingEnabled" (click)="testCustomClick('strong')">
+          <i class="pi pi-circle"></i>
+          Strong (10%)
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
-<!-- Dashboard Actions Menu -->
+<!-- Dashboard Actions Menu (hidden for now) -->
 <p-menu #menu 
         [model]="menuItems" 
         [popup]="true" 
-        appendTo="body">
+        appendTo="body"
+        (onShow)="onMenuShow()"
+        (onHide)="onMenuHide()"
+        [style]="{ display: 'none' }">
 </p-menu> 

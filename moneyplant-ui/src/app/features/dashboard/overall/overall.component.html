@@ -2,9 +2,7 @@
 <vis-dashboard-header 
   title="Financial Dashboard"
   [isHighlightingEnabled]="isHighlightingEnabled"
-  [isExportingPdf]="isExportingPdf"
   [isExportingExcel]="isExportingExcel"
-  (onExportToPdf)="exportDashboardToPdf()"
   (onExportToExcel)="exportDashboardToExcel()"
   (onToggleHighlighting)="toggleHighlightingMode()"
   (onSetHighlightingPreset)="setHighlightingPreset($event)">

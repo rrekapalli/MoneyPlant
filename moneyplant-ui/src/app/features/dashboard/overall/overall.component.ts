@@ -77,9 +77,7 @@ import {
   // Fluent API
   StandardDashboardBuilder,
   DashboardConfig,
-  // PDF Export Service
-  PdfExportService,
-  PdfExportOptions,
+
   // Excel Export Service
   ExcelExportService,
   ExcelExportOptions,
@@ -147,7 +145,7 @@ export class OverallComponent implements OnInit, OnDestroy {
   dashboardConfig!: DashboardConfig;
   
   // PDF export loading state
-  isExportingPdf = false;
+
   
   // Excel export loading state
   isExportingExcel = false;
@@ -174,7 +172,6 @@ export class OverallComponent implements OnInit, OnDestroy {
 
   constructor(
     private cdr: ChangeDetectorRef,
-    private pdfExportService: PdfExportService,
     private excelExportService: ExcelExportService,
     private filterService: FilterService
   ) {}
@@ -1217,61 +1214,53 @@ export class OverallComponent implements OnInit, OnDestroy {
     }
   }
 
-  /**
-   * Export dashboard to PDF
-   */
-  public async exportDashboardToPdf(): Promise<void> {
-    if (!this.dashboardContainer) {
-      return;
-    }
 
-    this.isExportingPdf = true;
-
-    try {
-      await this.pdfExportService.exportDashboardToPdf(
-        this.dashboardContainer,
-        this.dashboardConfig.widgets,
-        {
-          orientation: 'landscape',
-          format: 'a4',
-          margin: 15,
-          filename: `financial-dashboard-${new Date().toISOString().split('T')[0]}.pdf`,
-          title: 'Financial Dashboard - MoneyPlant',
-          includeHeader: true,
-          includeFooter: true,
-          quality: 1,
-          scale: 2
-        }
-      );
-    } catch (error) {
-      // Handle PDF export error silently
-    } finally {
-      this.isExportingPdf = false;
-    }
-  }
 
   /**
    * Export dashboard data to Excel
    */
   public async exportDashboardToExcel(): Promise<void> {
+    console.log('Overall component: exportDashboardToExcel called');
     this.isExportingExcel = true;
+    this.cdr.detectChanges(); // Immediately update UI
 
     try {
-      await this.excelExportService.exportDashboardToExcel(
-        this.dashboardConfig.widgets,
-        {
-          filename: `financial-dashboard-data-${new Date().toISOString().split('T')[0]}.xlsx`,
-          includeHeaders: true,
-          includeTimestamp: true,
-          sheetNamePrefix: 'Widget',
-          autoColumnWidth: true,
-          includeWidgetTitles: true
-        }
-      );
+      // Add a small delay to allow UI to update with loading state
+      await new Promise(resolve => setTimeout(resolve, 50));
+      
+      console.log('Starting Excel export...');
+      
+      // Use setTimeout to make the Excel generation truly async
+      await new Promise<void>((resolve, reject) => {
+        setTimeout(async () => {
+          try {
+            await this.excelExportService.exportDashboardToExcel(
+              this.dashboardConfig.widgets,
+              {
+                filename: `financial-dashboard-data-${new Date().toISOString().split('T')[0]}.xlsx`,
+                includeHeaders: true,
+                includeTimestamp: true,
+                sheetNamePrefix: 'Widget',
+                autoColumnWidth: true,
+                includeWidgetTitles: true
+              }
+            );
+            console.log('Excel export completed successfully');
+            resolve();
+          } catch (error) {
+            console.error('Excel export failed:', error);
+            reject(error);
+          }
+        }, 100);
+      });
+      
     } catch (error) {
-      // Handle Excel export error silently
+      console.error('Excel export error:', error);
+      // Could show user-friendly error message here
     } finally {
       this.isExportingExcel = false;
+      this.cdr.detectChanges(); // Update UI to remove loading state
+      console.log('Excel export process finished');
     }
   }
 
@@ -1341,6 +1330,7 @@ export class OverallComponent implements OnInit, OnDestroy {
    * Toggle filter highlighting mode
    */
   public toggleHighlightingMode(): void {
+    console.log('Overall component: toggleHighlightingMode called, current state:', this.isHighlightingEnabled);
     this.isHighlightingEnabled = !this.isHighlightingEnabled;
     this.updateDashboardHighlightingConfig();
     
