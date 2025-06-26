@@ -1,40 +1,14 @@
-<p class="dashboard-title">Financial Dashboard</p>
+<!-- Dashboard Header -->
+<vis-dashboard-header 
+  title="Financial Dashboard"
+  [isHighlightingEnabled]="isHighlightingEnabled"
+  [isExportingExcel]="isExportingExcel"
+  (onExportToExcel)="exportDashboardToExcel()"
+  (onToggleHighlighting)="toggleHighlightingMode()"
+  (onSetHighlightingPreset)="setHighlightingPreset($event)">
+</vis-dashboard-header>
 
-<!-- Test button for async data update -->
-<div class="test-controls">
-  <p-button 
-    label="Update All Charts" 
-    icon="pi pi-sync" 
-    (onClick)="updateAllCharts()"
-    [loading]="false"
-    styleClass="p-button-sm p-button-secondary">
-  </p-button>
-  
-  <p-button 
-    label="Clear All Filters" 
-    icon="pi pi-times" 
-    (onClick)="clearAllFilters()"
-    styleClass="p-button-sm p-button-warning">
-  </p-button>
-  
-  <p-button 
-    label="Export to PDF" 
-    icon="pi pi-file-pdf" 
-    (onClick)="exportDashboardToPdf()"
-    [loading]="isExportingPdf"
-    [disabled]="isExportingPdf"
-    styleClass="p-button-sm p-button-success">
-  </p-button>
-  
-  <p-button 
-    label="Export to Excel" 
-    icon="pi pi-file-excel" 
-    (onClick)="exportDashboardToExcel()"
-    [loading]="isExportingExcel"
-    [disabled]="isExportingExcel"
-    styleClass="p-button-sm p-button-info">
-  </p-button>
-</div>
+
 
 <p-scrollPanel [style]="{ height: '100%', width: '100%', 'overflow-x': 'hidden', 'overflow': 'auto' }">
   <div class="dashboard-container" #dashboardContainer>

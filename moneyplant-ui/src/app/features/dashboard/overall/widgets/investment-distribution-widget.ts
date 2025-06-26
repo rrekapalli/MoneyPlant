@@ -21,7 +21,7 @@ export function createInvestmentDistributionWidget(): IWidget {
   return DensityMapBuilder.create()
     .setData([]) // Data will be populated from shared dashboard data
     .setMapType(MapType.WORLD)
-    //.setHeader('Investment Distribution by Country')
+    .setHeader('Investment Distribution by Country')
     .setPosition({ x: 0, y: 8, cols: 6, rows: 8 })
     .setTitle('Investment Distribution by Country', 'Global')
     .setColorScheme(ColorScheme.DENSITY_BLUE, 0, 100)
