@@ -7,7 +7,6 @@ import {CommonModule} from '@angular/common';
 import {ButtonModule} from 'primeng/button';
 import {MenuModule} from 'primeng/menu';
 import {MenuItem} from 'primeng/api';
-import {PdfExportService, PdfExportOptions} from '../services/pdf-export.service';
 import {ExcelExportService, ExcelExportOptions} from '../services/excel-export.service';
 
 @Component({
@@ -36,7 +35,6 @@ export class WidgetHeaderComponent {
   sidebarVisible: boolean = false;
 
   constructor(
-    private pdfExportService: PdfExportService,
     private excelExportService: ExcelExportService
   ) {}
 
@@ -64,11 +62,11 @@ export class WidgetHeaderComponent {
     
     // Add export options
     items.push(
-      {
-        label: 'Export to PDF',
-        icon: 'pi pi-file-pdf',
-        command: () => this.exportToPdf()
-      },
+      // {
+      //   label: 'Export to PDF',
+      //   icon: 'pi pi-file-pdf',
+      //   command: () => this.exportToPdf()
+      // },
       {
         label: 'Export to Excel/CSV',
         icon: 'pi pi-file-excel',
@@ -106,32 +104,32 @@ export class WidgetHeaderComponent {
     });
   }
 
-  async exportToPdf() {
-    try {
-      const options: PdfExportOptions = {
-        filename: `${this.widget.id}-export.pdf`,
-        title: this.widget.config?.header?.title || 'Widget Export',
-        orientation: 'portrait',
-        format: 'a4',
-        includeHeader: true,
-        includeFooter: true
-      };
+  // async exportToPdf() {
+  //   try {
+  //     const options: PdfExportOptions = {
+  //       filename: `${this.widget.id}-export.pdf`,
+  //       title: this.widget.config?.header?.title || 'Widget Export',
+  //       orientation: 'portrait',
+  //       format: 'a4',
+  //       includeHeader: true,
+  //       includeFooter: true
+  //     };
 
-      // Get the widget element from the DOM
-      const widgetElement = document.querySelector(`[data-widget-id="${this.widget.id}"]`) as HTMLElement;
-      if (widgetElement) {
-        await this.pdfExportService.exportWidgetToPdf(
-          { nativeElement: widgetElement },
-          this.widget,
-          options
-        );
-      } else {
-        console.error('Widget element not found in DOM');
-      }
-    } catch (error) {
-      console.error('Error exporting widget to PDF:', error);
-    }
-  }
+  //     // Get the widget element from the DOM
+  //     const widgetElement = document.querySelector(`[data-widget-id="${this.widget.id}"]`) as HTMLElement;
+  //     if (widgetElement) {
+  //       await this.pdfExportService.exportWidgetToPdf(
+  //         { nativeElement: widgetElement },
+  //         this.widget,
+  //         options
+  //       );
+  //     } else {
+  //       console.error('Widget element not found in DOM');
+  //     }
+  //   } catch (error) {
+  //     console.error('Error exporting widget to PDF:', error);
+  //   }
+  // }
 
   async exportToExcel() {
     try {

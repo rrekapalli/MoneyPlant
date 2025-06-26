@@ -1,7 +1,7 @@
 import { GridsterConfig, GridType, DisplayGrid } from 'angular-gridster2';
 import { IWidget } from '../entities/IWidget';
 import { IFilterValues } from '../entities/IFilterValues';
-import { PdfExportOptions } from '../services/pdf-export.service';
+// import { PdfExportOptions } from '../services/pdf-export.service';
 
 /**
  * Abstract base class for Dashboard Container builders
@@ -279,7 +279,7 @@ export abstract class DashboardContainerBuilder<T extends GridsterConfig = Grids
       isEditMode: this.isEditMode,
       chartHeight: this.chartHeight,
       defaultChartHeight: this.defaultChartHeight,
-      exportToPdf: this.exportToPdf.bind(this)
+      // exportToPdf: this.exportToPdf.bind(this)
     };
   }
 
@@ -373,10 +373,10 @@ export abstract class DashboardContainerBuilder<T extends GridsterConfig = Grids
     return baseZoom - (zoomAdjustment * 0.1) - aspectAdjustment;
   }
 
-  exportToPdf(options?: PdfExportOptions): Promise<void> {
-    // This is a placeholder - the actual implementation will be provided by the component
-    return Promise.reject(new Error('Export to PDF method must be implemented by the dashboard component'));
-  }
+  // exportToPdf(options?: PdfExportOptions): Promise<void> {
+  //   // This is a placeholder - the actual implementation will be provided by the component
+  //   return Promise.reject(new Error('Export to PDF method must be implemented by the dashboard component'));
+  // }
 }
 
 /**
@@ -390,7 +390,7 @@ export interface DashboardConfig {
   isEditMode: boolean;
   chartHeight: number;
   defaultChartHeight: number;
-  exportToPdf?: (options?: PdfExportOptions) => Promise<void>;
+  // exportToPdf?: (options?: PdfExportOptions) => Promise<void>;
   
   /** Global filter visualization configuration for the entire dashboard */
   filterVisualization?: {

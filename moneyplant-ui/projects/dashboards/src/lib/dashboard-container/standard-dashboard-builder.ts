@@ -321,15 +321,15 @@ export class StandardDashboardBuilder extends DashboardContainerBuilder<Gridster
       chartHeight: this.chartHeight,
       defaultChartHeight: this.defaultChartHeight,
       filterVisualization: (this as any).filterVisualization,
-      exportToPdf: this.exportToPdf.bind(this)
+      // exportToPdf: this.exportToPdf.bind(this)
     };
   }
 
   /**
    * Export dashboard to PDF (placeholder - will be overridden by component)
    */
-  override exportToPdf(options: any = {}): Promise<void> {
-    // This is a placeholder - the actual implementation will be provided by the component
-    return Promise.reject(new Error('Export to PDF method must be implemented by the dashboard component'));
-  }
+  // override exportToPdf(options: any = {}): Promise<void> {
+  //   // This is a placeholder - the actual implementation will be provided by the component
+  //   return Promise.reject(new Error('Export to PDF method must be implemented by the dashboard component'));
+  // }
 } 
