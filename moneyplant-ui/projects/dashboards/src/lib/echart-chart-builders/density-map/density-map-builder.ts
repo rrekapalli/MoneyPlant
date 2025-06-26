@@ -103,7 +103,7 @@ export interface DensityMapOptions extends EChartsOption {
  *   .setData(densityData)
  *   .setMap('HK')
  *   .setTitle('Hong Kong Population Density', '2023 Data')
- *   .setVisualMap(0, 100, ['#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8'])
+ *   .setVisualMap(0, 100, ['#e0f3f8', '#abd9e9', '#74add1', '#4575b4', '#313695'])
  *   .setRoam(true)
  *   .setPosition({ x: 0, y: 0, cols: 8, rows: 6 }) // Auto-centers and zooms based on 8x6 dimensions
  *   .build();
@@ -121,7 +121,7 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
   private zoomLevel: number = 1;
   private centerCoords: [number, number] = [0, 0];
   private visualMapRange: [number, number] = [0, 100];
-  private visualMapColors: string[] = ['#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8'];
+  private visualMapColors: string[] = ['#e0f3f8', '#abd9e9', '#74add1', '#4575b4', '#313695'];
 
   private constructor() {
     super();
@@ -190,7 +190,7 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
         text: ['High', 'Low'],
         calculable: true,
         inRange: {
-          color: ['#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8'],
+          color: ['#e0f3f8', '#abd9e9', '#74add1', '#4575b4', '#313695'],
         },
         textStyle: {
           color: '#333',

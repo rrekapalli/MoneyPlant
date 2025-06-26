@@ -193,113 +193,108 @@ Previously, density map widgets required the exact header title `'Investment Dis
 
 ### Root Cause
 
-The data population system in `overall.component.ts` used a switch statement based on `widget.config?.header?.title` to determine what data to provide:
-
+The data population system in `overall.component.ts` relied on exact title matching:
 ```typescript
-// Old problematic code
-const widgetTitle = widget.config?.header?.title;
-if (!widgetTitle) {
-  return; // ← Widget gets no data if no header!
-}
-const data = getFilteredDataForWidget(widgetTitle); // ← Exact title match required
-```
-
-### Solution Implemented
-
-We've implemented a **robust fallback system** that detects chart types and provides appropriate data even when headers are missing:
-
-#### 1. Enhanced Data Population Logic
-
-```typescript
-// New robust approach
-let initialData = null;
-if (widgetTitle) {
-  initialData = this.getFilteredDataForWidget(widgetTitle); // Try title first
-}
-
-if (!initialData) {
-  initialData = this.getDataByChartType(widget); // Fallback to chart type detection
+switch (widgetTitle) {
+  case 'Investment Distribution by Region':  // ← Required exact match
+    return this.getInvestmentData();
+  default:
+    return [];  // ← No data for widgets without matching titles
 }
 ```
 
-#### 2. Chart Type Detection
+### Solution
 
-The system now automatically detects density maps and provides appropriate data:
+**1. Enhanced Data Population System**
+- Added fallback detection by chart type when title matching fails
+- Widgets are now identified by their ECharts configuration, not just titles
+- Automatic data assignment for density maps even without headers
 
+**2. Robust Widget Detection**
+- `DensityMapBuilder.isDensityMapEnhanced()` - Advanced detection method
+- Checks multiple indicators: chart type, series configuration, visualMap presence
+- Works reliably regardless of header configuration
+
+**3. Comprehensive Fallback Logic**
 ```typescript
-private getDataByChartType(widget: IWidget): any {
-  const seriesType = chartOptions.series[0].type;
-  
-  switch (seriesType) {
-    case 'map':
-      // Detected density map - provide investment distribution data
-      return this.groupByAndSum(this.dashboardData, 'market', 'totalValue');
-    // ... other chart types
-  }
+// Try title-based data first
+let data = this.getFilteredDataForWidget(widgetTitle);
+
+// Fallback to chart type detection
+if (!data && this.isDensityMap(widget)) {
+  data = this.getInvestmentDistributionData();
 }
 ```
-
-#### 3. Enhanced Widget Detection
-
-Added multiple methods to identify density map widgets:
-
-```typescript
-// Basic detection
-DensityMapBuilder.isDensityMap(widget)
-
-// Enhanced detection (works without headers)
-DensityMapBuilder.isDensityMapEnhanced(widget)
-
-// Fallback data
-DensityMapBuilder.getDefaultData()
-```
-
-### Benefits of the Solution
-
-1. **Header Independence**: Widgets work with or without `.setHeader()`
-2. **Backward Compatibility**: Existing widgets with headers continue to work
-3. **Automatic Detection**: Charts are identified by their configuration
-4. **Consistent Data**: All chart types get appropriate fallback data
-5. **Better Developer Experience**: Less strict requirements for widget creation
 
 ### Usage Examples
 
-**Before (Required header):**
 ```typescript
-// This was required for data to show
-const widget = DensityMapBuilder.create()
+// ✅ Now works WITH header
+const widgetWithHeader = DensityMapBuilder.create()
   .setData([])
   .setMap('world')
-  .setHeader('Investment Distribution by Region') // ← Required!
+  .setHeader('Investment Distribution by Region') // ← Header present
+  .setPosition({ x: 0, y: 0, cols: 6, rows: 4 })
+  .build();
+
+// ✅ Now works WITHOUT header
+const widgetWithoutHeader = DensityMapBuilder.create()
+  .setData([])
+  .setMap('world')
+  // .setHeader() ← Header intentionally omitted
   .setPosition({ x: 0, y: 0, cols: 6, rows: 4 })
   .build();
 ```
 
-**After (Header optional):**
+Both widgets will now receive appropriate data automatically!
+
+## 🎨 **COLOR SCALE CORRECTION**
+
+### Problem
+The density map color scales were inverted, with light colors representing high values and dark colors representing low values, which is counterintuitive for most data visualizations.
+
+### Solution
+**Corrected Color Mapping:**
+- **Light colors** (`#e0f3f8`) now represent **LOW values**
+- **Dark colors** (`#313695`) now represent **HIGH values**
+
+**Before (Inverted):**
 ```typescript
-// This now works with or without header
-const widget = DensityMapBuilder.create()
-  .setData([])
+// Counterintuitive: Light = High, Dark = Low
+['#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8']
+//    ↑ Dark Blue (was for Low)     ↑ Light Blue (was for High)
+```
+
+**After (Corrected):**
+```typescript
+// Intuitive: Light = Low, Dark = High  
+['#e0f3f8', '#abd9e9', '#74add1', '#4575b4', '#313695']
+//    ↑ Light Blue (now for Low)     ↑ Dark Blue (now for High)
+```
+
+### Visual Impact
+- **Low values**: Light blue/cyan shades - easy to see as "less dense"
+- **High values**: Dark blue shades - visually "heavier" indicating higher density
+- **Better UX**: Follows standard data visualization conventions
+- **Intuitive**: Users naturally associate darker colors with higher values
+
+**Example Usage:**
+```typescript
+DensityMapBuilder.create()
+  .setData(populationData)
   .setMap('world')
-  // .setHeader('Investment Distribution by Region') // ← Optional!
-  .setPosition({ x: 0, y: 0, cols: 6, rows: 4 })
+  .setVisualMap(0, 100, ['#e0f3f8', '#abd9e9', '#74add1', '#4575b4', '#313695'])
+  //                      ↑ Low (Light)                              ↑ High (Dark)
   .build();
 ```
 
-### Testing
+## ✅ **Benefits Summary**
 
-Use the new test function to verify the solution:
-
-```typescript
-import { testDensityMapDetection, createDensityMapWithoutHeader } from './densityMap-examples';
-
-// Test detection capabilities
-const testResults = testDensityMapDetection();
-console.log('Detection test results:', testResults);
-
-// Create widget without header (demonstrates fix)
-const widgetWithoutHeader = createDensityMapWithoutHeader();
-```
+1. **🔧 Dependency-Free**: Widgets work with or without headers
+2. **🎯 Robust Detection**: Multiple fallback mechanisms for widget identification  
+3. **📊 Intuitive Colors**: Corrected color scales follow visualization best practices
+4. **🚀 Backward Compatible**: Existing widgets continue to work unchanged
+5. **🛡️ Error Resilient**: Graceful fallbacks prevent broken widgets"
 
 ## Available Built-in Maps
 
