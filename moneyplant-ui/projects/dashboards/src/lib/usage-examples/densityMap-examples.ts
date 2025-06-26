@@ -1,4 +1,5 @@
 import { DensityMapBuilder, DensityMapData } from '@dashboards/public-api';
+import { IWidget } from '../entities/IWidget';
 
 /**
  * Example data for world population density
@@ -303,4 +304,57 @@ export function updateDensityMapData(widget: any, newData: DensityMapData[]) {
  */
 export function isDensityMapWidget(widget: any): boolean {
   return DensityMapBuilder.isDensityMap(widget);
+}
+
+/**
+ * Create density map widget without header (for testing fallback data system)
+ * This demonstrates that the data population system works even without setHeader()
+ */
+export function createDensityMapWithoutHeader(): IWidget {
+  return DensityMapBuilder.create()
+    .setData([]) // Data will be populated by chart type detection
+    .setMap('world')
+    // .setHeader('Investment Distribution by Region') // ← Intentionally commented out
+    .setPosition({ x: 0, y: 0, cols: 6, rows: 4 })
+    .setTitle('Investment Distribution by Region', 'Global')
+    .setVisualMap(0, 100, ['#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8'])
+    .setRoam(true)
+    .setConditionalLabels(true, 'inside', '{b}\n{c}%', true)
+    .setAreaColor('#f5f5f5')
+    .setBorderColor('#999', 0.5)
+    .setEmphasisColor('#b8e186')
+    .setShadow(15, 'rgba(0, 0, 0, 0.4)')
+    .setTooltip('item', '{b}: {c}% of total investment')
+    .build();
+}
+
+/**
+ * Test enhanced density map detection
+ */
+export function testDensityMapDetection() {
+  // Create widget with header
+  const widgetWithHeader = DensityMapBuilder.create()
+    .setData([])
+    .setMap('world')
+    .setHeader('Investment Distribution by Region') // ← Has header
+    .setPosition({ x: 0, y: 0, cols: 6, rows: 4 })
+    .build();
+    
+  // Create widget without header (using our new function)
+  const widgetWithoutHeader = createDensityMapWithoutHeader();
+  
+  return {
+    withHeader: {
+      widget: widgetWithHeader,
+      isDetectedAsMap: DensityMapBuilder.isDensityMap(widgetWithHeader),
+      isDetectedAsMapEnhanced: DensityMapBuilder.isDensityMapEnhanced(widgetWithHeader),
+      hasHeader: !!widgetWithHeader.config?.header?.title
+    },
+    withoutHeader: {
+      widget: widgetWithoutHeader,
+      isDetectedAsMap: DensityMapBuilder.isDensityMap(widgetWithoutHeader),
+      isDetectedAsMapEnhanced: DensityMapBuilder.isDensityMapEnhanced(widgetWithoutHeader),
+      hasHeader: !!widgetWithoutHeader.config?.header?.title
+    }
+  };
 } 

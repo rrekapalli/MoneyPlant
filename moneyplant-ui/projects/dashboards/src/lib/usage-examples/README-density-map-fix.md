@@ -185,6 +185,122 @@ The auto-centering algorithm considers:
 3. **Reduced Configuration**: No need to manually calculate center/zoom for each widget
 4. **Better UX**: Users see the most relevant part of the map for their widget size
 
+## 🆕 **ISSUE RESOLUTION: Header-Data Dependency**
+
+### Problem
+
+Previously, density map widgets required the exact header title `'Investment Distribution by Region'` to be set using `.setHeader()` for data to be populated. If the header was not set, the widget would not display any data because the data population system relied on matching widget titles.
+
+### Root Cause
+
+The data population system in `overall.component.ts` used a switch statement based on `widget.config?.header?.title` to determine what data to provide:
+
+```typescript
+// Old problematic code
+const widgetTitle = widget.config?.header?.title;
+if (!widgetTitle) {
+  return; // ← Widget gets no data if no header!
+}
+const data = getFilteredDataForWidget(widgetTitle); // ← Exact title match required
+```
+
+### Solution Implemented
+
+We've implemented a **robust fallback system** that detects chart types and provides appropriate data even when headers are missing:
+
+#### 1. Enhanced Data Population Logic
+
+```typescript
+// New robust approach
+let initialData = null;
+if (widgetTitle) {
+  initialData = this.getFilteredDataForWidget(widgetTitle); // Try title first
+}
+
+if (!initialData) {
+  initialData = this.getDataByChartType(widget); // Fallback to chart type detection
+}
+```
+
+#### 2. Chart Type Detection
+
+The system now automatically detects density maps and provides appropriate data:
+
+```typescript
+private getDataByChartType(widget: IWidget): any {
+  const seriesType = chartOptions.series[0].type;
+  
+  switch (seriesType) {
+    case 'map':
+      // Detected density map - provide investment distribution data
+      return this.groupByAndSum(this.dashboardData, 'market', 'totalValue');
+    // ... other chart types
+  }
+}
+```
+
+#### 3. Enhanced Widget Detection
+
+Added multiple methods to identify density map widgets:
+
+```typescript
+// Basic detection
+DensityMapBuilder.isDensityMap(widget)
+
+// Enhanced detection (works without headers)
+DensityMapBuilder.isDensityMapEnhanced(widget)
+
+// Fallback data
+DensityMapBuilder.getDefaultData()
+```
+
+### Benefits of the Solution
+
+1. **Header Independence**: Widgets work with or without `.setHeader()`
+2. **Backward Compatibility**: Existing widgets with headers continue to work
+3. **Automatic Detection**: Charts are identified by their configuration
+4. **Consistent Data**: All chart types get appropriate fallback data
+5. **Better Developer Experience**: Less strict requirements for widget creation
+
+### Usage Examples
+
+**Before (Required header):**
+```typescript
+// This was required for data to show
+const widget = DensityMapBuilder.create()
+  .setData([])
+  .setMap('world')
+  .setHeader('Investment Distribution by Region') // ← Required!
+  .setPosition({ x: 0, y: 0, cols: 6, rows: 4 })
+  .build();
+```
+
+**After (Header optional):**
+```typescript
+// This now works with or without header
+const widget = DensityMapBuilder.create()
+  .setData([])
+  .setMap('world')
+  // .setHeader('Investment Distribution by Region') // ← Optional!
+  .setPosition({ x: 0, y: 0, cols: 6, rows: 4 })
+  .build();
+```
+
+### Testing
+
+Use the new test function to verify the solution:
+
+```typescript
+import { testDensityMapDetection, createDensityMapWithoutHeader } from './densityMap-examples';
+
+// Test detection capabilities
+const testResults = testDensityMapDetection();
+console.log('Detection test results:', testResults);
+
+// Create widget without header (demonstrates fix)
+const widgetWithoutHeader = createDensityMapWithoutHeader();
+```
+
 ## Available Built-in Maps
 
 ECharts provides several built-in maps that work out of the box:

@@ -550,6 +550,50 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
   }
 
   /**
+   * Static method to check if a widget is a density map (enhanced detection)
+   * This method can identify density maps even without proper headers
+   */
+  static isDensityMapEnhanced(widget: IWidget): boolean {
+    // Check by chart type first
+    if (ApacheEchartBuilder.isChartType(widget, 'map')) {
+      return true;
+    }
+    
+    // Check if the widget has map-specific configuration
+    const options = widget.config?.options as any;
+    if (options?.series?.[0]) {
+      const series = options.series[0];
+      return series.type === 'map' || series.map !== undefined;
+    }
+    
+    // Check if visualMap is present (common in density maps)
+    if (options?.visualMap) {
+      return true;
+    }
+    
+    return false;
+  }
+
+  /**
+   * Get appropriate data for density map widget
+   * This method provides fallback data when header is not set
+   */
+  static getDefaultData(): DensityMapData[] {
+    return [
+      { name: 'United States', value: 100 },
+      { name: 'China', value: 85 },
+      { name: 'Japan', value: 70 },
+      { name: 'Germany', value: 65 },
+      { name: 'United Kingdom', value: 60 },
+      { name: 'France', value: 55 },
+      { name: 'Canada', value: 50 },
+      { name: 'Australia', value: 45 },
+      { name: 'Brazil', value: 40 },
+      { name: 'India', value: 35 }
+    ];
+  }
+
+  /**
    * Export density map data for Excel/CSV export
    * Extracts region names and their corresponding values
    * @param widget - Widget containing density map data
