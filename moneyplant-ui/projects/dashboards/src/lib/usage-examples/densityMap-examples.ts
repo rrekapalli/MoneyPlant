@@ -199,14 +199,96 @@ export function createMinimalDensityMap() {
   return DensityMapBuilder.create()
     .setData(worldDensityData.slice(0, 3))
     .setMap('world')
-    .setVisualMap(0, 100, ['#313695', '#74add1', '#e0f3f8'])
-    .setRoam(false)
-    .setZoom(1.0)
-    .setLabelShow(false)
-    .setTooltip('item', '{b}: {c}')
-    .setHeader('Density Overview')
-    .setPosition({ x: 0, y: 0, cols: 4, rows: 3 })
+    .setHeader('Minimal World Map')
+    .setPosition({ x: 0, y: 0, cols: 2, rows: 2 })
     .build();
+}
+
+/**
+ * Auto-centered density map examples demonstrating automatic center and zoom calculation
+ * based on widget dimensions
+ */
+export function createAutoCenteredDensityMaps() {
+  return {
+    // Small widget - will auto-center and zoom appropriately
+    smallMap: DensityMapBuilder.create()
+      .setData(worldDensityData)
+      .setMap('world')
+      .setHeader('Small World Map')
+      .setPosition({ x: 0, y: 0, cols: 4, rows: 3 })
+      .build(),
+
+    // Medium widget - balanced center and zoom
+    mediumMap: DensityMapBuilder.create()
+      .setData(worldDensityData)
+      .setMap('world')
+      .setHeader('Medium World Map')
+      .setPosition({ x: 4, y: 0, cols: 6, rows: 4 })
+      .build(),
+
+    // Large widget - wider aspect ratio, adjusted center
+    largeMap: DensityMapBuilder.create()
+      .setData(worldDensityData)
+      .setMap('world')
+      .setHeader('Large World Map')
+      .setPosition({ x: 0, y: 4, cols: 8, rows: 5 })
+      .build(),
+
+    // Tall widget - taller aspect ratio, different center adjustment
+    tallMap: DensityMapBuilder.create()
+      .setData(worldDensityData)
+      .setMap('world')
+      .setHeader('Tall World Map')
+      .setPosition({ x: 8, y: 4, cols: 4, rows: 8 })
+      .build(),
+
+    // Extra large widget - maximum size with optimal centering
+    extraLargeMap: DensityMapBuilder.create()
+      .setData(worldDensityData)
+      .setMap('world')
+      .setHeader('Extra Large World Map')
+      .setPosition({ x: 0, y: 9, cols: 12, rows: 8 })
+      .build()
+  };
+}
+
+/**
+ * Example showing how to update existing density map widgets with auto-adjusted settings
+ */
+export function updateExistingMapWithAutoSettings(widget: any) {
+  // Update the widget's center and zoom based on its current dimensions
+  DensityMapBuilder.updateMapSettings(widget);
+  return widget;
+}
+
+/**
+ * Test function to demonstrate auto-centering calculations
+ * This shows how the center and zoom values change based on widget dimensions
+ */
+export function demonstrateAutoCenteringCalculations() {
+  const builder = DensityMapBuilder.create();
+  
+  const testCases = [
+    { cols: 2, rows: 2, description: 'Small square widget' },
+    { cols: 4, rows: 3, description: 'Small rectangular widget' },
+    { cols: 6, rows: 4, description: 'Medium widget' },
+    { cols: 8, rows: 5, description: 'Large wide widget' },
+    { cols: 4, rows: 8, description: 'Tall narrow widget' },
+    { cols: 12, rows: 8, description: 'Extra large widget' }
+  ];
+
+  return testCases.map(testCase => {
+    const center = builder.calculateMapCenter(testCase.cols, testCase.rows);
+    const zoom = builder.calculateMapZoom(testCase.cols, testCase.rows);
+    
+    return {
+      description: testCase.description,
+      dimensions: `${testCase.cols}x${testCase.rows}`,
+      calculatedCenter: center,
+      calculatedZoom: zoom,
+      aspectRatio: (testCase.cols / testCase.rows).toFixed(2)
+    };
+  });
 }
 
 /**

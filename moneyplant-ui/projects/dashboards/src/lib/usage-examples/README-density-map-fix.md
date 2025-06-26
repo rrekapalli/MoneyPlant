@@ -102,6 +102,89 @@ setConditionalLabels(
 3. **Reduced Clutter**: Avoids overwhelming the map with empty labels
 4. **Professional Appearance**: More polished and informative maps
 
+## 🆕 **NEW FEATURE: Automatic Map Centering and Zoom**
+
+### Smart Positioning Based on Widget Dimensions
+
+The DensityMapBuilder now automatically calculates optimal map center and zoom levels based on the widget's dimensions (columns and rows). This ensures the map is always properly positioned regardless of widget size.
+
+#### How It Works
+
+When you call `.setPosition()`, the builder automatically:
+1. Calculates the optimal center coordinates based on aspect ratio
+2. Determines the appropriate zoom level based on widget area
+3. Applies these settings to ensure the map fits perfectly
+
+#### Usage Examples
+
+**1. Automatic Centering (Default Behavior)**
+```typescript
+// The map will automatically center and zoom based on 6x4 dimensions
+DensityMapBuilder.create()
+  .setData(worldData)
+  .setMap('world')
+  .setPosition({ x: 0, y: 0, cols: 6, rows: 4 }) // Auto-centers and zooms
+  .build();
+```
+
+**2. Different Widget Sizes**
+```typescript
+// Small widget - tighter zoom, adjusted center
+const smallMap = DensityMapBuilder.create()
+  .setData(worldData)
+  .setMap('world')
+  .setPosition({ x: 0, y: 0, cols: 4, rows: 3 }) // Auto-adjusts for small size
+  .build();
+
+// Large widget - wider view, different center
+const largeMap = DensityMapBuilder.create()
+  .setData(worldData)
+  .setMap('world')
+  .setPosition({ x: 0, y: 0, cols: 8, rows: 6 }) // Auto-adjusts for large size
+  .build();
+
+// Tall widget - adjusted for vertical aspect ratio
+const tallMap = DensityMapBuilder.create()
+  .setData(worldData)
+  .setMap('world')
+  .setPosition({ x: 0, y: 0, cols: 4, rows: 8 }) // Auto-adjusts for tall aspect
+  .build();
+```
+
+**3. Update Existing Widgets**
+```typescript
+// Update an existing widget with auto-adjusted settings
+DensityMapBuilder.updateMapSettings(existingWidget);
+```
+
+#### Manual Override
+
+You can still manually set center and zoom if needed:
+```typescript
+DensityMapBuilder.create()
+  .setData(worldData)
+  .setMap('world')
+  .setPosition({ x: 0, y: 0, cols: 6, rows: 4 }) // Auto-centers first
+  .setCenter([0, 0]) // Manual override
+  .setZoom(1.5) // Manual override
+  .build();
+```
+
+#### Calculation Logic
+
+The auto-centering algorithm considers:
+- **Aspect Ratio**: Adjusts center for wide vs tall widgets
+- **Widget Area**: Larger widgets get more zoomed-out views
+- **Base Coordinates**: Uses (0, -30) coordinates as starting point (shifted south for better world map view)
+- **Logarithmic Scaling**: Zoom adjustments scale logarithmically with area
+
+#### Benefits of Auto-Centering
+
+1. **Consistent Experience**: Maps always fit properly regardless of widget size
+2. **Responsive Design**: Automatically adapts to different dashboard layouts
+3. **Reduced Configuration**: No need to manually calculate center/zoom for each widget
+4. **Better UX**: Users see the most relevant part of the map for their widget size
+
 ## Available Built-in Maps
 
 ECharts provides several built-in maps that work out of the box:

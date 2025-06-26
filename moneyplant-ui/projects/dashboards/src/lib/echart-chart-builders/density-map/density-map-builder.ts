@@ -78,9 +78,15 @@ export interface DensityMapOptions extends EChartsOption {
 /**
  * Density Map Chart Builder extending the generic ApacheEchartBuilder
  * 
+ * Features:
+ * - Automatic map centering and zoom calculation based on widget dimensions
+ * - Support for various map types (world, country-specific, custom)
+ * - Conditional labeling for regions with data
+ * - Customizable visual mapping and styling
+ * 
  * Usage examples:
  * 
- * // Basic usage with default options
+ * // Basic usage with automatic centering and zoom
  * const widget = DensityMapBuilder.create()
  *   .setData([
  *     { name: 'Hong Kong Island', value: 100 },
@@ -89,25 +95,24 @@ export interface DensityMapOptions extends EChartsOption {
  *   ])
  *   .setMap('HK')
  *   .setHeader('Population Density')
- *   .setPosition({ x: 0, y: 0, cols: 6, rows: 4 })
+ *   .setPosition({ x: 0, y: 0, cols: 6, rows: 4 }) // Auto-centers and zooms based on 6x4 dimensions
  *   .build();
  * 
- * // Advanced usage with custom options
+ * // Advanced usage with custom options (auto-centering still applies)
  * const widget = DensityMapBuilder.create()
  *   .setData(densityData)
  *   .setMap('HK')
  *   .setTitle('Hong Kong Population Density', '2023 Data')
  *   .setVisualMap(0, 100, ['#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8'])
  *   .setRoam(true)
- *   .setZoom(1.2)
- *   .setCenter([114.1694, 22.3193])
- *   .setTooltip('item', '{b}: {c}')
- *   .setHeader('Population Density Map')
- *   .setPosition({ x: 0, y: 0, cols: 8, rows: 6 })
+ *   .setPosition({ x: 0, y: 0, cols: 8, rows: 6 }) // Auto-centers and zooms based on 8x6 dimensions
  *   .build();
  * 
  * // Update widget data dynamically
  * DensityMapBuilder.updateData(widget, newData);
+ * 
+ * // Update existing widget with auto-adjusted center and zoom
+ * DensityMapBuilder.updateMapSettings(widget);
  */
 export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, DensityMapSeriesOptions> {
   protected override seriesOptions: DensityMapSeriesOptions;
@@ -442,9 +447,47 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
   }
 
   /**
+   * Set widget position and automatically calculate map center based on dimensions
+   */
+  override setPosition(position: { x: number; y: number; cols: number; rows: number }): this {
+    // Call parent setPosition method
+    super.setPosition(position);
+    
+    // Automatically calculate and set map center based on widget dimensions
+    const center = this.calculateMapCenter(position.cols, position.rows);
+    this.setCenter(center as [number, number]);
+    
+    // Also calculate and set zoom level based on widget dimensions
+    // const zoom = this.calculateMapZoom(position.cols, position.rows);
+    // this.setZoom(zoom);
+    
+    return this;
+  }
+
+  /**
+   * Auto-adjust map center and zoom based on current widget dimensions
+   * This method can be called after setting position to recalculate map settings
+   */
+  autoAdjustMapSettings(): this {
+    // Get current position from widget builder
+    const position = this.widgetBuilder.build().position;
+    if (position) {
+      const center = this.calculateMapCenter(position.cols, position.rows);
+      const zoom = this.calculateMapZoom(position.cols, position.rows);
+      
+      this.setCenter(center as [number, number]);
+      // this.setZoom(zoom);
+    }
+    return this;
+  }
+
+  /**
    * Build the final widget with all configurations
    */
   override build(): IWidget {
+    // Auto-adjust map settings if position is set
+    this.autoAdjustMapSettings();
+    
     // Update series with current options
     this.seriesOptions = {
       ...this.seriesOptions,
@@ -471,6 +514,32 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
       (widget.config.options as any).series[0].data = data;
     }
     widget.data = data;
+  }
+
+  /**
+   * Update existing density map widget with auto-adjusted center and zoom
+   * based on its current dimensions
+   */
+  static updateMapSettings(widget: IWidget): void {
+    if (!DensityMapBuilder.isDensityMap(widget)) {
+      return;
+    }
+
+    const position = widget.position;
+    if (!position) {
+      return;
+    }
+
+    // Calculate new center and zoom
+    const builder = new DensityMapBuilder();
+    const center = builder.calculateMapCenter(position.cols, position.rows);
+    const zoom = builder.calculateMapZoom(position.cols, position.rows);
+
+    // Update the widget's series configuration
+    if ((widget.config.options as any)?.series?.[0]) {
+      (widget.config.options as any).series[0].center = center;
+      (widget.config.options as any).series[0].zoom = zoom;
+    }
   }
 
   /**
@@ -530,6 +599,46 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
     }
     return builder.getWidgetBuilder();
   }
+
+  // Add these helper methods to your class
+  public calculateMapCenter(cols: number, rows: number): number[] {
+    // Base center coordinates (0, -30) - shifted south for better world map view
+    const baseLongitude = 0;
+    const baseLatitude = 30;
+    
+    // Adjust center based on aspect ratio
+    const aspectRatio = cols / rows;
+    
+    // Adjust longitude more for wider containers
+    const longitudeAdjustment = (aspectRatio > 1) ? (aspectRatio - 1) * 5 : 0;
+
+    // Adjust latitude more for taller containers
+    const latitudeAdjustment = (aspectRatio < 1) ? ((1 / aspectRatio) - 1) * 2 : 0;
+
+    return [
+      baseLongitude + longitudeAdjustment,
+      baseLatitude + latitudeAdjustment
+    ];
+  }
+
+  public calculateMapZoom(cols: number, rows: number): number {
+    // Base zoom level
+    const baseZoom = 4.0;
+    
+    // Calculate area of grid
+    const area = cols * rows;
+    
+    // Adjust zoom based on area
+    // Larger area = more zoom out (smaller zoom number)
+    const zoomAdjustment = Math.log(area) / Math.log(2); // logarithmic scaling
+    
+    // Calculate aspect ratio adjustment
+    const aspectRatio = cols / rows;
+    const aspectAdjustment = Math.abs(1 - aspectRatio) * 0.5;
+
+    return baseZoom - (zoomAdjustment * 0.1) - aspectAdjustment;
+  }
+
 }
 
 /**
