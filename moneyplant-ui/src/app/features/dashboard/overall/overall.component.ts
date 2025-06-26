@@ -73,6 +73,7 @@ import('echarts-map-collection/custom/world.json').then((worldMapData) => {
 import { 
   IWidget,
   DashboardContainerComponent,
+  DashboardHeaderComponent,
   // Fluent API
   StandardDashboardBuilder,
   DashboardConfig,
@@ -134,7 +135,8 @@ import { Subscription } from 'rxjs';
     MessageModule,
     ScrollPanelModule,
     // Dashboard components
-    DashboardContainerComponent
+    DashboardContainerComponent,
+    DashboardHeaderComponent
   ],
   templateUrl: './overall.component.html',
   styleUrls: ['./overall.component.scss'],

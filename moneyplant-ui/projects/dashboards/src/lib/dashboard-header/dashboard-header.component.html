@@ -1,0 +1,24 @@
+<div class="dashboard-header">
+  <div class="dashboard-header-left">
+    <h2 class="dashboard-title">{{ title }}</h2>
+  </div>
+  
+  <div class="dashboard-header-right">
+    <!-- Three-dot menu for dashboard actions -->
+    <p-button #menuButton
+              [outlined]="true" 
+              class="p-button-sm" 
+              type="button" 
+              icon="pi pi-ellipsis-v"
+              (click)="menu.toggle($event)"
+              [loading]="isExportingPdf || isExportingExcel">
+    </p-button>
+  </div>
+</div>
+
+<!-- Dashboard Actions Menu -->
+<p-menu #menu 
+        [model]="menuItems" 
+        [popup]="true" 
+        appendTo="body">
+</p-menu> 

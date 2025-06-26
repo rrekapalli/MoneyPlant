@@ -1,6 +1,7 @@
 // Components
 export * from './lib/widgets/widget/widget-builder';
 export * from './lib/dashboard-container/dashboard-container.component';
+export * from './lib/dashboard-header';
 export * from './lib/widget-header/widget-header.component';
 export * from './lib/widget-config/widget-config.component';
 

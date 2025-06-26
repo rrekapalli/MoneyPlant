@@ -1,76 +1,16 @@
-<p class="dashboard-title">Financial Dashboard</p>
+<!-- Dashboard Header -->
+<vis-dashboard-header 
+  title="Financial Dashboard"
+  [isHighlightingEnabled]="isHighlightingEnabled"
+  [isExportingPdf]="isExportingPdf"
+  [isExportingExcel]="isExportingExcel"
+  (onExportToPdf)="exportDashboardToPdf()"
+  (onExportToExcel)="exportDashboardToExcel()"
+  (onToggleHighlighting)="toggleHighlightingMode()"
+  (onSetHighlightingPreset)="setHighlightingPreset($event)">
+</vis-dashboard-header>
 
-<!-- Test button for async data update -->
-<div class="test-controls">
-  <p-button 
-    label="Update All Charts" 
-    icon="pi pi-sync" 
-    (onClick)="updateAllCharts()"
-    [loading]="false"
-    styleClass="p-button-sm p-button-secondary">
-  </p-button>
-  
-  <p-button 
-    label="Clear All Filters" 
-    icon="pi pi-times" 
-    (onClick)="clearAllFilters()"
-    styleClass="p-button-sm p-button-warning">
-  </p-button>
-  
-  <p-button 
-    label="Export to PDF" 
-    icon="pi pi-file-pdf" 
-    (onClick)="exportDashboardToPdf()"
-    [loading]="isExportingPdf"
-    [disabled]="isExportingPdf"
-    styleClass="p-button-sm p-button-success">
-  </p-button>
-  
-  <p-button 
-    label="Export to Excel" 
-    icon="pi pi-file-excel" 
-    (onClick)="exportDashboardToExcel()"
-    [loading]="isExportingExcel"
-    [disabled]="isExportingExcel"
-    styleClass="p-button-sm p-button-info">
-  </p-button>
-</div>
 
-<!-- Filter Highlighting Controls -->
-<div class="highlighting-controls">
-  <div class="highlighting-status">
-    <span class="status-label">{{ getHighlightingStatusMessage() }}</span>
-  </div>
-  
-  <div class="highlighting-buttons">
-    <p-button 
-      [label]="isHighlightingEnabled ? 'Disable Highlighting' : 'Enable Highlighting'"
-      [icon]="isHighlightingEnabled ? 'pi pi-eye-slash' : 'pi pi-eye'"
-      (onClick)="toggleHighlightingMode()"
-      [styleClass]="isHighlightingEnabled ? 'p-button-sm p-button-outlined' : 'p-button-sm'">
-    </p-button>
-
-    @if (isHighlightingEnabled) {
-      <p-button 
-        label="Subtle (40%)" 
-        (onClick)="setHighlightingPreset('subtle')"
-        styleClass="p-button-sm p-button-outlined">
-      </p-button>
-      
-      <p-button 
-        label="Medium (25%)" 
-        (onClick)="setHighlightingPreset('medium')"
-        styleClass="p-button-sm p-button-outlined">
-      </p-button>
-      
-      <p-button 
-        label="Strong (10%)" 
-        (onClick)="setHighlightingPreset('strong')"
-        styleClass="p-button-sm p-button-outlined">
-      </p-button>
-    }
-  </div>
-</div>
 
 <p-scrollPanel [style]="{ height: '100%', width: '100%', 'overflow-x': 'hidden', 'overflow': 'auto' }">
   <div class="dashboard-container" #dashboardContainer>
