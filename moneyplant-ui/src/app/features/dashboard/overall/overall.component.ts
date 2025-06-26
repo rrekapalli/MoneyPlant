@@ -17,7 +17,8 @@ import {
   MapChart,
   TreemapChart,
   SunburstChart,
-  SankeyChart
+  SankeyChart,
+  CandlestickChart
 } from 'echarts/charts';
 // Import tooltip, title, legend, and other components
 import {
@@ -28,7 +29,10 @@ import {
   TransformComponent,
   LegendComponent,
   VisualMapComponent,
-  PolarComponent
+  PolarComponent,
+  DataZoomComponent,
+  BrushComponent,
+  ToolboxComponent
 } from 'echarts/components';
 // Import renderer
 import {
@@ -45,6 +49,9 @@ echarts.use([
   LegendComponent,
   VisualMapComponent,
   PolarComponent,
+  DataZoomComponent,
+  BrushComponent,
+  ToolboxComponent,
   BarChart,
   LineChart,
   PieChart,
@@ -55,6 +62,7 @@ echarts.use([
   TreemapChart,
   SunburstChart,
   SankeyChart,
+  CandlestickChart,
   CanvasRenderer
 ]);
 
@@ -109,6 +117,8 @@ import {
   createInvestmentFlowSankeyWidget,
   createBudgetAllocationSankeyWidget,
   createMinimalSankeyChartWidget,
+  createCandlestickChartWidget,
+  createAdvancedCandlestickChartWidget,
   createFilterWidget,
   createMetricTiles,
   // Dashboard data
@@ -1017,6 +1027,8 @@ export class OverallComponent implements OnInit, OnDestroy {
     const investmentFlowSankey = createInvestmentFlowSankeyWidget();
     const budgetAllocationSankey = createBudgetAllocationSankeyWidget();
     const minimalSankeyTest = createMinimalSankeyChartWidget();
+    const candlestickChart = createCandlestickChartWidget();
+    const advancedCandlestickChart = createAdvancedCandlestickChartWidget();
     const filterWidget = createFilterWidget();
     const testFilterWidget = createTestFilterWidget();
     const metricTiles = createMetricTiles(INITIAL_DASHBOARD_DATA);
@@ -1053,6 +1065,8 @@ export class OverallComponent implements OnInit, OnDestroy {
         pieAssetAllocation,
         polarChart,
         barMonthlyIncomeVsExpenses,
+        candlestickChart,
+        advancedCandlestickChart,
         // linePortfolioPerformance,
         // scatterRiskVsReturn,
         // gaugeSavingsGoal,
@@ -1207,6 +1221,28 @@ export class OverallComponent implements OnInit, OnDestroy {
             { source: 'Income', target: 'Savings', value: 30 }
           ]
         };
+        
+      // case 'candlestick':
+      //   // This is a candlestick chart - provide sample OHLC data
+      //   console.log('Detected candlestick widget, providing sample OHLC data');
+      //   // Sample OHLC data based on totalValue from dashboard data
+      //   const stockData = [];
+      //   const dateLabels = [];
+      //   const sortedData = this.dashboardData.sort((a, b) => a.month.localeCompare(b.month));
+      //   
+      //   for (let i = 0; i < Math.min(sortedData.length, 15); i++) {
+      //     const baseValue = sortedData[i].totalValue;
+      //     // Generate realistic OHLC data: [open, close, low, high]
+      //     const open = baseValue + (Math.random() - 0.5) * 10;
+      //     const close = open + (Math.random() - 0.5) * 15;
+      //     const low = Math.min(open, close) - Math.random() * 5;
+      //     const high = Math.max(open, close) + Math.random() * 5;
+      //     
+      //     stockData.push([open, close, low, high]);
+      //     dateLabels.push(`2024-01-${String(i + 1).padStart(2, '0')}`);
+      //   }
+      //   
+      //   return { data: stockData, xAxisData: dateLabels };
         
       default:
         console.warn(`Unknown chart type: ${seriesType}`);
