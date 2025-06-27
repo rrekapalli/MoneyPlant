@@ -4,6 +4,9 @@
 // Base abstract class
 export * from './apache-echart-builder';
 
+// Chart configurations
+export * from './chart-configurations';
+
 // Specific chart builders
 export * from './pie';
 export * from './bar';

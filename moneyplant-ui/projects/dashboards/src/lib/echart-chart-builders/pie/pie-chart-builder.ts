@@ -1,6 +1,7 @@
 import { IWidget, WidgetBuilder } from '../../../public-api';
 import { EChartsOption } from 'echarts';
-import { ApacheEchartBuilder } from '../apache-echart-builder';
+import { ApacheEchartBuilder, ConfigurableChartBuilder } from '../apache-echart-builder';
+import { PieChartConfiguration, ChartConfiguration } from '../chart-configurations';
 
 export interface PieChartData {
   value: number;
@@ -12,6 +13,9 @@ export interface PieChartSeriesOptions {
   type?: string;
   radius?: string | string[];
   center?: string | string[];
+  roseType?: string;
+  startAngle?: number;
+  endAngle?: number;
   itemStyle?: {
     borderRadius?: number;
     color?: string | string[];
@@ -40,35 +44,56 @@ export interface PieChartOptions extends EChartsOption {
 }
 
 /**
- * Pie Chart Builder extending the generic ApacheEchartBuilder
+ * Enhanced Pie Chart Builder with configurable presets
  * 
  * Usage examples:
  * 
- * // Basic usage with default options
+ * // Using default configuration
  * const widget = PieChartBuilder.create()
  *   .setData(initialData)
  *   .setHeader('Asset Allocation')
  *   .setPosition({ x: 0, y: 0, cols: 4, rows: 4 })
  *   .build();
  * 
- * // Advanced usage with custom options
+ * // Using a preset configuration
  * const widget = PieChartBuilder.create()
- *   .setData(initialData)
- *   .setTitle('Portfolio Distribution', 'As of December 2024')
- *   .setRadius(['40%', '70%'])
- *   .setCenter(['50%', '60%'])
- *   .setLabelFormatter('{b}: {c} ({d}%)')
- *   .setColors(['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de'])
- *   .setTooltip('item', '{b}: {c} ({d}%)')
- *   .setLegend('horizontal', 'bottom')
- *   .setHeader('Custom Pie Chart')
+ *   .useConfiguration(PieChartConfiguration.FINANCIAL)
+ *   .setData(data)
+ *   .setHeader('Portfolio Distribution')
  *   .setPosition({ x: 0, y: 0, cols: 6, rows: 4 })
  *   .build();
  * 
- * // Update widget data dynamically
- * PieChartBuilder.updateData(widget, newData);
+ * // Creating with custom configuration callback
+ * const widget = PieChartBuilder.create()
+ *   .createWithCustomConfig(builder => 
+ *     builder
+ *       .setRadius(['40%', '70%'])
+ *       .setColors(['#5470c6', '#91cc75', '#fac858'])
+ *       .setTitle('Custom Pie Chart')
+ *   )
+ *   .setData(data)
+ *   .build();
+ * 
+ * // Creating multiple variations
+ * const widgets = PieChartBuilder.createVariations(() => PieChartBuilder.create(), [
+ *   {
+ *     name: 'donut',
+ *     preset: PieChartConfiguration.DONUT,
+ *     config: builder => builder.setHeader('Donut Chart').setData(data1)
+ *   },
+ *   {
+ *     name: 'rose',
+ *     preset: PieChartConfiguration.ROSE,
+ *     config: builder => builder.setHeader('Rose Chart').setData(data2)
+ *   }
+ * ]);
+ * 
+ * // Using factory pattern
+ * const pieChartFactory = PieChartBuilder.create().createFactory();
+ * const widget1 = pieChartFactory(data1, builder => builder.useConfiguration(PieChartConfiguration.DONUT));
+ * const widget2 = pieChartFactory(data2, builder => builder.useConfiguration(PieChartConfiguration.ROSE));
  */
-export class PieChartBuilder extends ApacheEchartBuilder<PieChartOptions, PieChartSeriesOptions> {
+export class PieChartBuilder extends ConfigurableChartBuilder<PieChartOptions, PieChartSeriesOptions> {
   protected override seriesOptions: PieChartSeriesOptions;
 
   private constructor() {
@@ -81,6 +106,173 @@ export class PieChartBuilder extends ApacheEchartBuilder<PieChartOptions, PieCha
    */
   static create(): PieChartBuilder {
     return new PieChartBuilder();
+  }
+
+  /**
+   * Initialize predefined configuration presets
+   */
+  protected override initializeDefaultConfigurations(): void {
+    // Default configuration
+    this.addConfiguration(PieChartConfiguration.DEFAULT, this.getDefaultOptions(), this.getDefaultSeriesOptions());
+
+    // Financial pie chart configuration
+    this.addConfiguration(PieChartConfiguration.FINANCIAL, {
+      ...this.getDefaultOptions(),
+      tooltip: {
+        trigger: 'item',
+        formatter: '{b}: ${c} ({d}%)',
+        backgroundColor: 'rgba(50, 50, 50, 0.9)',
+        borderColor: '#777',
+        textStyle: { color: '#fff' }
+      },
+      legend: {
+        show: true,
+        orient: 'horizontal',
+        left: 'center',
+        bottom: '10%',
+        textStyle: { fontSize: 12 }
+      }
+    }, {
+      ...this.getDefaultSeriesOptions(),
+      radius: ['40%', '70%'],
+      itemStyle: {
+        borderRadius: 8,
+        borderColor: '#fff',
+        borderWidth: 2
+      },
+      label: {
+        formatter: '{b}\n{d}%',
+        fontSize: 11,
+        color: '#333'
+      }
+    });
+
+    // Donut chart configuration
+    this.addConfiguration(PieChartConfiguration.DONUT, {
+      ...this.getDefaultOptions(),
+      tooltip: {
+        trigger: 'item',
+        formatter: '{b}: {c} ({d}%)'
+      },
+      legend: {
+        show: true,
+        orient: 'vertical',
+        left: 'right',
+        top: 'middle'
+      }
+    }, {
+      ...this.getDefaultSeriesOptions(),
+      radius: ['50%', '80%'],
+      center: ['40%', '50%'],
+      itemStyle: {
+        borderRadius: 10
+      },
+      label: {
+        show: false
+      }
+    });
+
+    // Rose (Nightingale) chart configuration
+    this.addConfiguration(PieChartConfiguration.ROSE, {
+      ...this.getDefaultOptions(),
+      tooltip: {
+        trigger: 'item',
+        formatter: '{b}: {c} ({d}%)'
+      },
+      legend: {
+        show: true,
+        orient: 'horizontal',
+        left: 'center',
+        bottom: '5%'
+      }
+    }, {
+      ...this.getDefaultSeriesOptions(),
+      radius: ['20%', '80%'],
+      roseType: 'area',
+      itemStyle: {
+        borderRadius: 5,
+        borderColor: '#fff',
+        borderWidth: 1
+      },
+      label: {
+        show: true,
+        formatter: '{b}',
+        position: 'outside'
+      }
+    });
+
+    // Nested pie chart configuration
+    this.addConfiguration(PieChartConfiguration.NESTED, {
+      ...this.getDefaultOptions(),
+      tooltip: {
+        trigger: 'item',
+        formatter: '{b}: {c} ({d}%)'
+      },
+      legend: {
+        show: true,
+        orient: 'horizontal',
+        left: 'center',
+        top: '5%'
+      }
+    }, {
+      ...this.getDefaultSeriesOptions(),
+      radius: ['30%', '50%'],
+      center: ['50%', '60%'],
+      label: {
+        show: true,
+        formatter: '{b}\n{d}%',
+        position: 'inner'
+      }
+    });
+
+    // Semi-circle chart configuration
+    this.addConfiguration(PieChartConfiguration.SEMI_CIRCLE, {
+      ...this.getDefaultOptions(),
+      tooltip: {
+        trigger: 'item',
+        formatter: '{b}: {c} ({d}%)'
+      },
+      legend: {
+        show: true,
+        orient: 'horizontal',
+        left: 'center',
+        bottom: '20%'
+      }
+    }, {
+      ...this.getDefaultSeriesOptions(),
+      radius: ['40%', '80%'],
+      center: ['50%', '70%'],
+      startAngle: 180,
+      endAngle: 360,
+      itemStyle: {
+        borderRadius: 5
+      },
+      label: {
+        show: true,
+        formatter: '{b}\n{d}%'
+      }
+    });
+
+    // Minimal configuration
+    this.addConfiguration(PieChartConfiguration.MINIMAL, {
+      ...this.getDefaultOptions(),
+      tooltip: {
+        trigger: 'item',
+        formatter: '{b}: {d}%'
+      },
+      legend: {
+        show: false
+      }
+    }, {
+      ...this.getDefaultSeriesOptions(),
+      radius: ['0%', '60%'],
+      itemStyle: {
+        borderRadius: 2
+      },
+      label: {
+        show: false
+      }
+    });
   }
 
   /**

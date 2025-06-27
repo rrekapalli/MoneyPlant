@@ -1,6 +1,7 @@
 import { IWidget, WidgetBuilder } from '../../../public-api';
 import { EChartsOption } from 'echarts';
-import { ApacheEchartBuilder } from '../apache-echart-builder';
+import { ApacheEchartBuilder, ConfigurableChartBuilder } from '../apache-echart-builder';
+import { GaugeChartConfiguration, ChartConfiguration } from '../chart-configurations';
 
 export interface GaugeChartData {
   value: number;
@@ -109,7 +110,7 @@ export interface GaugeChartOptions extends EChartsOption {
  * // Update widget data dynamically
  * GaugeChartBuilder.updateData(widget, newData);
  */
-export class GaugeChartBuilder extends ApacheEchartBuilder<GaugeChartOptions, GaugeChartSeriesOptions> {
+export class GaugeChartBuilder extends ConfigurableChartBuilder<GaugeChartOptions, GaugeChartSeriesOptions> {
   protected override seriesOptions: GaugeChartSeriesOptions;
 
   private constructor() {
@@ -122,6 +123,131 @@ export class GaugeChartBuilder extends ApacheEchartBuilder<GaugeChartOptions, Ga
    */
   static create(): GaugeChartBuilder {
     return new GaugeChartBuilder();
+  }
+
+  /**
+   * Initialize predefined configuration presets
+   */
+  protected override initializeDefaultConfigurations(): void {
+    // Default configuration
+    this.addConfiguration(GaugeChartConfiguration.DEFAULT, this.getDefaultOptions(), this.getDefaultSeriesOptions());
+
+    // Performance monitoring configuration
+    this.addConfiguration(GaugeChartConfiguration.PERFORMANCE, {
+      ...this.getDefaultOptions(),
+      tooltip: {
+        trigger: 'item',
+        formatter: '{b}: {c}%',
+      }
+    }, {
+      ...this.getDefaultSeriesOptions(),
+      axisLine: {
+        lineStyle: {
+          width: 30,
+          color: [[0.3, '#ff6e76'], [0.7, '#fddd60'], [1, '#58d9f9']],
+        },
+      },
+      detail: {
+        show: true,
+        offsetCenter: [0, 40],
+        color: '#ff6e76',
+        fontSize: 30,
+        formatter: '{value}%'
+      }
+    });
+
+    // Minimal configuration
+    this.addConfiguration(GaugeChartConfiguration.MINIMAL, {
+      ...this.getDefaultOptions(),
+      tooltip: { trigger: 'item' }
+    }, {
+      ...this.getDefaultSeriesOptions(),
+      axisLine: {
+        lineStyle: {
+          width: 10,
+          color: [[1, '#E6EBF8']],
+        },
+      },
+      progress: {
+        show: true,
+        width: 8,
+      },
+      pointer: { show: false },
+      axisTick: { show: false },
+      splitLine: { show: false },
+      axisLabel: { show: false }
+    });
+
+    // Dashboard KPI configuration
+    this.addConfiguration(GaugeChartConfiguration.DASHBOARD_KPI, {
+      ...this.getDefaultOptions()
+    }, {
+      ...this.getDefaultSeriesOptions(),
+      radius: '90%',
+      center: ['50%', '55%'],
+      startAngle: 200,
+      endAngle: -20,
+      progress: {
+        show: true,
+        width: 20,
+      },
+      detail: {
+        show: true,
+        offsetCenter: [0, 60],
+        fontSize: 24,
+        formatter: '{value}%'
+      }
+    });
+
+    // Speedometer configuration
+    this.addConfiguration(GaugeChartConfiguration.SPEEDOMETER, {
+      ...this.getDefaultOptions()
+    }, {
+      ...this.getDefaultSeriesOptions(),
+      startAngle: 180,
+      endAngle: 0,
+      center: ['50%', '75%'],
+      radius: '90%',
+      pointer: {
+        show: true,
+        length: '75%',
+        width: 4,
+      },
+      detail: {
+        show: true,
+        offsetCenter: [0, -20],
+        fontSize: 16,
+        formatter: '{value} km/h'
+      }
+    });
+
+    // Progress configuration
+    this.addConfiguration(GaugeChartConfiguration.PROGRESS, {
+      ...this.getDefaultOptions()
+    }, {
+      ...this.getDefaultSeriesOptions(),
+      startAngle: 90,
+      endAngle: -270,
+      pointer: { show: false },
+      progress: {
+        show: true,
+        width: 18,
+      },
+      axisLine: {
+        lineStyle: {
+          width: 18,
+        },
+      },
+      axisTick: { show: false },
+      splitLine: { show: false },
+      axisLabel: { show: false },
+      detail: {
+        show: true,
+        offsetCenter: [0, 0],
+        fontSize: 40,
+        formatter: '{value}%'
+      }
+    });
   }
 
   /**

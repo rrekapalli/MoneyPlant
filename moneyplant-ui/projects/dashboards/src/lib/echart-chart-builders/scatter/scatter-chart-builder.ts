@@ -1,6 +1,7 @@
 import { IWidget, WidgetBuilder } from '../../../public-api';
 import { EChartsOption } from 'echarts';
-import { ApacheEchartBuilder } from '../apache-echart-builder';
+import { ApacheEchartBuilder, ConfigurableChartBuilder } from '../apache-echart-builder';
+import { ScatterChartConfiguration, ChartConfiguration } from '../chart-configurations';
 
 export interface ScatterChartData {
   value: [number, number]; // [x, y] coordinates
@@ -19,11 +20,20 @@ export interface ScatterChartSeriesOptions {
   data?: ScatterChartData[];
   symbolSize?: number | Function;
   symbol?: string;
+  sampling?: string;
+  coordinateSystem?: string;
   itemStyle?: {
     color?: string | string[];
     opacity?: number;
     borderColor?: string;
     borderWidth?: number;
+  };
+  label?: {
+    show?: boolean;
+    position?: string;
+    formatter?: string;
+    fontSize?: number;
+    color?: string;
   };
   emphasis?: {
     focus?: string;
@@ -31,12 +41,19 @@ export interface ScatterChartSeriesOptions {
       shadowBlur?: number;
       shadowOffsetX?: number;
       shadowColor?: string;
+      borderColor?: string;
+      borderWidth?: number;
     };
   };
   large?: boolean;
   largeThreshold?: number;
   progressive?: number;
   progressiveThreshold?: number;
+  encode?: {
+    x?: number | string;
+    y?: number | string;
+    tooltip?: number[];
+  };
 }
 
 export interface ScatterChartOptions extends EChartsOption {
@@ -62,11 +79,11 @@ export interface ScatterChartOptions extends EChartsOption {
 }
 
 /**
- * Scatter Chart Builder extending the generic ApacheEchartBuilder
+ * Enhanced Scatter Chart Builder with configurable presets
  * 
  * Usage examples:
  * 
- * // Basic usage with default options
+ * // Using default configuration
  * const data = [
  *   { value: [10, 20], name: 'Point 1' },
  *   { value: [15, 25], name: 'Point 2' },
@@ -78,25 +95,46 @@ export interface ScatterChartOptions extends EChartsOption {
  *   .setPosition({ x: 0, y: 0, cols: 6, rows: 4 })
  *   .build();
  * 
- * // Advanced usage with custom options
+ * // Using a preset configuration
  * const widget = ScatterChartBuilder.create()
+ *   .useConfiguration(ScatterChartConfiguration.CORRELATION)
  *   .setData(data)
- *   .setTitle('Portfolio Risk vs Return', 'Scatter Analysis')
- *   .setXAxisName('Risk')
- *   .setYAxisName('Return')
- *   .setSymbol('circle', 10)
- *   .setColors(['#5470c6', '#91cc75', '#fac858'])
- *   .setLargeScatter(true, 2000)
- *   .setTooltip('item', '{b}: ({c})')
- *   .setLegend('horizontal', 'bottom')
- *   .setHeader('Risk-Return Analysis')
+ *   .setHeader('Correlation Analysis')
  *   .setPosition({ x: 0, y: 0, cols: 8, rows: 4 })
  *   .build();
  * 
- * // Update widget data dynamically
- * ScatterChartBuilder.updateData(widget, newData);
+ * // Creating with custom configuration callback
+ * const widget = ScatterChartBuilder.create()
+ *   .createWithCustomConfig(builder => 
+ *     builder
+ *       .setSymbol('circle', 12)
+ *       .setXAxisName('Risk')
+ *       .setYAxisName('Return')
+ *       .setTitle('Custom Scatter Plot')
+ *   )
+ *   .setData(data)
+ *   .build();
+ * 
+ * // Creating multiple variations
+ * const widgets = ScatterChartBuilder.createVariations(() => ScatterChartBuilder.create(), [
+ *   {
+ *     name: 'bubble',
+ *     preset: ScatterChartConfiguration.BUBBLE,
+ *     config: builder => builder.setHeader('Bubble Chart').setData(data1)
+ *   },
+ *   {
+ *     name: 'clustering',
+ *     preset: ScatterChartConfiguration.CLUSTERING,
+ *     config: builder => builder.setHeader('Cluster Analysis').setData(data2)
+ *   }
+ * ]);
+ * 
+ * // Using factory pattern
+ * const scatterChartFactory = ScatterChartBuilder.create().createFactory();
+ * const widget1 = scatterChartFactory(data1, builder => builder.useConfiguration(ScatterChartConfiguration.CORRELATION));
+ * const widget2 = scatterChartFactory(data2, builder => builder.useConfiguration(ScatterChartConfiguration.BUBBLE));
  */
-export class ScatterChartBuilder extends ApacheEchartBuilder<ScatterChartOptions, ScatterChartSeriesOptions> {
+export class ScatterChartBuilder extends ConfigurableChartBuilder<ScatterChartOptions, ScatterChartSeriesOptions> {
   protected override seriesOptions: ScatterChartSeriesOptions;
 
   private constructor() {
@@ -109,6 +147,129 @@ export class ScatterChartBuilder extends ApacheEchartBuilder<ScatterChartOptions
    */
   static create(): ScatterChartBuilder {
     return new ScatterChartBuilder();
+  }
+
+  /**
+   * Initialize predefined configuration presets
+   */
+  protected override initializeDefaultConfigurations(): void {
+    // Default configuration
+    this.addConfiguration(ScatterChartConfiguration.DEFAULT, this.getDefaultOptions(), this.getDefaultSeriesOptions());
+
+    // Performance monitoring configuration
+    this.addConfiguration(ScatterChartConfiguration.PERFORMANCE, {
+      ...this.getDefaultOptions(),
+      grid: {
+        containLabel: true,
+        top: '8%',
+        left: '5%',
+        right: '5%',
+        bottom: '10%',
+      },
+      tooltip: {
+        trigger: 'item',
+        formatter: '{b}: Performance {c}',
+      }
+    }, {
+      ...this.getDefaultSeriesOptions(),
+      symbolSize: 6,
+      itemStyle: {
+        color: '#ff6b6b',
+        opacity: 0.7,
+      }
+    });
+
+    // Minimal/clean configuration
+    this.addConfiguration(ScatterChartConfiguration.MINIMAL, {
+      ...this.getDefaultOptions(),
+      grid: {
+        containLabel: true,
+        top: '5%',
+        left: '2%',
+        right: '2%',
+        bottom: '5%',
+      },
+      tooltip: { trigger: 'item' },
+      legend: { show: false }
+    }, {
+      ...this.getDefaultSeriesOptions(),
+      symbolSize: 4,
+      itemStyle: {
+        opacity: 0.6,
+      }
+    });
+
+    // Bubble chart configuration
+    this.addConfiguration(ScatterChartConfiguration.BUBBLE, {
+      ...this.getDefaultOptions(),
+      tooltip: {
+        trigger: 'item',
+        formatter: function(params: any) {
+          return `${params.name}<br/>X: ${params.value[0]}<br/>Y: ${params.value[1]}<br/>Size: ${params.value[2] || 'N/A'}`;
+        }
+      }
+    }, {
+      ...this.getDefaultSeriesOptions(),
+      symbolSize: function(data: any) {
+        return Math.sqrt(data[2] || 10) * 2;
+      },
+      itemStyle: {
+        opacity: 0.7,
+      }
+    });
+
+    // Correlation analysis configuration
+    this.addConfiguration(ScatterChartConfiguration.CORRELATION, {
+      ...this.getDefaultOptions(),
+      tooltip: {
+        trigger: 'item',
+        formatter: '{b}: ({c})',
+      },
+      xAxis: {
+        type: 'value',
+        nameLocation: 'middle',
+        scale: true,
+        axisLabel: { color: '#666' },
+        name: 'Variable X'
+      },
+      yAxis: {
+        type: 'value',
+        nameLocation: 'middle',
+        scale: true,
+        axisLabel: { color: '#666' },
+        name: 'Variable Y'
+      }
+    }, {
+      ...this.getDefaultSeriesOptions(),
+      symbolSize: 8,
+      itemStyle: {
+        color: '#5470c6',
+        opacity: 0.6,
+      }
+    });
+
+    // Clustering configuration
+    this.addConfiguration(ScatterChartConfiguration.CLUSTERING, {
+      ...this.getDefaultOptions(),
+      legend: {
+        show: true,
+        orient: 'horizontal',
+        left: 'center',
+        top: '5%',
+      },
+      tooltip: {
+        trigger: 'item',
+        formatter: '{a}<br/>{b}: ({c})',
+      }
+    }, {
+      ...this.getDefaultSeriesOptions(),
+      symbolSize: 10,
+      itemStyle: {
+        opacity: 0.8,
+        borderWidth: 1,
+        borderColor: '#fff'
+      }
+    });
   }
 
   /**

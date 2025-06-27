@@ -1,12 +1,30 @@
 // Widget creation functions
-export { createAssetAllocationWidget } from './asset-allocation-widget';
+export { 
+  createAssetAllocationWidget,
+  createDonutAssetAllocationWidget,
+  createMinimalAssetAllocationWidget,
+  createAssetAllocationVariations,
+  createPieChartFactory,
+  PieChartWidgetFactory,
+  getAvailablePieChartConfigurations
+} from './asset-allocation-widget';
 export { createMonthlyIncomeExpensesWidget } from './monthly-income-expenses-widget';
 export { createPortfolioPerformanceWidget } from './portfolio-performance-widget';
 export { createRiskReturnWidget } from './risk-return-widget';
 export { createSavingsGoalWidget } from './savings-goal-widget';
 export { createSpendingHeatmapWidget } from './spending-heatmap-widget';
 export { createInvestmentDistributionWidget } from './investment-distribution-widget';
-export { createAreaChartWidget, createStackedAreaChartWidget, createLargeScaleAreaChartWidget } from './area-chart-widget';
+export { 
+  createAreaChartWidget, 
+  createFinancialAreaChartWidget,
+  createPerformanceAreaChartWidget,
+  createStackedAreaChartWidget,
+  createAreaChartVariations,
+  createCustomAreaChartWidget,
+  createAreaChartFactory,
+  AreaChartWidgetFactory,
+  getAvailableAreaChartConfigurations
+} from './area-chart-widget';
 export { createPolarChartWidget, createMultiSeriesPolarChartWidget, createRadarPolarChartWidget } from './polar-chart-widget';
 export { createStackedAreaChartWidget as createNewStackedAreaChartWidget, createPerformanceStackedAreaChartWidget, createMarketTrendStackedAreaChartWidget } from './stacked-area-chart-widget';
 export { createTreemapChartWidget, createExpenseTreemapWidget, createLargeScaleTreemapWidget } from './treemap-chart-widget';

@@ -1,6 +1,7 @@
 import { IWidget, WidgetBuilder } from '../../public-api';
 import { v4 as uuidv4 } from 'uuid';
 import { EChartsOption } from 'echarts';
+import { ChartConfiguration, ChartConfigurationHelper } from './chart-configurations';
 
 /**
  * Abstract base class for Apache ECharts builders
@@ -434,4 +435,149 @@ export interface CommonChartOptions {
   series?: any[];
   animation?: boolean | any;
   backgroundColor?: string;
+}
+
+/**
+ * Enhanced configurable chart builder that extends ApacheEchartBuilder
+ * Provides a more flexible and generic approach to chart creation with
+ * configurable defaults and runtime customization
+ */
+export abstract class ConfigurableChartBuilder<
+  T extends EChartsOption = EChartsOption, 
+  TSeries extends { [key: string]: any } = any
+> extends ApacheEchartBuilder<T, TSeries> {
+  
+  protected defaultConfigurations: Map<string, Partial<T>> = new Map();
+  protected seriesConfigurations: Map<string, Partial<TSeries>> = new Map();
+  protected currentConfiguration: string = ChartConfiguration.DEFAULT;
+
+  protected constructor() {
+    super();
+    this.initializeDefaultConfigurations();
+  }
+
+  /**
+   * Abstract method to initialize default configurations
+   * Subclasses should set up their default configuration presets
+   */
+  protected abstract initializeDefaultConfigurations(): void;
+
+  /**
+   * Add a new configuration preset
+   */
+  addConfiguration(name: string, chartOptions: Partial<T>, seriesOptions?: Partial<TSeries>): this {
+    this.defaultConfigurations.set(name, chartOptions);
+    if (seriesOptions) {
+      this.seriesConfigurations.set(name, seriesOptions);
+    }
+    return this;
+  }
+
+  /**
+   * Use a specific configuration preset
+   */
+  useConfiguration(name: string): this {
+    if (!this.defaultConfigurations.has(name)) {
+      console.warn(`Configuration '${name}' not found. Using default configuration.`);
+      name = ChartConfiguration.DEFAULT;
+    }
+    
+    this.currentConfiguration = name;
+    
+    // Apply chart options
+    const chartConfig = this.defaultConfigurations.get(name);
+    if (chartConfig) {
+      this.chartOptions = { ...this.chartOptions, ...chartConfig };
+    }
+    
+    // Apply series options
+    const seriesConfig = this.seriesConfigurations.get(name);
+    if (seriesConfig) {
+      this.seriesOptions = { ...this.seriesOptions, ...seriesConfig };
+    }
+    
+    return this;
+  }
+
+  /**
+   * Get available configuration names
+   */
+  getAvailableConfigurations(): string[] {
+    return Array.from(this.defaultConfigurations.keys());
+  }
+
+  /**
+   * Create a chart with custom configuration callback
+   */
+  createWithCustomConfig(
+    configCallback: (builder: this) => this,
+    preset: string = ChartConfiguration.DEFAULT
+  ): this {
+    this.useConfiguration(preset);
+    return configCallback(this);
+  }
+
+  /**
+   * Create multiple chart variations with different configurations
+   */
+  static createVariations<TBuilder extends ConfigurableChartBuilder<any, any>>(
+    builderFactory: () => TBuilder,
+    configurations: Array<{
+      name: string;
+      config: (builder: TBuilder) => TBuilder;
+      preset?: string;
+    }>
+      ): IWidget[] {
+      return configurations.map(({ config, preset = ChartConfiguration.DEFAULT }) => {
+        const builder = builderFactory();
+        return builder.createWithCustomConfig(config, preset).build();
+      });
+  }
+
+  /**
+   * Merge configurations (useful for creating composite configurations)
+   */
+  mergeConfigurations(baseConfig: string, overrideConfig: string, newName: string): this {
+    const base = this.defaultConfigurations.get(baseConfig) || {};
+    const override = this.defaultConfigurations.get(overrideConfig) || {};
+    const baseSeries = this.seriesConfigurations.get(baseConfig) || {};
+    const overrideSeries = this.seriesConfigurations.get(overrideConfig) || {};
+
+    this.addConfiguration(
+      newName,
+      { ...base, ...override },
+      { ...baseSeries, ...overrideSeries }
+    );
+
+    return this;
+  }
+
+  /**
+   * Apply runtime customizations without changing the base configuration
+   */
+  withRuntimeCustomization(customizer: (chartOptions: Partial<T>, seriesOptions: TSeries) => void): this {
+    customizer(this.chartOptions, this.seriesOptions);
+    return this;
+  }
+
+  /**
+   * Create a chart factory function that can be reused
+   */
+  createFactory(): (data?: any, customizations?: (builder: this) => this) => IWidget {
+    return (data?: any, customizations?: (builder: this) => this) => {
+      // Create a new instance to avoid state pollution
+      const BuilderClass = this.constructor as new () => this;
+      let builder = new BuilderClass();
+      
+      if (data) {
+        builder = builder.setData(data);
+      }
+      
+      if (customizations) {
+        builder = customizations(builder);
+      }
+      
+      return builder.build();
+    };
+  }
 } 

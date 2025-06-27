@@ -1,6 +1,7 @@
 import { IWidget, WidgetBuilder } from '../../../public-api';
 import { EChartsOption } from 'echarts';
-import { ApacheEchartBuilder } from '../apache-echart-builder';
+import { ApacheEchartBuilder, ConfigurableChartBuilder } from '../apache-echart-builder';
+import { AreaChartConfiguration, ChartConfiguration } from '../chart-configurations';
 
 export interface AreaChartData {
   name: string;
@@ -38,9 +39,14 @@ export interface AreaChartSeriesOptions {
       shadowOffsetX?: number;
       shadowColor?: string;
     };
+    areaStyle?: {
+      opacity?: number;
+    };
   };
   stack?: string;
   sampling?: string;
+  large?: boolean;
+  largeThreshold?: number;
 }
 
 export interface AreaChartOptions extends EChartsOption {
@@ -66,11 +72,11 @@ export interface AreaChartOptions extends EChartsOption {
 }
 
 /**
- * Area Chart Builder extending the generic ApacheEchartBuilder
+ * Enhanced Area Chart Builder with configurable presets
  * 
  * Usage examples:
  * 
- * // Basic usage with default options
+ * // Using default configuration
  * const widget = AreaChartBuilder.create()
  *   .setData([10, 20, 30, 40, 50])
  *   .setXAxisData(['Jan', 'Feb', 'Mar', 'Apr', 'May'])
@@ -78,37 +84,46 @@ export interface AreaChartOptions extends EChartsOption {
  *   .setPosition({ x: 0, y: 0, cols: 6, rows: 4 })
  *   .build();
  * 
- * // Advanced usage with custom options
+ * // Using a preset configuration
  * const widget = AreaChartBuilder.create()
- *   .setData([10, 20, 30, 40, 50])
- *   .setXAxisData(['Jan', 'Feb', 'Mar', 'Apr', 'May'])
- *   .setTitle('Portfolio Performance', 'Last 5 months')
- *   .setSmooth(true)
- *   .setAreaStyle('#5470c6', 0.3)
- *   .setLineStyle(3, '#5470c6', 'solid')
- *   .setSymbol('circle', 8)
- *   .setTooltip('axis', '{b}: {c}')
- *   .setLegend('horizontal', 'bottom')
- *   .setHeader('Performance Chart')
+ *   .useConfiguration('financial')
+ *   .setData(data)
+ *   .setXAxisData(xData)
+ *   .setHeader('Financial Overview')
  *   .setPosition({ x: 0, y: 0, cols: 8, rows: 4 })
  *   .build();
  * 
- * // Multi-series area chart
+ * // Creating with custom configuration callback
  * const widget = AreaChartBuilder.create()
- *   .setData([
- *     { name: 'Series 1', data: [10, 20, 30, 40, 50] },
- *     { name: 'Series 2', data: [5, 15, 25, 35, 45] }
- *   ])
- *   .setXAxisData(['Jan', 'Feb', 'Mar', 'Apr', 'May'])
- *   .setStack('total')
- *   .setHeader('Stacked Area Chart')
- *   .setPosition({ x: 0, y: 0, cols: 8, rows: 4 })
+ *   .createWithCustomConfig(builder => 
+ *     builder
+ *       .setSmooth(true)
+ *       .setGradientAreaStyle('#5470c6', '#91cc75')
+ *       .setTitle('Custom Chart')
+ *   )
+ *   .setData(data)
  *   .build();
  * 
- * // Update widget data dynamically
- * AreaChartBuilder.updateData(widget, newData);
+ * // Creating multiple variations
+ * const widgets = AreaChartBuilder.createVariations([
+ *   {
+ *     name: 'revenue',
+ *     preset: 'financial',
+ *     config: builder => builder.setHeader('Revenue').setData(revenueData)
+ *   },
+ *   {
+ *     name: 'performance',
+ *     preset: 'performance',
+ *     config: builder => builder.setHeader('Performance').setData(perfData)
+ *   }
+ * ]);
+ * 
+ * // Using factory pattern
+ * const areaChartFactory = AreaChartBuilder.create().createFactory();
+ * const widget1 = areaChartFactory(data1, builder => builder.setSmooth(true));
+ * const widget2 = areaChartFactory(data2, builder => builder.setStack('total'));
  */
-export class AreaChartBuilder extends ApacheEchartBuilder<AreaChartOptions, AreaChartSeriesOptions> {
+export class AreaChartBuilder extends ConfigurableChartBuilder<AreaChartOptions, AreaChartSeriesOptions> {
   protected override seriesOptions: AreaChartSeriesOptions;
   private xAxisData: string[] = [];
 
@@ -122,6 +137,185 @@ export class AreaChartBuilder extends ApacheEchartBuilder<AreaChartOptions, Area
    */
   static create(): AreaChartBuilder {
     return new AreaChartBuilder();
+  }
+
+  /**
+   * Initialize predefined configuration presets
+   */
+  protected override initializeDefaultConfigurations(): void {
+    // Default configuration
+    this.addConfiguration(AreaChartConfiguration.DEFAULT, this.getDefaultOptions(), this.getDefaultSeriesOptions());
+
+    // Financial chart configuration
+    this.addConfiguration(AreaChartConfiguration.FINANCIAL, {
+      ...this.getDefaultOptions(),
+      grid: {
+        containLabel: true,
+        top: '10%',
+        left: '8%',
+        right: '8%',
+        bottom: '12%',
+      },
+      tooltip: {
+        trigger: 'axis',
+        formatter: '{b}: ${c}K',
+        backgroundColor: 'rgba(50, 50, 50, 0.9)',
+        borderColor: '#777',
+        textStyle: { color: '#fff' }
+      }
+    }, {
+      ...this.getDefaultSeriesOptions(),
+      smooth: true,
+      areaStyle: {
+        color: {
+          type: 'linear',
+          x: 0, y: 0, x2: 0, y2: 1,
+          colorStops: [
+            { offset: 0, color: '#4CAF50' },
+            { offset: 1, color: 'rgba(76, 175, 80, 0.1)' }
+          ],
+        },
+        opacity: 0.8,
+      },
+      lineStyle: { width: 3, color: '#4CAF50' }
+    });
+
+    // Performance monitoring configuration
+    this.addConfiguration(AreaChartConfiguration.PERFORMANCE, {
+      ...this.getDefaultOptions(),
+      grid: {
+        containLabel: true,
+        top: '8%',
+        left: '5%',
+        right: '5%',
+        bottom: '10%',
+      },
+      tooltip: {
+        trigger: 'axis',
+        formatter: '{b}: {c}%',
+      }
+    }, {
+      ...this.getDefaultSeriesOptions(),
+      smooth: true,
+      showSymbol: false,
+      sampling: 'average',
+      areaStyle: {
+        color: 'rgba(255, 107, 107, 0.2)',
+        opacity: 0.4,
+      },
+      lineStyle: { width: 2, color: '#ff6b6b' }
+    });
+
+    // Stacked area configuration
+    this.addConfiguration(AreaChartConfiguration.STACKED, {
+      ...this.getDefaultOptions(),
+      legend: {
+        show: true,
+        orient: 'horizontal',
+        left: 'center',
+        top: '5%',
+      }
+    }, {
+      ...this.getDefaultSeriesOptions(),
+      stack: 'total',
+      areaStyle: { opacity: 0.6 }
+    });
+
+    // Minimal/clean configuration
+    this.addConfiguration(AreaChartConfiguration.MINIMAL, {
+      ...this.getDefaultOptions(),
+      grid: {
+        containLabel: true,
+        top: '5%',
+        left: '2%',
+        right: '2%',
+        bottom: '5%',
+      },
+      tooltip: { trigger: 'axis' },
+      legend: { show: false }
+    }, {
+      ...this.getDefaultSeriesOptions(),
+      showSymbol: false,
+      lineStyle: { width: 1 },
+      areaStyle: { opacity: 0.1 }
+    });
+
+    // Smooth gradient configuration
+    this.addConfiguration(AreaChartConfiguration.SMOOTH_GRADIENT, {
+      ...this.getDefaultOptions(),
+      tooltip: {
+        trigger: 'axis',
+        formatter: '{b}: {c}',
+        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+        borderColor: '#ddd',
+        textStyle: { color: '#333' }
+      }
+    }, {
+      ...this.getDefaultSeriesOptions(),
+      smooth: true,
+      areaStyle: {
+        color: {
+          type: 'linear',
+          x: 0, y: 0, x2: 0, y2: 1,
+          colorStops: [
+            { offset: 0, color: 'rgba(84, 112, 198, 0.8)' },
+            { offset: 0.5, color: 'rgba(84, 112, 198, 0.4)' },
+            { offset: 1, color: 'rgba(84, 112, 198, 0.1)' }
+          ],
+        },
+        opacity: 1,
+      },
+      lineStyle: { width: 3, color: '#5470c6' },
+      symbolSize: 8
+    });
+
+    // Multi-series configuration
+    this.addConfiguration(AreaChartConfiguration.MULTI_SERIES, {
+      ...this.getDefaultOptions(),
+      legend: {
+        show: true,
+        orient: 'horizontal',
+        left: 'center',
+        top: '5%',
+        textStyle: { fontSize: 12 }
+      },
+      tooltip: {
+        trigger: 'axis',
+        formatter: function(params: any) {
+          let result = params[0].name + '<br/>';
+          params.forEach((param: any) => {
+            result += param.marker + param.seriesName + ': ' + param.value + '<br/>';
+          });
+          return result;
+        }
+      }
+    }, {
+      ...this.getDefaultSeriesOptions(),
+      areaStyle: { opacity: 0.4 },
+      emphasis: {
+        focus: 'series',
+        areaStyle: { opacity: 0.7 }
+      }
+    });
+
+    // Large dataset configuration
+    this.addConfiguration(AreaChartConfiguration.LARGE_DATASET, {
+      ...this.getDefaultOptions(),
+      animation: false,
+      tooltip: {
+        trigger: 'axis',
+        formatter: '{b}: {c}',
+        renderMode: 'richText'
+      }
+    }, {
+      ...this.getDefaultSeriesOptions(),
+      showSymbol: false,
+      sampling: 'lttb', // Largest-Triangle-Three-Buckets sampling
+      large: true,
+      largeThreshold: 500,
+      areaStyle: { opacity: 0.2 },
+      lineStyle: { width: 1 }
+    });
   }
 
   /**

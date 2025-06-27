@@ -1,20 +1,32 @@
-import { IWidget, PieChartBuilder, PieChartData, IFilterValues, FilterService } from '@dashboards/public-api';
+import { IWidget, PieChartBuilder, PieChartData, IFilterValues, FilterService, PieChartConfiguration } from '@dashboards/public-api';
 
 // Default colors for asset allocation
 export const ASSET_ALLOCATION_COLORS = ['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de'];
 
 /**
- * Create the asset allocation pie chart widget
+ * Create pie chart factory for reusable chart creation
+ */
+export const createPieChartFactory = () => {
+  return PieChartBuilder.create().createFactory();
+};
+
+/**
+ * Create the asset allocation pie chart widget using financial configuration
  */
 export function createAssetAllocationWidget(): IWidget {
   const widget = PieChartBuilder.create()
+    .useConfiguration(PieChartConfiguration.FINANCIAL)
     .setData([]) // Data will be populated from shared dashboard data
     .setHeader('Asset Allocation')
     .setPosition({ x: 0, y: 0, cols: 4, rows: 8 })
     .setColors(ASSET_ALLOCATION_COLORS)
-    .setRadius(['40%', '70%'])
-    .setLabelFormatter('{b}: {c} ({d}%)')
-    .setTooltip('item', '{b}: ${c} ({d}%)')
+    .withRuntimeCustomization((chartOptions, seriesOptions) => {
+      // Custom runtime adjustments for asset allocation
+      seriesOptions.radius = ['40%', '70%'];
+      if (chartOptions.tooltip) {
+        chartOptions.tooltip.formatter = '{b}: ${c} ({d}%)';
+      }
+    })
     .build();
     
   // Add filterColumn configuration
@@ -23,6 +35,84 @@ export function createAssetAllocationWidget(): IWidget {
   }
   
   return widget;
+}
+
+/**
+ * Create a donut-style asset allocation widget
+ */
+export function createDonutAssetAllocationWidget(): IWidget {
+  const widget = PieChartBuilder.create()
+    .useConfiguration(PieChartConfiguration.DONUT)
+    .setData([]) // Data will be populated from shared dashboard data
+    .setHeader('Asset Allocation (Donut)')
+    .setPosition({ x: 4, y: 0, cols: 4, rows: 8 })
+    .setColors(ASSET_ALLOCATION_COLORS)
+    .build();
+    
+  // Add filterColumn configuration
+  if (widget.config) {
+    widget.config.filterColumn = 'assetCategory';
+  }
+  
+  return widget;
+}
+
+/**
+ * Create a minimal asset allocation widget
+ */
+export function createMinimalAssetAllocationWidget(): IWidget {
+  const widget = PieChartBuilder.create()
+    .useConfiguration(PieChartConfiguration.MINIMAL)
+    .setData([]) // Data will be populated from shared dashboard data
+    .setHeader('Asset Allocation (Clean)')
+    .setPosition({ x: 8, y: 0, cols: 4, rows: 8 })
+    .setColors(ASSET_ALLOCATION_COLORS)
+    .build();
+    
+  // Add filterColumn configuration
+  if (widget.config) {
+    widget.config.filterColumn = 'assetCategory';
+  }
+  
+  return widget;
+}
+
+/**
+ * Create multiple pie chart variations using the configurable builder
+ */
+export function createAssetAllocationVariations(): IWidget[] {
+  return PieChartBuilder.createVariations(() => PieChartBuilder.create(), [
+    {
+      name: 'financial-style',
+      config: (builder) => 
+        builder
+          .setData([])
+          .setHeader('Financial Style')
+          .setColors(ASSET_ALLOCATION_COLORS)
+          .setPosition({ x: 0, y: 0, cols: 4, rows: 4 }),
+      preset: PieChartConfiguration.FINANCIAL
+    },
+    {
+      name: 'donut-style',
+      config: (builder) => 
+        builder
+          .setData([])
+          .setHeader('Donut Style')
+          .setColors(ASSET_ALLOCATION_COLORS)
+          .setPosition({ x: 4, y: 0, cols: 4, rows: 4 }),
+      preset: PieChartConfiguration.DONUT
+    },
+    {
+      name: 'minimal-style',
+      config: (builder) => 
+        builder
+          .setData([])
+          .setHeader('Minimal Style')
+          .setColors(ASSET_ALLOCATION_COLORS)
+          .setPosition({ x: 8, y: 0, cols: 4, rows: 4 }),
+      preset: PieChartConfiguration.MINIMAL
+    }
+  ]);
 }
 
 /**
@@ -136,4 +226,64 @@ export function createAssetAllocationFilter(clickedData: any): IFilterValues | n
     value: clickedData.name,
     percentage: clickedData.value?.toString() || '0'
   };
-} 
+}
+
+/**
+ * Demo function showing all available pie chart configurations
+ */
+export function getAvailablePieChartConfigurations(): string[] {
+  return PieChartBuilder.create().getAvailableConfigurations();
+}
+
+/**
+ * Factory-based pie chart creation with different presets
+ */
+export const PieChartWidgetFactory = {
+  /**
+   * Create financial pie chart
+   */
+  createFinancial: (data?: PieChartData[]) => {
+    const factory = createPieChartFactory();
+    return factory(data, (builder) => 
+      builder
+        .useConfiguration(PieChartConfiguration.FINANCIAL)
+        .setColors(ASSET_ALLOCATION_COLORS)
+    );
+  },
+
+  /**
+   * Create donut pie chart
+   */
+  createDonut: (data?: PieChartData[]) => {
+    const factory = createPieChartFactory();
+    return factory(data, (builder) => 
+      builder
+        .useConfiguration(PieChartConfiguration.DONUT)
+        .setColors(ASSET_ALLOCATION_COLORS)
+    );
+  },
+
+  /**
+   * Create rose pie chart
+   */
+  createRose: (data?: PieChartData[]) => {
+    const factory = createPieChartFactory();
+    return factory(data, (builder) => 
+      builder
+        .useConfiguration(PieChartConfiguration.ROSE)
+        .setColors(ASSET_ALLOCATION_COLORS)
+    );
+  },
+
+  /**
+   * Create minimal pie chart
+   */
+  createMinimal: (data?: PieChartData[]) => {
+    const factory = createPieChartFactory();
+    return factory(data, (builder) => 
+      builder
+        .useConfiguration(PieChartConfiguration.MINIMAL)
+        .setColors(ASSET_ALLOCATION_COLORS)
+    );
+  }
+}; 

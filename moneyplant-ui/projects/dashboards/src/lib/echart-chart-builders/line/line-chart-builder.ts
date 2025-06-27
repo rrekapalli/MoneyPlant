@@ -1,6 +1,7 @@
 import { IWidget, WidgetBuilder } from '../../../public-api';
 import { EChartsOption } from 'echarts';
-import { ApacheEchartBuilder } from '../apache-echart-builder';
+import { ApacheEchartBuilder, ConfigurableChartBuilder } from '../apache-echart-builder';
+import { LineChartConfiguration, ChartConfiguration } from '../chart-configurations';
 
 export interface LineChartData {
   name: string;
@@ -15,28 +16,53 @@ export interface LineChartSeriesOptions {
   smooth?: boolean;
   symbol?: string;
   symbolSize?: number;
+  step?: string | boolean;
+  stack?: string;
+  sampling?: string;
+  connectNulls?: boolean;
   lineStyle?: {
     width?: number;
     color?: string;
     type?: string;
+    opacity?: number;
   };
   itemStyle?: {
     color?: string;
     borderColor?: string;
     borderWidth?: number;
-  };
-  areaStyle?: {
-    color?: string;
     opacity?: number;
   };
+  areaStyle?: {
+    color?: string | object;
+    opacity?: number;
+    origin?: string;
+  };
   showSymbol?: boolean;
+  label?: {
+    show?: boolean;
+    position?: string;
+    formatter?: string;
+    fontSize?: number;
+    color?: string;
+  };
   emphasis?: {
     focus?: string;
     itemStyle?: {
       shadowBlur?: number;
       shadowOffsetX?: number;
       shadowColor?: string;
+      borderColor?: string;
+      borderWidth?: number;
     };
+    areaStyle?: {
+      opacity?: number;
+    };
+  };
+  markPoint?: {
+    data?: any[];
+  };
+  markLine?: {
+    data?: any[];
   };
 }
 
@@ -63,11 +89,11 @@ export interface LineChartOptions extends EChartsOption {
 }
 
 /**
- * Line Chart Builder extending the generic ApacheEchartBuilder
+ * Enhanced Line Chart Builder with configurable presets
  * 
  * Usage examples:
  * 
- * // Basic usage with default options
+ * // Using default configuration
  * const widget = LineChartBuilder.create()
  *   .setData([10, 20, 30, 40, 50])
  *   .setXAxisData(['Jan', 'Feb', 'Mar', 'Apr', 'May'])
@@ -75,25 +101,46 @@ export interface LineChartOptions extends EChartsOption {
  *   .setPosition({ x: 0, y: 0, cols: 6, rows: 4 })
  *   .build();
  * 
- * // Advanced usage with custom options
+ * // Using a preset configuration
  * const widget = LineChartBuilder.create()
+ *   .useConfiguration(LineChartConfiguration.FINANCIAL)
  *   .setData([10, 20, 30, 40, 50])
  *   .setXAxisData(['Jan', 'Feb', 'Mar', 'Apr', 'May'])
- *   .setTitle('Portfolio Performance', 'Last 5 months')
- *   .setSmooth(true)
- *   .setAreaStyle('#5470c6', 0.3)
- *   .setLineStyle(3, '#5470c6', 'solid')
- *   .setSymbol('circle', 8)
- *   .setTooltip('axis', '{b}: {c}')
- *   .setLegend('horizontal', 'bottom')
- *   .setHeader('Performance Chart')
+ *   .setHeader('Financial Performance')
  *   .setPosition({ x: 0, y: 0, cols: 8, rows: 4 })
  *   .build();
  * 
- * // Update widget data dynamically
- * LineChartBuilder.updateData(widget, newData);
+ * // Creating with custom configuration callback
+ * const widget = LineChartBuilder.create()
+ *   .createWithCustomConfig(builder => 
+ *     builder
+ *       .setSmooth(true)
+ *       .setAreaStyle('#5470c6', 0.3)
+ *       .setTitle('Custom Line Chart')
+ *   )
+ *   .setData([10, 20, 30, 40, 50])
+ *   .build();
+ * 
+ * // Creating multiple variations
+ * const widgets = LineChartBuilder.createVariations(() => LineChartBuilder.create(), [
+ *   {
+ *     name: 'smooth',
+ *     preset: LineChartConfiguration.SMOOTH,
+ *     config: builder => builder.setHeader('Smooth Line').setData(data1)
+ *   },
+ *   {
+ *     name: 'stepped',
+ *     preset: LineChartConfiguration.STEPPED,
+ *     config: builder => builder.setHeader('Stepped Line').setData(data2)
+ *   }
+ * ]);
+ * 
+ * // Using factory pattern
+ * const lineChartFactory = LineChartBuilder.create().createFactory();
+ * const widget1 = lineChartFactory(data1, builder => builder.useConfiguration(LineChartConfiguration.TIME_SERIES));
+ * const widget2 = lineChartFactory(data2, builder => builder.useConfiguration(LineChartConfiguration.SMOOTH));
  */
-export class LineChartBuilder extends ApacheEchartBuilder<LineChartOptions, LineChartSeriesOptions> {
+export class LineChartBuilder extends ConfigurableChartBuilder<LineChartOptions, LineChartSeriesOptions> {
   protected override seriesOptions: LineChartSeriesOptions;
   private xAxisData: string[] = [];
 
@@ -107,6 +154,158 @@ export class LineChartBuilder extends ApacheEchartBuilder<LineChartOptions, Line
    */
   static create(): LineChartBuilder {
     return new LineChartBuilder();
+  }
+
+  /**
+   * Initialize predefined configuration presets
+   */
+  protected override initializeDefaultConfigurations(): void {
+    // Default configuration
+    this.addConfiguration(LineChartConfiguration.DEFAULT, this.getDefaultOptions(), this.getDefaultSeriesOptions());
+
+    // Financial line chart configuration
+    this.addConfiguration(LineChartConfiguration.FINANCIAL, {
+      ...this.getDefaultOptions(),
+      grid: {
+        containLabel: true,
+        top: '12%',
+        left: '8%',
+        right: '8%',
+        bottom: '15%',
+      },
+      tooltip: {
+        trigger: 'axis',
+        formatter: '{b}: ${c}K',
+        backgroundColor: 'rgba(50, 50, 50, 0.9)',
+        borderColor: '#777',
+        textStyle: { color: '#fff' }
+      }
+    }, {
+      ...this.getDefaultSeriesOptions(),
+      smooth: true,
+      areaStyle: {
+        color: {
+          type: 'linear',
+          x: 0, y: 0, x2: 0, y2: 1,
+          colorStops: [
+            { offset: 0, color: '#4CAF50' },
+            { offset: 1, color: 'rgba(76, 175, 80, 0.1)' }
+          ],
+        },
+        opacity: 0.8,
+      },
+      lineStyle: { width: 3, color: '#4CAF50' },
+      symbolSize: 8
+    });
+
+    // Performance monitoring configuration
+    this.addConfiguration(LineChartConfiguration.PERFORMANCE, {
+      ...this.getDefaultOptions(),
+      grid: {
+        containLabel: true,
+        top: '8%',
+        left: '5%',
+        right: '5%',
+        bottom: '10%',
+      },
+      tooltip: {
+        trigger: 'axis',
+        formatter: '{b}: {c}%',
+      }
+    }, {
+      ...this.getDefaultSeriesOptions(),
+      smooth: true,
+      showSymbol: false,
+      sampling: 'average',
+      lineStyle: { width: 2, color: '#ff6b6b' }
+    });
+
+    // Minimal/clean configuration
+    this.addConfiguration(LineChartConfiguration.MINIMAL, {
+      ...this.getDefaultOptions(),
+      grid: {
+        containLabel: true,
+        top: '5%',
+        left: '2%',
+        right: '2%',
+        bottom: '5%',
+      },
+      tooltip: { trigger: 'axis' },
+      legend: { show: false }
+    }, {
+      ...this.getDefaultSeriesOptions(),
+      showSymbol: false,
+      lineStyle: { width: 1 }
+    });
+
+    // Smooth line configuration
+    this.addConfiguration(LineChartConfiguration.SMOOTH, {
+      ...this.getDefaultOptions(),
+      tooltip: {
+        trigger: 'axis',
+        formatter: '{b}: {c}',
+      }
+    }, {
+      ...this.getDefaultSeriesOptions(),
+      smooth: true,
+      lineStyle: { width: 3 },
+      symbolSize: 8
+    });
+
+    // Stepped line configuration
+    this.addConfiguration(LineChartConfiguration.STEPPED, {
+      ...this.getDefaultOptions(),
+      tooltip: {
+        trigger: 'axis',
+        formatter: '{b}: {c}',
+      }
+    }, {
+      ...this.getDefaultSeriesOptions(),
+      step: 'middle',
+      lineStyle: { width: 2 }
+    });
+
+    // Multi-axis configuration
+    this.addConfiguration(LineChartConfiguration.MULTI_AXIS, {
+      ...this.getDefaultOptions(),
+      legend: {
+        show: true,
+        orient: 'horizontal',
+        left: 'center',
+        top: '5%',
+      },
+      tooltip: {
+        trigger: 'axis',
+        formatter: function(params: any) {
+          let result = params[0].name + '<br/>';
+          params.forEach((param: any) => {
+            result += param.marker + param.seriesName + ': ' + param.value + '<br/>';
+          });
+          return result;
+        }
+      }
+    }, {
+      ...this.getDefaultSeriesOptions(),
+      emphasis: {
+        focus: 'series'
+      }
+    });
+
+    // Time series configuration
+    this.addConfiguration(LineChartConfiguration.TIME_SERIES, {
+      ...this.getDefaultOptions(),
+      animation: false,
+      tooltip: {
+        trigger: 'axis',
+        formatter: '{b}: {c}',
+        renderMode: 'richText'
+      }
+    }, {
+      ...this.getDefaultSeriesOptions(),
+      showSymbol: false,
+      sampling: 'lttb',
+      lineStyle: { width: 1 }
+    });
   }
 
   /**
@@ -267,6 +466,50 @@ export class LineChartBuilder extends ApacheEchartBuilder<LineChartOptions, Line
    */
   setShowSymbol(show: boolean): this {
     this.seriesOptions.showSymbol = show;
+    return this;
+  }
+
+  /**
+   * Set step type for stepped line charts
+   */
+  setStep(step: string | boolean): this {
+    this.seriesOptions.step = step;
+    return this;
+  }
+
+  /**
+   * Set stack for stacked line charts
+   */
+  setStack(stack: string): this {
+    this.seriesOptions.stack = stack;
+    return this;
+  }
+
+  /**
+   * Set sampling method for large datasets
+   */
+  setSampling(sampling: string): this {
+    this.seriesOptions.sampling = sampling;
+    return this;
+  }
+
+  /**
+   * Set connect nulls
+   */
+  setConnectNulls(connect: boolean): this {
+    this.seriesOptions.connectNulls = connect;
+    return this;
+  }
+
+  /**
+   * Set label options
+   */
+  setLabel(show: boolean, position: string = 'top', formatter?: string): this {
+    this.seriesOptions.label = {
+      show,
+      position,
+      formatter: formatter || '{c}',
+    };
     return this;
   }
 
