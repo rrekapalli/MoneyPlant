@@ -124,7 +124,7 @@ import {
 import { createTestFilterWidget } from './widgets/test-filter-widget';
 
 // Import base dashboard component
-import { BaseDashboardComponent } from '../../../core/base';
+import { BaseDashboardComponent } from '@dashboards/public-api';
 
 // Define the specific data structure for this dashboard
 export interface DashboardDataRow {

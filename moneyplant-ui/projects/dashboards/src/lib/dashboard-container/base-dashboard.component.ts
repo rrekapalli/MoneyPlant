@@ -208,7 +208,7 @@ export abstract class BaseDashboardComponent<T = any> implements OnInit, OnDestr
     }
     
     // Try to match by common property names
-    const commonProperties = ['category', 'assetCategory', 'month', 'market', 'type', 'name'];
+    const commonProperties = ['category', 'month', 'type', 'name'];
     for (const prop of commonProperties) {
       if (rowData.hasOwnProperty(prop) && rowData[prop] === filterValue) {
         return true;
@@ -445,12 +445,10 @@ export abstract class BaseDashboardComponent<T = any> implements OnInit, OnDestr
     
     // If no data found by title, try to detect chart type and provide appropriate data
     if (!baseData) {
-      console.warn(`Widget ${widget.id} has no title defined or no matching data. Attempting to detect chart type for filtering...`);
       baseData = this.getDataByChartType(widget);
     }
     
     if (!baseData) {
-      console.warn(`No base data available for widget: ${widget.id} (title: ${widgetTitle})`);
       return;
     }
 
@@ -520,10 +518,7 @@ export abstract class BaseDashboardComponent<T = any> implements OnInit, OnDestr
     if (newOptions.series && newOptions.series.length > 0) {
       const series = newOptions.series[0];
       
-      if (widgetTitle === 'Risk vs Return Analysis') {
-        // Scatter plot - update data points
-        series.data = filteredData;
-      } else {
+      if(filteredData && filteredData.length > 0) {
         // Bar/Pie/Line charts - update data
         series.data = filteredData;
         
@@ -565,7 +560,6 @@ export abstract class BaseDashboardComponent<T = any> implements OnInit, OnDestr
     const widgetTitle = widget.config?.header?.title || widget.id;
 
     if (attempt >= maxAttempts) {
-      console.warn(`Failed to update widget after ${maxAttempts} attempts:`, widgetTitle);
       return;
     }
 
@@ -580,7 +574,6 @@ export abstract class BaseDashboardComponent<T = any> implements OnInit, OnDestr
       }, 50);
       
     } catch (error) {
-      console.warn(`Widget update attempt ${attempt + 1} failed:`, error);
       
       // Retry with exponential backoff
       const delay = baseDelay * Math.pow(2, attempt);
@@ -593,81 +586,7 @@ export abstract class BaseDashboardComponent<T = any> implements OnInit, OnDestr
   /**
    * Get data for widget based on chart type detection
    */
-  protected getDataByChartType(widget: IWidget): any {
-    const chartOptions = widget.config?.options as any;
-    
-    if (!chartOptions?.series?.[0]) {
-      return null;
-    }
-    
-    const seriesType = chartOptions.series[0].type;
-    const mapType = chartOptions.series[0].map;
-    
-    // Detect chart type and provide appropriate data
-    switch (seriesType) {
-      case 'map':
-        // This is a density/choropleth map - provide investment distribution data
-        console.log(`Detected density map widget (map: ${mapType}), providing investment distribution data`);
-        return this.groupByAndSum(this.dashboardData, 'market', 'totalValue');
-        
-      case 'pie':
-        // This is a pie chart - provide asset allocation data
-        console.log('Detected pie chart widget, providing asset allocation data');
-        return this.groupByAndSum(this.dashboardData, 'assetCategory', 'totalValue');
-        
-      case 'bar':
-        // This is a bar chart - provide monthly data
-        console.log('Detected bar chart widget, providing monthly data');
-        return this.groupByAndSum(this.dashboardData, 'month', 'totalValue');
-        
-      case 'line':
-        // This is a line chart - provide portfolio performance data
-        console.log('Detected line chart widget, providing portfolio performance data');
-        return this.groupByAndSum(this.dashboardData, 'month', 'totalValue');
-        
-      case 'scatter':
-        // This is a scatter chart - provide generic scatter data
-        console.log('Detected scatter chart widget, providing generic scatter data');
-        return this.getScatterChartData(this.dashboardData);
-        
-      case 'heatmap':
-        // This is a heatmap - provide heatmap data
-        console.log('Detected heatmap widget, providing heatmap data');
-        return this.createHeatmapData(this.dashboardData);
-        
-      case 'gauge':
-        // This is a gauge chart - provide simple numeric data
-        console.log('Detected gauge widget, providing gauge data');
-        return this.getGaugeChartData(this.dashboardData);
-        
-      case 'treemap':
-        // This is a treemap - provide treemap data
-        console.log('Detected treemap widget, providing treemap data');
-        return this.createTreemapData(this.dashboardData);
-        
-      case 'sunburst':
-        // This is a sunburst chart - provide sunburst data
-        console.log('Detected sunburst widget, providing sunburst data');
-        return this.createSunburstData(this.dashboardData);
-        
-      case 'sankey':
-        // This is a sankey diagram - provide default sankey data
-        console.log('Detected sankey widget, providing default sankey data');
-        return {
-          nodes: [
-            { name: 'Income' }, { name: 'Expenses' }, { name: 'Savings' }
-          ],
-          links: [
-            { source: 'Income', target: 'Expenses', value: 70 },
-            { source: 'Income', target: 'Savings', value: 30 }
-          ]
-        };
-        
-      default:
-        console.warn(`Unknown chart type: ${seriesType}`);
-        return null;
-    }
-  }
+  protected abstract getDataByChartType(widget: IWidget): any;
 
   // Abstract helper methods that should be implemented by child classes
   protected abstract createTreemapData(data: T[]): any;
@@ -688,7 +607,6 @@ export abstract class BaseDashboardComponent<T = any> implements OnInit, OnDestr
    * Export dashboard data to Excel
    */
   public async exportDashboardToExcel(): Promise<void> {
-    console.log('BaseDashboardComponent: exportDashboardToExcel called');
     this.isExportingExcel = true;
     this.cdr.detectChanges(); // Immediately update UI
 
@@ -696,7 +614,6 @@ export abstract class BaseDashboardComponent<T = any> implements OnInit, OnDestr
       // Add a small delay to allow UI to update with loading state
       await new Promise(resolve => setTimeout(resolve, 50));
       
-      console.log('Starting Excel export...');
       
       // Use setTimeout to make the Excel generation truly async
       await new Promise<void>((resolve, reject) => {
@@ -713,7 +630,6 @@ export abstract class BaseDashboardComponent<T = any> implements OnInit, OnDestr
                 includeWidgetTitles: true
               }
             );
-            console.log('Excel export completed successfully');
             resolve();
           } catch (error) {
             console.error('Excel export failed:', error);
@@ -728,7 +644,6 @@ export abstract class BaseDashboardComponent<T = any> implements OnInit, OnDestr
     } finally {
       this.isExportingExcel = false;
       this.cdr.detectChanges(); // Update UI to remove loading state
-      console.log('Excel export process finished');
     }
   }
 
@@ -798,15 +713,12 @@ export abstract class BaseDashboardComponent<T = any> implements OnInit, OnDestr
    * Toggle filter highlighting mode
    */
   public toggleHighlightingMode(): void {
-    console.log('BaseDashboardComponent: toggleHighlightingMode called, current state:', this.isHighlightingEnabled);
     this.isHighlightingEnabled = !this.isHighlightingEnabled;
     this.updateDashboardHighlightingConfig();
     
     // Re-apply current filters with new highlighting mode
     const currentFilters = this.getCurrentFilters();
     this.updateWidgetsWithFilters(currentFilters);
-    
-    console.log(`🎨 Filter highlighting mode ${this.isHighlightingEnabled ? 'enabled' : 'disabled'}`);
     
     // Force change detection to update UI
     this.cdr.detectChanges();
@@ -823,8 +735,6 @@ export abstract class BaseDashboardComponent<T = any> implements OnInit, OnDestr
     const currentFilters = this.getCurrentFilters();
     this.updateWidgetsWithFilters(currentFilters);
     
-    console.log(`🎛️ Highlighting opacity updated to ${Math.round(this.highlightingOpacity * 100)}%`);
-    
     // Force change detection to update UI
     this.cdr.detectChanges();
   }
@@ -837,10 +747,6 @@ export abstract class BaseDashboardComponent<T = any> implements OnInit, OnDestr
       this.dashboardConfig.filterVisualization.enableHighlighting = this.isHighlightingEnabled;
       this.dashboardConfig.filterVisualization.defaultFilteredOpacity = this.highlightingOpacity;
       
-      console.log(`📊 Dashboard highlighting config updated:`, {
-        enabled: this.isHighlightingEnabled,
-        opacity: this.highlightingOpacity
-      });
     }
   }
 
@@ -874,7 +780,6 @@ export abstract class BaseDashboardComponent<T = any> implements OnInit, OnDestr
     }
     
     this.updateHighlightingOpacity(opacity);
-    console.log(`✨ Applied ${preset} highlighting preset (opacity: ${Math.round(opacity * 100)}%)`);
   }
 
   /**
@@ -901,14 +806,11 @@ export abstract class BaseDashboardComponent<T = any> implements OnInit, OnDestr
       
       // If no data found by title, try to detect chart type and provide appropriate data
       if (!initialData) {
-        console.warn(`Widget ${widget.id} has no title defined or no matching data. Attempting to detect chart type...`);
         initialData = this.getDataByChartType(widget);
       }
       
       if (initialData) {
         this.updateEchartWidget(widget, initialData);
-      } else {
-        console.warn(`No data found for widget: ${widget.id} (title: ${widgetTitle})`);
       }
     });
 
