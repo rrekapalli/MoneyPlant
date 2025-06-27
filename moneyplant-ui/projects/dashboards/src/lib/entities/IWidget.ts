@@ -58,6 +58,16 @@ export interface IWidget extends GridsterItem {
        */
       onChartOptions?: (widget: IWidget, chart?: ECharts, filters?: string | IFilterValues[]) => void 
     };
+
+    /** Enhanced functionality properties */
+    /** Filter click handler function */
+    filterClickHandler?: (clickData: any) => any;
+    
+    /** Pending click handler (for charts not yet initialized) */
+    pendingClickHandler?: (clickData: any, widget: IWidget) => void;
+    
+    /** Current configuration name being used */
+    currentConfiguration?: string;
   };
   
   /** Data series for the widget */

@@ -88,9 +88,12 @@ import {
   FilterService
 } from '@dashboards/public-api';
 
+// Import PieChartBuilder for enhanced asset allocation functionality
+import { PieChartBuilder, PieChartData } from '@dashboards/public-api';
+
 // Import widget creation functions
 import {
-  createAssetAllocationWidget,
+  // createAssetAllocationWidget, // Now using PieChartBuilder directly
   createMonthlyIncomeExpensesWidget,
   createPortfolioPerformanceWidget,
   createRiskReturnWidget,
@@ -159,6 +162,15 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
   protected dashboardData: DashboardDataRow[] = [...INITIAL_DASHBOARD_DATA];
   protected readonly initialDashboardData: DashboardDataRow[] = INITIAL_DASHBOARD_DATA;
 
+  // Enhanced asset allocation management
+  private assetAllocationManager?: {
+    widget: IWidget;
+    updateData: (newData: PieChartData[]) => void;
+    loadDataAsync: () => Promise<void>;
+    applyFilters: () => void;
+    getInfo: () => any;
+  };
+
   constructor(
     cdr: ChangeDetectorRef,
     excelExportService: ExcelExportService,
@@ -175,6 +187,113 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
     }).catch((error) => {
       // Handle world map loading error silently
     });
+
+    // Initialize enhanced asset allocation widget
+    this.initializeAssetAllocation();
+  }
+
+  /**
+   * Initialize enhanced asset allocation with all management features
+   */
+  private initializeAssetAllocation(): void {
+    // Convert dashboard data to pie chart data
+    const initialData = this.convertDataToPieChartData(this.dashboardData);
+    
+    // Create data loader function
+    const dataLoader = async (): Promise<PieChartData[]> => {
+      // Simulate API call - in real app this would fetch from service
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return this.convertDataToPieChartData(this.dashboardData);
+    };
+
+    // Setup complete asset allocation widget with all features
+    this.assetAllocationManager = PieChartBuilder.setupCompleteAssetAllocation(
+      null, // container element (handled by dashboard framework)
+      initialData,
+      this.filterService,
+      dataLoader
+    );
+
+    // Example of using the enhanced features
+    console.log('Asset Allocation Widget Info:', this.assetAllocationManager.getInfo());
+  }
+
+  /**
+   * Convert dashboard data to pie chart format for asset allocation
+   */
+  private convertDataToPieChartData(data: DashboardDataRow[]): PieChartData[] {
+    const assetTotals = new Map<string, number>();
+    
+    data.forEach(row => {
+      const currentTotal = assetTotals.get(row.assetCategory) || 0;
+      assetTotals.set(row.assetCategory, currentTotal + row.totalValue);
+    });
+
+    return Array.from(assetTotals.entries()).map(([name, value]) => ({
+      name,
+      value
+    }));
+  }
+
+  /**
+   * Demonstrate enhanced asset allocation data updates
+   */
+  private async updateAssetAllocationData(): Promise<void> {
+    if (!this.assetAllocationManager) return;
+
+    try {
+      // Option 1: Update with new data directly
+      const newData = this.convertDataToPieChartData(this.dashboardData);
+      this.assetAllocationManager.updateData(newData);
+
+      // Option 2: Load data asynchronously with retry
+      await this.assetAllocationManager.loadDataAsync();
+
+      // Option 3: Apply current filters
+      this.assetAllocationManager.applyFilters();
+
+      console.log('Asset allocation updated successfully');
+    } catch (error) {
+      console.error('Failed to update asset allocation:', error);
+    }
+  }
+
+  /**
+   * Demonstrate creating multiple asset allocation variations
+   */
+  private createAssetAllocationVariations(): void {
+    const baseData = this.convertDataToPieChartData(this.dashboardData);
+    
+    const variations = PieChartBuilder.createAssetAllocationVariations(
+      baseData,
+      this.filterService
+    );
+
+    variations.forEach(({ name, widget, updateData }) => {
+      console.log(`Created ${name} variation:`, widget);
+      
+      // Example of updating individual variation
+      const newData = baseData.map(item => ({
+        ...item,
+        value: item.value * (0.8 + Math.random() * 0.4) // Add some variance
+      }));
+      updateData(newData);
+    });
+  }
+
+  /**
+   * Demonstrate factory pattern usage
+   */
+  private createAssetAllocationWithFactory(): void {
+    const factory = PieChartBuilder.createAssetAllocationFactory(this.filterService);
+    const baseData = this.convertDataToPieChartData(this.dashboardData);
+
+    // Create different styles
+    const financialWidget = factory.createFinancial(baseData, { x: 0, y: 0, cols: 4, rows: 4 });
+    const donutWidget = factory.createDonut(baseData, { x: 4, y: 0, cols: 4, rows: 4 });
+    const minimalWidget = factory.createMinimal(baseData, { x: 8, y: 0, cols: 4, rows: 4 });
+
+    console.log('Factory widgets created:', { financialWidget, donutWidget, minimalWidget });
   }
 
   protected onChildDestroy(): void {
@@ -192,8 +311,8 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
    * Initialize dashboard config using the Fluent API
    */
   protected initializeDashboardConfig(): void {
-    // Create widgets using the new widget functions
-    const pieAssetAllocation = createAssetAllocationWidget();
+    // Create widgets using the enhanced PieChartBuilder for asset allocation
+    const pieAssetAllocation = PieChartBuilder.createAssetAllocationWidget([], this.filterService);
     const barMonthlyIncomeVsExpenses = createMonthlyIncomeExpensesWidget();
     const linePortfolioPerformance = createPortfolioPerformanceWidget();
     const scatterRiskVsReturn = createRiskReturnWidget();

@@ -458,6 +458,251 @@ export class PieChartBuilder extends ConfigurableChartBuilder<PieChartOptions, P
     if (total === 0) return '0%';
     return `${((value / total) * 100).toFixed(2)}%`;
   }
+
+  // ========== ENHANCED: ASSET ALLOCATION SPECIFIC METHODS ==========
+
+  /**
+   * Create a complete asset allocation widget with all management features
+   * This replaces the need for separate asset-allocation-widget.ts file
+   */
+  static createAssetAllocationWidget(
+    data: PieChartData[] = [],
+    filterService?: any,
+    position: { x: number; y: number; cols: number; rows: number } = { x: 0, y: 0, cols: 4, rows: 8 }
+  ): IWidget {
+    const widget = PieChartBuilder.create()
+      .useConfiguration(PieChartConfiguration.FINANCIAL)
+      .setData(data)
+      .setHeader('Asset Allocation')
+      .setPosition(position)
+      .setColors(['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de'])
+      .withRuntimeCustomization((chartOptions, seriesOptions) => {
+        // Custom runtime adjustments for asset allocation
+        seriesOptions.radius = ['40%', '70%'];
+        if (chartOptions.tooltip) {
+          chartOptions.tooltip.formatter = '{b}: ${c} ({d}%)';
+        }
+      })
+      .build();
+
+    // Configure filtering
+    this.configureFiltering(widget, 'assetCategory', this.createAssetAllocationFilter);
+
+    // Setup automatic filtering if filter service is provided
+    if (filterService) {
+      this.enableAutoFiltering(widget, filterService, (filter) => {
+        console.log('Asset allocation filter created:', filter);
+      });
+    }
+
+    return widget;
+  }
+
+  /**
+   * Create asset allocation filter from click data
+   * Specific implementation for asset allocation charts
+   */
+  static createAssetAllocationFilter(clickData: any): any | null {
+    if (!clickData || !clickData.name) return null;
+
+    return {
+      accessor: 'assetCategory',
+      filterColumn: 'assetCategory',
+      assetCategory: clickData.name,
+      value: clickData.name,
+      percentage: clickData.value?.toString() || '0'
+    };
+  }
+
+  /**
+   * Update asset allocation data with enhanced filtering and retry logic
+   */
+  static updateAssetAllocationData(
+    widget: IWidget,
+    newData: PieChartData[],
+    filterService?: any
+  ): void {
+    this.updateDataWithFilters(widget, newData, filterService, 'assetCategory');
+  }
+
+  /**
+   * Load asset allocation data asynchronously with retry mechanism
+   */
+  static async loadAssetAllocationDataAsync(
+    widget: IWidget,
+    dataLoader: () => Promise<PieChartData[]>,
+    filterService?: any
+  ): Promise<void> {
+    try {
+      await this.loadDataAsync(widget, dataLoader, {
+        retryCount: 3,
+        retryDelay: 1000,
+        timeout: 5000
+      });
+      
+      // Apply filters after loading if filter service is provided
+      if (filterService) {
+        this.applyFiltersToWidget(widget, filterService);
+      }
+    } catch (error) {
+      console.error('Failed to load asset allocation data:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Setup complete asset allocation widget with all features
+   * This method consolidates all the functionality from the widget file
+   */
+  static setupCompleteAssetAllocation(
+    container: HTMLElement | null,
+    initialData: PieChartData[] = [],
+    filterService?: any,
+    dataLoader?: () => Promise<PieChartData[]>
+  ): {
+    widget: IWidget;
+    updateData: (newData: PieChartData[]) => void;
+    loadDataAsync: () => Promise<void>;
+    applyFilters: () => void;
+    getInfo: () => any;
+  } {
+    // Create the widget
+    const widget = this.createAssetAllocationWidget(initialData, filterService);
+
+    // Return management interface
+    return {
+      widget,
+      updateData: (newData: PieChartData[]) => {
+        this.updateAssetAllocationData(widget, newData, filterService);
+      },
+      loadDataAsync: async () => {
+        if (dataLoader) {
+          await this.loadAssetAllocationDataAsync(widget, dataLoader, filterService);
+        }
+      },
+      applyFilters: () => {
+        if (filterService) {
+          this.applyFiltersToWidget(widget, filterService);
+        }
+      },
+      getInfo: () => this.getWidgetInfo(widget)
+    };
+  }
+
+  /**
+   * Create multiple asset allocation variations
+   * Replaces the variations function from widget file
+   */
+  static createAssetAllocationVariations(
+    baseData: PieChartData[] = [],
+    filterService?: any
+  ): Array<{
+    name: string;
+    widget: IWidget;
+    updateData: (data: PieChartData[]) => void;
+  }> {
+    const variations = [
+      {
+        name: 'financial-style',
+        preset: PieChartConfiguration.FINANCIAL,
+        position: { x: 0, y: 0, cols: 4, rows: 4 },
+        title: 'Financial Style'
+      },
+      {
+        name: 'donut-style',
+        preset: PieChartConfiguration.DONUT,
+        position: { x: 4, y: 0, cols: 4, rows: 4 },
+        title: 'Donut Style'
+      },
+      {
+        name: 'minimal-style',
+        preset: PieChartConfiguration.MINIMAL,
+        position: { x: 8, y: 0, cols: 4, rows: 4 },
+        title: 'Minimal Style'
+      }
+    ];
+
+    return variations.map(({ name, preset, position, title }) => {
+      const widget = PieChartBuilder.create()
+        .useConfiguration(preset)
+        .setData(baseData)
+        .setHeader(title)
+        .setPosition(position)
+        .setColors(['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de'])
+        .build();
+
+      // Configure filtering for each variation
+      this.configureFiltering(widget, 'assetCategory', this.createAssetAllocationFilter);
+      
+      if (filterService) {
+        this.enableAutoFiltering(widget, filterService);
+      }
+
+      return {
+        name,
+        widget,
+        updateData: (data: PieChartData[]) => {
+          this.updateAssetAllocationData(widget, data, filterService);
+        }
+      };
+    });
+  }
+
+  /**
+   * Enhanced factory for asset allocation charts
+   */
+  static createAssetAllocationFactory(filterService?: any) {
+    return {
+      /**
+       * Create financial style asset allocation
+       */
+      createFinancial: (data?: PieChartData[], customPosition?: any) => {
+        return this.createAssetAllocationWidget(
+          data || [],
+          filterService,
+          customPosition || { x: 0, y: 0, cols: 4, rows: 8 }
+        );
+      },
+
+      /**
+       * Create donut style asset allocation
+       */
+      createDonut: (data?: PieChartData[], customPosition?: any) => {
+        const widget = PieChartBuilder.create()
+          .useConfiguration(PieChartConfiguration.DONUT)
+          .setData(data || [])
+          .setHeader('Asset Allocation (Donut)')
+          .setPosition(customPosition || { x: 4, y: 0, cols: 4, rows: 8 })
+          .setColors(['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de'])
+          .build();
+
+        this.configureFiltering(widget, 'assetCategory', this.createAssetAllocationFilter);
+        if (filterService) {
+          this.enableAutoFiltering(widget, filterService);
+        }
+        return widget;
+      },
+
+      /**
+       * Create minimal style asset allocation
+       */
+      createMinimal: (data?: PieChartData[], customPosition?: any) => {
+        const widget = PieChartBuilder.create()
+          .useConfiguration(PieChartConfiguration.MINIMAL)
+          .setData(data || [])
+          .setHeader('Asset Allocation (Clean)')
+          .setPosition(customPosition || { x: 8, y: 0, cols: 4, rows: 8 })
+          .setColors(['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de'])
+          .build();
+
+        this.configureFiltering(widget, 'assetCategory', this.createAssetAllocationFilter);
+        if (filterService) {
+          this.enableAutoFiltering(widget, filterService);
+        }
+        return widget;
+      }
+    };
+  }
 }
 
 /**

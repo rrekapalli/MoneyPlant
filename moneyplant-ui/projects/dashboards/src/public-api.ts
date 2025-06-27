@@ -21,6 +21,7 @@ export * from './lib/usage-examples/dashboard-container-examples';
 export * from './lib/usage-examples/areaChart-examples';
 export * from './lib/usage-examples/polarChart-examples';
 export * from './lib/usage-examples/tile-examples';
+export * from './lib/usage-examples/enhanced-asset-allocation-examples';
 
 // Config
 export * from './lib/formly-configs/form-options';

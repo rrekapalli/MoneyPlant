@@ -3,6 +3,32 @@ import { v4 as uuidv4 } from 'uuid';
 import { EChartsOption } from 'echarts';
 import { ChartConfiguration, ChartConfigurationHelper } from './chart-configurations';
 
+// ========== NEW INTERFACES FOR ENHANCED FUNCTIONALITY ==========
+
+export interface AsyncLoadOptions {
+  retryCount?: number;
+  retryDelay?: number;
+  timeout?: number;
+}
+
+export interface FilterClickHandler {
+  (clickData: any): any; // IFilterValues type would be imported from actual filter service
+}
+
+export interface ChartClickHandler {
+  (clickData: any, widget: IWidget): void;
+}
+
+export interface RuntimeCustomizer<TOptions = any, TSeriesOptions = any> {
+  (chartOptions: TOptions, seriesOptions: TSeriesOptions): void;
+}
+
+export interface ConfigurationValidationResult {
+  isValid: boolean;
+  errors: string[];
+  warnings?: string[];
+}
+
 /**
  * Abstract base class for Apache ECharts builders
  * Provides common functionality for all chart types
@@ -376,6 +402,348 @@ export abstract class ApacheEchartBuilder<T extends EChartsOption = EChartsOptio
       return (widget.config.options as any).series[0].type;
     }
     return null;
+  }
+
+  // ========== NEW: ENHANCED DATA MANAGEMENT METHODS ==========
+
+  /**
+   * Update widget data with optional filtering
+   * Can be overridden by specific chart builders for custom behavior
+   */
+  static updateDataWithFilters(
+    widget: IWidget, 
+    newData: any[], 
+    filterService?: any, // FilterService interface
+    filterColumn?: string
+  ): void {
+    let filteredData = newData;
+    
+    if (filterService && (filterColumn || widget.config?.filterColumn)) {
+      const columnToFilter = filterColumn || widget.config?.filterColumn;
+      const filters = filterService.getFilterValues();
+      filteredData = filterService.applyFiltersToData(newData, filters, columnToFilter);
+    }
+    
+    this.updateData(widget, filteredData);
+    this.refreshChartInstance(widget);
+  }
+
+  /**
+   * Async data loading with retry mechanism
+   */
+  static async loadDataAsync(
+    widget: IWidget,
+    dataLoader: () => Promise<any[]>,
+    options: AsyncLoadOptions = {}
+  ): Promise<void> {
+    const { retryCount = 0, retryDelay = 1000, timeout = 5000 } = options;
+    
+    let attempts = 0;
+    
+    while (attempts <= retryCount) {
+      try {
+        const timeoutPromise = new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error('Data loading timeout')), timeout)
+        );
+        
+        const data = await Promise.race([dataLoader(), timeoutPromise]);
+        this.updateData(widget, data);
+        this.refreshChartInstance(widget);
+        return;
+        
+      } catch (error) {
+        attempts++;
+        if (attempts <= retryCount) {
+          await this.delay(retryDelay * Math.pow(1.5, attempts - 1)); // Exponential backoff
+        } else {
+          throw new Error(`Failed to load data after ${retryCount + 1} attempts: ${error}`);
+        }
+      }
+    }
+  }
+
+  /**
+   * Batch update multiple widgets
+   */
+  static batchUpdateData(updates: Array<{ widget: IWidget; data: any[]; filterService?: any }>): void {
+    updates.forEach(({ widget, data, filterService }) => {
+      this.updateDataWithFilters(widget, data, filterService);
+    });
+  }
+
+  // ========== NEW: FILTER INTEGRATION METHODS ==========
+
+  /**
+   * Configure widget for filtering
+   */
+  static configureFiltering(
+    widget: IWidget, 
+    filterColumn: string, 
+    clickHandler?: FilterClickHandler
+  ): void {
+    if (widget.config) {
+      widget.config.filterColumn = filterColumn;
+      if (clickHandler) {
+        widget.config.filterClickHandler = clickHandler;
+      }
+    }
+  }
+
+  /**
+   * Create filter from chart click data
+   * Default implementation that can be overridden by specific builders
+   */
+  static createFilterFromClick(
+    clickData: any, 
+    filterColumn: string,
+    additionalProperties?: Record<string, any>
+  ): any | null { // IFilterValues type
+    if (!clickData || !filterColumn) return null;
+    
+    const baseFilter = {
+      accessor: filterColumn,
+      filterColumn: filterColumn,
+      value: clickData.name || clickData.value,
+      [filterColumn]: clickData.name || clickData.value
+    };
+
+    return additionalProperties ? { ...baseFilter, ...additionalProperties } : baseFilter;
+  }
+
+  /**
+   * Apply filters to widget without updating data source
+   */
+  static applyFiltersToWidget(
+    widget: IWidget,
+    filterService: any,
+    preserveSelection: boolean = false
+  ): void {
+    if (!widget.config?.filterColumn) return;
+    
+    const currentData = this.extractCurrentData(widget);
+    if (currentData) {
+      const filteredData = filterService.applyFiltersToData(
+        currentData, 
+        filterService.getFilterValues(),
+        widget.config.filterColumn
+      );
+      this.updateData(widget, filteredData);
+      this.refreshChartInstance(widget);
+    }
+  }
+
+  // ========== NEW: EVENT HANDLING METHODS ==========
+
+  /**
+   * Configure chart click events
+   */
+  static configureClickHandler(widget: IWidget, handler: ChartClickHandler): void {
+    if (widget.chartInstance) {
+      widget.chartInstance.off('click'); // Remove existing handlers
+      widget.chartInstance.on('click', (params: any) => {
+        handler(params, widget);
+      });
+    } else {
+      // Store handler for later when chart instance is available
+      if (!widget.config) {
+        widget.config = {
+          component: 'echart',
+          options: {}
+        };
+      }
+      widget.config.pendingClickHandler = handler;
+    }
+  }
+
+  /**
+   * Configure chart hover events
+   */
+  static configureHoverHandler(
+    widget: IWidget, 
+    onHover: (data: any) => void,
+    onHoverOut?: () => void
+  ): void {
+    if (widget.chartInstance) {
+      widget.chartInstance.off('mouseover');
+      widget.chartInstance.off('mouseout');
+      
+      widget.chartInstance.on('mouseover', onHover);
+      if (onHoverOut) {
+        widget.chartInstance.on('mouseout', onHoverOut);
+      }
+    }
+  }
+
+  /**
+   * Setup automatic filter handling on chart clicks
+   */
+  static enableAutoFiltering(
+    widget: IWidget,
+    filterService: any,
+    onFilterCreated?: (filter: any) => void
+  ): void {
+    this.configureClickHandler(widget, (clickData, w) => {
+      if (w.config?.filterColumn) {
+        const filter = this.createFilterFromClick(clickData, w.config.filterColumn);
+        if (filter) {
+          filterService.addFilter(filter);
+          if (onFilterCreated) onFilterCreated(filter);
+        }
+      }
+    });
+  }
+
+  // ========== NEW: CONFIGURATION MANAGEMENT ==========
+
+  /**
+   * Apply runtime customization to existing widget
+   */
+  static applyRuntimeCustomization<TOptions, TSeriesOptions>(
+    widget: IWidget,
+    customizer: RuntimeCustomizer<TOptions, TSeriesOptions>
+  ): void {
+    const options = widget.config?.options as TOptions;
+    const series = (options as any)?.series?.[0] as TSeriesOptions;
+    
+    if (customizer && options && series) {
+      customizer(options, series);
+      this.refreshChartInstance(widget);
+    }
+  }
+
+  /**
+   * Get current widget configuration info
+   */
+  static getWidgetInfo(widget: IWidget): {
+    chartType: string;
+    hasData: boolean;
+    dataCount: number;
+    filterColumn?: string;
+    configuration?: string;
+  } {
+    const options = widget.config?.options as any;
+    const series = options?.series?.[0];
+    
+    return {
+      chartType: series?.type || 'unknown',
+      hasData: Boolean(series?.data && series.data.length > 0),
+      dataCount: series?.data?.length || 0,
+      filterColumn: widget.config?.filterColumn,
+      configuration: widget.config?.currentConfiguration
+    };
+  }
+
+  // ========== NEW: CHART INSTANCE MANAGEMENT ==========
+
+  /**
+   * Refresh chart instance with retry mechanism
+   */
+  protected static refreshChartInstance(widget: IWidget, maxRetries: number = 10): void {
+    if (widget.chartInstance) {
+      this.updateChartInstance(widget);
+    } else {
+      this.retryChartUpdate(widget, maxRetries);
+    }
+  }
+
+  /**
+   * Update chart instance immediately
+   */
+  private static updateChartInstance(widget: IWidget): void {
+    try {
+      if (widget.chartInstance && widget.config?.options) {
+        widget.chartInstance.setOption(widget.config.options as any, true);
+        
+        // Setup pending event handlers
+        if (widget.config.pendingClickHandler) {
+          this.configureClickHandler(widget, widget.config.pendingClickHandler);
+          delete widget.config.pendingClickHandler;
+        }
+      }
+    } catch (error) {
+      console.error('Error updating chart instance:', error);
+    }
+  }
+
+  /**
+   * Retry chart update with exponential backoff
+   */
+  private static retryChartUpdate(widget: IWidget, maxRetries: number): void {
+    let attempts = 0;
+    
+    const retryUpdate = () => {
+      attempts++;
+      
+      if (widget.chartInstance) {
+        this.updateChartInstance(widget);
+        return;
+      }
+      
+      if (attempts < maxRetries) {
+        const delay = Math.min(500 * Math.pow(1.5, attempts - 1), 2000);
+        setTimeout(retryUpdate, delay);
+      } else {
+        console.warn(`Failed to update chart instance after ${maxRetries} attempts`);
+      }
+    };
+    
+    setTimeout(retryUpdate, 100);
+  }
+
+  // ========== NEW: UTILITY METHODS ==========
+
+  /**
+   * Extract current data from widget
+   */
+  private static extractCurrentData(widget: IWidget): any[] | null {
+    const options = widget.config?.options as any;
+    const series = options?.series?.[0];
+    return series?.data || null;
+  }
+
+  /**
+   * Validate widget configuration
+   */
+  static validateConfiguration(widget: IWidget): ConfigurationValidationResult {
+    const errors: string[] = [];
+    const warnings: string[] = [];
+    
+    if (!widget.config) {
+      errors.push('Widget config is missing');
+    }
+    
+    if (!widget.config?.options) {
+      errors.push('Chart options are missing');
+    }
+    
+    const options = widget.config?.options as any;
+    if (options && !options.series) {
+      errors.push('Chart series configuration is missing');
+    }
+    
+    if (widget.config?.filterColumn && !widget.config.filterClickHandler) {
+      warnings.push('Filter column configured but no click handler set');
+    }
+    
+    return {
+      isValid: errors.length === 0,
+      errors,
+      warnings
+    };
+  }
+
+  /**
+   * Delay utility for async operations
+   */
+  private static delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  /**
+   * Deep clone object utility
+   */
+  protected static deepClone<T>(obj: T): T {
+    return JSON.parse(JSON.stringify(obj));
   }
 }
 
