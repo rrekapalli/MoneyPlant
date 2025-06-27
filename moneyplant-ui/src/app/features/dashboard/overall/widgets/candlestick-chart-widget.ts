@@ -26,7 +26,7 @@ export function createCandlestickChartWidget(): IWidget {
     '01-22', '01-23', '01-24', '01-25', '01-26'
   ];
 
-  return CandlestickChartBuilder.create()
+  const widget = CandlestickChartBuilder.create()
     .setData(stockData)
     .setXAxisData(dateLabels)
     .setTitle('Stock Price', 'Daily OHLC Data')
@@ -36,6 +36,13 @@ export function createCandlestickChartWidget(): IWidget {
     .setHeader('Candlestick Chart')
     .setPosition({ x: 0, y: 12, cols: 6, rows: 6 })
     .build();
+    
+  // Add filterColumn configuration
+  if (widget.config) {
+    widget.config.filterColumn = 'date';
+  }
+  
+  return widget;
 }
 
 /**
@@ -58,7 +65,7 @@ export function createAdvancedCandlestickChartWidget(): IWidget {
     '01-15', '01-16', '01-17', '01-18', '01-19'
   ];
 
-  return CandlestickChartBuilder.create()
+  const widget = CandlestickChartBuilder.create()
     .setData(advancedStockData)
     .setXAxisData(advancedDateLabels)
     .setTitle('Advanced Stock Analysis', '15-Day Trading Data')
@@ -68,4 +75,11 @@ export function createAdvancedCandlestickChartWidget(): IWidget {
     .setHeader('Advanced Candlestick Chart')
     .setPosition({ x: 6, y: 12, cols: 6, rows: 6 })
     .build();
+    
+  // Add filterColumn configuration
+  if (widget.config) {
+    widget.config.filterColumn = 'date';
+  }
+  
+  return widget;
 } 

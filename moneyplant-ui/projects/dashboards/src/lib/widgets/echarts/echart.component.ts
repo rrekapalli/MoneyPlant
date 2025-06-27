@@ -1,10 +1,11 @@
-import {Component, Input, EventEmitter, ViewChild, ChangeDetectorRef} from '@angular/core';
+import {Component, Input, ViewChild, ChangeDetectorRef, inject} from '@angular/core';
 import {IWidget} from '../../entities/IWidget';
 import {CommonModule} from '@angular/common';
 import {NgxEchartsDirective, provideEchartsCore} from 'ngx-echarts';
 import { EChartsOption } from 'echarts';
 import { CompactType, DisplayGrid, GridType } from 'angular-gridster2';
 import { IFilterValues } from '../../entities/IFilterValues';
+import { FilterService } from '../../services/filter.service';
 
 @Component({
   selector: 'vis-echart',
@@ -24,23 +25,33 @@ import { IFilterValues } from '../../entities/IFilterValues';
 })
 export class EchartComponent {
   @Input() widget!: IWidget;
-  @Input() onDataLoad!: EventEmitter<IWidget>;
-  @Input() onUpdateFilter!: EventEmitter<any>;
   @ViewChild('chart', { static: false }) chart!: NgxEchartsDirective;
 
   isSingleClick: boolean = true;
   
+  private filterService = inject(FilterService);
+  
   constructor(private cdr: ChangeDetectorRef) {}
   
   get chartOptions() {
-    return this.widget?.config?.options as EChartsOption;
+    const options = this.widget?.config?.options as EChartsOption;
+    console.log('📊 Chart options for', this.widget?.config?.header?.title, ':', options);
+    return options;
   }
 
   onChartInit(instance: any) {
+    console.log('📈 Chart initialized:', this.widget.config?.header?.title, instance);
     this.widget.chartInstance = instance;
-    setTimeout(() => {
-      this.onDataLoad?.emit(this.widget);
-    });
+    
+    // Add click event listener directly to the chart instance as a fallback
+    if (instance && instance.on) {
+      instance.on('click', (params: any) => {
+        console.log('📊 Direct chart click event:', params);
+        this.onClick(params);
+      });
+    }
+    
+    // Chart initialization complete - no need to emit data load event with signals
   }
 
   onChartDblClick(e: any): void {
@@ -48,6 +59,8 @@ export class EchartComponent {
   }
 
   onClick(e: any) {
+    console.log('📊 Chart clicked:', e, 'Widget:', this.widget.config?.header?.title);
+    
     this.isSingleClick = true;
     setTimeout(() => {
       let selectedPoint = e.data;
@@ -62,6 +75,8 @@ export class EchartComponent {
       // Create filter value from clicked data
       const filterValue = this.createFilterValueFromClickData(selectedPoint, e);
       
+      console.log('🎯 Filter value created:', filterValue);
+      
       if (filterValue) {
         // Add widget information to filter value
         filterValue['widgetId'] = this.widget.id;
@@ -69,17 +84,16 @@ export class EchartComponent {
           filterValue['widgetTitle'] = this.widget.config.header.title;
         }
         
-        this.onUpdateFilter.emit({
-          value: selectedPoint,
-          widget: this.widget,
-          filterValue: filterValue
-        });
+        console.log('📤 Adding filter via FilterService:', filterValue);
+        
+        // Add filter directly to FilterService
+        this.filterService.addFilterValue(
+          this.widget.id,
+          this.widget.config?.header?.title || 'Unknown Widget',
+          selectedPoint
+        );
       } else {
-        // Fallback to original behavior
-        this.onUpdateFilter.emit({
-          value: selectedPoint,
-          widget: this.widget,
-        });
+        console.log('⚠️ No valid filter value created from click data');
       }
     }, 250);
   }

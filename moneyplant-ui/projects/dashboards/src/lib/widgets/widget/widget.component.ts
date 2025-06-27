@@ -60,6 +60,7 @@ const onGetWidget = (widget: IWidget) => {
   imports: [
     CommonModule,
     NgComponentOutlet,
+    EchartComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [
@@ -119,24 +120,11 @@ export class WidgetComponent implements OnInit, OnDestroy {
     return this.viewModeSignal();
   }
 
-  @Output() dataLoad = new EventEmitter<IWidget>();
   @Output() updateWidget = new EventEmitter<IWidget>();
-  @Output() updateFilter = new EventEmitter<any>();
   @Output() toggleViewMode = new EventEmitter<{widgetId: string, viewMode: 'chart' | 'table'}>();
-
-  // Legacy output names for backward compatibility
-  @Output() onDataLoad = new EventEmitter<IWidget>();
-  @Output() onUpdateFilter = new EventEmitter<any>();
 
   constructor(private cdr: ChangeDetectorRef) {
     // Effects for reactive updates
-    effect(() => {
-      const widget = this.widgetSignal();
-      if (widget && this.hasValidWidget()) {
-        this.dataLoad.emit(widget);
-        this.onDataLoad.emit(widget);
-      }
-    });
 
     effect(() => {
       // Trigger change detection when signals change
@@ -160,11 +148,8 @@ export class WidgetComponent implements OnInit, OnDestroy {
    * Handle data loading for the widget
    */
   handleDataLoad(): void {
-    const widget = this.widgetSignal();
-    if (widget) {
-      this.dataLoad.emit(widget);
-      this.onDataLoad.emit(widget);
-    }
+    // Data loading is now handled automatically via signals
+    // No need to emit events
   }
 
   /**
@@ -181,8 +166,8 @@ export class WidgetComponent implements OnInit, OnDestroy {
    * Handle filter updates
    */
   handleUpdateFilter(event: any): void {
-    this.updateFilter.emit(event);
-    this.onUpdateFilter.emit(event);
+    // Filter updates are now handled directly by the FilterService
+    // No need to emit events
   }
 
   /**
@@ -233,14 +218,34 @@ export class WidgetComponent implements OnInit, OnDestroy {
    */
   getComputedChartHeight(): number {
     const widget = this.widgetSignal();
-    const baseHeight = this.chartHeightSignal();
     
     if (widget?.position) {
       const rows = widget.position.rows || 1;
-      return Math.max(baseHeight * rows, 200); // Minimum height of 200px
+      
+      // Calculate height based on gridster row height (50px per row)
+      const gridRowHeight = 50; // This should match the fixedRowHeight in gridster config
+      const headerHeight = widget.config?.header ? 40 : 10; // Height for widget header if present
+      const padding = 10; // Additional padding
+      
+      const calculatedHeight = (rows * gridRowHeight) - headerHeight - padding;
+      
+      // Different minimum heights based on widget type
+      const componentType = widget.config?.component;
+      let minHeight = 50; // Default minimum
+      
+      if (componentType === 'echart' || componentType === 'chart') {
+        minHeight = 200; // Charts need more space
+      } else if (componentType === 'tile') {
+        minHeight = 80; // Tiles can be smaller
+      } else if (componentType === 'filter') {
+        minHeight = 40; // Filters are very compact
+      }
+      
+      return Math.max(calculatedHeight, minHeight);
     }
     
-    return baseHeight;
+    // Fallback to signal value or default
+    return this.chartHeightSignal() || 300;
   }
 
   /**
@@ -251,11 +256,11 @@ export class WidgetComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Get component configuration for dynamic rendering
+   * Get component configuration for dynamic rendering (for non-chart components)
    */
   getComponentForWidget(): { component: any; inputs: any } | null {
     const widget = this.getCurrentWidget();
-    if (!widget) {
+    if (!widget || this.isChartWidget()) {
       return null;
     }
 
@@ -263,8 +268,7 @@ export class WidgetComponent implements OnInit, OnDestroy {
       component: onGetWidget(widget),
       inputs: {
         widget: widget,
-        onDataLoad: this.onDataLoad,
-        onUpdateFilter: this.onUpdateFilter,
+        // No need for event emitters with signal-based architecture
       },
     };
   }

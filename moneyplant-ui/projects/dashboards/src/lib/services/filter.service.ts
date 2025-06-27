@@ -65,11 +65,15 @@ export class FilterService {
    * Add a new filter value from a chart click
    */
   addFilterValue(widgetId: string, widgetTitle: string, clickedData: any): void {
+    console.log('🔧 FilterService: addFilterValue called', { widgetId, widgetTitle, clickedData });
+    
     if (this.isUpdatingSignal()) {
+      console.log('⚠️ FilterService: Already updating, skipping');
       return; // Prevent infinite loop
     }
 
     const filterValue = this.createFilterValueFromClickData(clickedData);
+    console.log('🔧 FilterService: Created filter value:', filterValue);
     
     if (filterValue) {
       // Add widget information
@@ -89,6 +93,7 @@ export class FilterService {
       // Add to filter values
       const updatedFilters = [...currentFilters, filterValue];
       
+      console.log('🔧 FilterService: Adding filter, updated filters:', updatedFilters);
       this.debouncedUpdate(updatedFilters);
 
       // Add to filter events
@@ -319,15 +324,25 @@ export class FilterService {
   private matchesFilter(item: any, filter: IFilterValues): boolean {
     // Use filterColumn if available, otherwise fall back to accessor
     const filterKey = filter.filterColumn || filter.accessor;
+    const filterValue = filter['value'] || filter[filter.accessor];
+    
+    if (!filterKey || !filterValue) {
+      return true; // If no filter key or value, don't filter
+    }
     
     let result = false;
     
     switch (filter.accessor) {
       case 'category':
-        result = item.name === filter['category'] || item.category === filter['category'];
+        // Check both name and the filterColumn property
+        result = item.name === filterValue || 
+                item[filterKey] === filterValue ||
+                item.category === filterValue;
         break;
       case 'series':
-        result = item.seriesName === filter['series'] || item.series === filter['series'];
+        result = item.seriesName === filterValue || 
+                item[filterKey] === filterValue ||
+                item.series === filterValue;
         break;
       case 'coordinates':
         result = item.value && 
@@ -337,10 +352,9 @@ export class FilterService {
         break;
       default:
         // For custom accessors, check if the property exists and matches
-        // Use filterColumn if available, otherwise use accessor
-        const propertyToCheck = filter.filterColumn || filter.accessor;
-        result = item[propertyToCheck] === filter[filter.accessor] || 
-               item[propertyToCheck]?.toString() === filter['value'];
+        result = item[filterKey] === filterValue || 
+               item[filterKey]?.toString() === filterValue ||
+               item.name === filterValue; // Fallback for name-based matching
         break;
     }
     

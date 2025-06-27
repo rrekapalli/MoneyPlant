@@ -1,5 +1,15 @@
 <div class="widget-container" [attr.data-widget-id]="getCurrentWidget()?.id" [style.height.px]="getComputedChartHeight()">
-  <ng-container *ngComponentOutlet="getComponentForWidget()?.component; inputs: getComponentForWidget()?.inputs">
+  
+  <!-- EChart Component -->
+  <vis-echart 
+    *ngIf="isChartWidget()"
+    [widget]="getCurrentWidget()!">
+  </vis-echart>
+
+  <!-- Use NgComponentOutlet for other components -->
+  <ng-container *ngIf="!isChartWidget() && hasValidWidget()">
+    <ng-container *ngComponentOutlet="getComponentForWidget()?.component; inputs: getComponentForWidget()?.inputs">
+    </ng-container>
   </ng-container>
 
   <!-- Fallback for unknown widget types -->

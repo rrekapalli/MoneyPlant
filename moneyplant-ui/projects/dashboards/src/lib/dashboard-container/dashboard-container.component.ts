@@ -181,7 +181,7 @@ export class DashboardContainerComponent implements OnInit, OnDestroy {
       maxCols: 12,
       minCols: 1,
       maxRows: 100,
-      minRows: 1,
+      minRows: 50,
       fixedColWidth: 100,
       fixedRowHeight: 100,
       enableEmptyCellClick: false,
@@ -353,10 +353,8 @@ export class DashboardContainerComponent implements OnInit, OnDestroy {
   }
 
   async onDataLoad(widget: IWidget) {
-    // Apply filters to widget if any exist
-    if (this.filterValues && this.filterValues.length > 0) {
-      this.applyFiltersToWidget(widget);
-    }
+    // Data loading is now handled automatically via signals
+    // No longer needed with signal-based architecture
   }
 
   /**
@@ -402,108 +400,20 @@ export class DashboardContainerComponent implements OnInit, OnDestroy {
   }
 
   onUpdateFilter($event: any) {
-    const filterWidget = this.widgets.find(w => w.config?.component === 'filter');
-    if (!filterWidget) {
-      return;
-    }
+    console.log('🏢 Dashboard Container: onUpdateFilter called with:', $event);
     
-    const newFilterWidget = {...filterWidget};
+    // DISABLED: Filter updates now handled directly by FilterService
+    // This prevents infinite loops between dashboard container and overall component
+    console.log('⚠️ Dashboard Container: onUpdateFilter disabled - filters handled by FilterService');
+    return;
     
-    // Ensure the config and options structure exists with proper typing
-    if (!newFilterWidget.config) {
-      newFilterWidget.config = {
-        options: { values: [] } as IFilterOptions
-      };
-    } else if (!newFilterWidget.config.options) {
-      newFilterWidget.config.options = { values: [] } as IFilterOptions;
-    }
-    
-    // Ensure the values array exists
-    const filterOptions = newFilterWidget.config.options as IFilterOptions;
-    if (!filterOptions.values) {
-      filterOptions.values = [];
-    }
-
-    if(Array.isArray($event)) {
-      // Handle array events (Clear All or Set Filters)
-      filterOptions.values = $event;
-      this.filterValues = $event;
-      
-      // If it's an empty array, it means "Clear All" was clicked
-      if ($event.length === 0) {
-        // Clear the dashboard builder filter values
-        this.dashboardBuilder.setFilterValues([]);
-        // Clear local filter values array
-        this.filterValues = [];
-      }
-    }
-    else if ($event && $event.value && $event.widget) {
-      // Handle chart click events
-      const clickedData = $event.value;
-      const sourceWidget = $event.widget;
-      const filterValue = $event.filterValue; // New filter value from echart component
-      
-      // Use the filter value from echart component if available, otherwise create one
-      let finalFilterValue: any = filterValue;
-      
-      if (!finalFilterValue && clickedData && typeof clickedData === 'object') {
-        // Get the filter column from source widget config, fallback to accessor
-        const filterColumn = sourceWidget.config?.filterColumn || sourceWidget.config?.accessor || 'unknown';
-        
-        // Fallback to creating filter value from clicked data
-        if (clickedData.name) {
-          finalFilterValue = {
-            accessor: 'category',
-            filterColumn: filterColumn,
-            category: clickedData.name,
-            value: clickedData.value || clickedData.name
-          };
-        }
-        // For other chart types, try to extract meaningful data
-        else if (clickedData.seriesName) {
-          finalFilterValue = {
-            accessor: 'series',
-            filterColumn: filterColumn,
-            series: clickedData.seriesName,
-            value: clickedData.value || clickedData.seriesName
-          };
-        }
-        // For scatter plots or other data types
-        else {
-          // Try to find any meaningful property
-          const keys = Object.keys(clickedData);
-          if (keys.length > 0) {
-            const key = keys[0];
-            finalFilterValue = {
-              accessor: key,
-              filterColumn: filterColumn,
-              [key]: clickedData[key],
-              value: clickedData[key]
-            };
-          }
-        }
-        
-        // Add widget information
-        if (sourceWidget.config?.header?.title) {
-          finalFilterValue.widgetTitle = sourceWidget.config.header.title;
-        }
-        if (sourceWidget.id) {
-          finalFilterValue.widgetId = sourceWidget.id;
-        }
-      }
-      
-      // Only add the filter if we have valid data
-      if (finalFilterValue && finalFilterValue.accessor && finalFilterValue.value) {
-        filterOptions.values.push(finalFilterValue);
-        this.filterValues.push(finalFilterValue);
-      }
-    }
-    
-    // Update the dashboard configuration with new filter values
-    this.dashboardBuilder.setFilterValues(this.filterValues);
-    
-    // Emit filter values change event to trigger widget updates
-    this.filterValuesChanged.emit(this.filterValues);
+    // // Old code kept for reference but disabled
+    // const filterWidget = this.widgets.find(w => w.config?.component === 'filter');
+    // if (!filterWidget) {
+    //   console.log('⚠️ Dashboard Container: No filter widget found');
+    //   return;
+    // }
+    // ... rest of old implementation
   }
 
   onDashboardSelectionChanged($event: any) {

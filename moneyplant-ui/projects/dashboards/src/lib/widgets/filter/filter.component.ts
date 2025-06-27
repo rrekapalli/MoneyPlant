@@ -1,8 +1,9 @@
-import {Component, EventEmitter, Input} from '@angular/core';
+import {Component, EventEmitter, Input, OnInit, OnDestroy, inject, signal, computed, effect, ChangeDetectionStrategy} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {IWidget} from '../../entities/IWidget';
 import {IFilterValues} from '../../entities/IFilterValues';
 import {IFilterOptions} from '../../entities/IFilterOptions';
+import {FilterService} from '../../services/filter.service';
 
 @Component({
   selector: 'vis-filters',
@@ -10,57 +11,63 @@ import {IFilterOptions} from '../../entities/IFilterOptions';
   styleUrls: ['./filter.component.css'],
   standalone: true,
   imports: [CommonModule],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class FilterComponent {
+export class FilterComponent implements OnInit, OnDestroy {
   @Input() widget!: IWidget;
   @Input() onUpdateFilter!: EventEmitter<any>;
   @Input() onDataLoad!: EventEmitter<any>;
 
-  // ******************  Firing in an infite loop!!
-  get filterValues(): IFilterValues[] {
-    const filters: IFilterOptions = this.widget?.config?.options as IFilterOptions;
+  // Inject FilterService
+  private filterService = inject(FilterService);
+  
+  // Computed property for filter values from FilterService (read-only)
+  protected readonly filterValues = this.filterService.filterValues;
+  
+  // Computed property for whether filters are active
+  protected readonly hasActiveFilters = this.filterService.hasActiveFilters;
 
-    if (filters && filters.values && Array.isArray(filters.values) && filters.values.length > 0) {
-      return (filters.values as IFilterValues[]);
-    } else {
-      return [];
+  ngOnInit(): void {
+    // No initialization needed - just display filters from service
+  }
+
+  ngOnDestroy(): void {
+    // Effects are automatically cleaned up
+  }
+
+  /**
+   * Clear all filters
+   */
+  clearAllFilters(event?: any): void {
+    if (event) {
+      console.log('🗑️ Filter Widget: Clearing all filters');
+      this.filterService.clearAllFilters();
     }
   }
 
-  set filterValues(values: IFilterValues[]) {
-    if (values && values.length > 0) {
-      if (!this.widget.config) {
-        this.widget.config = {
-          options: { values: [] } as IFilterOptions
-        };
-      } else if (!this.widget.config.options) {
-        this.widget.config.options = { values: [] } as IFilterOptions;
-      }
-      (this.widget.config.options as IFilterOptions).values = values;
+  /**
+   * Clear a specific filter
+   */
+  clearFilter(filterToRemove: IFilterValues): void {
+    if (filterToRemove) {
+      console.log('🗑️ Filter Widget: Removing filter:', filterToRemove);
+      this.filterService.removeFilterValue(filterToRemove);
     }
   }
 
-  clearAllFilters(item: any) {
-    if (item) {
-      // Clear local widget state
-      this.filterValues = [];
-      if (this.widget?.config?.options) {
-        (this.widget.config.options as IFilterOptions).values = [];
-      }
-      
-      // Emit empty array to notify dashboard container to clear all filters
-      this.onUpdateFilter.emit([]);
-    }
+  /**
+   * Legacy getter for backward compatibility (now uses FilterService)
+   */
+  get legacyFilterValues(): IFilterValues[] {
+    return this.filterValues();
   }
 
-  clearFilter(item: any) {
-    if (JSON.stringify(item).length > 0) {
-      const filterValues = this.filterValues.splice(this.filterValues.indexOf(item), 1);
-      if (this.widget?.config?.options) {
-        (this.widget.config.options as IFilterOptions).values = this.filterValues;
-      }
-      
-      this.onUpdateFilter.emit(this.filterValues);
+  /**
+   * Legacy setter for backward compatibility (now updates FilterService)
+   */
+  set legacyFilterValues(values: IFilterValues[]) {
+    if (values && Array.isArray(values)) {
+      this.filterService.setFilterValues(values);
     }
   }
 }

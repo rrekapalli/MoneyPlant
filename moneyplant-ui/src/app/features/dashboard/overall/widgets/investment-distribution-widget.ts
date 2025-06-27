@@ -18,7 +18,7 @@ export const INVESTMENT_DISTRIBUTION_DATA: DensityMapData[] = [
  * Create the investment distribution density map widget
  */
 export function createInvestmentDistributionWidget(): IWidget {
-  return DensityMapBuilder.create()
+  const widget = DensityMapBuilder.create()
     .setData([]) // Data will be populated from shared dashboard data
     .setMapType(MapType.WORLD)
     .setHeader('Investment Distribution by Country')
@@ -35,6 +35,13 @@ export function createInvestmentDistributionWidget(): IWidget {
     .setShadow(15, 'rgba(0, 0, 0, 0.4)')
     .setTooltip('item', '{b}: {c}% of total investment')
     .build();
+    
+  // Add filterColumn configuration
+  if (widget.config) {
+    widget.config.filterColumn = 'market';
+  }
+  
+  return widget;
 }
 
 /**

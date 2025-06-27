@@ -19,7 +19,7 @@ export const samplePolarChartData: PolarChartData[] = [
  * Create a basic polar chart widget
  */
 export function createPolarChartWidget(): IWidget {
-  return PolarChartBuilder.create()
+  const widget = PolarChartBuilder.create()
     .setData([]) // Data will be populated from shared dashboard data
     .setTitle('Performance Metrics', '360-degree view')
     .setPolarCenter(['50%', '50%'])
@@ -35,6 +35,13 @@ export function createPolarChartWidget(): IWidget {
     .setHeader('Performance Metrics')
     .setPosition({ x: 0, y: 8, cols: 6, rows: 8 })
     .build();
+    
+  // Add filterColumn configuration
+  if (widget.config) {
+    widget.config.filterColumn = 'assetCategory';
+  }
+  
+  return widget;
 }
 
 /**

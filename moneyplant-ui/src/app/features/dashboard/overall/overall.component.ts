@@ -132,7 +132,7 @@ import { createTestFilterWidget } from './widgets/test-filter-widget';
 // Filter service
 import { FilterService } from '@dashboards/public-api';
 
-import { Subscription } from 'rxjs';
+
 
 @Component({
   selector: 'app-overall',
@@ -154,16 +154,18 @@ export class OverallComponent implements OnInit, OnDestroy {
   // Signal-based properties
   private dashboardDataSignal = signal<DashboardDataRow[]>([...INITIAL_DASHBOARD_DATA]);
   private widgetsSignal = signal<IWidget[]>([]);
-  private filterValuesSignal = signal<IFilterValues[]>([]);
   private isExportingExcelSignal = signal<boolean>(false);
   private isHighlightingEnabledSignal = signal<boolean>(true);
   private highlightingOpacitySignal = signal<number>(0.25);
+  
+  // Use FilterService signals instead of local signal
+  public readonly filterValues = this.filterService.filterValues;
 
   // Computed dashboard configuration
   public readonly dashboardConfig = computed((): DashboardConfig => {
     return StandardDashboardBuilder.createStandard()
       .setWidgets(this.widgetsSignal())
-      .setFilterValues(this.filterValuesSignal())
+      .setFilterValues(this.filterValues())
       .setDashboardId('overall-dashboard')
       .setEditMode(false)
       .setGridDimensions(12, 150)
@@ -191,16 +193,16 @@ export class OverallComponent implements OnInit, OnDestroy {
     return this.widgetsSignal();
   }
 
-  get filterValues(): IFilterValues[] {
-    return this.filterValuesSignal();
-  }
+
 
   // Flag to prevent recursive filter updates
   private isUpdatingFilters = false;
+  
+  // Flag to prevent infinite loops in effects
+  private isUpdatingWidgets = false;
 
   // Debounce mechanism for widget updates
   private widgetUpdateTimeout?: any;
-  private filterSubscription?: Subscription;
 
   // Reference to dashboard container for PDF export
   @ViewChild('dashboardContainer', { static: false }) dashboardContainer!: ElementRef<HTMLElement>;
@@ -213,37 +215,31 @@ export class OverallComponent implements OnInit, OnDestroy {
     private excelExportService: ExcelExportService,
     private filterService: FilterService
   ) {
-    // Effects for reactive updates
+    // Minimal effect for change detection - only on filter changes
     effect(() => {
-      // Update widgets when data or filters change
-      this.updateWidgetsBasedOnSignals();
-    });
-
-    effect(() => {
-      // Sync with filter service
-      const filters = this.filterValuesSignal();
-      if (!this.isUpdatingFilters && filters.length > 0) {
-        this.filterService.setFilterValues(filters);
-      }
-    });
-
-    effect(() => {
-      // Trigger change detection when signals change
+      // Only track filter changes for change detection
+      this.filterValues();
+      
+      // Trigger change detection only for filter changes
       this.cdr.markForCheck();
+    });
+
+    // Effect to listen to FilterService changes and update widgets
+    effect(() => {
+      if (this.isUpdatingFilters) return; // Prevent loops
+      
+      const currentFilters = this.filterValues();
+      
+      // Update widgets when filters change
+      if (currentFilters.length >= 0) { // Always update (including when cleared)
+        console.log('🔄 FilterService changed, updating widgets with filters:', currentFilters);
+        this.updateWidgetsWithFilters(currentFilters);
+      }
     });
   }
 
   ngOnInit(): void {
     this.initializeDashboardConfig();
-    
-    // Subscribe to filter service changes
-    this.filterSubscription = this.filterService.filterValues$.subscribe(filters => {
-      if (!this.isUpdatingFilters) {
-        this.isUpdatingFilters = true;
-        this.filterValuesSignal.set(filters);
-        this.isUpdatingFilters = false;
-      }
-    });
 
     // Register world map for density map charts
     import('echarts-map-collection/custom/world.json').then((worldMapData) => {
@@ -254,9 +250,6 @@ export class OverallComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    if (this.filterSubscription) {
-      this.filterSubscription.unsubscribe();
-    }
     if (this.widgetUpdateTimeout) {
       clearTimeout(this.widgetUpdateTimeout);
     }
@@ -266,23 +259,31 @@ export class OverallComponent implements OnInit, OnDestroy {
    * Update widgets based on current signal values
    */
   private updateWidgetsBasedOnSignals(): void {
-    const currentData = this.dashboardDataSignal();
-    const currentFilters = this.filterValuesSignal();
+    if (this.isUpdatingWidgets) {
+      return; // Prevent infinite loop
+    }
     
-    // Apply filters to data
-    const filteredData = this.applyFiltersToFlatData(currentData, currentFilters);
-    
-    // Update each widget with filtered data
-    const updatedWidgets = this.widgetsSignal().map((widget: IWidget) => {
-      const widgetData = this.getFilteredDataForWidget(widget.config?.header?.title || '');
-      return {
-        ...widget,
-        data: widgetData
-      };
-    });
+    this.isUpdatingWidgets = true;
+    try {
+      const currentData = this.dashboardDataSignal();
+      const currentFilters = this.filterValues();
+      
+      // Apply filters to data
+      const filteredData = this.applyFiltersToFlatData(currentData, currentFilters);
+      
+      // Update each widget with filtered data
+      const updatedWidgets = this.widgetsSignal().map((widget: IWidget) => {
+        const widgetData = this.getFilteredDataForWidget(widget.config?.header?.title || '');
+        return {
+          ...widget,
+          data: widgetData
+        };
+      });
 
-    if (JSON.stringify(updatedWidgets) !== JSON.stringify(this.widgetsSignal())) {
+      // Update widgets signal (avoid JSON.stringify due to circular references in chart instances)
       this.widgetsSignal.set(updatedWidgets);
+    } finally {
+      this.isUpdatingWidgets = false;
     }
   }
 
@@ -291,12 +292,20 @@ export class OverallComponent implements OnInit, OnDestroy {
    */
   onFilterValuesChanged(filters: IFilterValues[]): void {
     if (this.isUpdatingFilters) {
+      console.log('⚠️ onFilterValuesChanged: Already updating filters, skipping');
       return;
     }
 
+    console.log('🔍 onFilterValuesChanged called with filters:', filters);
+
     this.isUpdatingFilters = true;
     try {
-      this.filterValuesSignal.set(filters);
+      // Only update widgets, don't update FilterService to avoid circular calls
+      // The FilterService is already updated by the chart click events
+      console.log('✅ Updating widgets with new filters:', filters);
+      
+      // Manually update widgets with new filters
+      this.updateWidgetsWithFilters(filters);
     } finally {
       this.isUpdatingFilters = false;
     }
@@ -411,31 +420,42 @@ export class OverallComponent implements OnInit, OnDestroy {
    * Check if a flat data row matches a filter
    */
   private matchesFlatDataFilter(row: DashboardDataRow, filter: IFilterValues): boolean {
-    // Handle different filter types
-    switch (filter.accessor) {
-      case 'category':
-        // Filter by assetCategory
-        return row.assetCategory === filter['category'] || 
-               row.assetCategory === filter['value'];
+    // Use filterColumn if available, otherwise fall back to accessor
+    const filterColumn = filter.filterColumn || filter.accessor;
+    const filterValue = filter['value'] || filter[filter.accessor];
+    
+    if (!filterColumn || !filterValue) {
+      return true; // If no filter column or value, don't filter
+    }
+    
+    // Match based on the filter column
+    switch (filterColumn) {
+      case 'assetCategory':
+        return row.assetCategory === filterValue;
         
       case 'month':
-        // Filter by month
-        return row.month === filter['month'] || 
-               row.month === filter['value'];
+        return row.month === filterValue;
         
       case 'market':
-        // Filter by market
-        return row.market === filter['market'] || 
-               row.market === filter['value'];
+        return row.market === filterValue;
         
-      case 'assetCategory':
-        // Direct assetCategory filter
-        return row.assetCategory === filter['assetCategory'] || 
-               row.assetCategory === filter['value'];
+      case 'sector':
+        // For test filter widget - map sector to assetCategory
+        return row.assetCategory === filterValue;
+        
+      case 'date':
+        // For candlestick charts - this would need date matching logic
+        // For now, return true since our sample data doesn't have date fields
+        return true;
         
       default:
-        // Try to match by any property
-        const filterValue = filter['value'] || filter[filter.accessor];
+        // Try to match by the filterColumn property directly
+        const rowValue = (row as any)[filterColumn];
+        if (rowValue !== undefined) {
+          return rowValue === filterValue;
+        }
+        
+        // Fallback: try to match by any property (legacy behavior)
         return row.assetCategory === filterValue || 
                row.month === filterValue || 
                row.market === filterValue;
@@ -459,9 +479,13 @@ export class OverallComponent implements OnInit, OnDestroy {
       case 'Portfolio Performance':
         return this.groupByAndSum(filteredData, 'month', 'totalValue');
       case 'Investment Distribution by Region':
+      case 'Investment Distribution by Country':
         return this.groupByAndSum(filteredData, 'market', 'totalValue');
       case 'Test Filter Widget':
         return this.groupByAndSum(filteredData, 'assetCategory', 'totalValue');
+      case 'Candlestick Chart':
+      case 'Advanced Candlestick Chart':
+        return this.createCandlestickData(filteredData);
       default:
         // For other widget types, return the filtered data as-is
         return filteredData;
@@ -507,6 +531,7 @@ export class OverallComponent implements OnInit, OnDestroy {
         return riskReturnResult;
         
       case 'Investment Distribution by Region':
+      case 'Investment Distribution by Country':
         // Group by market (country) and sum totalValue for map visualization
         const investmentData = this.groupByAndSum(this.dashboardData, 'market', 'totalValue');
         return investmentData;
@@ -590,6 +615,12 @@ export class OverallComponent implements OnInit, OnDestroy {
         const testData = this.groupByAndSum(this.dashboardData, 'assetCategory', 'totalValue');
         return testData;
         
+      case 'Candlestick Chart':
+      case 'Advanced Candlestick Chart':
+        // Generate candlestick OHLC data from dashboard data
+        const candlestickData = this.createCandlestickData(this.dashboardData);
+        return candlestickData;
+        
       default:
         console.warn(`Unknown widget title: ${widgetTitle}`);
         return null;
@@ -610,6 +641,41 @@ export class OverallComponent implements OnInit, OnDestroy {
     }, {} as Record<string, number>);
 
     return Object.entries(grouped).map(([name, value]) => ({ name, value }));
+  }
+
+  /**
+   * Helper method to create candlestick OHLC data from dashboard data
+   */
+  private createCandlestickData(data: DashboardDataRow[]): { data: number[][]; xAxisData: string[] } {
+    // Sort data by month to create time series
+    const sortedData = data.sort((a, b) => a.month.localeCompare(b.month));
+    
+    // Group by month and calculate OHLC values
+    const monthlyData = sortedData.reduce((acc, row) => {
+      if (!acc[row.month]) {
+        acc[row.month] = [];
+      }
+      acc[row.month].push(row.totalValue);
+      return acc;
+    }, {} as Record<string, number[]>);
+    
+    const candlestickData: number[][] = [];
+    const dateLabels: string[] = [];
+    
+    Object.entries(monthlyData).forEach(([month, values]) => {
+      if (values.length > 0) {
+        // Calculate OHLC: [open, close, low, high]
+        const open = values[0];
+        const close = values[values.length - 1];
+        const high = Math.max(...values);
+        const low = Math.min(...values);
+        
+        candlestickData.push([open, close, low, high]);
+        dateLabels.push(month);
+      }
+    });
+    
+    return { data: candlestickData, xAxisData: dateLabels };
   }
 
   /**
@@ -1017,6 +1083,14 @@ export class OverallComponent implements OnInit, OnDestroy {
       if (widgetTitle === 'Risk vs Return Analysis') {
         // Scatter plot - update data points
         series.data = filteredData;
+      } else if (widgetTitle === 'Candlestick Chart' || widgetTitle === 'Advanced Candlestick Chart') {
+        // Candlestick charts expect different data structure: { data: number[][], xAxisData: string[] }
+        if (filteredData && filteredData.data && filteredData.xAxisData) {
+          series.data = filteredData.data;
+          if (newOptions.xAxis && newOptions.xAxis.data !== undefined) {
+            newOptions.xAxis.data = filteredData.xAxisData;
+          }
+        }
       } else {
         // Bar/Pie/Line charts - update data
         series.data = filteredData;
@@ -1304,27 +1378,10 @@ export class OverallComponent implements OnInit, OnDestroy {
           ]
         };
         
-      // case 'candlestick':
-      //   // This is a candlestick chart - provide sample OHLC data
-      //   console.log('Detected candlestick widget, providing sample OHLC data');
-      //   // Sample OHLC data based on totalValue from dashboard data
-      //   const stockData = [];
-      //   const dateLabels = [];
-      //   const sortedData = this.dashboardData.sort((a, b) => a.month.localeCompare(b.month));
-      //   
-      //   for (let i = 0; i < Math.min(sortedData.length, 15); i++) {
-      //     const baseValue = sortedData[i].totalValue;
-      //     // Generate realistic OHLC data: [open, close, low, high]
-      //     const open = baseValue + (Math.random() - 0.5) * 10;
-      //     const close = open + (Math.random() - 0.5) * 15;
-      //     const low = Math.min(open, close) - Math.random() * 5;
-      //     const high = Math.max(open, close) + Math.random() * 5;
-      //     
-      //     stockData.push([open, close, low, high]);
-      //     dateLabels.push(`2024-01-${String(i + 1).padStart(2, '0')}`);
-      //   }
-      //   
-      //   return { data: stockData, xAxisData: dateLabels };
+      case 'candlestick':
+        // This is a candlestick chart - provide OHLC data from dashboard data
+        console.log('Detected candlestick widget, providing OHLC data from dashboard');
+        return this.createCandlestickData(this.dashboardData);
         
       default:
         console.warn(`Unknown chart type: ${seriesType}`);
