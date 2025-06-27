@@ -1,8 +1,8 @@
 <!-- Dashboard Header -->
 <vis-dashboard-header 
   title="Financial Dashboard"
-  [isHighlightingEnabled]="isHighlightingEnabled"
-  [isExportingExcel]="isExportingExcel"
+  [isHighlightingEnabled]="isHighlightingEnabled()"
+  [isExportingExcel]="isExportingExcel()"
   (onExportToExcel)="exportDashboardToExcel()"
   (onToggleHighlighting)="toggleHighlightingMode()"
   (onSetHighlightingPreset)="setHighlightingPreset($event)">
@@ -15,9 +15,9 @@
     <!-- Dashboard Container Component -->
     <vis-dashboard-container 
       #dashboardContainerComponent
-      [widgets]="dashboardConfig.widgets" 
-      [options]="dashboardConfig.config"
-      [dashboardId]="dashboardConfig.dashboardId"
+      [widgets]="dashboardConfig().widgets" 
+      [options]="dashboardConfig().config"
+      [dashboardId]="dashboardConfig().dashboardId"
       (filterValuesChanged)="onFilterValuesChanged($event)">
     </vis-dashboard-container>
   </div>

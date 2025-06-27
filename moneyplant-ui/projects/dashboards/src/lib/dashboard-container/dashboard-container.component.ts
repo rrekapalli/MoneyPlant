@@ -9,6 +9,12 @@ import {
   ViewChild,
   inject,
   output,
+  signal,
+  computed,
+  effect,
+  OnInit,
+  OnDestroy,
+  ChangeDetectionStrategy,
 } from '@angular/core';
 import {
   GridType,
@@ -51,13 +57,61 @@ import { DashboardConfig } from './dashboard-container-builder';
     NgxPrintModule,
     ToastModule,
   ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class DashboardContainerComponent {
+export class DashboardContainerComponent implements OnInit, OnDestroy {
   
-  @Input() widgets!: IWidget[];
-  @Input() filterValues: IFilterValues[] = [];
+  // Signal-based properties
+  private widgetsSignal = signal<IWidget[]>([]);
+  private filterValuesSignal = signal<IFilterValues[]>([]);
+  private dashboardIdSignal = signal<string>('');
+  private isEditModeSignal = signal<boolean>(false);
+  private chartHeightSignal = signal<number>(300);
+  private optionsSignal = signal<GridsterConfig>({});
+
+  // Computed values
+  public readonly mergedOptions = computed(() => {
+    const defaultConfig = this.getDefaultGridsterConfig();
+    return { ...defaultConfig, ...this.optionsSignal() };
+  });
+
+  // Legacy Input/Output for backward compatibility
+  @Input() set widgets(value: IWidget[]) {
+    this.widgetsSignal.set(value || []);
+  }
+  get widgets(): IWidget[] {
+    return this.widgetsSignal();
+  }
+
+  @Input() set filterValues(value: IFilterValues[]) {
+    this.filterValuesSignal.set(value || []);
+  }
+  get filterValues(): IFilterValues[] {
+    return this.filterValuesSignal();
+  }
+
+  @Input() set dashboardId(value: any) {
+    this.dashboardIdSignal.set(value || '');
+  }
+  get dashboardId(): string {
+    return this.dashboardIdSignal();
+  }
+
+  @Input() set isEditMode(value: boolean) {
+    this.isEditModeSignal.set(value || false);
+  }
+  get isEditMode(): boolean {
+    return this.isEditModeSignal();
+  }
+
+  @Input() set options(value: GridsterConfig) {
+    this.optionsSignal.set(value || {});
+  }
+  get options(): GridsterConfig {
+    return this.optionsSignal();
+  }
+
   public container = DashboardContainerComponent;
-  chartHeight: number = 300;
   readonly defaultChartHeight: number = 400;
 
   @Output() containerTouchChanged: EventEmitter<any> = new EventEmitter<any>();
@@ -66,12 +120,8 @@ export class DashboardContainerComponent {
   @Output() filterValuesChanged: EventEmitter<IFilterValues[]> = new EventEmitter<IFilterValues[]>();
 
   availableDashboards: any[] = [];
-  //selectedDashboardId: string = '';
-
-  @Input() dashboardId:any;
 
   initialWidgetData: any;
-  @Input() isEditMode: boolean = false;
 
   onShowConfirmation: any = false;
   onShowNewDashboardDialog = false;
@@ -84,9 +134,6 @@ export class DashboardContainerComponent {
   @ViewChild(GridsterComponent) gridster!: GridsterComponent;
   @ViewChild('dashboardContainer', { static: true }) dashboardContainer!: ElementRef<HTMLElement>;
 
-  @Input() options: GridsterConfig = {};
-  public mergedOptions: GridsterConfig = {};
-
   // Track view modes for each widget
   private widgetViewModes: Map<string, 'chart' | 'table'> = new Map();
 
@@ -96,8 +143,70 @@ export class DashboardContainerComponent {
   // PDF export service
   // private pdfExportService = inject(PdfExportService);
 
+  constructor() {
+    // Effects for reactive updates
+    effect(() => {
+      // Emit legacy events when signals change
+      this.filterValuesChanged.emit(this.filterValuesSignal());
+    });
+
+    effect(() => {
+      // Update dashboard builder when signals change
+      this.updateDashboardBuilder();
+    });
+  }
+
   ngOnInit() {
     this.initializeDashboard();
+  }
+
+  ngOnDestroy() {
+    // Cleanup any resources if needed
+  }
+
+  /**
+   * Get default gridster configuration
+   */
+  private getDefaultGridsterConfig(): GridsterConfig {
+    return {
+      gridType: GridType.VerticalFixed,
+      displayGrid: DisplayGrid.None,
+      outerMargin: true,
+      draggable: {
+        enabled: this.isEditModeSignal(),
+      },
+      resizable: {
+        enabled: this.isEditModeSignal(),
+      },
+      maxCols: 12,
+      minCols: 1,
+      maxRows: 100,
+      minRows: 1,
+      fixedColWidth: 100,
+      fixedRowHeight: 100,
+      enableEmptyCellClick: false,
+      enableEmptyCellContextMenu: false,
+      enableEmptyCellDrop: false,
+      enableEmptyCellDrag: false,
+      emptyCellDragMaxCols: 50,
+      emptyCellDragMaxRows: 50,
+      ignoreMarginInRow: false,
+      mobileBreakpoint: 640,
+    };
+  }
+
+  /**
+   * Update dashboard builder with current signal values
+   */
+  private updateDashboardBuilder(): void {
+    this.dashboardBuilder = StandardDashboardBuilder.createStandard()
+      .setWidgets(this.widgetsSignal())
+      .setFilterValues(this.filterValuesSignal())
+      .setDashboardId(this.dashboardIdSignal())
+      .setEditMode(this.isEditModeSignal())
+      .setChartHeight(this.chartHeightSignal())
+      .setDefaultChartHeight(this.defaultChartHeight)
+      .setCustomConfig(this.optionsSignal());
   }
 
   /**
@@ -106,13 +215,13 @@ export class DashboardContainerComponent {
   private initializeDashboard(): void {
     // Build the dashboard configuration
     const dashboardConfig = this.dashboardBuilder
-      .setWidgets(this.widgets || [])
-      .setFilterValues(this.filterValues || [])
-      .setDashboardId(this.dashboardId || '')
-      .setEditMode(this.isEditMode)
-      .setChartHeight(this.chartHeight)
+      .setWidgets(this.widgetsSignal() || [])
+      .setFilterValues(this.filterValuesSignal() || [])
+      .setDashboardId(this.dashboardIdSignal() || '')
+      .setEditMode(this.isEditModeSignal())
+      .setChartHeight(this.chartHeightSignal())
       .setDefaultChartHeight(this.defaultChartHeight)
-      .setCustomConfig(this.options)
+      .setCustomConfig(this.optionsSignal())
       .setItemResizeCallback(this.onWidgetResize.bind(this))
       .setItemChangeCallback(this.onWidgetChange.bind(this))
       .build();
@@ -125,17 +234,12 @@ export class DashboardContainerComponent {
    * Apply dashboard configuration to component properties
    */
   private applyDashboardConfig(config: DashboardConfig): void {
-    this.mergedOptions = config.config;
-    this.widgets = config.widgets;
-    this.filterValues = config.filterValues;
-    this.dashboardId = config.dashboardId;
-    this.isEditMode = config.isEditMode;
-    this.chartHeight = config.chartHeight;
-    
-    // Override the exportToPdf method with the component's implementation
-    // if (config.exportToPdf) {
-    //   config.exportToPdf = this.exportToPdf.bind(this);
-    // }
+    this.optionsSignal.set({ ...this.optionsSignal(), ...config.config });
+    this.widgetsSignal.set(config.widgets);
+    this.filterValuesSignal.set(config.filterValues);
+    this.dashboardIdSignal.set(config.dashboardId);
+    this.isEditModeSignal.set(config.isEditMode);
+    this.chartHeightSignal.set(config.chartHeight);
   }
 
   /**
@@ -143,46 +247,37 @@ export class DashboardContainerComponent {
    */
   public updateDashboardConfig(updates: Partial<DashboardConfig>): void {
     if (updates.config) {
-      this.mergedOptions = { ...this.mergedOptions, ...updates.config };
+      this.optionsSignal.update(current => ({ ...current, ...updates.config }));
     }
     
     if (updates.widgets) {
-      this.widgets = updates.widgets;
+      this.widgetsSignal.set(updates.widgets);
     }
     
     if (updates.filterValues) {
-      this.filterValues = updates.filterValues;
+      this.filterValuesSignal.set(updates.filterValues);
     }
     
     if (updates.dashboardId) {
-      this.dashboardId = updates.dashboardId;
+      this.dashboardIdSignal.set(updates.dashboardId);
     }
     
     if (updates.isEditMode !== undefined) {
-      this.isEditMode = updates.isEditMode;
+      this.isEditModeSignal.set(updates.isEditMode);
     }
     
     if (updates.chartHeight) {
-      this.chartHeight = updates.chartHeight;
+      this.chartHeightSignal.set(updates.chartHeight);
     }
     
-    // Update the dashboard builder with new configuration
-    this.dashboardBuilder = StandardDashboardBuilder.createStandard()
-      .setWidgets(this.widgets)
-      .setFilterValues(this.filterValues)
-      .setDashboardId(this.dashboardId)
-      .setEditMode(this.isEditMode)
-      .setChartHeight(this.chartHeight)
-      .setDefaultChartHeight(this.defaultChartHeight);
-    
-    // Apply the updated configuration
-    this.applyDashboardConfig(this.dashboardBuilder.build());
+    // The effect will automatically update the dashboard builder
   }
 
   /**
    * Enable edit mode using builder
    */
   public enableEditMode(): void {
+    this.isEditModeSignal.set(true);
     this.dashboardBuilder.enableEditMode();
     const config = this.dashboardBuilder.build();
     this.applyDashboardConfig(config);
@@ -192,6 +287,7 @@ export class DashboardContainerComponent {
    * Disable edit mode using builder
    */
   public disableEditMode(): void {
+    this.isEditModeSignal.set(false);
     this.dashboardBuilder.disableEditMode();
     const config = this.dashboardBuilder.build();
     this.applyDashboardConfig(config);

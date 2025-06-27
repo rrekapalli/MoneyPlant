@@ -23,8 +23,8 @@
             <vis-widget 
                 [widget]="item" 
                 [viewMode]="getWidgetViewMode(item.id)"
-                (onDataLoad)="onDataLoad($event)" 
-                (onUpdateFilter)="onUpdateFilter($event)"/>
+                (dataLoad)="onDataLoad($event)" 
+                (updateFilter)="onUpdateFilter($event)"/>
 
         </gridster-item>
         

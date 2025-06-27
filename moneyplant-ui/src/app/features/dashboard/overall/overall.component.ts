@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef, ElementRef, ViewChild, ChangeDetectionStrategy, OnDestroy } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, ElementRef, ViewChild, ChangeDetectionStrategy, OnDestroy, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { MessageModule } from 'primeng/message';
@@ -151,14 +151,49 @@ import { Subscription } from 'rxjs';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class OverallComponent implements OnInit, OnDestroy {
-  // Dashboard config (Fluent API)
-  dashboardConfig!: DashboardConfig;
-  
-  // PDF export loading state
+  // Signal-based properties
+  private dashboardDataSignal = signal<DashboardDataRow[]>([...INITIAL_DASHBOARD_DATA]);
+  private widgetsSignal = signal<IWidget[]>([]);
+  private filterValuesSignal = signal<IFilterValues[]>([]);
+  private isExportingExcelSignal = signal<boolean>(false);
+  private isHighlightingEnabledSignal = signal<boolean>(true);
+  private highlightingOpacitySignal = signal<number>(0.25);
 
-  
-  // Excel export loading state
-  isExportingExcel = false;
+  // Computed dashboard configuration
+  public readonly dashboardConfig = computed((): DashboardConfig => {
+    return StandardDashboardBuilder.createStandard()
+      .setWidgets(this.widgetsSignal())
+      .setFilterValues(this.filterValuesSignal())
+      .setDashboardId('overall-dashboard')
+      .setEditMode(false)
+      .setGridDimensions(12, 150)
+      .setFixedRowHeight(50)
+      .setChartHeight(300)
+      .setDefaultChartHeight(400)
+      .enableFilterHighlighting(this.isHighlightingEnabledSignal(), {
+        filteredOpacity: this.highlightingOpacitySignal(),
+        highlightedOpacity: 1.0
+      })
+      .build();
+  });
+
+  // Computed values for template usage
+  public readonly isExportingExcel = this.isExportingExcelSignal.asReadonly();
+  public readonly isHighlightingEnabled = this.isHighlightingEnabledSignal.asReadonly();
+  public readonly highlightingOpacity = this.highlightingOpacitySignal.asReadonly();
+
+  // Legacy properties for backward compatibility
+  get dashboardData(): DashboardDataRow[] {
+    return this.dashboardDataSignal();
+  }
+
+  get widgets(): IWidget[] {
+    return this.widgetsSignal();
+  }
+
+  get filterValues(): IFilterValues[] {
+    return this.filterValuesSignal();
+  }
 
   // Flag to prevent recursive filter updates
   private isUpdatingFilters = false;
@@ -167,31 +202,47 @@ export class OverallComponent implements OnInit, OnDestroy {
   private widgetUpdateTimeout?: any;
   private filterSubscription?: Subscription;
 
-  // Filter highlighting mode control
-  public isHighlightingEnabled: boolean = true;
-  public highlightingOpacity: number = 0.25;
-
   // Reference to dashboard container for PDF export
   @ViewChild('dashboardContainer', { static: false }) dashboardContainer!: ElementRef<HTMLElement>;
 
   // Reference to dashboard container component
   @ViewChild(DashboardContainerComponent, { static: false }) dashboardContainerComponent!: DashboardContainerComponent;
 
-  // Shared dashboard data - Flat structure
-  private dashboardData: DashboardDataRow[] = [...INITIAL_DASHBOARD_DATA];
-
   constructor(
     private cdr: ChangeDetectorRef,
     private excelExportService: ExcelExportService,
     private filterService: FilterService
-  ) {}
+  ) {
+    // Effects for reactive updates
+    effect(() => {
+      // Update widgets when data or filters change
+      this.updateWidgetsBasedOnSignals();
+    });
+
+    effect(() => {
+      // Sync with filter service
+      const filters = this.filterValuesSignal();
+      if (!this.isUpdatingFilters && filters.length > 0) {
+        this.filterService.setFilterValues(filters);
+      }
+    });
+
+    effect(() => {
+      // Trigger change detection when signals change
+      this.cdr.markForCheck();
+    });
+  }
 
   ngOnInit(): void {
     this.initializeDashboardConfig();
     
     // Subscribe to filter service changes
     this.filterSubscription = this.filterService.filterValues$.subscribe(filters => {
-      this.updateWidgetsWithFilters(filters);
+      if (!this.isUpdatingFilters) {
+        this.isUpdatingFilters = true;
+        this.filterValuesSignal.set(filters);
+        this.isUpdatingFilters = false;
+      }
     });
 
     // Register world map for density map charts
@@ -202,8 +253,41 @@ export class OverallComponent implements OnInit, OnDestroy {
     });
   }
 
+  ngOnDestroy(): void {
+    if (this.filterSubscription) {
+      this.filterSubscription.unsubscribe();
+    }
+    if (this.widgetUpdateTimeout) {
+      clearTimeout(this.widgetUpdateTimeout);
+    }
+  }
+
   /**
-   * Handle filter values change from dashboard container
+   * Update widgets based on current signal values
+   */
+  private updateWidgetsBasedOnSignals(): void {
+    const currentData = this.dashboardDataSignal();
+    const currentFilters = this.filterValuesSignal();
+    
+    // Apply filters to data
+    const filteredData = this.applyFiltersToFlatData(currentData, currentFilters);
+    
+    // Update each widget with filtered data
+    const updatedWidgets = this.widgetsSignal().map((widget: IWidget) => {
+      const widgetData = this.getFilteredDataForWidget(widget.config?.header?.title || '');
+      return {
+        ...widget,
+        data: widgetData
+      };
+    });
+
+    if (JSON.stringify(updatedWidgets) !== JSON.stringify(this.widgetsSignal())) {
+      this.widgetsSignal.set(updatedWidgets);
+    }
+  }
+
+  /**
+   * Handle filter values changed from dashboard container
    */
   onFilterValuesChanged(filters: IFilterValues[]): void {
     if (this.isUpdatingFilters) {
@@ -211,11 +295,11 @@ export class OverallComponent implements OnInit, OnDestroy {
     }
 
     this.isUpdatingFilters = true;
-    
-    // Set filter values in the service
-    this.filterService.setFilterValues(filters);
-    
-    this.isUpdatingFilters = false;
+    try {
+      this.filterValuesSignal.set(filters);
+    } finally {
+      this.isUpdatingFilters = false;
+    }
   }
 
   /**
@@ -232,11 +316,11 @@ export class OverallComponent implements OnInit, OnDestroy {
     this.applyFiltersToDashboardData(currentFilters);
     
     // Find all echart widgets
-    const echartWidgets = this.dashboardConfig.widgets.filter(widget => 
+    const echartWidgets = this.widgetsSignal().filter((widget: IWidget) => 
       widget.config?.component === 'echart'
     );
 
-    echartWidgets.forEach(widget => {
+    echartWidgets.forEach((widget: IWidget) => {
       this.updateWidgetWithFilters(widget, currentFilters);
     });
 
@@ -259,7 +343,7 @@ export class OverallComponent implements OnInit, OnDestroy {
    */
   private updateMetricTilesWithFilters(filters: IFilterValues[]): void {
     // Find all tile widgets
-    const tileWidgets = this.dashboardConfig.widgets.filter(widget => 
+    const tileWidgets = this.widgetsSignal().filter((widget: IWidget) => 
       widget.config?.component === 'tile'
     );
 
@@ -267,7 +351,7 @@ export class OverallComponent implements OnInit, OnDestroy {
     const updatedMetricTiles = createMetricTiles(this.dashboardData);
 
     // Update each tile widget with new data
-    tileWidgets.forEach((widget, index) => {
+    tileWidgets.forEach((widget: IWidget, index: number) => {
       if (index < updatedMetricTiles.length) {
         const updatedTile = updatedMetricTiles[index];
         
@@ -291,20 +375,20 @@ export class OverallComponent implements OnInit, OnDestroy {
   private applyFiltersToDashboardData(filters: IFilterValues[]): void {
     if (filters.length === 0) {
       // Reset to initial data if no filters
-      this.dashboardData = [...INITIAL_DASHBOARD_DATA];
+      this.dashboardDataSignal.set([...INITIAL_DASHBOARD_DATA]);
       return;
     }
 
     // Check if highlighting mode is enabled
-    const highlightingEnabled = this.dashboardConfig?.filterVisualization?.enableHighlighting;
+    const highlightingEnabled = this.isHighlightingEnabledSignal();
     
     if (highlightingEnabled) {
       // In highlighting mode, keep the full dataset available
       // Individual widgets will handle their own filtering/highlighting
-      this.dashboardData = [...INITIAL_DASHBOARD_DATA];
+      this.dashboardDataSignal.set([...INITIAL_DASHBOARD_DATA]);
     } else {
       // In traditional mode, filter the main dataset
-      this.dashboardData = this.applyFiltersToFlatData(INITIAL_DASHBOARD_DATA, filters);
+      this.dashboardDataSignal.set(this.applyFiltersToFlatData(INITIAL_DASHBOARD_DATA, filters));
     }
   }
 
@@ -839,7 +923,7 @@ export class OverallComponent implements OnInit, OnDestroy {
     });
     
     // Check if highlighting mode is enabled
-    const highlightingEnabled = this.dashboardConfig?.filterVisualization?.enableHighlighting;
+    const highlightingEnabled = this.dashboardConfig()?.filterVisualization?.enableHighlighting;
     
     // Try to get base data by widget title first
     let baseData = null;
@@ -878,10 +962,10 @@ export class OverallComponent implements OnInit, OnDestroy {
       
       // Get highlighting options from dashboard config
       const visualOptions = {
-        filteredOpacity: this.dashboardConfig.filterVisualization?.defaultFilteredOpacity || 0.25,
-        highlightedOpacity: this.dashboardConfig.filterVisualization?.defaultHighlightedOpacity || 1.0,
-        highlightColor: this.dashboardConfig.filterVisualization?.defaultHighlightColor || '#ff6b6b',
-        filteredColor: this.dashboardConfig.filterVisualization?.defaultFilteredColor || '#e0e0e0'
+        filteredOpacity: this.dashboardConfig().filterVisualization?.defaultFilteredOpacity || 0.25,
+        highlightedOpacity: this.dashboardConfig().filterVisualization?.defaultHighlightedOpacity || 1.0,
+        highlightColor: this.dashboardConfig().filterVisualization?.defaultHighlightColor || '#ff6b6b',
+        filteredColor: this.dashboardConfig().filterVisualization?.defaultFilteredColor || '#e0e0e0'
       };
 
       // Apply highlighting to the data
@@ -1036,59 +1120,57 @@ export class OverallComponent implements OnInit, OnDestroy {
     // Position metric tiles at row 0 (top of dashboard)
     // Metric tiles are already positioned at y: 0 in the createMetricTiles function
 
-    // Position filter widget at row 1 (below metric tiles)
-    filterWidget.position = { x: 0, y: 2, cols: 12, rows: 1 };
+    // Position filter widget at row 2 (below metric tiles)
+    filterWidget.position = { x: 0, y: 3, cols: 12, rows: 1 };
 
-    // Position other widgets starting from row 2 (below filter)
-    densityMapInvestment.position = { x: 0, y: 3, cols: 8, rows: 8 };
-    pieAssetAllocation.position = { x: 9, y: 11, cols: 4, rows: 8 };
-    polarChart.position = { x: 9, y: 15, cols: 4, rows: 8 };
-    barMonthlyIncomeVsExpenses.position = { x: 0, y: 13, cols: 8, rows: 8 };
+    // Position other widgets starting from row 3 (below filter) in a proper grid layout
+    
+    // Row 3-18: Main section with density map on left, pie & polar on right
+    densityMapInvestment.position = { x: 0, y: 5, cols: 8, rows: 16 };
+    pieAssetAllocation.position = { x: 8, y: 5, cols: 4, rows: 8 };
+    polarChart.position = { x: 8, y: 13, cols: 4, rows: 8 };
 
-    // Use the Fluent API to build the dashboard config with filter highlighting enabled
-    this.dashboardConfig = StandardDashboardBuilder.createStandard()
-      .setDashboardId('overall-dashboard')
-      // Enable filter highlighting mode with custom styling
-      .enableFilterHighlighting(true, {
-        filteredOpacity: 0.25,
-        highlightedOpacity: 1.0,
-        highlightColor: '#ff6b6b',
-        filteredColor: '#e0e0e0'
-      })
-      .setWidgets([
-        // Metric tiles at the top (row 0)
-        ...metricTiles,
-        // Filter widget below tiles (row 1)
-        filterWidget,
-        // Other widgets starting from row 2
-        densityMapInvestment,
-        pieAssetAllocation,
-        polarChart,
-        barMonthlyIncomeVsExpenses,
-        candlestickChart,
-        advancedCandlestickChart,
-        // linePortfolioPerformance,
-        // scatterRiskVsReturn,
-        // gaugeSavingsGoal,
-        // heatmapSpending,
-        // areaChart,
-        // stackedAreaChart,
-        // performanceStackedAreaChart,
-        // marketTrendStackedAreaChart,
-        // treemapChart,
-        // expenseTreemap,
-        // largeScaleTreemap,
-        // sunburstChart,
-        // organizationalSunburst,
-        // largeScaleSunburst,
-        // sankeyChart,
-        // investmentFlowSankey,
-        // budgetAllocationSankey,
-        // minimalSankeyTest,
-        testFilterWidget  // Enable test filter widget to demo highlighting
-      ])
-      .setEditMode(false)
-      .build();
+    // Row 19-26: Bar chart and test filter widget (same row, same height)
+    barMonthlyIncomeVsExpenses.position = { x: 0, y: 21, cols: 8, rows: 8 };
+    testFilterWidget.position = { x: 8, y: 21, cols: 4, rows: 8 };
+
+    // Row 27-34: Candlestick charts (same row, equal width)
+    advancedCandlestickChart.position = { x: 0, y: 29, cols: 6, rows: 14 };
+    candlestickChart.position = { x: 6, y: 29, cols: 6, rows: 12 };
+    
+    // Set widgets signal - the computed dashboardConfig will handle building the config
+    this.widgetsSignal.set([
+      // Metric tiles at the top (row 0)
+      ...metricTiles,
+      // Filter widget below tiles (row 1)
+      filterWidget,
+      // Other widgets starting from row 2
+      densityMapInvestment,
+      pieAssetAllocation,
+      polarChart,
+      barMonthlyIncomeVsExpenses,
+      candlestickChart,
+      advancedCandlestickChart,
+      // linePortfolioPerformance,
+      // scatterRiskVsReturn,
+      // gaugeSavingsGoal,
+      // heatmapSpending,
+      // areaChart,
+      // stackedAreaChart,
+      // performanceStackedAreaChart,
+      // marketTrendStackedAreaChart,
+      // treemapChart,
+      // expenseTreemap,
+      // largeScaleTreemap,
+      // sunburstChart,
+      // organizationalSunburst,
+      // largeScaleSunburst,
+      // sankeyChart,
+      // investmentFlowSankey,
+      // budgetAllocationSankey,
+      // minimalSankeyTest,
+      testFilterWidget  // Enable test filter widget to demo highlighting
+    ]);
 
     // Populate widgets with initial data
     this.populateWidgetsWithInitialData();
@@ -1098,16 +1180,16 @@ export class OverallComponent implements OnInit, OnDestroy {
    * Populate all widgets with initial data from the shared dataset
    */
   private populateWidgetsWithInitialData(): void {
-    if (!this.dashboardConfig?.widgets) {
+    if (!this.dashboardConfig()?.widgets) {
       return;
     }
 
     // Find all echart widgets and populate them with initial data
-    const echartWidgets = this.dashboardConfig.widgets.filter(widget => 
+    const echartWidgets = this.dashboardConfig().widgets.filter((widget: IWidget) => 
       widget.config?.component === 'echart'
     );
 
-    echartWidgets.forEach(widget => {
+    echartWidgets.forEach((widget: IWidget) => {
       const widgetTitle = widget.config?.header?.title;
       
       // Try to get data by widget title first
@@ -1250,14 +1332,12 @@ export class OverallComponent implements OnInit, OnDestroy {
     }
   }
 
-
-
   /**
    * Export dashboard data to Excel
    */
   public async exportDashboardToExcel(): Promise<void> {
     console.log('Overall component: exportDashboardToExcel called');
-    this.isExportingExcel = true;
+    this.isExportingExcelSignal.set(true);
     this.cdr.detectChanges(); // Immediately update UI
 
     try {
@@ -1271,7 +1351,7 @@ export class OverallComponent implements OnInit, OnDestroy {
         setTimeout(async () => {
           try {
             await this.excelExportService.exportDashboardToExcel(
-              this.dashboardConfig.widgets,
+              this.dashboardConfig().widgets,
               {
                 filename: `financial-dashboard-data-${new Date().toISOString().split('T')[0]}.xlsx`,
                 includeHeaders: true,
@@ -1294,7 +1374,7 @@ export class OverallComponent implements OnInit, OnDestroy {
       console.error('Excel export error:', error);
       // Could show user-friendly error message here
     } finally {
-      this.isExportingExcel = false;
+      this.isExportingExcelSignal.set(false);
       this.cdr.detectChanges(); // Update UI to remove loading state
       console.log('Excel export process finished');
     }
@@ -1309,7 +1389,7 @@ export class OverallComponent implements OnInit, OnDestroy {
       const updatedData = await this.getUpdatedChartData();
       
       // Update each chart widget
-      this.dashboardConfig.widgets.forEach((widget, index) => {
+      this.dashboardConfig().widgets.forEach((widget: IWidget, index: number) => {
         if (widget.config?.component === 'echart' && updatedData[index]) {
           if (widget.config?.options) {
             const chartOptions = widget.config.options as any;
@@ -1366,15 +1446,15 @@ export class OverallComponent implements OnInit, OnDestroy {
    * Toggle filter highlighting mode
    */
   public toggleHighlightingMode(): void {
-    console.log('Overall component: toggleHighlightingMode called, current state:', this.isHighlightingEnabled);
-    this.isHighlightingEnabled = !this.isHighlightingEnabled;
+    console.log('Overall component: toggleHighlightingMode called, current state:', this.isHighlightingEnabled());
+    this.isHighlightingEnabledSignal.set(!this.isHighlightingEnabled());
     this.updateDashboardHighlightingConfig();
     
     // Re-apply current filters with new highlighting mode
     const currentFilters = this.getCurrentFilters();
     this.updateWidgetsWithFilters(currentFilters);
     
-    console.log(`🎨 Filter highlighting mode ${this.isHighlightingEnabled ? 'enabled' : 'disabled'}`);
+    console.log(`🎨 Filter highlighting mode ${this.isHighlightingEnabled() ? 'enabled' : 'disabled'}`);
     
     // Force change detection to update UI
     this.cdr.detectChanges();
@@ -1384,14 +1464,14 @@ export class OverallComponent implements OnInit, OnDestroy {
    * Update highlighting opacity and refresh widgets
    */
   public updateHighlightingOpacity(opacity: number): void {
-    this.highlightingOpacity = Math.max(0.1, Math.min(1.0, opacity));
+    this.highlightingOpacitySignal.set(Math.max(0.1, Math.min(1.0, opacity)));
     this.updateDashboardHighlightingConfig();
     
     // Re-apply current filters with new opacity
     const currentFilters = this.getCurrentFilters();
     this.updateWidgetsWithFilters(currentFilters);
     
-    console.log(`🎛️ Highlighting opacity updated to ${Math.round(this.highlightingOpacity * 100)}%`);
+    console.log(`🎛️ Highlighting opacity updated to ${Math.round(this.highlightingOpacity() * 100)}%`);
     
     // Force change detection to update UI
     this.cdr.detectChanges();
@@ -1401,13 +1481,14 @@ export class OverallComponent implements OnInit, OnDestroy {
    * Update dashboard configuration with current highlighting settings
    */
   private updateDashboardHighlightingConfig(): void {
-    if (this.dashboardConfig?.filterVisualization) {
-      this.dashboardConfig.filterVisualization.enableHighlighting = this.isHighlightingEnabled;
-      this.dashboardConfig.filterVisualization.defaultFilteredOpacity = this.highlightingOpacity;
+    const config = this.dashboardConfig();
+    if (config?.filterVisualization) {
+      config.filterVisualization.enableHighlighting = this.isHighlightingEnabled();
+      config.filterVisualization.defaultFilteredOpacity = this.highlightingOpacity();
       
       console.log(`📊 Dashboard highlighting config updated:`, {
-        enabled: this.isHighlightingEnabled,
-        opacity: this.highlightingOpacity
+        enabled: this.isHighlightingEnabled(),
+        opacity: this.highlightingOpacity()
       });
     }
   }
@@ -1416,8 +1497,8 @@ export class OverallComponent implements OnInit, OnDestroy {
    * Get highlighting status message for UI
    */
   public getHighlightingStatusMessage(): string {
-    if (this.isHighlightingEnabled) {
-      return `Highlighting Mode: ON - Source widgets highlighted (${Math.round(this.highlightingOpacity * 100)}% opacity), others filtered`;
+    if (this.isHighlightingEnabled()) {
+      return `Highlighting Mode: ON - Source widgets highlighted (${Math.round(this.highlightingOpacity() * 100)}% opacity), others filtered`;
     } else {
       return 'Highlighting Mode: OFF - All widgets use traditional filtering';
     }
@@ -1443,17 +1524,5 @@ export class OverallComponent implements OnInit, OnDestroy {
     
     this.updateHighlightingOpacity(opacity);
     console.log(`✨ Applied ${preset} highlighting preset (opacity: ${Math.round(opacity * 100)}%)`);
-  }
-
-  ngOnDestroy(): void {
-    // Cleanup code when component is destroyed
-    if (this.widgetUpdateTimeout) {
-      clearTimeout(this.widgetUpdateTimeout);
-    }
-    
-    // Unsubscribe from filter service
-    if (this.filterSubscription) {
-      this.filterSubscription.unsubscribe();
-    }
   }
 }

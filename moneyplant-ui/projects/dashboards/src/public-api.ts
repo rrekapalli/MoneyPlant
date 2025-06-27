@@ -11,9 +11,9 @@ export * from './lib/dashboard-container';
 // Dashboard Constants
 export * from './lib/dashboard-container/dashboard-constants';
 
-// Services
+// Services (Updated with Signal Support)
 export * from './lib/services/excel-export.service';
-export * from './lib/services/filter.service';
+export * from './lib/services/filter.service'; // Now with signal support
 
 // Examples
 export * from './lib/usage-examples/usage-example';
@@ -26,7 +26,6 @@ export * from './lib/usage-examples/tile-examples';
 export * from './lib/formly-configs/form-options';
 export * from './lib/formly-configs/series-options';
 
-
 // Entities
 export * from './lib/entities/ICodeCellOptions';
 export * from './lib/entities/IFilterOptions';
@@ -37,14 +36,16 @@ export * from './lib/entities/ITableOptions';
 export * from './lib/entities/ITileOptions';
 export * from './lib/entities/IWidget';
 
-
 // Chart Builders
 export * from './lib/echart-chart-builders';
 
-
-// Widgets
+// Widgets (Updated with Signal Support)
 export * from './lib/widgets/echarts/echart.component';
 export * from './lib/widgets/filter/filter.component';
 export * from './lib/widgets/table/table.component';
 export * from './lib/widgets/tile';
 export * from './lib/widgets/markdown-cell/markdown-cell.component';
+export * from './lib/widgets/widget/widget.component'; // Now with signal support
+
+// Re-export key Angular signals utilities for convenience
+export { signal, computed, effect } from '@angular/core';

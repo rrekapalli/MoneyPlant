@@ -1,5 +1,5 @@
-import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { Injectable, signal, computed, effect } from '@angular/core';
+import { Observable, BehaviorSubject } from 'rxjs';
 import { IFilterValues } from '../entities/IFilterValues';
 
 export interface FilterEvent {
@@ -13,35 +13,59 @@ export interface FilterEvent {
   providedIn: 'root'
 })
 export class FilterService {
-  private filterValuesSubject = new BehaviorSubject<IFilterValues[]>([]);
-  private filterEventsSubject = new BehaviorSubject<FilterEvent[]>([]);
-  private isUpdating = false;
+  // Signals for filter state
+  private filterValuesSignal = signal<IFilterValues[]>([]);
+  private filterEventsSignal = signal<FilterEvent[]>([]);
+  private isUpdatingSignal = signal<boolean>(false);
   private updateTimeout?: any;
 
+  // Legacy Observable support
+  private filterValuesSubject = new BehaviorSubject<IFilterValues[]>([]);
+  private filterEventsSubject = new BehaviorSubject<FilterEvent[]>([]);
+
+  // Public signal accessors
+  public readonly filterValues = this.filterValuesSignal.asReadonly();
+  public readonly filterEvents = this.filterEventsSignal.asReadonly();
+  public readonly isUpdating = this.isUpdatingSignal.asReadonly();
+
+  // Legacy Observable support
   public filterValues$: Observable<IFilterValues[]> = this.filterValuesSubject.asObservable();
   public filterEvents$: Observable<FilterEvent[]> = this.filterEventsSubject.asObservable();
 
-  constructor() {}
+  // Computed values
+  public readonly hasActiveFilters = computed(() => this.filterValuesSignal().length > 0);
+  public readonly filterCount = computed(() => this.filterValuesSignal().length);
 
-  /**
-   * Get current filter values
-   */
-  getFilterValues(): IFilterValues[] {
-    return this.filterValuesSubject.value;
+  constructor() {
+    // Sync signals with BehaviorSubjects for backward compatibility
+    effect(() => {
+      this.filterValuesSubject.next(this.filterValuesSignal());
+    });
+
+    effect(() => {
+      this.filterEventsSubject.next(this.filterEventsSignal());
+    });
   }
 
   /**
-   * Get current filter events
+   * Get current filter values (signal-based)
+   */
+  getFilterValues(): IFilterValues[] {
+    return this.filterValuesSignal();
+  }
+
+  /**
+   * Get current filter events (signal-based)
    */
   getFilterEvents(): FilterEvent[] {
-    return this.filterEventsSubject.value;
+    return this.filterEventsSignal();
   }
 
   /**
    * Add a new filter value from a chart click
    */
   addFilterValue(widgetId: string, widgetTitle: string, clickedData: any): void {
-    if (this.isUpdating) {
+    if (this.isUpdatingSignal()) {
       return; // Prevent infinite loop
     }
 
@@ -53,7 +77,7 @@ export class FilterService {
       filterValue['widgetTitle'] = widgetTitle;
       
       // Check for duplicates before adding
-      const currentFilters = this.filterValuesSubject.value;
+      const currentFilters = this.filterValuesSignal();
       const isDuplicate = currentFilters.some(existingFilter => 
         this.isSameFilter(existingFilter, filterValue)
       );
@@ -75,9 +99,9 @@ export class FilterService {
         timestamp: new Date()
       };
       
-      const currentEvents = this.filterEventsSubject.value;
+      const currentEvents = this.filterEventsSignal();
       const updatedEvents = [...currentEvents, filterEvent];
-      this.filterEventsSubject.next(updatedEvents);
+      this.filterEventsSignal.set(updatedEvents);
     }
   }
 
@@ -85,11 +109,11 @@ export class FilterService {
    * Remove a specific filter value
    */
   removeFilterValue(filterToRemove: IFilterValues): void {
-    if (this.isUpdating) {
+    if (this.isUpdatingSignal()) {
       return; // Prevent infinite loop
     }
 
-    const currentFilters = this.filterValuesSubject.value;
+    const currentFilters = this.filterValuesSignal();
     const updatedFilters = currentFilters.filter(filter => 
       !this.isSameFilter(filter, filterToRemove)
     );
@@ -101,17 +125,17 @@ export class FilterService {
    * Clear all filter values
    */
   clearAllFilters(): void {
-    if (this.isUpdating) {
+    if (this.isUpdatingSignal()) {
       return; // Prevent infinite loop
     }
 
     // Clear immediately without debouncing to prevent race conditions
-    this.isUpdating = true;
+    this.isUpdatingSignal.set(true);
     try {
-      this.filterValuesSubject.next([]);
-      this.filterEventsSubject.next([]);
+      this.filterValuesSignal.set([]);
+      this.filterEventsSignal.set([]);
     } finally {
-      this.isUpdating = false;
+      this.isUpdatingSignal.set(false);
     }
   }
 
@@ -119,7 +143,7 @@ export class FilterService {
    * Update filter values (used when filters are set programmatically)
    */
   setFilterValues(filters: IFilterValues[]): void {
-    if (this.isUpdating) {
+    if (this.isUpdatingSignal()) {
       return; // Prevent infinite loop
     }
 
@@ -137,38 +161,59 @@ export class FilterService {
 
     // Set a new timeout
     this.updateTimeout = setTimeout(() => {
-      this.isUpdating = true;
+      this.isUpdatingSignal.set(true);
       try {
-        this.filterValuesSubject.next(filters);
+        this.filterValuesSignal.set(filters);
       } finally {
-        this.isUpdating = false;
+        this.isUpdatingSignal.set(false);
       }
     }, 50); // 50ms debounce
   }
 
   /**
-   * Get filters for a specific widget
+   * Get filters for a specific widget (computed)
    */
   getFiltersForWidget(widgetId: string): IFilterValues[] {
-    return this.filterValuesSubject.value.filter(filter => 
+    return this.filterValuesSignal().filter(filter => 
       filter['widgetId'] === widgetId
     );
+  }
+
+  /**
+   * Create computed signal for widget-specific filters
+   */
+  createWidgetFiltersComputed(widgetId: string) {
+    return computed(() => this.getFiltersForWidget(widgetId));
   }
 
   /**
    * Get filters by accessor type (also checks filterColumn)
    */
   getFiltersByAccessor(accessor: string): IFilterValues[] {
-    return this.filterValuesSubject.value.filter(filter => 
+    return this.filterValuesSignal().filter(filter => 
       filter.accessor === accessor || filter.filterColumn === accessor
     );
   }
 
   /**
+   * Create computed signal for accessor-specific filters
+   */
+  createAccessorFiltersComputed(accessor: string) {
+    return computed(() => this.getFiltersByAccessor(accessor));
+  }
+
+  /**
    * Check if a widget has any active filters
    */
-  hasActiveFilters(widgetId: string): boolean {
+  hasActiveFiltersForWidget(widgetId: string): boolean {
     return this.getFiltersForWidget(widgetId).length > 0;
+  }
+
+  /**
+   * Create computed signal for widget's active filter status
+   */
+  createWidgetActiveFiltersComputed(widgetId: string) {
+    return computed(() => this.hasActiveFiltersForWidget(widgetId));
   }
 
   /**
@@ -354,6 +399,28 @@ export class FilterService {
         };
       }
     });
+  }
+
+  /**
+   * Create computed signal for filtered data
+   */
+  createFilteredDataComputed<T extends Record<string, any>>(data: () => T[]) {
+    return computed(() => this.applyFiltersToData(data(), this.filterValuesSignal()));
+  }
+
+  /**
+   * Create computed signal for highlighted data
+   */
+  createHighlightedDataComputed<T extends Record<string, any>>(
+    data: () => T[],
+    options?: {
+      filteredOpacity?: number;
+      highlightedOpacity?: number;
+      highlightColor?: string;
+      filteredColor?: string;
+    }
+  ) {
+    return computed(() => this.applyHighlightingFiltersToData(data(), this.filterValuesSignal(), options));
   }
 
   /**

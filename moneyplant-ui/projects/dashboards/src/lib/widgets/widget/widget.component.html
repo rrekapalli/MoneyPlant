@@ -1,5 +1,9 @@
-<div [style.height.px]="widget.height">
-    <ng-container
-        *ngComponentOutlet="currentWidget.component; inputs: currentWidget.inputs">
-    </ng-container>
+<div class="widget-container" [attr.data-widget-id]="getCurrentWidget()?.id" [style.height.px]="getComputedChartHeight()">
+  <ng-container *ngComponentOutlet="getComponentForWidget()?.component; inputs: getComponentForWidget()?.inputs">
+  </ng-container>
+
+  <!-- Fallback for unknown widget types -->
+  <div *ngIf="!hasValidWidget()" class="widget-error">
+    <p>Unknown widget type: {{ componentType() }}</p>
+  </div>
 </div>

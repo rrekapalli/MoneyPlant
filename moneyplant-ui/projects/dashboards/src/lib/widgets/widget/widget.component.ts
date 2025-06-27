@@ -1,12 +1,25 @@
-import {Component, EventEmitter, Input, Output} from '@angular/core';
-import {NgComponentOutlet} from '@angular/common';
+import {
+  Component,
+  Input,
+  OnInit,
+  Output,
+  EventEmitter,
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  signal,
+  computed,
+  effect,
+  OnDestroy,
+} from '@angular/core';
+import {CommonModule, NgComponentOutlet} from '@angular/common';
 import {IWidget} from '../../entities/IWidget';
 import {EchartComponent} from '../echarts/echart.component';
 import {FilterComponent} from '../filter/filter.component';
-import {TableComponent} from '../table/table.component';
 import {TileComponent} from '../tile/tile.component';
+import {TableComponent} from '../table/table.component';
 import {MarkdownCellComponent} from '../markdown-cell/markdown-cell.component';
 import {CodeCellComponent} from '../code-cell/code-cell.component';
+import {IFilterValues} from '../../entities/IFilterValues';
 import { provideEchartsCore } from 'ngx-echarts';
 import {ITableOptions} from '../../entities/ITableOptions';
 
@@ -42,376 +55,217 @@ const onGetWidget = (widget: IWidget) => {
 @Component({
   selector: 'vis-widget',
   standalone: true,
-  templateUrl:'./widget.component.html',
-  imports: [NgComponentOutlet],
+  templateUrl: './widget.component.html',
+  styleUrls: ['./widget.component.scss'],
+  imports: [
+    CommonModule,
+    NgComponentOutlet,
+  ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [
     provideEchartsCore({
       echarts: () => import('echarts'),
     })
   ]
 })
-export class WidgetComponent {
-  /** Widget configuration to render */
-  @Input() widget!: IWidget;
+export class WidgetComponent implements OnInit, OnDestroy {
   
-  /** Current view mode for the widget */
-  @Input() viewMode: 'chart' | 'table' = 'chart';
-  
-  /** Event emitted when widget data is loaded */
-  @Output() onDataLoad: EventEmitter<IWidget> = new EventEmitter();
-  
-  /** Event emitted when filter is updated */
-  @Output() onUpdateFilter: EventEmitter<any> = new EventEmitter();
+  // Signal-based properties (protected for template access)
+  protected widgetSignal = signal<IWidget | null>(null);
+  protected filterValuesSignal = signal<IFilterValues[]>([]);
+  protected chartHeightSignal = signal<number>(300);
+  protected viewModeSignal = signal<'chart' | 'table'>('chart');
 
-  private originalWidget: IWidget | null = null;
-  private tableWidget: IWidget | null = null;
-  private cachedCurrentWidget: any = null;
-  private lastWidgetId: string | null = null;
-  private lastViewMode: string | null = null;
+  // Computed values (public for template access)
+  public readonly hasValidWidget = computed(() => !!this.widgetSignal());
+  public readonly componentType = computed(() => this.widgetSignal()?.config?.component || '');
+  public readonly widgetTitle = computed(() => this.widgetSignal()?.config?.header?.title || '');
+  public readonly isChartWidget = computed(() => {
+    const component = this.componentType();
+    return component === 'echart' || component === 'chart';
+  });
+  public readonly isFilterWidget = computed(() => this.componentType() === 'filter');
+  public readonly isTileWidget = computed(() => this.componentType() === 'tile');
+  public readonly isTableWidget = computed(() => this.componentType() === 'table');
+  public readonly isMarkdownWidget = computed(() => this.componentType() === 'markdown');
+  public readonly isCodeWidget = computed(() => this.componentType() === 'code');
+
+  // Legacy Input/Output for backward compatibility
+  @Input() set widget(value: IWidget) {
+    this.widgetSignal.set(value);
+  }
+  get widget(): IWidget | null {
+    return this.widgetSignal();
+  }
+
+  @Input() set filterValues(value: IFilterValues[]) {
+    this.filterValuesSignal.set(value || []);
+  }
+  get filterValues(): IFilterValues[] {
+    return this.filterValuesSignal();
+  }
+
+  @Input() set chartHeight(value: number) {
+    this.chartHeightSignal.set(value || 300);
+  }
+  get chartHeight(): number {
+    return this.chartHeightSignal();
+  }
+
+  @Input() set viewMode(value: 'chart' | 'table') {
+    this.viewModeSignal.set(value || 'chart');
+  }
+  get viewMode(): 'chart' | 'table' {
+    return this.viewModeSignal();
+  }
+
+  @Output() dataLoad = new EventEmitter<IWidget>();
+  @Output() updateWidget = new EventEmitter<IWidget>();
+  @Output() updateFilter = new EventEmitter<any>();
+  @Output() toggleViewMode = new EventEmitter<{widgetId: string, viewMode: 'chart' | 'table'}>();
+
+  // Legacy output names for backward compatibility
+  @Output() onDataLoad = new EventEmitter<IWidget>();
+  @Output() onUpdateFilter = new EventEmitter<any>();
+
+  constructor(private cdr: ChangeDetectorRef) {
+    // Effects for reactive updates
+    effect(() => {
+      const widget = this.widgetSignal();
+      if (widget && this.hasValidWidget()) {
+        this.dataLoad.emit(widget);
+        this.onDataLoad.emit(widget);
+      }
+    });
+
+    effect(() => {
+      // Trigger change detection when signals change
+      this.cdr.markForCheck();
+    });
+  }
+
+  ngOnInit(): void {
+    // Initialize widget if needed
+    const widget = this.widgetSignal();
+    if (widget) {
+      this.handleDataLoad();
+    }
+  }
+
+  ngOnDestroy(): void {
+    // Cleanup any resources if needed
+  }
 
   /**
-   * Get the current widget configuration for dynamic component rendering
-   * @returns Object containing component class and input properties
+   * Handle data loading for the widget
    */
-  get currentWidget() {
-    // Check if we need to update the cache
-    const currentWidgetId = this.widget?.id;
-    const currentViewMode = this.viewMode;
+  handleDataLoad(): void {
+    const widget = this.widgetSignal();
+    if (widget) {
+      this.dataLoad.emit(widget);
+      this.onDataLoad.emit(widget);
+    }
+  }
+
+  /**
+   * Handle widget updates
+   */
+  handleUpdateWidget(): void {
+    const widget = this.widgetSignal();
+    if (widget) {
+      this.updateWidget.emit(widget);
+    }
+  }
+
+  /**
+   * Handle filter updates
+   */
+  handleUpdateFilter(event: any): void {
+    this.updateFilter.emit(event);
+    this.onUpdateFilter.emit(event);
+  }
+
+  /**
+   * Handle view mode toggle
+   */
+  onToggleViewMode(newViewMode: 'chart' | 'table'): void {
+    const widget = this.widgetSignal();
+    if (widget) {
+      this.viewModeSignal.set(newViewMode);
+      this.toggleViewMode.emit({
+        widgetId: widget.id,
+        viewMode: newViewMode
+      });
+    }
+  }
+
+  /**
+   * Get widget configuration options
+   */
+  getWidgetOptions(): any {
+    return this.widgetSignal()?.config?.options || {};
+  }
+
+  /**
+   * Get widget data
+   */
+  getWidgetData(): any {
+    return this.widgetSignal()?.data || null;
+  }
+
+  /**
+   * Get widget series
+   */
+  getWidgetSeries(): any[] {
+    return this.widgetSignal()?.series || [];
+  }
+
+  /**
+   * Check if widget has data
+   */
+  hasData(): boolean {
+    const widget = this.widgetSignal();
+    return !!(widget?.data || widget?.series?.length);
+  }
+
+  /**
+   * Get computed chart height based on widget size
+   */
+  getComputedChartHeight(): number {
+    const widget = this.widgetSignal();
+    const baseHeight = this.chartHeightSignal();
     
-    if (this.cachedCurrentWidget && 
-        this.lastWidgetId === currentWidgetId && 
-        this.lastViewMode === currentViewMode) {
-      return this.cachedCurrentWidget;
+    if (widget?.position) {
+      const rows = widget.position.rows || 1;
+      return Math.max(baseHeight * rows, 200); // Minimum height of 200px
     }
     
-    // Update cache
-    const widgetToRender = this.getWidgetForCurrentMode();
-    this.cachedCurrentWidget = {
-      component: onGetWidget(widgetToRender),
+    return baseHeight;
+  }
+
+  /**
+   * Get current widget for template
+   */
+  getCurrentWidget(): IWidget | null {
+    return this.widgetSignal();
+  }
+
+  /**
+   * Get component configuration for dynamic rendering
+   */
+  getComponentForWidget(): { component: any; inputs: any } | null {
+    const widget = this.getCurrentWidget();
+    if (!widget) {
+      return null;
+    }
+
+    return {
+      component: onGetWidget(widget),
       inputs: {
-        widget: widgetToRender,
+        widget: widget,
         onDataLoad: this.onDataLoad,
         onUpdateFilter: this.onUpdateFilter,
       },
     };
-    
-    this.lastWidgetId = currentWidgetId;
-    this.lastViewMode = currentViewMode;
-    
-    return this.cachedCurrentWidget;
-  }
-
-  /**
-   * Check if the current widget is an ECharts component
-   * @returns True if the widget is an ECharts component
-   */
-  get isEchartComponent(): boolean {
-    const widgetToRender = this.getWidgetForCurrentMode();
-    return onGetWidget(widgetToRender) === EchartComponent;
-  }
-
-  /**
-   * Get the widget configuration based on current view mode
-   * @returns Widget configuration for current mode
-   */
-  private getWidgetForCurrentMode(): IWidget {
-    if (this.viewMode === 'table') {
-      return this.getTableWidget();
-    } else {
-      return this.getOriginalWidget();
-    }
-  }
-
-  /**
-   * Get the original widget configuration
-   * @returns Original widget configuration
-   */
-  private getOriginalWidget(): IWidget {
-    if (!this.originalWidget) {
-      this.originalWidget = { ...this.widget };
-    }
-    return this.originalWidget;
-  }
-
-  /**
-   * Get or create table widget configuration
-   * @returns Table widget configuration
-   */
-  private getTableWidget(): IWidget {
-    if (!this.tableWidget) {
-      this.tableWidget = this.createTableWidget();
-    }
-    return this.tableWidget;
-  }
-
-  /**
-   * Create table widget configuration from chart data
-   * @returns Table widget configuration
-   */
-  private createTableWidget(): IWidget {
-    const originalWidget = this.getOriginalWidget();
-    const dataExtractor = this.getDataExtractor(originalWidget);
-    
-    let columns: string[] = [];
-    let data: any[] = [];
-
-    if (dataExtractor) {
-      columns = dataExtractor.getHeaders(originalWidget);
-      const rawData = dataExtractor.extractData(originalWidget);
-      
-      // Convert array data to object format for table
-      data = rawData.map((row: any[], index: number) => {
-        const rowObj: any = {};
-        columns.forEach((col: string, colIndex: number) => {
-          rowObj[col] = row[colIndex] || '';
-        });
-        return rowObj;
-      });
-    } else {
-      // Fallback for unsupported widget types
-      columns = ['Property', 'Value'];
-      data = [
-        { 'Property': 'Widget ID', 'Value': originalWidget.id },
-        { 'Property': 'Component Type', 'Value': originalWidget.config?.component || 'Unknown' },
-        { 'Property': 'Title', 'Value': originalWidget.config?.header?.title || 'Untitled' }
-      ];
-    }
-
-    const tableOptions: ITableOptions = {
-      columns,
-      data
-    };
-
-    return {
-      ...originalWidget,
-      config: {
-        ...originalWidget.config,
-        component: 'table',
-        options: tableOptions
-      }
-    };
-  }
-
-  /**
-   * Get data extractor for widget type
-   * @param widget - Widget to get extractor for
-   * @returns Data extractor or null
-   */
-  private getDataExtractor(widget: IWidget): any {
-    const component = widget.config?.component;
-    
-    // Handle different widget types
-    if (component === 'echart') {
-      const chartType = this.getChartType(widget);
-      if (chartType) {
-        return this.getChartDataExtractor(chartType);
-      }
-    } else if (component === 'table') {
-      return {
-        extractData: (w: IWidget) => (w.config?.options as any)?.data || [],
-        getHeaders: (w: IWidget) => (w.config?.options as any)?.columns || [],
-        getSheetName: (w: IWidget) => this.getWidgetSheetName(w, 'Table')
-      };
-    } else if (component === 'tile') {
-      return {
-        extractData: (w: IWidget) => {
-          const options = w.config?.options as any;
-          return [[
-            options?.value || '',
-            options?.change || '',
-            options?.changeType || '',
-            options?.description || ''
-          ]];
-        },
-        getHeaders: () => ['Value', 'Change', 'Type', 'Description'],
-        getSheetName: (w: IWidget) => this.getWidgetSheetName(w, 'Tile')
-      };
-    } else {
-      return this.getGenericDataExtractor();
-    }
-  }
-
-  /**
-   * Get chart type from widget configuration
-   * @param widget - Widget to get chart type from
-   * @returns Chart type string or null
-   */
-  private getChartType(widget: IWidget): string | null {
-    if (widget.config?.component === 'echart' && 
-        (widget.config?.options as any)?.series?.[0]?.type) {
-      return (widget.config.options as any).series[0].type;
-    }
-    return null;
-  }
-
-  /**
-   * Get chart data extractor based on chart type
-   * @param chartType - Type of chart
-   * @returns Data extractor or null
-   */
-  private getChartDataExtractor(chartType: string): any {
-    switch (chartType) {
-      case 'pie':
-        return {
-          extractData: (w: IWidget) => {
-            const series = (w.config?.options as any)?.series?.[0];
-            if (!series?.data) return [];
-            return series.data.map((item: any) => [
-              item.name || 'Unknown',
-              item.value || 0,
-              this.calculatePercentage(item.value, series.data)
-            ]);
-          },
-          getHeaders: () => ['Category', 'Value', 'Percentage'],
-          getSheetName: (w: IWidget) => this.getWidgetSheetName(w, 'PieChart')
-        };
-      case 'bar':
-        return {
-          extractData: (w: IWidget) => {
-            const series = (w.config?.options as any)?.series?.[0];
-            const xAxis = (w.config?.options as any)?.xAxis;
-            
-            if (!series?.data) return [];
-            
-            // Handle different xAxis structures
-            let categories: string[] = [];
-            if (xAxis) {
-              if (Array.isArray(xAxis)) {
-                categories = xAxis[0]?.data || [];
-              } else if (xAxis.data) {
-                categories = xAxis.data;
-              }
-            }
-            
-            // If no categories found, create default ones
-            if (categories.length === 0) {
-              categories = series.data.map((_: any, index: number) => `Category ${index + 1}`);
-            }
-            
-            return series.data.map((value: any, index: number) => [
-              categories[index] || `Category ${index + 1}`,
-              value || 0
-            ]);
-          },
-          getHeaders: () => ['Category', 'Value'],
-          getSheetName: (w: IWidget) => this.getWidgetSheetName(w, 'BarChart')
-        };
-      case 'line':
-        return {
-          extractData: (w: IWidget) => {
-            const series = (w.config?.options as any)?.series;
-            const xAxis = (w.config?.options as any)?.xAxis;
-            
-            if (!series || series.length === 0) return [];
-            
-            // Handle different xAxis structures
-            let categories: string[] = [];
-            if (xAxis) {
-              if (Array.isArray(xAxis)) {
-                categories = xAxis[0]?.data || [];
-              } else if (xAxis.data) {
-                categories = xAxis.data;
-              }
-            }
-            
-            // If no categories found, create default ones
-            if (categories.length === 0 && series[0]?.data) {
-              categories = series[0].data.map((_: any, index: number) => `Point ${index + 1}`);
-            }
-            
-            const data: any[] = [];
-            series.forEach((s: any, index: number) => {
-              if (s.data) {
-                s.data.forEach((value: any, pointIndex: number) => {
-                  if (index === 0) {
-                    data[pointIndex] = [categories[pointIndex] || `Point ${pointIndex + 1}`];
-                  }
-                  if (data[pointIndex]) {
-                    data[pointIndex].push(value || 0);
-                  }
-                });
-              }
-            });
-            return data;
-          },
-          getHeaders: (w: IWidget) => {
-            const series = (w.config?.options as any)?.series;
-            if (!series || series.length === 0) return ['Category'];
-            return ['Category', ...series.map((s: any) => s.name || 'Series')];
-          },
-          getSheetName: (w: IWidget) => this.getWidgetSheetName(w, 'LineChart')
-        };
-      case 'scatter':
-        return {
-          extractData: (w: IWidget) => {
-            const series = (w.config?.options as any)?.series?.[0];
-            if (!series?.data) return [];
-            return series.data.map((item: any) => [
-              item.name || 'Point',
-              Array.isArray(item.value) ? item.value[0] || 0 : item.value || 0,
-              Array.isArray(item.value) ? item.value[1] || 0 : ''
-            ]);
-          },
-          getHeaders: () => ['Name', 'X', 'Y'],
-          getSheetName: (w: IWidget) => this.getWidgetSheetName(w, 'ScatterChart')
-        };
-      default:
-        return this.getGenericDataExtractor();
-    }
-  }
-
-  /**
-   * Get generic data extractor for unsupported widget types
-   * @returns Generic data extractor
-   */
-  private getGenericDataExtractor(): any {
-    return {
-      extractData: (w: IWidget) => {
-        const data: any[] = [];
-        data.push(['Widget ID', w.id]);
-        data.push(['Component Type', w.config?.component || 'Unknown']);
-        data.push(['Title', w.config?.header?.title || 'Untitled']);
-        
-        if (w.config?.options) {
-          const options = w.config.options as any;
-          Object.keys(options).forEach(key => {
-            if (typeof options[key] !== 'object' || options[key] === null) {
-              data.push([key, options[key]]);
-            }
-          });
-        }
-        
-        if (w.series && w.series.length > 0) {
-          data.push(['Series Data', JSON.stringify(w.series)]);
-        }
-        
-        return data;
-      },
-      getHeaders: () => ['Property', 'Value'],
-      getSheetName: (w: IWidget) => this.getWidgetSheetName(w, 'Widget')
-    };
-  }
-
-  /**
-   * Get widget sheet name for export
-   * @param widget - Widget configuration
-   * @param prefix - Sheet name prefix
-   * @returns Sheet name
-   */
-  private getWidgetSheetName(widget: IWidget, prefix: string): string {
-    const title = widget.config?.header?.title || widget.id;
-    return `${prefix}_${title}`.replace(/[^a-zA-Z0-9_]/g, '_').substring(0, 31);
-  }
-
-  /**
-   * Calculate percentage for pie charts
-   * @param value - Current value
-   * @param data - All data points
-   * @returns Percentage string
-   */
-  private calculatePercentage(value: number, data: any[]): string {
-    const total = data.reduce((sum: number, item: any) => sum + (item.value || 0), 0);
-    if (total === 0) return '0%';
-    return `${((value / total) * 100).toFixed(1)}%`;
   }
 }
