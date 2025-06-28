@@ -23,8 +23,6 @@ export * from './lib/usage-examples/polarChart-examples';
 export * from './lib/usage-examples/tile-examples';
 
 // Config
-export * from './lib/formly-configs/form-options';
-export * from './lib/formly-configs/series-options';
 
 
 // Entities

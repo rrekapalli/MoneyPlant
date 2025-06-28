@@ -13,10 +13,7 @@ describe('WidgetConfigComponent', () => {
         .and('have.css', 'overflow', 'visible');
     });
   
-    // it('should render the form with formly-form and submit button', () => {
-    //   cy.get('form[formGroup]').should('exist');
-    //   cy.get('formly-form').should('exist');
-    // });
+
   
     it('should trigger form submission on clicking Submit button', () => {
       cy.get('p-button[label="Submit"]').click();
