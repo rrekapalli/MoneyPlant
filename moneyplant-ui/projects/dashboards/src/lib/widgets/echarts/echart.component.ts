@@ -20,7 +20,7 @@ import { IFilterValues } from '../../entities/IFilterValues';
     (chartError)="onChartError($event)"
     #chart
     [attr.data-widget-id]="widget.id"
-    style="width: 100%; height: 100%; min-height: 200px;"
+    style="width: 100%; height: 100%; min-height: 320px; display: block; position: relative;"
   >
   </div>`,
   imports: [CommonModule, NgxEchartsDirective],
@@ -44,6 +44,10 @@ export class EchartComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit() {
+    // Schedule a resize after view initialization to ensure proper chart sizing
+    setTimeout(() => {
+      this.resizeChart();
+    }, 200);
   }
 
   ngOnDestroy() {
@@ -80,6 +84,13 @@ export class EchartComponent implements OnInit, AfterViewInit, OnDestroy {
       }
       
       this.widget.chartInstance = instance;
+      
+      // Force resize after initialization to ensure chart fills container
+      setTimeout(() => {
+        if (this.widget.chartInstance && !this.widget.chartInstance.isDisposed()) {
+          this.widget.chartInstance.resize();
+        }
+      }, 100);
     }
     
     setTimeout(() => {
@@ -257,6 +268,21 @@ export class EchartComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /**
+   * Resize chart to fit container properly
+   */
+  resizeChart(): void {
+    if (this.widget?.chartInstance && !this.disposed) {
+      try {
+        if (!this.widget.chartInstance.isDisposed()) {
+          this.widget.chartInstance.resize();
+        }
+      } catch (error) {
+        console.error('Error resizing chart:', error);
+      }
+    }
+  }
+
+  /**
    * Force chart update when widget data changes
    */
   forceChartUpdate(): void {
@@ -271,6 +297,8 @@ export class EchartComponent implements OnInit, AfterViewInit, OnDestroy {
       try {
         if (!this.widget.chartInstance.isDisposed()) {
           this.widget.chartInstance.setOption(this.chartOptions, false); // Use merge mode
+          // Also resize after updating to ensure proper fit
+          setTimeout(() => this.resizeChart(), 50);
         }
       } catch (error) {
         console.error('Error updating chart:', error);

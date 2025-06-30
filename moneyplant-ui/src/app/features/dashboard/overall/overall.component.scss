@@ -2,13 +2,13 @@
 .dashboard-container {
   display: flex;
   flex-direction: column;
-  height: 80vh;
+  height: 100vh; /* Increased from 80vh to 100vh for more space */
   padding: 0.5rem;
 }
 
 vis-dashboard-container {
   flex: 1 1 auto;
-  min-height: 50vh;
+  min-height: 70vh; /* Increased from 50vh to 70vh for more chart space */
 }
 
 
@@ -99,11 +99,11 @@ vis-dashboard-container {
     border-radius: 4px;
     background-color: #ffffff;
     overflow: visible !important; /* Changed from hidden to visible */
-    min-height: 200px !important;
-    min-width: 200px !important;
-    border: 2px solid #007bff !important; /* Blue border for visibility */
-    padding: 10px !important;
-    margin: 5px !important;
+    min-height: 360px !important; /* Increased to 360px for better chart space */
+    min-width: 350px !important;
+    border: 1px solid #007bff !important; /* Thinner border for more space */
+    padding: 5px !important; /* Reduced padding for more space */
+    margin: 2px !important; /* Reduced margin for more space */
   }
 
   /* Style widget headers */
@@ -117,48 +117,51 @@ vis-dashboard-container {
   .widget-content {
     padding: 0.5rem;
     height: calc(100% - 40px);
-    min-height: 150px;
+    min-height: 320px; /* Increased to 320px for better chart space */
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
   }
 
   /* Style for echarts containers */
   .echart-container {
     width: 100% !important;
     height: 100% !important;
-    min-height: 300px !important; /* Increased minimum height */
-    min-width: 300px !important; /* Increased minimum width */
-    border: 4px solid #dc3545 !important; /* Thicker red border for visibility */
-    background-color: rgba(220, 53, 69, 0.1) !important; /* Light red background */
-    display: flex !important;
-    justify-content: center !important;
-    align-items: center !important;
+    min-height: 320px !important; /* Increased to 320px for better chart space */
+    min-width: 320px !important;
+    border: 2px solid #dc3545 !important;
+    background-color: rgba(220, 53, 69, 0.05) !important;
+    display: block !important;
     position: relative !important;
-    z-index: 10 !important; /* Ensure chart is above other elements */
-    overflow: visible !important; /* Show overflow content */
+    z-index: 10 !important;
+    overflow: visible !important;
+    flex: 1 1 auto !important;
   }
 
   /* Style for echart widget containers */
   .echart-widget-container {
     width: 100% !important;
     height: 100% !important;
-    min-height: 300px !important; /* Increased minimum height */
-    min-width: 300px !important; /* Increased minimum width */
+    min-height: 320px !important; /* Increased to 320px for better chart space */
+    min-width: 320px !important;
     display: flex !important;
     flex-direction: column !important;
-    justify-content: center !important;
-    align-items: center !important;
-    border: 4px solid #ffc107 !important; /* Thicker yellow border for visibility */
-    background-color: rgba(255, 193, 7, 0.1) !important; /* Light yellow background */
-    padding: 10px !important;
+    justify-content: stretch !important;
+    align-items: stretch !important;
+    border: 2px solid #ffc107 !important;
+    background-color: rgba(255, 193, 7, 0.05) !important;
+    padding: 5px !important;
     box-sizing: border-box !important;
     overflow: visible !important;
-    z-index: 5 !important; /* Ensure widget container is above other elements but below chart */
-    position: relative !important; /* Ensure proper positioning */
+    z-index: 5 !important;
+    position: relative !important;
+    flex: 1 1 auto !important;
   }
 
   /* Ensure gridster items have proper dimensions */
   .gridster-item {
-    min-height: 300px !important; /* Increased minimum height */
-    min-width: 300px !important; /* Increased minimum width */
+    min-height: 360px !important; /* Increased to 360px for better chart space */
+    min-width: 350px !important;
     height: auto !important; /* Allow height to adjust based on content */
     overflow: visible !important; /* Show overflow content */
     z-index: 1 !important; /* Base z-index */

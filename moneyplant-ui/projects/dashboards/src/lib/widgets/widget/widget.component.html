@@ -1,4 +1,6 @@
-<div [style.height.px]="widget.height">
+<div [style.height]="isEchartComponent ? '100%' : (widget.height ? widget.height + 'px' : '100%')" 
+     [style.min-height]="isEchartComponent ? '320px' : 'auto'"
+     style="width: 100%; display: flex; flex-direction: column;">
     <ng-container
         *ngComponentOutlet="currentWidget.component; inputs: currentWidget.inputs">
     </ng-container>

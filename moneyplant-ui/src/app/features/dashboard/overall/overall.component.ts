@@ -233,10 +233,17 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
       ]) // Test data to check if chart renders
       .setVariant(POLAR_VARIANTS.ROSE)  // Use ROSE variant (confirmed working)
       .setHeader('Asset Allocation')
-      .setPosition({ x: 0, y: 3, cols: 6, rows: 8 })
+      .setPosition({ x: 0, y: 3, cols: 6, rows: 8 })  // Reduced back to 8 for better fit
       .setCurrencyFormatter('USD', 'en-US')
       .setPredefinedPalette('finance')
       .setFilterColumn('assetCategory')
+      .setGrid({
+        containLabel: true,
+        top: '5%',      // Reduced from 15% to 5%
+        left: '5%',     // Reduced from 10% to 5%
+        right: '5%',    // Reduced from 10% to 5%
+        bottom: '5%'    // Reduced from 15% to 5%
+      })
       .build();
 
 
@@ -255,11 +262,18 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
       .setCategories(barTestData.map(item => item.name)) // Extract categories from data
       .setVariant(BAR_VARIANTS.VERTICAL)
       .setHeader('Monthly Income vs Expenses')
-      .setPosition({ x: 6, y: 3, cols: 6, rows: 8 })
+      .setPosition({ x: 6, y: 3, cols: 6, rows: 8 })  // Reduced back to 8 for better fit
       .setCurrencyFormatter('USD', 'en-US')
       .setPredefinedPalette('business')
       .setTooltip('axis', '{b}: {c}')
       .setFilterColumn('month')
+      .setGrid({
+        containLabel: true,
+        top: '5%',      // Reduced from 15% to 5%
+        left: '5%',     // Reduced from 3% to 5%
+        right: '5%',    // Reduced from 4% to 5%
+        bottom: '5%'    // Reduced from 15% to 5%
+      })
       .build();
 
 
@@ -269,10 +283,17 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
       .setData([]) // Data will be populated later
       .setVariant(SCATTER_VARIANTS.BASIC)
       .setHeader('Risk vs Return Analysis')
-      .setPosition({ x: 0, y: 11, cols: 6, rows: 8 })
+      .setPosition({ x: 0, y: 12, cols: 6, rows: 8 })  // Adjusted position and height
       .setTooltip('item', '{b}: Risk {c[0]}%, Return {c[1]}%')
       .setPredefinedPalette('modern')
       .setFilterColumn('assetCategory')
+      .setGrid({
+        containLabel: true,
+        top: '5%',      // Reduced from 15% to 5%
+        left: '5%',     // Reduced from 10% to 5%
+        right: '5%',    // Reduced from 10% to 5%
+        bottom: '5%'    // Reduced from 15% to 5%
+      })
       .build();
 
     // Investment Distribution Map (using density map builder with BASIC variant)
@@ -280,13 +301,20 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
       .setData([]) // Data will be populated later
       .setVariant(DENSITY_MAP_VARIANTS.BASIC)
       .setHeader('Investment Distribution by Region')
-      .setPosition({ x: 6, y: 11, cols: 6, rows: 8 })
+      .setPosition({ x: 6, y: 12, cols: 6, rows: 8 })  // Adjusted position and height
       .setMap('world') // Explicitly set world map
       .setVisualMap(0, 1000000, ['#e0f3f8', '#abd9e9', '#74add1', '#4575b4', '#313695'])
       .setTooltip('item', '{b}: ${c}')
       .setCurrencyFormatter('USD', 'en-US')
       .setFilterColumn('market')
       .setRoam(false) // Disable roaming for better UX in dashboard
+      .setGrid({
+        containLabel: true,
+        top: '2%',      // Minimal top margin for maps
+        left: '2%',     // Minimal left margin for maps
+        right: '2%',    // Minimal right margin for maps
+        bottom: '2%'    // Minimal bottom margin for maps
+      })
       .build();
 
     const filterWidget = createFilterWidget();
