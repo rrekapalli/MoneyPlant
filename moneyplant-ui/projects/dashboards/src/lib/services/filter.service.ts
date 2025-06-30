@@ -236,6 +236,12 @@ export class FilterService {
    * Apply filters to data
    */
   applyFiltersToData<T extends Record<string, any>>(data: T[], filters: IFilterValues[]): T[] {
+    // Type guard: Check if data is actually an array
+    if (!Array.isArray(data)) {
+      console.warn('FilterService.applyFiltersToData: data is not an array, returning as-is', data);
+      return data as any; // Return the non-array data unchanged
+    }
+
     if (!filters || filters.length === 0) {
       return data;
     }

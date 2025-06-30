@@ -481,17 +481,24 @@ export abstract class BaseDashboardComponent<T = any> implements OnInit, OnDestr
       );
     } else if (filters.length > 0) {
       // Use traditional filtering for other widgets (non-source widgets)
-      processedData = this.filterService.applyFiltersToData(baseData, filters);
-      
-      // If all data is filtered out and we have filters, show empty state
-      if (processedData.length === 0) {
-        processedData = [{
-          name: 'No data matches filter',
-          value: 0,
-          itemStyle: {
-            color: '#cccccc'
-          }
-        }];
+      // Only apply filtering if baseData is an array
+      if (Array.isArray(baseData)) {
+        processedData = this.filterService.applyFiltersToData(baseData, filters);
+        
+        // If all data is filtered out and we have filters, show empty state
+        if (processedData.length === 0) {
+          processedData = [{
+            name: 'No data matches filter',
+            value: 0,
+            itemStyle: {
+              color: '#cccccc'
+            }
+          }];
+        }
+      } else {
+        // For non-array data (like Sankey diagrams), return as-is
+        // These widgets handle their own filtering internally
+        processedData = baseData;
       }
     }
 
