@@ -1,6 +1,6 @@
 import { IWidget, WidgetBuilder } from '../../../public-api';
 import { EChartsOption } from 'echarts';
-import { ApacheEchartBuilder } from '../apache-echart-builder';
+import { ApacheEchartBuilder, ChartDataTransformOptions, DataFilter, ColorPalette } from '../apache-echart-builder';
 
 export interface PolarChartData {
   value: number;
@@ -74,51 +74,20 @@ export interface PolarChartOptions extends EChartsOption {
 }
 
 /**
- * Polar Chart Builder extending the generic ApacheEchartBuilder
+ * Enhanced Polar Chart Builder extending the generic ApacheEchartBuilder
  * 
- * Usage examples:
- * 
- * // Basic usage with default options
- * const widget = PolarChartBuilder.create()
- *   .setData([10, 20, 30, 40, 50])
- *   .setHeader('Polar Chart')
- *   .setPosition({ x: 0, y: 0, cols: 6, rows: 4 })
- *   .build();
- * 
- * // Advanced usage with custom options
- * const widget = PolarChartBuilder.create()
- *   .setData([10, 20, 30, 40, 50])
- *   .setTitle('Performance Metrics', '360-degree view')
- *   .setPolarCenter(['50%', '50%'])
- *   .setPolarRadius(['30%', '80%'])
- *   .setStartAngle(0)
- *   .setEndAngle(360)
- *   .setSmooth(true)
- *   .setAreaStyle('#5470c6', 0.3)
- *   .setLineStyle(3, '#5470c6', 'solid')
- *   .setSymbol('circle', 8)
- *   .setTooltip('item', '{b}: {c}')
- *   .setLegend('horizontal', 'bottom')
- *   .setHeader('Performance Metrics')
- *   .setPosition({ x: 0, y: 0, cols: 8, rows: 4 })
- *   .build();
- * 
- * // Multi-series polar chart
- * const widget = PolarChartBuilder.create()
- *   .setData([
- *     { name: 'Series 1', data: [10, 20, 30, 40, 50] },
- *     { name: 'Series 2', data: [5, 15, 25, 35, 45] }
- *   ])
- *   .setStack('total')
- *   .setHeader('Multi-Series Polar Chart')
- *   .setPosition({ x: 0, y: 0, cols: 8, rows: 4 })
- *   .build();
- * 
- * // Update widget data dynamically
- * PolarChartBuilder.updateData(widget, newData);
+ * Features:
+ * - Generic data transformation from any[] to polar format
+ * - Advanced formatting (currency, percentage, number)
+ * - Predefined color palettes
+ * - Filter integration
+ * - Sample data generation
+ * - Configuration presets for performance analysis
+ * - Enhanced update methods with retry mechanism
  */
 export class PolarChartBuilder extends ApacheEchartBuilder<PolarChartOptions, PolarChartSeriesOptions> {
   protected override seriesOptions: PolarChartSeriesOptions;
+  private filterColumn: string = '';
 
   private constructor() {
     super();
@@ -383,6 +352,184 @@ export class PolarChartBuilder extends ApacheEchartBuilder<PolarChartOptions, Po
   }
 
   /**
+   * Transform generic data to polar format
+   */
+  transformData(options: { 
+    valueField?: string; 
+    nameField?: string; 
+    categoryField?: string; 
+  } & ChartDataTransformOptions = {}): this {
+    if (!this.data || !Array.isArray(this.data)) {
+      return this;
+    }
+
+    const {
+      valueField = 'value',
+      nameField = 'name',
+      categoryField = 'category',
+      sortBy,
+      sortOrder = 'desc',
+      limit
+    } = options;
+
+    try {
+      let transformedData: number[] = [];
+
+      // Apply filters first
+      let filteredData = this.data;
+      if ((options as any).filters && (options as any).filters.length > 0) {
+        filteredData = ApacheEchartBuilder.applyFilters(this.data, (options as any).filters);
+      }
+
+      // Transform data to polar format
+      filteredData.forEach(item => {
+        const value = parseFloat(item[valueField]) || 0;
+        transformedData.push(value);
+      });
+
+      // Apply sorting
+      if (sortBy === 'value') {
+        transformedData.sort((a, b) => sortOrder === 'asc' ? a - b : b - a);
+      }
+
+      // Apply limit
+      if (limit && limit > 0) {
+        transformedData = transformedData.slice(0, limit);
+      }
+
+      this.seriesOptions.data = transformedData;
+
+    } catch (error) {
+      console.error('Error transforming polar chart data:', error);
+    }
+
+    return this;
+  }
+
+  /**
+   * Set predefined color palette
+   */
+  override setPredefinedPalette(palette: ColorPalette): this {
+    const colors = this.getPaletteColors(palette);
+    if (colors.length > 0) {
+      this.setItemStyle(colors[0]);
+      this.setLineStyle(2, colors[0]);
+    }
+    return this;
+  }
+
+  /**
+   * Set currency formatter for values
+   */
+  override setCurrencyFormatter(currency: string = 'USD', locale: string = 'en-US'): this {
+    const formatter = this.createCurrencyFormatter(currency, locale);
+    this.setTooltip('item', (params: any) => {
+      return `${params.seriesName}: ${formatter(params.value)}`;
+    });
+    return this;
+  }
+
+  /**
+   * Set percentage formatter for values
+   */
+  override setPercentageFormatter(decimals: number = 1): this {
+    const formatter = this.createPercentageFormatter(decimals);
+    this.setTooltip('item', (params: any) => {
+      return `${params.seriesName}: ${formatter(params.value)}`;
+    });
+    return this;
+  }
+
+  /**
+   * Set number formatter for values with custom options
+   */
+  setCustomNumberFormatter(decimals: number = 0, locale: string = 'en-US'): this {
+    const formatter = this.createNumberFormatter(decimals, locale);
+    this.setTooltip('item', (params: any) => {
+      return `${params.seriesName}: ${formatter(params.value)}`;
+    });
+    return this;
+  }
+
+  /**
+   * Set filter column for filtering integration
+   */
+  override setFilterColumn(column: string): this {
+    this.filterColumn = column;
+    return this;
+  }
+
+  /**
+   * Create filter from chart data
+   */
+  createFilterFromChartData(): DataFilter[] {
+    if (!this.filterColumn || !this.data) return [];
+
+    const uniqueValues = [...new Set(this.data.map(item => item[this.filterColumn]))];
+    return [{
+      column: this.filterColumn,
+      operator: 'in',
+      value: uniqueValues
+    }];
+  }
+
+  /**
+   * Generate sample data for testing
+   */
+  generateSampleData(count: number = 8): this {
+    const sampleData = [];
+    
+    for (let i = 0; i < count; i++) {
+      sampleData.push({
+        value: Math.floor(Math.random() * 100) + 10,
+        name: `Metric ${i + 1}`,
+        angle: (360 / count) * i,
+        category: ['Performance', 'Quality', 'Efficiency'][Math.floor(Math.random() * 3)],
+        department: ['Sales', 'Marketing', 'Operations'][Math.floor(Math.random() * 3)]
+      });
+    }
+
+    return this.setData(sampleData);
+  }
+
+  /**
+   * Configuration preset for performance metrics
+   */
+  setPerformanceMetricsConfiguration(): this {
+    return this
+      .setPredefinedPalette('business')
+      .setPercentageFormatter(1)
+      .setPolarRadius(['20%', '80%'])
+      .setAreaStyle('#5470c6', 0.3)
+      .setSmooth(true);
+  }
+
+  /**
+   * Configuration preset for radar analysis
+   */
+  setRadarAnalysisConfiguration(): this {
+    return this
+      .setPredefinedPalette('finance')
+      .setCustomNumberFormatter(0, 'en-US')
+      .setPolarRadius(['30%', '90%'])
+      .setLineStyle(3, '#91cc75', 'solid')
+      .setSymbol('circle', 6);
+  }
+
+  /**
+   * Configuration preset for 360-degree view
+   */
+  set360ViewConfiguration(): this {
+    return this
+      .setPredefinedPalette('modern')
+      .setCurrencyFormatter('USD', 'en-US')
+      .setPolarRadius(['10%', '95%'])
+      .setStartAngle(0)
+      .setEndAngle(360)
+      .setAreaStyle('#ee6666', 0.4);
+  }
+
+  /**
    * Build the widget with polar chart configuration
    */
   override build(): IWidget {
@@ -396,15 +543,45 @@ export class PolarChartBuilder extends ApacheEchartBuilder<PolarChartOptions, Po
   }
 
   /**
-   * Update widget data
+   * Enhanced updateData with retry mechanism
    */
   static override updateData(widget: IWidget, data: any): void {
-    if (PolarChartBuilder.isPolarChart(widget)) {
-      const options = widget.config?.options as any;
-      if (options?.series && options.series.length > 0) {
-        options.series[0].data = data;
+    const maxRetries = 3;
+    let retryCount = 0;
+
+    const updateWithRetry = () => {
+      try {
+        if (widget.chartInstance) {
+          // Transform data if needed
+          let transformedData = data;
+          if (Array.isArray(data) && data.length > 0 && typeof data[0] === 'object') {
+            transformedData = data.map(item => parseFloat(item.value) || 0);
+          }
+
+          const currentOptions = widget.chartInstance.getOption();
+          const newOptions = {
+            ...currentOptions,
+            series: [{
+              ...(currentOptions as any)['series'][0],
+              data: transformedData
+            }]
+          };
+
+          widget.chartInstance.setOption(newOptions, true);
+        } else if (retryCount < maxRetries) {
+          retryCount++;
+          setTimeout(updateWithRetry, 100 * retryCount);
+        }
+      } catch (error) {
+        console.error('Error updating polar chart data:', error);
+        if (retryCount < maxRetries) {
+          retryCount++;
+          setTimeout(updateWithRetry, 100 * retryCount);
+        }
       }
-    }
+    };
+
+    updateWithRetry();
   }
 
   /**

@@ -26,7 +26,7 @@ export interface TreemapSeriesOptions {
   };
   label?: {
     show?: boolean;
-    formatter?: string;
+    formatter?: string | Function;
     fontSize?: number;
     color?: string;
   };
@@ -240,7 +240,7 @@ export class TreemapChartBuilder extends ApacheEchartBuilder<TreemapChartOptions
   /**
    * Set label formatter for treemap
    */
-  override setLabelFormatter(formatter: string): this {
+  override setLabelFormatter(formatter: string | Function): this {
     if (!this.seriesOptions.label) this.seriesOptions.label = {};
     this.seriesOptions.label.formatter = formatter;
     return this;
@@ -308,10 +308,195 @@ export class TreemapChartBuilder extends ApacheEchartBuilder<TreemapChartOptions
   }
 
   /**
-   * Static method to update data on an existing treemap chart widget
+   * Static method to update data on an existing treemap chart widget with enhanced retry mechanism
    */
-  static override updateData(widget: IWidget, data: any): void {
-    ApacheEchartBuilder.updateData(widget, data);
+  static override updateData(widget: IWidget, data: any, retryOptions?: { maxAttempts?: number; baseDelay?: number }): void {
+    ApacheEchartBuilder.updateData(widget, data, retryOptions);
+  }
+
+  /**
+   * Transform generic data array to treemap format
+   */
+  static transformToTreemapData(data: any[], options?: { 
+    valueField?: string; 
+    nameField?: string; 
+    childrenField?: string;
+    maxDepth?: number;
+    minValue?: number;
+  }): TreemapData[] {
+    if (!data || data.length === 0) return [];
+
+    const valueField = options?.valueField || 'value';
+    const nameField = options?.nameField || 'name';
+    const childrenField = options?.childrenField || 'children';
+    const maxDepth = options?.maxDepth || 3;
+    const minValue = options?.minValue || 0;
+
+    const transformItem = (item: any, depth: number): TreemapData => {
+      const transformed: TreemapData = {
+        name: String(item[nameField]) || 'Unknown',
+        value: Number(item[valueField]) || 0
+      };
+
+      // Filter out items below minimum value
+      if (transformed.value < minValue) {
+        return transformed;
+      }
+
+      // Process children if they exist and we haven't reached max depth
+      if (depth < maxDepth && item[childrenField] && Array.isArray(item[childrenField])) {
+        transformed.children = item[childrenField]
+          .map((child: any) => transformItem(child, depth + 1))
+          .filter((child: TreemapData) => child.value >= minValue);
+      }
+
+      return transformed;
+    };
+
+    return data.map(item => transformItem(item, 0));
+  }
+
+  /**
+   * Create hierarchical data structure from flat array
+   */
+  static createHierarchyFromFlat(
+    data: any[], 
+    options: {
+      idField: string;
+      parentField: string;
+      valueField: string;
+      nameField: string;
+    }
+  ): TreemapData[] {
+    const { idField, parentField, valueField, nameField } = options;
+    const itemMap = new Map<any, TreemapData>();
+    const rootItems: TreemapData[] = [];
+
+    // First pass: create all items
+    data.forEach(item => {
+      const treeItem: TreemapData = {
+        name: String(item[nameField]) || 'Unknown',
+        value: Number(item[valueField]) || 0,
+        children: []
+      };
+      itemMap.set(item[idField], treeItem);
+    });
+
+    // Second pass: build hierarchy
+    data.forEach(item => {
+      const treeItem = itemMap.get(item[idField]);
+      if (!treeItem) return;
+
+      const parentId = item[parentField];
+      if (parentId && itemMap.has(parentId)) {
+        const parent = itemMap.get(parentId);
+        if (parent && parent.children) {
+          parent.children.push(treeItem);
+        }
+      } else {
+        rootItems.push(treeItem);
+      }
+    });
+
+    return rootItems;
+  }
+
+  /**
+   * Set financial display formatting
+   */
+  setFinancialDisplay(currencyCode: string = 'USD', locale: string = 'en-US'): this {
+    this.setCurrencyFormatter(currencyCode, locale);
+    
+    const formatter = new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency: currencyCode,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    });
+
+    this.setLabelFormatter((params: any) => {
+      return `${params.data.name}\n${formatter.format(params.data.value)}`;
+    });
+
+    return this;
+  }
+
+  /**
+   * Set percentage display formatting
+   */
+  setPercentageDisplay(decimals: number = 1): this {
+    this.setPercentageFormatter(decimals);
+    
+    this.setLabelFormatter((params: any) => {
+      return `${params.data.name}\n${params.data.value.toFixed(decimals)}%`;
+    });
+
+    return this;
+  }
+
+  /**
+   * Set zoom behavior configuration
+   */
+  setZoomBehavior(
+    enableZoom: boolean = true, 
+    nodeClick: 'zoomToNode' | 'link' | false = 'zoomToNode',
+    roam: boolean = true
+  ): this {
+    this.setRoam(roam);
+    if (nodeClick) {
+      this.setNodeClick(nodeClick);
+    }
+    return this;
+  }
+
+  /**
+   * Create portfolio distribution configuration
+   */
+  setPortfolioConfiguration(): this {
+    return this
+      .setBreadcrumb(true, '10%', '10%', '10%', '10%')
+      .setItemStyle('#fff', 1, 1)
+      .setLevels([
+        {
+          itemStyle: { borderColor: '#777', borderWidth: 0, gapWidth: 1 },
+          label: { show: false }
+        },
+        {
+          itemStyle: { borderColor: '#555', borderWidth: 5, gapWidth: 1 },
+          label: { show: true, formatter: '{b}\n{c}%' }
+        },
+        {
+          itemStyle: { borderColor: '#555', borderWidth: 5, gapWidth: 1 },
+          label: { show: true, formatter: '{b}\n{c}%' }
+        }
+      ])
+      .setEmphasis(10, 0, 'rgba(0, 0, 0, 0.5)')
+      .setZoomBehavior(true, 'zoomToNode', true);
+  }
+
+  /**
+   * Create expense breakdown configuration
+   */
+  setExpenseConfiguration(): this {
+    return this
+      .setBreadcrumb(true, '10%', '10%', '10%', '10%')
+      .setItemStyle('#fff', 1, 1)
+      .setLevels([
+        {
+          itemStyle: { borderColor: '#777', borderWidth: 0, gapWidth: 1 },
+          label: { show: false }
+        },
+        {
+          itemStyle: { borderColor: '#555', borderWidth: 5, gapWidth: 1 },
+          label: { show: true, formatter: '{b}\n${c}K' }
+        },
+        {
+          itemStyle: { borderColor: '#555', borderWidth: 5, gapWidth: 1 },
+          label: { show: true, formatter: '{b}\n${c}K' }
+        }
+      ])
+      .setEmphasis(10, 0, 'rgba(0, 0, 0, 0.5)')
+      .setZoomBehavior(true, 'zoomToNode', true);
   }
 
   /**

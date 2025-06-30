@@ -10,6 +10,7 @@ export abstract class ApacheEchartBuilder<T extends EChartsOption = EChartsOptio
   protected widgetBuilder: WidgetBuilder;
   protected chartOptions: Partial<T>;
   protected seriesOptions!: TSeries;
+  protected data: any[] = [];
 
   protected constructor() {
     this.widgetBuilder = new WidgetBuilder()
@@ -59,6 +60,7 @@ export abstract class ApacheEchartBuilder<T extends EChartsOption = EChartsOptio
    * Set the data for the chart
    */
   setData(data: any): this {
+    this.data = Array.isArray(data) ? data : [data];
     this.widgetBuilder.setData(data);
     return this;
   }
@@ -68,7 +70,7 @@ export abstract class ApacheEchartBuilder<T extends EChartsOption = EChartsOptio
   /**
    * Set the label formatter
    */
-  setLabelFormatter(formatter: string): this {
+  setLabelFormatter(formatter: string | Function): this {
     if (!(this.seriesOptions as any).label) (this.seriesOptions as any).label = {};
     (this.seriesOptions as any).label.formatter = formatter;
     return this;
@@ -352,10 +354,51 @@ export abstract class ApacheEchartBuilder<T extends EChartsOption = EChartsOptio
   }
 
   /**
-   * Static method to update data on an existing chart widget
+   * Static method to update data on an existing chart widget with retry mechanism
    */
-  static updateData(widget: IWidget, data: any): void {
+  static updateData(widget: IWidget, data: any, retryOptions?: { maxAttempts?: number; baseDelay?: number }): void {
     WidgetBuilder.setData(widget, data);
+
+    // Update chart instance if available
+    if (widget.chartInstance) {
+      try {
+        widget.chartInstance.setOption(widget.config?.options as any, true);
+      } catch (error) {
+        console.error('Error updating chart:', error);
+      }
+    } else {
+      // Use retry mechanism for chart updates
+      this.retryChartUpdate(widget, retryOptions);
+    }
+  }
+
+  /**
+   * Retry mechanism for chart updates when chart instance is not immediately available
+   */
+  private static retryChartUpdate(widget: IWidget, options?: { maxAttempts?: number; baseDelay?: number }): void {
+    const maxAttempts = options?.maxAttempts || 10;
+    const baseDelay = options?.baseDelay || 100;
+    let attempts = 0;
+    
+    const retryUpdate = () => {
+      attempts++;
+      
+      if (widget.chartInstance) {
+        try {
+          widget.chartInstance.setOption(widget.config?.options as any, true);
+          return;
+        } catch (error) {
+          console.error('Error updating chart on retry:', error);
+        }
+      }
+      
+      if (attempts < maxAttempts) {
+        const delay = Math.min(baseDelay * Math.pow(1.5, attempts - 1), 2000);
+        setTimeout(retryUpdate, delay);
+      }
+    };
+    
+    setTimeout(retryUpdate, baseDelay);
   }
 
   /**
@@ -375,6 +418,277 @@ export abstract class ApacheEchartBuilder<T extends EChartsOption = EChartsOptio
       return (widget.config.options as any).series[0].type;
     }
     return null;
+  }
+
+  // --- Enhanced Data Transformation Methods ---
+
+  /**
+   * Transform generic data array to chart-specific format
+   * This method should be overridden by specific chart builders
+   */
+  static transformData(data: any[], options?: ChartDataTransformOptions): any[] {
+    return data; // Default implementation returns data as-is
+  }
+
+  /**
+   * Apply filters to data array
+   */
+  static applyFilters(data: any[], filters: DataFilter[]): any[] {
+    if (!filters || filters.length === 0) return data;
+
+    return data.filter(item => {
+      return filters.every(filter => {
+        const propertyPath = filter.column || filter.property;
+        if (!propertyPath) return true;
+        const value = this.getNestedProperty(item, propertyPath);
+        return this.matchesFilter(value, filter);
+      });
+    });
+  }
+
+  /**
+   * Get nested property from object using dot notation
+   */
+  private static getNestedProperty(obj: any, path: string): any {
+    return path.split('.').reduce((current, key) => current?.[key], obj);
+  }
+
+  /**
+   * Check if value matches filter criteria
+   */
+  private static matchesFilter(value: any, filter: DataFilter): boolean {
+    switch (filter.operator) {
+      case 'equals':
+        return value === filter.value;
+      case 'contains':
+        return String(value).toLowerCase().includes(String(filter.value).toLowerCase());
+      case 'greaterThan':
+        return Number(value) > Number(filter.value);
+      case 'lessThan':
+        return Number(value) < Number(filter.value);
+      case 'greaterThanOrEqual':
+        return Number(value) >= Number(filter.value);
+      case 'lessThanOrEqual':
+        return Number(value) <= Number(filter.value);
+      case 'in':
+        return Array.isArray(filter.value) && filter.value.includes(value);
+      default:
+        return true;
+    }
+  }
+
+  /**
+   * Generate alternative/sample data for testing
+   */
+  static generateSampleData(template: any[], variationOptions?: DataVariationOptions): any[] {
+    return template.map(item => {
+      const newItem = { ...item };
+      
+      if (variationOptions?.randomizeNumericFields) {
+        Object.keys(newItem).forEach(key => {
+          if (typeof newItem[key] === 'number') {
+            const variation = (Math.random() - 0.5) * 2 * (variationOptions.variationPercentage || 0.2);
+            newItem[key] = Math.max(0, newItem[key] * (1 + variation));
+          }
+        });
+      }
+      
+      return newItem;
+    });
+  }
+
+  // --- Advanced Formatting Methods ---
+
+  /**
+   * Set currency formatter for tooltips and labels
+   */
+  setCurrencyFormatter(currencyCode: string = 'USD', locale: string = 'en-US'): this {
+    const formatter = (value: number) => {
+      return new Intl.NumberFormat(locale, {
+        style: 'currency',
+        currency: currencyCode
+      }).format(value);
+    };
+
+    this.setTooltip(
+      (this.chartOptions as any).tooltip?.trigger || 'item',
+      (params: any) => {
+        if (Array.isArray(params)) {
+          return params.map(p => `${p.seriesName}<br/>${p.name}: ${formatter(p.value)}`).join('<br/>');
+        }
+        return `${params.name}: ${formatter(params.value)}`;
+      }
+    );
+
+    return this;
+  }
+
+  /**
+   * Set percentage formatter for tooltips and labels
+   */
+  setPercentageFormatter(decimals: number = 1): this {
+    const formatter = (value: number) => `${value.toFixed(decimals)}%`;
+
+    this.setTooltip(
+      (this.chartOptions as any).tooltip?.trigger || 'item',
+      (params: any) => {
+        if (Array.isArray(params)) {
+          return params.map(p => `${p.seriesName}<br/>${p.name}: ${formatter(p.value)}`).join('<br/>');
+        }
+        return `${params.name}: ${formatter(params.value)}`;
+      }
+    );
+
+    return this;
+  }
+
+  /**
+   * Set number formatter with thousands separators
+   */
+  setNumberFormatter(locale: string = 'en-US', options?: Intl.NumberFormatOptions): this {
+    const formatter = (value: number) => {
+      return new Intl.NumberFormat(locale, options).format(value);
+    };
+
+    this.setTooltip(
+      (this.chartOptions as any).tooltip?.trigger || 'item',
+      (params: any) => {
+        if (Array.isArray(params)) {
+          return params.map(p => `${p.seriesName}<br/>${p.name}: ${formatter(p.value)}`).join('<br/>');
+        }
+        return `${params.name}: ${formatter(params.value)}`;
+      }
+    );
+
+    return this;
+  }
+
+  // --- Filter Integration Methods ---
+
+  /**
+   * Configure widget for filtering support
+   */
+  setFilterColumn(columnName: string): this {
+    const widget = this.widgetBuilder.build();
+    if (widget.config) {
+      widget.config.filterColumn = columnName;
+    }
+    return this;
+  }
+
+  /**
+   * Create filter value from chart interaction data
+   */
+  static createFilterFromChartData(chartData: any, filterColumn: string): DataFilter | null {
+    if (!chartData || !filterColumn) return null;
+
+    return {
+      property: filterColumn,
+      operator: 'equals',
+      value: chartData.name || chartData.value,
+      displayValue: chartData.name || String(chartData.value)
+    };
+  }
+
+  // --- Color and Styling Enhancements ---
+
+  /**
+   * Set gradient colors for chart elements
+   */
+  setGradientColors(startColor: string, endColor: string, direction: 'horizontal' | 'vertical' = 'vertical'): this {
+    const gradient = {
+      type: 'linear',
+      x: 0,
+      y: direction === 'vertical' ? 0 : 1,
+      x2: direction === 'vertical' ? 0 : 1,
+      y2: direction === 'vertical' ? 1 : 0,
+      colorStops: [
+        { offset: 0, color: startColor },
+        { offset: 1, color: endColor }
+      ]
+    };
+
+    if (!(this.seriesOptions as any).itemStyle) (this.seriesOptions as any).itemStyle = {};
+    (this.seriesOptions as any).itemStyle.color = gradient;
+
+    return this;
+  }
+
+  /**
+   * Set predefined color palette
+   */
+  setPredefinedPalette(paletteName: ColorPalette): this {
+    const palettes: Record<ColorPalette, string[]> = {
+      business: ['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de', '#3ba272', '#fc8452', '#9a60b4', '#ea7ccc'],
+      finance: ['#2E8B57', '#4682B4', '#DAA520', '#DC143C', '#9370DB', '#20B2AA', '#FF6347', '#4169E1', '#32CD32'],
+      modern: ['#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe', '#00f2fe', '#43e97b', '#38f9d7', '#ffecd2'],
+      pastel: ['#FFB6C1', '#87CEEB', '#98FB98', '#F0E68C', '#DDA0DD', '#F5DEB3', '#FFE4E1', '#E0FFFF', '#FAFAD2'],
+      dark: ['#2c3e50', '#34495e', '#7f8c8d', '#95a5a6', '#bdc3c7', '#ecf0f1', '#f39c12', '#e67e22', '#e74c3c']
+    };
+
+    return this.setColors(palettes[paletteName] || palettes['business']);
+  }
+
+  /**
+   * Get palette colors for a specific palette
+   */
+  protected getPaletteColors(paletteName: ColorPalette): string[] {
+    const palettes: Record<ColorPalette, string[]> = {
+      business: ['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de', '#3ba272', '#fc8452', '#9a60b4', '#ea7ccc'],
+      finance: ['#2E8B57', '#4682B4', '#DAA520', '#DC143C', '#9370DB', '#20B2AA', '#FF6347', '#4169E1', '#32CD32'],
+      modern: ['#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe', '#00f2fe', '#43e97b', '#38f9d7', '#ffecd2'],
+      pastel: ['#FFB6C1', '#87CEEB', '#98FB98', '#F0E68C', '#DDA0DD', '#F5DEB3', '#FFE4E1', '#E0FFFF', '#FAFAD2'],
+      dark: ['#2c3e50', '#34495e', '#7f8c8d', '#95a5a6', '#bdc3c7', '#ecf0f1', '#f39c12', '#e67e22', '#e74c3c']
+    };
+
+    return palettes[paletteName] || palettes['business'];
+  }
+
+  /**
+   * Create currency formatter function
+   */
+  protected createCurrencyFormatter(currency: string = 'USD', locale: string = 'en-US'): (value: number) => string {
+    return (value: number) => {
+      return new Intl.NumberFormat(locale, {
+        style: 'currency',
+        currency: currency
+      }).format(value);
+    };
+  }
+
+  /**
+   * Create percentage formatter function
+   */
+  protected createPercentageFormatter(decimals: number = 1): (value: number) => string {
+    return (value: number) => `${value.toFixed(decimals)}%`;
+  }
+
+  /**
+   * Create number formatter function
+   */
+  protected createNumberFormatter(decimals: number = 0, locale: string = 'en-US'): (value: number) => string {
+    return (value: number) => {
+      return new Intl.NumberFormat(locale, {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals
+      }).format(value);
+    };
+  }
+
+  /**
+   * Set value formatter for tooltips
+   */
+  protected setValueFormatter(formatter: (value: number) => string): this {
+    this.setTooltip(
+      (this.chartOptions as any).tooltip?.trigger || 'item',
+      (params: any) => {
+        if (Array.isArray(params)) {
+          return params.map(p => `${p.seriesName}<br/>${p.name}: ${formatter(p.value)}`).join('<br/>');
+        }
+        return `${params.name}: ${formatter(params.value)}`;
+      }
+    );
+    return this;
   }
 }
 
@@ -434,4 +748,44 @@ export interface CommonChartOptions {
   series?: any[];
   animation?: boolean | any;
   backgroundColor?: string;
-} 
+}
+
+/**
+ * Data transformation options interface
+ */
+export interface ChartDataTransformOptions {
+  nameField?: string;
+  valueField?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  limit?: number;
+  groupBy?: string;
+  aggregateBy?: string;
+  aggregateFunction?: 'sum' | 'avg' | 'count' | 'max' | 'min';
+  dateFormat?: string;
+}
+
+/**
+ * Data filter interface
+ */
+export interface DataFilter {
+  column?: string;
+  property?: string;
+  operator: 'equals' | 'contains' | 'greaterThan' | 'lessThan' | 'greaterThanOrEqual' | 'lessThanOrEqual' | 'in';
+  value: any;
+  displayValue?: string;
+}
+
+/**
+ * Data variation options for sample data generation
+ */
+export interface DataVariationOptions {
+  randomizeNumericFields?: boolean;
+  variationPercentage?: number;
+  preserveStructure?: boolean;
+}
+
+/**
+ * Predefined color palette types
+ */
+export type ColorPalette = 'business' | 'finance' | 'modern' | 'pastel' | 'dark';

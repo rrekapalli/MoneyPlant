@@ -265,14 +265,156 @@ export class SankeyChartBuilder extends ApacheEchartBuilder<SankeyChartOptions, 
   }
 
   /**
-   * Static method to update data in an existing widget
+   * Static method to update data in an existing widget with enhanced retry mechanism
    */
-  static override updateData(widget: IWidget, data: SankeyChartData): void {
+  static override updateData(widget: IWidget, data: SankeyChartData, retryOptions?: { maxAttempts?: number; baseDelay?: number }): void {
     if ((widget.config?.options as any)?.series?.[0]) {
       (widget.config.options as any).series[0].data = data.nodes;
       (widget.config.options as any).series[0].links = data.links;
     }
     widget.data = data;
+    ApacheEchartBuilder.updateData(widget, data, retryOptions);
+  }
+
+  /**
+   * Transform generic data array to sankey format
+   */
+  static transformToSankeyData(data: any[], options?: {
+    nodeField?: string;
+    sourceField?: string;
+    targetField?: string;
+    valueField?: string;
+    aggregateBy?: 'sum' | 'count';
+  }): SankeyChartData {
+    if (!data || data.length === 0) return { nodes: [], links: [] };
+
+    const sourceField = options?.sourceField || 'source';
+    const targetField = options?.targetField || 'target';
+    const valueField = options?.valueField || 'value';
+    const aggregateBy = options?.aggregateBy || 'sum';
+
+    // Extract unique nodes
+    const nodeSet = new Set<string>();
+    data.forEach(item => {
+      nodeSet.add(String(item[sourceField]));
+      nodeSet.add(String(item[targetField]));
+    });
+
+    const nodes: SankeyNode[] = Array.from(nodeSet).map(name => ({ name }));
+
+    // Transform links and aggregate if needed
+    const linkMap = new Map<string, number>();
+    
+    data.forEach(item => {
+      const source = String(item[sourceField]);
+      const target = String(item[targetField]);
+      const value = Number(item[valueField]) || 1;
+      const key = `${source}->${target}`;
+
+      if (linkMap.has(key)) {
+        const existingValue = linkMap.get(key)!;
+        linkMap.set(key, aggregateBy === 'sum' ? existingValue + value : existingValue + 1);
+      } else {
+        linkMap.set(key, aggregateBy === 'sum' ? value : 1);
+      }
+    });
+
+    const links: SankeyLink[] = Array.from(linkMap.entries()).map(([key, value]) => {
+      const [source, target] = key.split('->');
+      return { source, target, value };
+    });
+
+    return { nodes, links };
+  }
+
+  /**
+   * Create financial flow configuration
+   */
+  setFinancialFlow(): this {
+    return this
+      .setNodeWidth(20)
+      .setNodeGap(8)
+      .setLayout('left')
+      .setCurveness(0.5)
+      .setEmphasisFocus('adjacency')
+      .setNodeColors(['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de']);
+  }
+
+  /**
+   * Create budget allocation configuration
+   */
+  setBudgetAllocation(): this {
+    return this
+      .setNodeWidth(15)
+      .setNodeGap(10)
+      .setLayout('left')
+      .setCurveness(0.4)
+      .setEmphasisFocus('adjacency')
+      .setNodeColors(['#2E8B57', '#4682B4', '#DAA520', '#DC143C', '#9370DB']);
+  }
+
+  /**
+   * Create investment flow configuration
+   */
+  setInvestmentFlow(): this {
+    return this
+      .setNodeWidth(25)
+      .setNodeGap(12)
+      .setLayout('left')
+      .setCurveness(0.3)
+      .setEmphasisFocus('adjacency')
+      .setNodeColors(['#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe']);
+  }
+
+  /**
+   * Set percentage display for sankey values
+   */
+  setPercentageDisplay(): this {
+    this.setTooltip('item', (params: any) => {
+      if (params.data.source) {
+        // This is a link
+        return `${params.data.source} → ${params.data.target}<br/>Value: ${params.data.value}%`;
+      } else {
+        // This is a node
+        return `${params.data.name}<br/>Total: ${params.data.value || 0}%`;
+      }
+    });
+    return this;
+  }
+
+  /**
+   * Set currency display for sankey values
+   */
+  setCurrencyDisplay(currencyCode: string = 'USD', locale: string = 'en-US'): this {
+    const formatter = new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency: currencyCode,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    });
+
+    this.setTooltip('item', (params: any) => {
+      if (params.data.source) {
+        // This is a link
+        return `${params.data.source} → ${params.data.target}<br/>Amount: ${formatter.format(params.data.value)}`;
+      } else {
+        // This is a node
+        return `${params.data.name}<br/>Total: ${formatter.format(params.data.value || 0)}`;
+      }
+    });
+    return this;
+  }
+
+  /**
+   * Create minimal test configuration for debugging
+   */
+  setMinimalConfiguration(): this {
+    return this
+      .setNodeWidth(10)
+      .setNodeGap(5)
+      .setLayout('none')
+      .setCurveness(0.5)
+      .setEmphasisFocus('adjacency');
   }
 
   /**

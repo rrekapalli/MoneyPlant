@@ -1,6 +1,6 @@
 import { IWidget, WidgetBuilder } from '../../../public-api';
 import { EChartsOption } from 'echarts';
-import { ApacheEchartBuilder } from '../apache-echart-builder';
+import { ApacheEchartBuilder, ChartDataTransformOptions, DataFilter, ColorPalette } from '../apache-echart-builder';
 
 export interface ScatterChartData {
   value: [number, number]; // [x, y] coordinates
@@ -62,42 +62,45 @@ export interface ScatterChartOptions extends EChartsOption {
 }
 
 /**
- * Scatter Chart Builder extending the generic ApacheEchartBuilder
+ * Enhanced Scatter Chart Builder extending the generic ApacheEchartBuilder
+ * 
+ * Features:
+ * - Generic data transformation from any[] to scatter chart format
+ * - Support for correlation analysis and trend visualization
+ * - Predefined color palettes and gradients
+ * - Built-in formatters for currency, percentage, and numbers
+ * - Filter integration and sample data generation
+ * - Configuration presets for common use cases
+ * - Enhanced update methods with retry mechanisms
  * 
  * Usage examples:
  * 
- * // Basic usage with default options
- * const data = [
- *   { value: [10, 20], name: 'Point 1' },
- *   { value: [15, 25], name: 'Point 2' },
- *   { value: [20, 30], name: 'Point 3' }
- * ];
+ * // Basic usage with generic data transformation
  * const widget = ScatterChartBuilder.create()
- *   .setData(data)
- *   .setHeader('Risk vs Return')
+ *   .setData(genericDataArray)
+ *   .transformData({ xField: 'risk', yField: 'return' })
+ *   .setHeader('Risk vs Return Analysis')
  *   .setPosition({ x: 0, y: 0, cols: 6, rows: 4 })
  *   .build();
  * 
- * // Advanced usage with custom options
+ * // Advanced usage with correlation analysis
  * const widget = ScatterChartBuilder.create()
- *   .setData(data)
- *   .setTitle('Portfolio Risk vs Return', 'Scatter Analysis')
- *   .setXAxisName('Risk')
- *   .setYAxisName('Return')
- *   .setSymbol('circle', 10)
- *   .setColors(['#5470c6', '#91cc75', '#fac858'])
- *   .setLargeScatter(true, 2000)
- *   .setTooltip('item', '{b}: ({c})')
- *   .setLegend('horizontal', 'bottom')
- *   .setHeader('Risk-Return Analysis')
+ *   .setData(correlationData)
+ *   .transformData({ xField: 'experience', yField: 'salary' })
+ *   .setCorrelationAnalysisConfiguration()
+ *   .setCurrencyFormatter('USD', 'en-US')
+ *   .setPredefinedPalette('finance')
+ *   .setFilterColumn('department')
+ *   .setHeader('Salary vs Experience Analysis')
  *   .setPosition({ x: 0, y: 0, cols: 8, rows: 4 })
  *   .build();
  * 
- * // Update widget data dynamically
+ * // Update with enhanced data transformation
  * ScatterChartBuilder.updateData(widget, newData);
  */
 export class ScatterChartBuilder extends ApacheEchartBuilder<ScatterChartOptions, ScatterChartSeriesOptions> {
   protected override seriesOptions: ScatterChartSeriesOptions;
+  private filterColumn: string = '';
 
   private constructor() {
     super();
@@ -186,6 +189,56 @@ export class ScatterChartBuilder extends ApacheEchartBuilder<ScatterChartOptions
   }
 
   /**
+   * Transform generic data array to scatter chart format
+   */
+  transformData(options: { xField?: string; yField?: string; nameField?: string; sizeField?: string } & ChartDataTransformOptions = {}): this {
+    if (!this.data || !Array.isArray(this.data)) {
+      return this;
+    }
+
+    const {
+      xField = 'x',
+      yField = 'y',
+      nameField = 'name',
+      sizeField,
+      sortBy,
+      sortOrder = 'asc',
+      limit
+    } = options;
+
+    try {
+      let transformedData = this.data.map((item, index) => ({
+        value: [
+          parseFloat(item[xField]) || 0,
+          parseFloat(item[yField]) || 0
+        ] as [number, number],
+        name: item[nameField] || `Point ${index + 1}`,
+        symbolSize: sizeField ? parseFloat(item[sizeField]) || 8 : 8,
+        originalItem: item
+      }));
+
+      // Apply sorting
+      if (sortBy === 'x') {
+        transformedData.sort((a, b) => sortOrder === 'asc' ? a.value[0] - b.value[0] : b.value[0] - a.value[0]);
+      } else if (sortBy === 'y') {
+        transformedData.sort((a, b) => sortOrder === 'asc' ? a.value[1] - b.value[1] : b.value[1] - a.value[1]);
+      }
+
+      // Apply limit
+      if (limit && limit > 0) {
+        transformedData = transformedData.slice(0, limit);
+      }
+
+      this.seriesOptions.data = transformedData;
+
+    } catch (error) {
+      console.error('Error transforming scatter chart data:', error);
+    }
+
+    return this;
+  }
+
+  /**
    * Set the data for the scatter chart
    */
   override setData(data: any): this {
@@ -198,8 +251,10 @@ export class ScatterChartBuilder extends ApacheEchartBuilder<ScatterChartOptions
    * Set X-axis name
    */
   setXAxisName(name: string): this {
-    if (!(this.chartOptions as any).xAxis) (this.chartOptions as any).xAxis = {};
-    (this.chartOptions as any).xAxis.name = name;
+    (this.chartOptions as any).xAxis = {
+      ...(this.chartOptions as any).xAxis,
+      name,
+    };
     return this;
   }
 
@@ -207,8 +262,10 @@ export class ScatterChartBuilder extends ApacheEchartBuilder<ScatterChartOptions
    * Set Y-axis name
    */
   setYAxisName(name: string): this {
-    if (!(this.chartOptions as any).yAxis) (this.chartOptions as any).yAxis = {};
-    (this.chartOptions as any).yAxis.name = name;
+    (this.chartOptions as any).yAxis = {
+      ...(this.chartOptions as any).yAxis,
+      name,
+    };
     return this;
   }
 
@@ -222,7 +279,7 @@ export class ScatterChartBuilder extends ApacheEchartBuilder<ScatterChartOptions
   }
 
   /**
-   * Set dynamic symbol size function
+   * Set symbol size function for dynamic sizing
    */
   setSymbolSizeFunction(sizeFunction: Function): this {
     this.seriesOptions.symbolSize = sizeFunction;
@@ -230,19 +287,20 @@ export class ScatterChartBuilder extends ApacheEchartBuilder<ScatterChartOptions
   }
 
   /**
-   * Set item style (color, opacity, border)
+   * Set item style
    */
   setItemStyle(color: string, opacity: number = 0.8, borderColor?: string, borderWidth?: number): this {
-    if (!this.seriesOptions.itemStyle) this.seriesOptions.itemStyle = {};
-    this.seriesOptions.itemStyle.color = color;
-    this.seriesOptions.itemStyle.opacity = opacity;
-    if (borderColor) this.seriesOptions.itemStyle.borderColor = borderColor;
-    if (borderWidth) this.seriesOptions.itemStyle.borderWidth = borderWidth;
+    this.seriesOptions.itemStyle = {
+      color,
+      opacity,
+      borderColor,
+      borderWidth,
+    };
     return this;
   }
 
   /**
-   * Enable large scatter optimization
+   * Set large scatter mode for performance
    */
   setLargeScatter(enabled: boolean, threshold: number = 2000): this {
     this.seriesOptions.large = enabled;
@@ -260,10 +318,129 @@ export class ScatterChartBuilder extends ApacheEchartBuilder<ScatterChartOptions
   }
 
   /**
+   * Set predefined color palette
+   */
+  override setPredefinedPalette(palette: ColorPalette): this {
+    const colors = this.getPaletteColors(palette);
+    if (colors.length > 0) {
+      this.setItemStyle(colors[0]);
+    }
+    return this;
+  }
+
+  /**
+   * Set currency formatter for values
+   */
+  override setCurrencyFormatter(currency: string = 'USD', locale: string = 'en-US'): this {
+    const formatter = this.createCurrencyFormatter(currency, locale);
+    this.setValueFormatter(formatter);
+    return this;
+  }
+
+  /**
+   * Set percentage formatter for values
+   */
+  override setPercentageFormatter(decimals: number = 1): this {
+    const formatter = this.createPercentageFormatter(decimals);
+    this.setValueFormatter(formatter);
+    return this;
+  }
+
+  /**
+   * Set number formatter for values with custom options
+   */
+  setCustomNumberFormatter(decimals: number = 0, locale: string = 'en-US'): this {
+    const formatter = this.createNumberFormatter(decimals, locale);
+    this.setValueFormatter(formatter);
+    return this;
+  }
+
+  /**
+   * Set filter column for filtering integration
+   */
+  override setFilterColumn(column: string): this {
+    this.filterColumn = column;
+    return this;
+  }
+
+  /**
+   * Create filter from chart data
+   */
+  createFilterFromChartData(): DataFilter[] {
+    if (!this.filterColumn || !this.data) return [];
+
+    const uniqueValues = [...new Set(this.data.map(item => item[this.filterColumn]))];
+    return [{
+      column: this.filterColumn,
+      operator: 'in',
+      value: uniqueValues
+    }];
+  }
+
+  /**
+   * Generate sample data for testing
+   */
+  generateSampleData(count: number = 20): this {
+    const sampleData = [];
+    
+    for (let i = 0; i < count; i++) {
+      sampleData.push({
+        x: Math.random() * 100,
+        y: Math.random() * 100,
+        name: `Point ${i + 1}`,
+        size: Math.random() * 15 + 5,
+        category: ['A', 'B', 'C'][Math.floor(Math.random() * 3)],
+        department: ['Sales', 'Marketing', 'Operations'][Math.floor(Math.random() * 3)]
+      });
+    }
+
+    return this.setData(sampleData);
+  }
+
+  /**
+   * Configuration preset for correlation analysis
+   */
+  setCorrelationAnalysisConfiguration(): this {
+    return this
+      .setSymbol('circle', 6)
+      .setItemStyle('#5470c6', 0.7)
+      .setLargeScatter(true, 1000)
+      .setXAxisName('X Variable')
+      .setYAxisName('Y Variable')
+      .setPredefinedPalette('finance')
+      .setTooltip('item', '{b}: ({c})');
+  }
+
+  /**
+   * Configuration preset for performance analysis
+   */
+  setPerformanceAnalysisConfiguration(): this {
+    return this
+      .setSymbol('diamond', 8)
+      .setItemStyle('#91cc75', 0.8)
+      .setXAxisName('Performance Score')
+      .setYAxisName('Efficiency Rating')
+      .setPredefinedPalette('business')
+      .setTooltip('item', '{b}: Performance {c}');
+  }
+
+  /**
+   * Configuration preset for risk analysis
+   */
+  setRiskAnalysisConfiguration(): this {
+    return this
+      .setSymbol('triangle', 7)
+      .setItemStyle('#ee6666', 0.7)
+      .setXAxisName('Risk Level')
+      .setYAxisName('Return Potential')
+      .setPredefinedPalette('modern')
+      .setTooltip('item', 'Risk: {c}');
+  }
+
+  /**
    * Override build method to merge series options
    */
   override build(): IWidget {
-    // Merge series options with chart options
     const finalOptions: ScatterChartOptions = {
       ...this.chartOptions,
       series: [{
@@ -278,10 +455,48 @@ export class ScatterChartBuilder extends ApacheEchartBuilder<ScatterChartOptions
   }
 
   /**
-   * Static method to update data on an existing scatter chart widget
+   * Enhanced updateData with retry mechanism
    */
   static override updateData(widget: IWidget, data: any): void {
-    ApacheEchartBuilder.updateData(widget, data);
+    const maxRetries = 3;
+    let retryCount = 0;
+
+    const updateWithRetry = () => {
+      try {
+        if (widget.chartInstance) {
+          // Transform data if needed
+          let transformedData = data;
+          if (Array.isArray(data) && data.length > 0 && typeof data[0] === 'object') {
+            transformedData = data.map(item => ({
+              value: [parseFloat(item.x) || 0, parseFloat(item.y) || 0],
+              name: item.name || 'Point'
+            }));
+          }
+
+                     const currentOptions = widget.chartInstance.getOption();
+           const newOptions = {
+             ...currentOptions,
+             series: [{
+               ...(currentOptions as any)['series'][0],
+               data: transformedData
+             }]
+           };
+
+          widget.chartInstance.setOption(newOptions, true);
+        } else if (retryCount < maxRetries) {
+          retryCount++;
+          setTimeout(updateWithRetry, 100 * retryCount);
+        }
+      } catch (error) {
+        console.error('Error updating scatter chart data:', error);
+        if (retryCount < maxRetries) {
+          retryCount++;
+          setTimeout(updateWithRetry, 100 * retryCount);
+        }
+      }
+    };
+
+    updateWithRetry();
   }
 
   /**
@@ -292,69 +507,58 @@ export class ScatterChartBuilder extends ApacheEchartBuilder<ScatterChartOptions
   }
 
   /**
-   * Static method to create a scatter chart widget with default configuration
-   * (for backward compatibility)
+   * Static method to create scatter chart widget
    */
   static createScatterChartWidget(data?: ScatterChartData[]): WidgetBuilder {
     const builder = ScatterChartBuilder.create();
+    
     if (data) {
       builder.setData(data);
     }
     
-    const finalOptions: ScatterChartOptions = {
-      ...builder['chartOptions'],
-      series: [{
-        ...builder['seriesOptions'],
-        type: 'scatter',
-      }],
-    };
-
-    return builder['widgetBuilder']
-      .setEChartsOptions(finalOptions)
-      .setData(data || []);
+    return builder.getWidgetBuilder();
   }
 
   /**
    * Export scatter chart data for Excel/CSV export
-   * Extracts x, y coordinates and optional category information
-   * @param widget - Widget containing scatter chart data
-   * @returns Array of data rows for export
    */
   static override exportData(widget: IWidget): any[] {
-    const series = (widget.config?.options as any)?.series?.[0];
+    const exportData: any[] = [];
     
-    if (!series?.data) {
-      console.warn('ScatterChartBuilder.exportData - No series data found');
-      return [];
+    if (widget['echart_options']?.series?.[0]?.data) {
+      const seriesData = widget['echart_options'].series[0].data;
+      
+      seriesData.forEach((item: any, index: number) => {
+        if (item && item.value && Array.isArray(item.value)) {
+          exportData.push({
+            Name: item.name || `Point ${index + 1}`,
+            'X Value': item.value[0] || 0,
+            'Y Value': item.value[1] || 0,
+            'Symbol Size': item.symbolSize || 8
+          });
+        }
+      });
     }
-
-    return series.data.map((point: any) => [
-      point[0] || 0,
-      point[1] || 0,
-      point[2] || 'Default'
-    ]);
+    
+    return exportData;
   }
 
   /**
-   * Get headers for scatter chart export
+   * Get export headers for Excel/CSV export
    */
   static override getExportHeaders(widget: IWidget): string[] {
-    return ['X Value', 'Y Value', 'Category'];
+    return ['Name', 'X Value', 'Y Value', 'Symbol Size'];
   }
 
   /**
-   * Get sheet name for scatter chart export
+   * Get export sheet name for Excel export
    */
   static override getExportSheetName(widget: IWidget): string {
-    const title = widget.config?.header?.title || 'Sheet';
-    return title.replace(/[^\w\s]/gi, '').substring(0, 31).trim();
+    return 'Scatter Chart Data';
   }
 }
 
-/**
- * Legacy function for backward compatibility
- * @deprecated Use ScatterChartBuilder.create() instead
- */
+// Legacy function for backward compatibility
 export function createScatterChartWidget(data?: ScatterChartData[]): WidgetBuilder {
   return ScatterChartBuilder.createScatterChartWidget(data);
 } 

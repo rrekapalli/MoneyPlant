@@ -20,7 +20,7 @@ export interface PieChartSeriesOptions {
   };
   label?: {
     show?: boolean;
-    formatter?: string;
+    formatter?: string | Function;
     position?: string;
     fontSize?: number;
     color?: string;
@@ -186,10 +186,104 @@ export class PieChartBuilder extends ApacheEchartBuilder<PieChartOptions, PieCha
   }
 
   /**
-   * Static method to update data on an existing pie chart widget
+   * Static method to update data on an existing pie chart widget with enhanced retry mechanism
    */
-  static override updateData(widget: IWidget, data: any): void {
-    ApacheEchartBuilder.updateData(widget, data);
+  static override updateData(widget: IWidget, data: any, retryOptions?: { maxAttempts?: number; baseDelay?: number }): void {
+    ApacheEchartBuilder.updateData(widget, data, retryOptions);
+  }
+
+  /**
+   * Transform generic data array to pie chart format
+   */
+  static override transformData(data: any[], options?: { valueField?: string; nameField?: string; sortBy?: 'value' | 'name' }): PieChartData[] {
+    if (!data || data.length === 0) return [];
+
+    const valueField = options?.valueField || 'value';
+    const nameField = options?.nameField || 'name';
+
+    let transformedData = data.map(item => ({
+      value: Number(item[valueField]) || 0,
+      name: String(item[nameField]) || 'Unknown'
+    }));
+
+    // Sort if requested
+    if (options?.sortBy === 'value') {
+      transformedData.sort((a, b) => b.value - a.value);
+    } else if (options?.sortBy === 'name') {
+      transformedData.sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    return transformedData;
+  }
+
+  /**
+   * Calculate and add percentage values to pie chart data
+   */
+  static addPercentages(data: PieChartData[]): (PieChartData & { percentage: number })[] {
+    const total = data.reduce((sum, item) => sum + item.value, 0);
+    
+    return data.map(item => ({
+      ...item,
+      percentage: total > 0 ? (item.value / total) * 100 : 0
+    }));
+  }
+
+  /**
+   * Create filter from pie chart click data
+   */
+  static createFilterFromPieClick(clickData: any, filterColumn: string): any {
+    if (!clickData || !clickData.name) return null;
+
+    return {
+      accessor: filterColumn,
+      filterColumn: filterColumn,
+      [filterColumn]: clickData.name,
+      value: clickData.name,
+      percentage: clickData.value?.toString() || '0'
+    };
+  }
+
+  /**
+   * Set donut chart style (inner radius)
+   */
+  setDonutStyle(innerRadius: string = '40%', outerRadius: string = '70%'): this {
+    this.seriesOptions.radius = [innerRadius, outerRadius];
+    return this;
+  }
+
+  /**
+   * Set pie chart to display percentages in labels
+   */
+  setPercentageLabels(showPercentage: boolean = true, decimals: number = 1): this {
+    if (showPercentage) {
+      this.seriesOptions.label = {
+        ...this.seriesOptions.label,
+        formatter: `{b}: {c} ({d}%)`
+      };
+    }
+    return this;
+  }
+
+  /**
+   * Configure for financial data display
+   */
+  setFinancialDisplay(currencyCode: string = 'USD', locale: string = 'en-US'): this {
+    this.setCurrencyFormatter(currencyCode, locale);
+    
+    this.seriesOptions.label = {
+      ...this.seriesOptions.label,
+      formatter: (params: any) => {
+        const formatter = new Intl.NumberFormat(locale, {
+          style: 'currency',
+          currency: currencyCode,
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0
+        });
+        return `${params.data.name}\n${formatter.format(params.data.value)}\n(${params.percent}%)`;
+      }
+    };
+
+    return this;
   }
 
   /**

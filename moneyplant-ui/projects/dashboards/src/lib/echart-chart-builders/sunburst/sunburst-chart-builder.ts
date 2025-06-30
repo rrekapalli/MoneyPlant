@@ -1,6 +1,6 @@
 import { IWidget, WidgetBuilder } from '../../../public-api';
 import { EChartsOption } from 'echarts';
-import { ApacheEchartBuilder } from '../apache-echart-builder';
+import { ApacheEchartBuilder, ChartDataTransformOptions, DataFilter, ColorPalette } from '../apache-echart-builder';
 
 export interface SunburstChartData {
   name: string;
@@ -42,39 +42,20 @@ export interface SunburstChartOptions extends EChartsOption {
 }
 
 /**
- * Sunburst Chart Builder extending the generic ApacheEchartBuilder
+ * Enhanced Sunburst Chart Builder extending the generic ApacheEchartBuilder
  * 
- * Usage examples:
- * 
- * // Basic usage with default options
- * const widget = SunburstChartBuilder.create()
- *   .setData(initialData)
- *   .setHeader('Hierarchical Data')
- *   .setPosition({ x: 0, y: 0, cols: 4, rows: 4 })
- *   .build();
- * 
- * // Advanced usage with custom options
- * const widget = SunburstChartBuilder.create()
- *   .setData(initialData)
- *   .setTitle('Organizational Structure', 'Hierarchical View')
- *   .setRadius(['20%', '90%'])
- *   .setCenter(['50%', '50%'])
- *   .setLabelFormatter('{b}')
- *   .setLevels([
- *     { itemStyle: { borderWidth: 2, borderColor: '#777' } },
- *     { itemStyle: { borderWidth: 1, borderColor: '#555' } },
- *     { itemStyle: { borderWidth: 1, borderColor: '#333' } }
- *   ])
- *   .setTooltip('item', '{b}: {c}')
- *   .setHeader('Custom Sunburst Chart')
- *   .setPosition({ x: 0, y: 0, cols: 6, rows: 4 })
- *   .build();
- * 
- * // Update widget data dynamically
- * SunburstChartBuilder.updateData(widget, newData);
+ * Features:
+ * - Generic data transformation from any[] to hierarchical sunburst format
+ * - Advanced formatting (currency, percentage, number)
+ * - Predefined color palettes
+ * - Filter integration
+ * - Sample data generation
+ * - Configuration presets for organizational and categorical analysis
+ * - Enhanced update methods with retry mechanism
  */
 export class SunburstChartBuilder extends ApacheEchartBuilder<SunburstChartOptions, SunburstChartSeriesOptions> {
   protected override seriesOptions: SunburstChartSeriesOptions;
+  private filterColumn: string = '';
 
   private constructor() {
     super();
@@ -218,6 +199,276 @@ export class SunburstChartBuilder extends ApacheEchartBuilder<SunburstChartOptio
   }
 
   /**
+   * Set predefined color palette
+   */
+  override setPredefinedPalette(palette: ColorPalette): this {
+    const colors = this.getPaletteColors(palette);
+    if (colors.length > 0) {
+      this.setLevels([
+        { itemStyle: { color: colors[0] } },
+        { itemStyle: { color: colors[1] || colors[0] } },
+        { itemStyle: { color: colors[2] || colors[0] } }
+      ]);
+    }
+    return this;
+  }
+
+  /**
+   * Set currency formatter for values
+   */
+  override setCurrencyFormatter(currency: string = 'USD', locale: string = 'en-US'): this {
+    const formatter = this.createCurrencyFormatter(currency, locale);
+    this.setTooltip('item', (params: any) => {
+      return `${params.data.name}: ${formatter(params.data.value)}`;
+    });
+    return this;
+  }
+
+  /**
+   * Set percentage formatter for values
+   */
+  override setPercentageFormatter(decimals: number = 1): this {
+    const formatter = this.createPercentageFormatter(decimals);
+    this.setTooltip('item', (params: any) => {
+      return `${params.data.name}: ${formatter(params.data.value)}`;
+    });
+    return this;
+  }
+
+  /**
+   * Set number formatter for values with custom options
+   */
+  setCustomNumberFormatter(decimals: number = 0, locale: string = 'en-US'): this {
+    const formatter = this.createNumberFormatter(decimals, locale);
+    this.setTooltip('item', (params: any) => {
+      return `${params.data.name}: ${formatter(params.data.value)}`;
+    });
+    return this;
+  }
+
+  /**
+   * Set filter column for filtering integration
+   */
+  override setFilterColumn(column: string): this {
+    this.filterColumn = column;
+    return this;
+  }
+
+  /**
+   * Create filter from chart data
+   */
+  createFilterFromChartData(): DataFilter[] {
+    if (!this.filterColumn || !this.data) return [];
+
+    const uniqueValues = [...new Set(this.data.map(item => item[this.filterColumn]))];
+    return [{
+      column: this.filterColumn,
+      operator: 'in',
+      value: uniqueValues
+    }];
+  }
+
+  /**
+   * Generate sample data for testing
+   */
+  generateSampleData(): this {
+    const sampleData: SunburstChartData[] = [
+      {
+        name: 'Technology',
+        value: 100,
+        children: [
+          {
+            name: 'Software',
+            value: 60,
+            children: [
+              { name: 'Frontend', value: 30 },
+              { name: 'Backend', value: 30 }
+            ]
+          },
+          {
+            name: 'Hardware',
+            value: 40,
+            children: [
+              { name: 'Servers', value: 25 },
+              { name: 'Devices', value: 15 }
+            ]
+          }
+        ]
+      },
+      {
+        name: 'Marketing',
+        value: 80,
+        children: [
+          { name: 'Digital', value: 50 },
+          { name: 'Traditional', value: 30 }
+        ]
+      },
+      {
+        name: 'Operations',
+        value: 70,
+        children: [
+          { name: 'Logistics', value: 40 },
+          { name: 'Support', value: 30 }
+        ]
+      }
+    ];
+
+    return this.setData(sampleData);
+  }
+
+  /**
+   * Configuration preset for organizational structure
+   */
+  setOrganizationalStructureConfiguration(): this {
+    return this
+      .setPredefinedPalette('business')
+      .setCustomNumberFormatter(0, 'en-US')
+      .setRadius(['15%', '85%'])
+      .setLabelFormatter('{b}')
+      .setSort('desc');
+  }
+
+  /**
+   * Configuration preset for budget allocation
+   */
+  setBudgetAllocationConfiguration(): this {
+    return this
+      .setPredefinedPalette('finance')
+      .setCurrencyFormatter('USD', 'en-US')
+      .setRadius(['20%', '90%'])
+      .setLabelFormatter('{b}: {c}')
+      .setSort('desc');
+  }
+
+  /**
+   * Configuration preset for category analysis
+   */
+  setCategoryAnalysisConfiguration(): this {
+    return this
+      .setPredefinedPalette('modern')
+      .setPercentageFormatter(1)
+      .setRadius(['25%', '95%'])
+      .setLabelFormatter('{b}')
+      .setSort('desc');
+  }
+
+  /**
+   * Transform generic data to hierarchical sunburst format
+   */
+  transformData(options: { 
+    nameField?: string; 
+    valueField?: string; 
+    parentField?: string; 
+    levelField?: string; 
+    categoryField?: string; 
+  } & ChartDataTransformOptions = {}): this {
+    if (!this.data || !Array.isArray(this.data)) {
+      return this;
+    }
+
+    const {
+      nameField = 'name',
+      valueField = 'value',
+      parentField = 'parent',
+      levelField = 'level',
+      categoryField = 'category',
+      sortBy,
+      sortOrder = 'desc',
+      limit
+    } = options;
+
+    try {
+      // Apply filters first
+      let filteredData = this.data;
+      if ((options as any).filters && (options as any).filters.length > 0) {
+        filteredData = ApacheEchartBuilder.applyFilters(this.data, (options as any).filters);
+      }
+
+      // Build hierarchical structure
+      const transformedData = this.buildHierarchy(filteredData, nameField, valueField, parentField, levelField);
+
+      // Apply sorting
+      if (sortBy === 'value') {
+        this.sortHierarchy(transformedData, sortOrder);
+      }
+
+      // Apply limit (only to top level)
+      if (limit && limit > 0 && transformedData.length > limit) {
+        transformedData.splice(limit);
+      }
+
+      this.seriesOptions.data = transformedData;
+
+    } catch (error) {
+      console.error('Error transforming sunburst chart data:', error);
+    }
+
+    return this;
+  }
+
+  /**
+   * Build hierarchical structure from flat data
+   */
+  private buildHierarchy(data: any[], nameField: string, valueField: string, parentField: string, levelField: string): SunburstChartData[] {
+    const nodeMap = new Map<string, SunburstChartData>();
+    const rootNodes: SunburstChartData[] = [];
+
+    // First pass: create all nodes
+    data.forEach(item => {
+      const name = item[nameField] || 'Unknown';
+      const value = parseFloat(item[valueField]) || 0;
+      const parent = item[parentField];
+      
+      const node: SunburstChartData = {
+        name,
+        value,
+        children: []
+      };
+
+      nodeMap.set(name, node);
+      
+      if (!parent) {
+        rootNodes.push(node);
+      }
+    });
+
+    // Second pass: build hierarchy
+    data.forEach(item => {
+      const name = item[nameField] || 'Unknown';
+      const parent = item[parentField];
+      
+      if (parent && nodeMap.has(parent) && nodeMap.has(name)) {
+        const parentNode = nodeMap.get(parent)!;
+        const childNode = nodeMap.get(name)!;
+        
+        if (!parentNode.children) {
+          parentNode.children = [];
+        }
+        parentNode.children.push(childNode);
+      }
+    });
+
+    return rootNodes;
+  }
+
+  /**
+   * Sort hierarchy by value
+   */
+  private sortHierarchy(nodes: SunburstChartData[], order: string): void {
+    nodes.sort((a, b) => {
+      const valueA = a.value || 0;
+      const valueB = b.value || 0;
+      return order === 'asc' ? valueA - valueB : valueB - valueA;
+    });
+
+    nodes.forEach(node => {
+      if (node.children && node.children.length > 0) {
+        this.sortHierarchy(node.children, order);
+      }
+    });
+  }
+
+  /**
    * Override build method to merge series options
    */
   override build(): IWidget {
@@ -236,10 +487,49 @@ export class SunburstChartBuilder extends ApacheEchartBuilder<SunburstChartOptio
   }
 
   /**
-   * Static method to update data on an existing sunburst chart widget
+   * Enhanced updateData with retry mechanism
    */
   static override updateData(widget: IWidget, data: any): void {
-    ApacheEchartBuilder.updateData(widget, data);
+    const maxRetries = 3;
+    let retryCount = 0;
+
+    const updateWithRetry = () => {
+      try {
+        if (widget.chartInstance) {
+          // Transform data if needed
+          let transformedData = data;
+          if (Array.isArray(data) && data.length > 0 && typeof data[0] === 'object') {
+            transformedData = data.map(item => ({
+              name: item.name || 'Unknown',
+              value: parseFloat(item.value) || 0,
+              children: item.children || []
+            }));
+          }
+
+          const currentOptions = widget.chartInstance.getOption();
+          const newOptions = {
+            ...currentOptions,
+            series: [{
+              ...(currentOptions as any)['series'][0],
+              data: transformedData
+            }]
+          };
+
+          widget.chartInstance.setOption(newOptions, true);
+        } else if (retryCount < maxRetries) {
+          retryCount++;
+          setTimeout(updateWithRetry, 100 * retryCount);
+        }
+      } catch (error) {
+        console.error('Error updating sunburst chart data:', error);
+        if (retryCount < maxRetries) {
+          retryCount++;
+          setTimeout(updateWithRetry, 100 * retryCount);
+        }
+      }
+    };
+
+    updateWithRetry();
   }
 
   /**
