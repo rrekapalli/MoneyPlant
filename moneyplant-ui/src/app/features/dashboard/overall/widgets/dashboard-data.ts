@@ -13,18 +13,18 @@ export interface DashboardDataRow {
 // Initial dashboard data - Flat structure
 export const INITIAL_DASHBOARD_DATA: DashboardDataRow[] = [
   // Asset Allocation & Risk vs Return data (same categories for all charts)
-  { id: '1', assetCategory: 'Stocks', month: 'Jan', market: 'United States', totalValue: 45, riskValue: 0.12, returnValue: 0.15 },
-  { id: '2', assetCategory: 'Bonds', month: 'Jan', market: 'United States', totalValue: 25, riskValue: 0.05, returnValue: 0.08 },
-  { id: '3', assetCategory: 'Cash', month: 'Jan', market: 'United States', totalValue: 15, riskValue: 0.03, returnValue: 0.05 },
-  { id: '4', assetCategory: 'Real Estate', month: 'Jan', market: 'United States', totalValue: 10, riskValue: 0.08, returnValue: 0.10 },
-  { id: '5', assetCategory: 'Commodities', month: 'Jan', market: 'United States', totalValue: 5, riskValue: 0.20, returnValue: 0.25 },
+  { id: '1', assetCategory: 'Stocks', month: 'Jan', market: 'United States', totalValue: 450000, riskValue: 0.12, returnValue: 0.15 },
+  { id: '2', assetCategory: 'Bonds', month: 'Jan', market: 'United States', totalValue: 250000, riskValue: 0.05, returnValue: 0.08 },
+  { id: '3', assetCategory: 'Cash', month: 'Jan', market: 'United States', totalValue: 150000, riskValue: 0.03, returnValue: 0.05 },
+  { id: '4', assetCategory: 'Real Estate', month: 'Jan', market: 'United States', totalValue: 100000, riskValue: 0.08, returnValue: 0.10 },
+  { id: '5', assetCategory: 'Commodities', month: 'Jan', market: 'United States', totalValue: 50000, riskValue: 0.20, returnValue: 0.25 },
   
   // Monthly Income/Expenses data (using same categories)
-  { id: '6', assetCategory: 'Stocks', month: 'Feb', market: 'United States', totalValue: 48, riskValue: 0.13, returnValue: 0.16 },
-  { id: '7', assetCategory: 'Bonds', month: 'Feb', market: 'United States', totalValue: 26, riskValue: 0.06, returnValue: 0.09 },
-  { id: '8', assetCategory: 'Cash', month: 'Feb', market: 'United States', totalValue: 16, riskValue: 0.04, returnValue: 0.06 },
-  { id: '9', assetCategory: 'Real Estate', month: 'Feb', market: 'United States', totalValue: 11, riskValue: 0.09, returnValue: 0.11 },
-  { id: '10', assetCategory: 'Commodities', month: 'Feb', market: 'United States', totalValue: 6, riskValue: 0.21, returnValue: 0.26 },
+  { id: '6', assetCategory: 'Stocks', month: 'Feb', market: 'United States', totalValue: 480000, riskValue: 0.13, returnValue: 0.16 },
+  { id: '7', assetCategory: 'Bonds', month: 'Feb', market: 'United States', totalValue: 260000, riskValue: 0.06, returnValue: 0.09 },
+  { id: '8', assetCategory: 'Cash', month: 'Feb', market: 'United States', totalValue: 160000, riskValue: 0.04, returnValue: 0.06 },
+  { id: '9', assetCategory: 'Real Estate', month: 'Feb', market: 'United States', totalValue: 110000, riskValue: 0.09, returnValue: 0.11 },
+  { id: '10', assetCategory: 'Commodities', month: 'Feb', market: 'United States', totalValue: 60000, riskValue: 0.21, returnValue: 0.26 },
   
   // Portfolio Performance data (using same categories)
   { id: '11', assetCategory: 'Stocks', month: 'Mar', market: 'United States', totalValue: 50, riskValue: 0.14, returnValue: 0.17 },
@@ -53,22 +53,32 @@ export const INITIAL_DASHBOARD_DATA: DashboardDataRow[] = [
   { id: '30', assetCategory: 'Commodities', month: 'Jun', market: 'United States', totalValue: 10, riskValue: 0.25, returnValue: 0.30 },
   
   // Test Filter data (using same categories)
-  { id: '31', assetCategory: 'Stocks', month: 'Jan', market: 'Germany', totalValue: 35, riskValue: 0.10, returnValue: 0.12 },
-  { id: '32', assetCategory: 'Bonds', month: 'Jan', market: 'Germany', totalValue: 20, riskValue: 0.04, returnValue: 0.06 },
-  { id: '33', assetCategory: 'Cash', month: 'Jan', market: 'Germany', totalValue: 12, riskValue: 0.02, returnValue: 0.04 },
-  { id: '34', assetCategory: 'Real Estate', month: 'Jan', market: 'Germany', totalValue: 8, riskValue: 0.06, returnValue: 0.08 },
-  { id: '35', assetCategory: 'Commodities', month: 'Jan', market: 'Germany', totalValue: 4, riskValue: 0.18, returnValue: 0.22 },
+  { id: '31', assetCategory: 'Stocks', month: 'Jan', market: 'Germany', totalValue: 350000, riskValue: 0.10, returnValue: 0.12 },
+  { id: '32', assetCategory: 'Bonds', month: 'Jan', market: 'Germany', totalValue: 200000, riskValue: 0.04, returnValue: 0.06 },
+  { id: '33', assetCategory: 'Cash', month: 'Jan', market: 'Germany', totalValue: 120000, riskValue: 0.02, returnValue: 0.04 },
+  { id: '34', assetCategory: 'Real Estate', month: 'Jan', market: 'Germany', totalValue: 80000, riskValue: 0.06, returnValue: 0.08 },
+  { id: '35', assetCategory: 'Commodities', month: 'Jan', market: 'Germany', totalValue: 40000, riskValue: 0.18, returnValue: 0.22 },
   
   // Additional market data for map charts
-  { id: '36', assetCategory: 'Stocks', month: 'Jan', market: 'China', totalValue: 40, riskValue: 0.15, returnValue: 0.18 },
-  { id: '37', assetCategory: 'Bonds', month: 'Jan', market: 'China', totalValue: 18, riskValue: 0.06, returnValue: 0.09 },
-  { id: '38', assetCategory: 'Cash', month: 'Jan', market: 'China', totalValue: 14, riskValue: 0.03, returnValue: 0.05 },
-  { id: '39', assetCategory: 'Real Estate', month: 'Jan', market: 'China', totalValue: 9, riskValue: 0.09, returnValue: 0.11 },
-  { id: '40', assetCategory: 'Commodities', month: 'Jan', market: 'China', totalValue: 6, riskValue: 0.19, returnValue: 0.23 },
+  { id: '36', assetCategory: 'Stocks', month: 'Jan', market: 'China', totalValue: 400000, riskValue: 0.15, returnValue: 0.18 },
+  { id: '37', assetCategory: 'Bonds', month: 'Jan', market: 'China', totalValue: 180000, riskValue: 0.06, returnValue: 0.09 },
+  { id: '38', assetCategory: 'Cash', month: 'Jan', market: 'China', totalValue: 140000, riskValue: 0.03, returnValue: 0.05 },
+  { id: '39', assetCategory: 'Real Estate', month: 'Jan', market: 'China', totalValue: 90000, riskValue: 0.09, returnValue: 0.11 },
+  { id: '40', assetCategory: 'Commodities', month: 'Jan', market: 'China', totalValue: 60000, riskValue: 0.19, returnValue: 0.23 },
   
-  { id: '41', assetCategory: 'Stocks', month: 'Jan', market: 'Japan', totalValue: 25, riskValue: 0.20, returnValue: 0.25 },
-  { id: '42', assetCategory: 'Bonds', month: 'Jan', market: 'Japan', totalValue: 12, riskValue: 0.08, returnValue: 0.11 },
-  { id: '43', assetCategory: 'Cash', month: 'Jan', market: 'Japan', totalValue: 10, riskValue: 0.05, returnValue: 0.07 },
-  { id: '44', assetCategory: 'Real Estate', month: 'Jan', market: 'Japan', totalValue: 7, riskValue: 0.12, returnValue: 0.14 },
-  { id: '45', assetCategory: 'Commodities', month: 'Jan', market: 'Japan', totalValue: 5, riskValue: 0.22, returnValue: 0.27 }
+  { id: '41', assetCategory: 'Stocks', month: 'Jan', market: 'Japan', totalValue: 250000, riskValue: 0.20, returnValue: 0.25 },
+  { id: '42', assetCategory: 'Bonds', month: 'Jan', market: 'Japan', totalValue: 120000, riskValue: 0.08, returnValue: 0.11 },
+  { id: '43', assetCategory: 'Cash', month: 'Jan', market: 'Japan', totalValue: 100000, riskValue: 0.05, returnValue: 0.07 },
+  { id: '44', assetCategory: 'Real Estate', month: 'Jan', market: 'Japan', totalValue: 70000, riskValue: 0.12, returnValue: 0.14 },
+  { id: '45', assetCategory: 'Commodities', month: 'Jan', market: 'Japan', totalValue: 50000, riskValue: 0.22, returnValue: 0.27 },
+
+  // Additional countries for better map coverage
+  { id: '46', assetCategory: 'Stocks', month: 'Feb', market: 'United Kingdom', totalValue: 180000, riskValue: 0.11, returnValue: 0.14 },
+  { id: '47', assetCategory: 'Bonds', month: 'Feb', market: 'France', totalValue: 160000, riskValue: 0.06, returnValue: 0.08 },
+  { id: '48', assetCategory: 'Real Estate', month: 'Mar', market: 'Canada', totalValue: 220000, riskValue: 0.09, returnValue: 0.12 },
+  { id: '49', assetCategory: 'Stocks', month: 'Mar', market: 'Australia', totalValue: 140000, riskValue: 0.13, returnValue: 0.16 },
+  { id: '50', assetCategory: 'Commodities', month: 'Apr', market: 'Brazil', totalValue: 90000, riskValue: 0.18, returnValue: 0.21 },
+  { id: '51', assetCategory: 'Bonds', month: 'Apr', market: 'India', totalValue: 110000, riskValue: 0.14, returnValue: 0.17 },
+  { id: '52', assetCategory: 'Real Estate', month: 'May', market: 'South Korea', totalValue: 130000, riskValue: 0.10, returnValue: 0.13 },
+  { id: '53', assetCategory: 'Stocks', month: 'May', market: 'Netherlands', totalValue: 170000, riskValue: 0.08, returnValue: 0.11 }
 ]; 

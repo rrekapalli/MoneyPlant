@@ -13,6 +13,7 @@ export class MockApiService {
   private marketData: any = null;
   private notificationsData: any = null;
   private featureFlagsData: any = null;
+  private dashboardData: any = null;
 
   constructor(private http: HttpClient) {}
 
@@ -116,6 +117,8 @@ export class MockApiService {
       return this.handleNotificationsRequest<T>(path);
     } else if (path.startsWith('/feature-flags')) {
       return this.handleFeatureFlagsRequest<T>(path);
+    } else if (path.startsWith('/dashboard')) {
+      return this.handleDashboardRequest<T>(path, params);
     }
     return throwError(() => new Error(`Mock API path not supported: ${path}`));
   }
@@ -636,5 +639,257 @@ export class MockApiService {
         throw new Error(`Unsupported feature flags DELETE path: ${path}`);
       })
     );
+  }
+
+  // Dashboard data loader
+  private loadDashboardData(): Observable<any> {
+    if (this.dashboardData) {
+      return of(this.dashboardData);
+    }
+
+    // Generate mock dashboard data with proper country names for world map
+    this.dashboardData = [
+      {
+        id: '1',
+        assetCategory: 'Stocks',
+        month: 'Jan',
+        market: 'United States',
+        totalValue: 150000,
+        riskValue: 12,
+        returnValue: 8,
+        description: 'Technology stocks portfolio'
+      },
+      {
+        id: '2',
+        assetCategory: 'Bonds',
+        month: 'Jan',
+        market: 'Germany',
+        totalValue: 75000,
+        riskValue: 4,
+        returnValue: 3,
+        description: 'Government bonds'
+      },
+      {
+        id: '3',
+        assetCategory: 'Real Estate',
+        month: 'Feb',
+        market: 'United Kingdom',
+        totalValue: 200000,
+        riskValue: 8,
+        returnValue: 6,
+        description: 'European real estate funds'
+      },
+      {
+        id: '4',
+        assetCategory: 'Cryptocurrency',
+        month: 'Feb',
+        market: 'China',
+        totalValue: 50000,
+        riskValue: 25,
+        returnValue: 15,
+        description: 'Digital assets'
+      },
+      {
+        id: '5',
+        assetCategory: 'Commodities',
+        month: 'Mar',
+        market: 'Japan',
+        totalValue: 80000,
+        riskValue: 15,
+        returnValue: 7,
+        description: 'Gold and oil futures'
+      },
+      {
+        id: '6',
+        assetCategory: 'Stocks',
+        month: 'Mar',
+        market: 'Canada',
+        totalValue: 120000,
+        riskValue: 10,
+        returnValue: 9,
+        description: 'Canadian equities'
+      },
+      {
+        id: '7',
+        assetCategory: 'Bonds',
+        month: 'Apr',
+        market: 'France',
+        totalValue: 95000,
+        riskValue: 5,
+        returnValue: 4,
+        description: 'French government bonds'
+      },
+      {
+        id: '8',
+        assetCategory: 'Real Estate',
+        month: 'Apr',
+        market: 'Australia',
+        totalValue: 180000,
+        riskValue: 9,
+        returnValue: 7,
+        description: 'Australian property funds'
+      }
+    ];
+
+    return of(this.dashboardData);
+  }
+
+  // Dashboard handlers
+  private handleDashboardRequest<T>(path: string, params?: any): Observable<T> {
+    return this.loadDashboardData().pipe(
+      map(data => {
+        // Parse filters from params if they exist
+        let filters: any[] = [];
+        if (params && params.get && params.get('filters')) {
+          try {
+            filters = JSON.parse(params.get('filters'));
+          } catch (e) {
+            // Ignore parsing errors
+          }
+        }
+
+        // Apply filters to data
+        let filteredData = data;
+        if (filters && filters.length > 0) {
+          filteredData = data.filter((row: any) => {
+            return filters.every(filter => {
+              const filterColumn = filter.filterColumn || 'assetCategory';
+              const rowValue = row[filterColumn];
+              return rowValue === filter.value;
+            });
+          });
+        }
+
+        if (path === '/dashboard/data') {
+          return filteredData as T;
+        }
+
+        if (path === '/dashboard/asset-allocation') {
+          // Transform data for asset allocation pie chart
+          const assetData = filteredData.reduce((acc: any, row: any) => {
+            const category = row.assetCategory;
+            if (!acc[category]) {
+              acc[category] = { name: category, value: 0, percentage: 0 };
+            }
+            acc[category].value += row.totalValue;
+            return acc;
+          }, {});
+
+          const totalValue = Object.values(assetData).reduce((sum: number, item: any) => sum + item.value, 0);
+          Object.values(assetData).forEach((item: any) => {
+            item.percentage = Math.round((item.value / totalValue) * 100);
+          });
+
+          return Object.values(assetData) as T;
+        }
+
+        if (path === '/dashboard/monthly-income-expenses') {
+          // Transform data for monthly income vs expenses
+          const monthlyData = filteredData.reduce((acc: any, row: any) => {
+            const month = row.month;
+            if (!acc[month]) {
+              acc[month] = { month: month, income: 0, expenses: 0, net: 0 };
+            }
+            acc[month].income += row.totalValue * 1.1; // Simulate income being higher
+            acc[month].expenses += row.totalValue;
+            acc[month].net = acc[month].income - acc[month].expenses;
+            return acc;
+          }, {});
+
+          return Object.values(monthlyData) as T;
+        }
+
+        if (path === '/dashboard/risk-return-analysis') {
+          // Transform data for risk vs return scatter chart
+          const riskReturnData = filteredData.filter((row: any) => 
+            row.riskValue !== undefined && row.returnValue !== undefined
+          );
+
+          const aggregatedData = riskReturnData.reduce((acc: any, row: any) => {
+            const category = row.assetCategory;
+            if (!acc[category]) {
+              acc[category] = {
+                assetCategory: category,
+                riskSum: 0,
+                returnSum: 0,
+                marketCapSum: 0,
+                count: 0
+              };
+            }
+            acc[category].riskSum += row.riskValue;
+            acc[category].returnSum += row.returnValue;
+            acc[category].marketCapSum += row.totalValue;
+            acc[category].count += 1;
+            return acc;
+          }, {});
+
+          const result = Object.values(aggregatedData).map((item: any) => ({
+            assetCategory: item.assetCategory,
+            risk: Math.round((item.riskSum / item.count) * 100) / 100,
+            return: Math.round((item.returnSum / item.count) * 100) / 100,
+            marketCap: item.marketCapSum
+          }));
+
+          return result as T;
+        }
+
+        if (path === '/dashboard/investment-distribution') {
+          // Transform data for investment distribution map
+          const distributionData = filteredData.reduce((acc: any, row: any) => {
+            const market = row.market;
+            if (!acc[market]) {
+              acc[market] = { 
+                country: market, 
+                region: this.getRegionForCountry(market), 
+                value: 0, 
+                percentage: 0 
+              };
+            }
+            acc[market].value += row.totalValue;
+            return acc;
+          }, {});
+
+          const totalValue = Object.values(distributionData).reduce((sum: number, item: any) => sum + item.value, 0);
+          Object.values(distributionData).forEach((item: any) => {
+            item.percentage = Math.round((item.value / totalValue) * 100);
+          });
+
+          return Object.values(distributionData) as T;
+        }
+
+        if (path === '/dashboard/metrics') {
+          // Calculate metrics for tiles
+          const totalValue = filteredData.reduce((sum: number, row: any) => sum + row.totalValue, 0);
+          const avgRisk = filteredData.reduce((sum: number, row: any) => sum + (row.riskValue || 0), 0) / filteredData.length;
+          const avgReturn = filteredData.reduce((sum: number, row: any) => sum + (row.returnValue || 0), 0) / filteredData.length;
+
+          return {
+            totalPortfolioValue: totalValue,
+            totalInvestments: filteredData.length,
+            averageRisk: Math.round(avgRisk * 100) / 100,
+            averageReturn: Math.round(avgReturn * 100) / 100,
+            monthlyGrowth: 2.5, // Mock percentage
+            yearlyGrowth: 12.8 // Mock percentage
+          } as T;
+        }
+
+        throw new Error(`Unsupported dashboard path: ${path}`);
+      })
+    );
+  }
+
+  // Helper method to map countries to regions
+  private getRegionForCountry(country: string): string {
+    const regionMap: Record<string, string> = {
+      'United States': 'North America',
+      'Canada': 'North America',
+      'Germany': 'Europe', 
+      'United Kingdom': 'Europe',
+      'France': 'Europe',
+      'China': 'Asia',
+      'Japan': 'Asia',
+      'Australia': 'Oceania'
+    };
+    return regionMap[country] || 'Other';
   }
 }

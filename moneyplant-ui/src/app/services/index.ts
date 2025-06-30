@@ -11,6 +11,7 @@ export * from './apis/feature-flag.api';
 export * from './state/feature-flag.state';
 export * from './apis/notifications.api';
 export * from './state/notifications.state';
+export * from './apis/dashboard.api';
 export * from './state/settings.state';
 export * from './toast.service';
 export * from './logging.service';

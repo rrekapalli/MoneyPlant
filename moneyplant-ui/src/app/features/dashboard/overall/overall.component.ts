@@ -83,6 +83,9 @@ import {
 // Import base dashboard component
 import { BaseDashboardComponent } from '@dashboards/public-api';
 
+// Import dashboard API service
+import { DashboardService } from '../../../services/apis/dashboard.api';
+
 // Define the specific data structure for this dashboard
 export interface DashboardDataRow {
   id: string;
@@ -123,19 +126,32 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
   constructor(
     cdr: ChangeDetectorRef,
     excelExportService: ExcelExportService,
-    filterService: FilterService
+    filterService: FilterService,
+    private dashboardService: DashboardService
   ) {
     super(cdr, excelExportService, filterService);
   }
 
   // Implement abstract methods from BaseDashboardComponent
   protected onChildInit(): void {
-    // Register world map for density map charts
-    import('echarts-map-collection/custom/world.json').then((worldMapData) => {
+    // Register world map for density map charts with better error handling
+    this.registerWorldMap();
+  }
+
+  /**
+   * Register world map with proper error handling and retries
+   */
+  private async registerWorldMap(): Promise<void> {
+    try {
+      console.log('Registering world map for density chart...');
+      const worldMapData = await import('echarts-map-collection/custom/world.json');
       DensityMapBuilder.registerMap('world', worldMapData.default || worldMapData);
-    }).catch((error) => {
-      // Handle world map loading error silently
-    });
+      console.log('World map registered successfully');
+    } catch (error) {
+      console.error('Failed to load world map data:', error);
+      // Try to use a fallback or show error message
+      console.warn('Using fallback map configuration');
+    }
   }
 
   protected onChildDestroy(): void {
@@ -192,8 +208,12 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
       .setData([]) // Data will be populated later
       .setHeader('Investment Distribution by Region')
       .setPosition({ x: 6, y: 11, cols: 6, rows: 8 })
+      .setMap('world') // Explicitly set world map
+      .setVisualMap(0, 1000000, ['#e0f3f8', '#abd9e9', '#74add1', '#4575b4', '#313695'])
+      .setTooltip('item', '{b}: ${c}')
       .setCurrencyFormatter('USD', 'en-US')
       .setFilterColumn('market')
+      .setRoam(false) // Disable roaming for better UX in dashboard
       .build();
 
     const filterWidget = createFilterWidget();
@@ -244,13 +264,19 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
     // First trigger change detection to ensure widgets are rendered
     this.cdr.detectChanges();
 
-    // Wait for charts to be initialized before updating data
+    // Wait for charts to be initialized and world map to be registered
     setTimeout(() => {
+      console.log('Starting initial widget population...');
+      
       // Update each widget using dedicated functions
       this.updateAssetAllocationWidget();
       this.updateMonthlyIncomeExpensesWidget();
       this.updateRiskReturnAnalysisWidget();
-      this.updateInvestmentDistributionWidget();
+      
+      // Wait a bit longer for map registration before updating investment distribution
+      setTimeout(() => {
+        this.updateInvestmentDistributionWidget();
+      }, 300);
 
       // Populate metric tiles with initial data
       this.updateMetricTilesWithFilters([]);
@@ -262,8 +288,8 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
       setTimeout(() => {
         this.retryWidgetUpdates();
         this.cdr.detectChanges();
-      }, 500);
-    }, 200);
+      }, 800);
+    }, 500); // Increased initial delay to allow for map registration
   }
 
   /**
@@ -306,7 +332,7 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
   }
 
   /**
-   * Update Asset Allocation Pie Chart Widget
+   * Update Asset Allocation Pie Chart Widget - Now using API calls
    */
   private async updateAssetAllocationWidget(filters?: any[] | IFilterValues[]): Promise<void> {
     try {
@@ -318,8 +344,54 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
         ? this.convertFiltersFormat(filters as IFilterValues[]) 
         : filters as any[];
 
-      // Apply filters to base data
-      let sourceData = this.applyFiltersToData(this.dashboardData, convertedFilters);
+      // Show loading state
+      this.setWidgetLoadingState(widget, true);
+
+      // Fetch data from API endpoint
+      this.dashboardService.getAssetAllocation(convertedFilters).subscribe({
+        next: (apiData) => {
+          // API data is already in the correct format for pie chart
+          const transformedData = apiData.map((item: any) => ({
+            name: item.name,
+            value: item.value
+          }));
+
+          if (transformedData && transformedData.length > 0) {
+            PieChartBuilder.updateData(widget, transformedData);
+            this.cdr.detectChanges();
+          }
+
+          // Hide loading state
+          this.setWidgetLoadingState(widget, false);
+        },
+        error: (error) => {
+          console.error('Failed to fetch asset allocation data:', error);
+          
+          // Fallback to static data processing
+          this.updateAssetAllocationWidgetFallback(convertedFilters);
+          
+          // Hide loading state
+          this.setWidgetLoadingState(widget, false);
+          
+          // Show error state
+          this.showWidgetErrorState(widget, 'Failed to load asset allocation data');
+        }
+      });
+    } catch (error) {
+      console.error('Error in updateAssetAllocationWidget:', error);
+    }
+  }
+
+  /**
+   * Fallback asset allocation update using static data
+   */
+  private updateAssetAllocationWidgetFallback(filters?: any[]): void {
+    try {
+      const widget = this.findWidgetByTitle('Asset Allocation');
+      if (!widget) return;
+
+      // Apply filters to base data (fallback to static data)
+      let sourceData = this.applyFiltersToData(this.dashboardData, filters);
       
       // Transform data using enhanced chart builder transformation for pie chart
       const transformedData = PieChartBuilder.transformData(sourceData, {
@@ -330,9 +402,10 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
 
       if (transformedData) {
         PieChartBuilder.updateData(widget, transformedData);
+        this.cdr.detectChanges();
       }
     } catch (error) {
-      // Silently handle errors
+      console.error('Fallback asset allocation update failed:', error);
     }
   }
 
@@ -517,12 +590,13 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
   }
 
   /**
-   * Update Investment Distribution Map Widget
+   * Update Investment Distribution Map Widget - Now using API calls
    */
   private async updateInvestmentDistributionWidget(filters?: any[] | IFilterValues[]): Promise<void> {
     try {
       const widget = this.findWidgetByTitle('Investment Distribution by Region');
       if (!widget) {
+        console.warn('Investment Distribution widget not found');
         return;
       }
 
@@ -531,8 +605,142 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
         ? this.convertFiltersFormat(filters as IFilterValues[]) 
         : filters as any[];
 
-      // Apply filters to base data
-      let sourceData = this.applyFiltersToData(this.dashboardData, convertedFilters);
+      // Show loading state
+      this.setWidgetLoadingState(widget, true);
+
+      // Fetch data from API endpoint
+      this.dashboardService.getInvestmentDistribution(convertedFilters).subscribe({
+        next: (apiData) => {
+          console.log('Received investment distribution data:', apiData);
+          
+          // Convert API response to format expected by density map
+          const mapData = apiData.map((item: any) => ({
+            name: item.country,
+            value: item.value
+          }));
+
+          console.log('Transformed map data:', mapData);
+
+          if (mapData && mapData.length > 0) {
+            // Use multiple update strategies for better reliability
+            this.updateMapWidget(widget, mapData);
+          } else {
+            console.warn('No map data available');
+          }
+
+          // Hide loading state
+          this.setWidgetLoadingState(widget, false);
+        },
+        error: (error) => {
+          console.error('Failed to fetch investment distribution data:', error);
+          
+          // Fallback to static data on API failure
+          this.updateInvestmentDistributionWidgetFallback(convertedFilters);
+          
+          // Hide loading state
+          this.setWidgetLoadingState(widget, false);
+          
+          // Optionally show error message to user
+          this.showWidgetErrorState(widget, 'Failed to load investment distribution data');
+        }
+      });
+    } catch (error) {
+      console.error('Error in updateInvestmentDistributionWidget:', error);
+    }
+  }
+
+  /**
+   * Update map widget with multiple strategies for better reliability
+   */
+  private updateMapWidget(widget: IWidget, mapData: any[]): void {
+    console.log('Updating map widget with data:', mapData);
+    
+    // Calculate min/max values for visual map
+    const values = mapData.map(item => item.value);
+    const minValue = Math.min(...values);
+    const maxValue = Math.max(...values);
+    
+    console.log(`Value range: ${minValue} - ${maxValue}`);
+
+    // Strategy 1: Use DensityMapBuilder.updateData
+    try {
+      DensityMapBuilder.updateData(widget, mapData);
+      console.log('Successfully updated using DensityMapBuilder.updateData');
+    } catch (error) {
+      console.warn('DensityMapBuilder.updateData failed:', error);
+    }
+
+    // Strategy 2: Direct ECharts update with proper configuration
+    setTimeout(() => {
+      if (widget.chartInstance) {
+        try {
+          const mapOptions = {
+            tooltip: {
+              trigger: 'item',
+              formatter: '{b}: ${c}'
+            },
+            visualMap: {
+              min: minValue,
+              max: maxValue,
+              left: 'left',
+              top: 'bottom',
+              text: ['High', 'Low'],
+              calculable: true,
+              inRange: {
+                color: ['#e0f3f8', '#abd9e9', '#74add1', '#4575b4', '#313695']
+              }
+            },
+            series: [{
+              name: 'Investment Distribution',
+              type: 'map',
+              map: 'world',
+              roam: false,
+              data: mapData,
+              emphasis: {
+                label: {
+                  show: true
+                }
+              }
+            }]
+          };
+
+          widget.chartInstance.setOption(mapOptions, true);
+          console.log('Successfully updated using direct ECharts API');
+        } catch (error) {
+          console.error('Direct ECharts update failed:', error);
+        }
+      } else {
+        console.warn('Chart instance not available');
+      }
+      this.cdr.detectChanges();
+    }, 300);
+
+    // Strategy 3: Use base component method as fallback
+    setTimeout(() => {
+      try {
+        this.updateEchartWidget(widget, mapData);
+        console.log('Successfully updated using base component method');
+      } catch (error) {
+        console.warn('Base component update failed:', error);
+      }
+      this.cdr.detectChanges();
+    }, 500);
+  }
+
+  /**
+   * Fallback method using static data when API fails
+   */
+  private updateInvestmentDistributionWidgetFallback(filters?: any[]): void {
+    try {
+      const widget = this.findWidgetByTitle('Investment Distribution by Region');
+      if (!widget) return;
+
+      console.log('Using fallback data for investment distribution widget');
+
+      // Apply filters to base data (fallback to static data)
+      let sourceData = this.applyFiltersToData(this.dashboardData, filters);
+      
+      console.log('Fallback source data:', sourceData);
       
       // Group and aggregate data by market
       const aggregatedData = sourceData.reduce((acc, row) => {
@@ -550,40 +758,41 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
         value: item.value
       }));
 
+      console.log('Fallback map data:', mapData);
+
       if (mapData && mapData.length > 0) {
-        // Method 1: Try DensityMapBuilder.updateData
-        DensityMapBuilder.updateData(widget, mapData);
-        
-        // Method 2: Try base dashboard component method
-        setTimeout(() => {
-          this.updateEchartWidget(widget, mapData);
-          this.cdr.detectChanges();
-        }, 100);
-        
-        // Method 3: Try direct ECharts update if chart instance exists
-        setTimeout(() => {
-          if (widget.chartInstance) {
-            try {
-              const currentOptions = widget.chartInstance.getOption() as any;
-              const newOptions = {
-                ...currentOptions,
-                series: [{
-                  ...currentOptions?.series?.[0],
-                  data: mapData,
-                  type: 'map'
-                }]
-              };
-              widget.chartInstance.setOption(newOptions, true);
-            } catch (error) {
-              // Silently handle errors
-            }
-          }
-          this.cdr.detectChanges();
-        }, 200);
+        // Use the same improved update strategy
+        this.updateMapWidget(widget, mapData);
+      } else {
+        console.warn('No fallback map data available');
       }
     } catch (error) {
-      // Silently handle errors
+      console.error('Fallback update failed:', error);
     }
+  }
+
+  /**
+   * Set loading state for a widget (simplified approach)
+   */
+  private setWidgetLoadingState(widget: IWidget, isLoading: boolean): void {
+    // For now, just trigger change detection
+    // In a full implementation, you could show a loading spinner
+    if (isLoading) {
+      console.log(`Loading data for widget: ${widget.config?.header?.title}`);
+    } else {
+      console.log(`Finished loading data for widget: ${widget.config?.header?.title}`);
+    }
+    this.cdr.detectChanges();
+  }
+
+  /**
+   * Show error state for a widget (simplified approach)
+   */
+  private showWidgetErrorState(widget: IWidget, errorMessage: string): void {
+    // For now, just log the error
+    // In a full implementation, you could show an error message in the widget
+    console.error(`Error in widget ${widget.config?.header?.title}: ${errorMessage}`);
+    this.cdr.detectChanges();
   }
 
   /**
