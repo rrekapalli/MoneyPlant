@@ -745,6 +745,30 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
   }
 
   /**
+   * Update map settings for an existing widget
+   */
+  static updateMapSettings(widget: IWidget, settings?: { zoom?: number; center?: [number, number]; roam?: boolean }): void {
+    if (!widget.chartInstance) return;
+    
+    try {
+      const currentOptions = widget.chartInstance.getOption() as any;
+      const newOptions = {
+        ...currentOptions,
+        series: currentOptions['series']?.map((series: any) => ({
+          ...series,
+          zoom: settings?.zoom ?? series.zoom,
+          center: settings?.center ?? series.center,
+          roam: settings?.roam ?? series.roam
+        }))
+      };
+      
+      widget.chartInstance.setOption(newOptions, true);
+    } catch (error) {
+      console.error('Error updating density map settings:', error);
+    }
+  }
+
+  /**
    * Static method to check if a widget is a density map
    */
   static isDensityMap(widget: IWidget): boolean {

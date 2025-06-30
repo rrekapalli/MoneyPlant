@@ -1,5 +1,5 @@
-import { IWidget } from '../../../public-api';
-import { PieChartBuilder, PieChartData } from './pie-chart-builder';
+import { IWidget } from '../entities/IWidget';
+import { PieChartBuilder, PieChartData } from '../echart-chart-builders/pie/pie-chart-builder';
 
 /**
  * Examples demonstrating the usage of PieChartBuilder class

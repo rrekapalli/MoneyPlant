@@ -1,4 +1,4 @@
-import { HeatmapChartBuilder, HeatmapChartData } from './heatmap-chart-builder';
+import { HeatmapChartBuilder, HeatmapChartData } from '../echart-chart-builders/heatmap/heatmap-chart-builder';
 
 /**
  * Heatmap Chart Examples

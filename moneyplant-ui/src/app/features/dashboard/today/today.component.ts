@@ -1,4 +1,4 @@
-import { Component, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
+import { Component, ChangeDetectorRef, ChangeDetectionStrategy, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { MessageModule } from 'primeng/message';
@@ -149,10 +149,12 @@ export interface DashboardDataRow {
   styleUrls: ['./today.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class TodayComponent extends BaseDashboardComponent<DashboardDataRow>  {
+export class TodayComponent extends BaseDashboardComponent<DashboardDataRow> {
   // Shared dashboard data - Flat structure (implements abstract property)
   protected dashboardData: DashboardDataRow[] = [...INITIAL_DASHBOARD_DATA];
   protected readonly initialDashboardData: DashboardDataRow[] = INITIAL_DASHBOARD_DATA;
+  
+  @ViewChild('dashboardContainerComponent', { static: false }) override dashboardContainerComponent!: any;
 
   constructor(
     cdr: ChangeDetectorRef,
@@ -175,6 +177,10 @@ export class TodayComponent extends BaseDashboardComponent<DashboardDataRow>  {
   protected onChildDestroy(): void {
     // Child-specific cleanup if needed
   }
+
+
+
+
 
   /**
    * Create metric tiles with filtered data
@@ -354,7 +360,7 @@ export class TodayComponent extends BaseDashboardComponent<DashboardDataRow>  {
 
     // Use the Fluent API to build the dashboard config with filter highlighting enabled
     this.dashboardConfig = StandardDashboardBuilder.createStandard()
-      .setDashboardId('overall-dashboard')
+      .setDashboardId('today-dashboard')
       // Enable filter highlighting mode with custom styling
       .enableFilterHighlighting(true, {
         filteredOpacity: 0.25,
@@ -395,6 +401,7 @@ export class TodayComponent extends BaseDashboardComponent<DashboardDataRow>  {
 
   /**
    * Populate all widgets with initial data from the shared dataset
+   * Enhanced version for tab-based components
    */
   protected override populateWidgetsWithInitialData(): void {
     if (!this.dashboardConfig?.widgets) {
@@ -417,14 +424,11 @@ export class TodayComponent extends BaseDashboardComponent<DashboardDataRow>  {
       
       // If no data found by title, try to detect chart type and provide appropriate data
       if (!initialData) {
-        console.warn(`Widget ${widget.id} has no title defined or no matching data. Attempting to detect chart type...`);
         initialData = this.getDataByChartType(widget);
       }
       
       if (initialData) {
         this.updateEchartWidget(widget, initialData);
-      } else {
-        console.warn(`No data found for widget: ${widget.id} (title: ${widgetTitle})`);
       }
     });
 
@@ -454,27 +458,22 @@ export class TodayComponent extends BaseDashboardComponent<DashboardDataRow>  {
     switch (seriesType) {
       case 'map':
         // This is a density/choropleth map - provide investment distribution data
-        console.log(`Detected density map widget (map: ${mapType}), providing investment distribution data`);
         return this.groupByAndSum(this.dashboardData, 'market', 'totalValue');
         
       case 'pie':
         // This is a pie chart - provide asset allocation data
-        console.log('Detected pie chart widget, providing asset allocation data');
         return this.groupByAndSum(this.dashboardData, 'assetCategory', 'totalValue');
         
       case 'bar':
         // This is a bar chart - provide monthly data
-        console.log('Detected bar chart widget, providing monthly data');
         return this.groupByAndSum(this.dashboardData, 'month', 'totalValue');
         
       case 'line':
         // This is a line chart - provide portfolio performance data
-        console.log('Detected line chart widget, providing portfolio performance data');
         return this.groupByAndSum(this.dashboardData, 'month', 'totalValue');
         
       case 'scatter':
         // This is a scatter chart - provide risk vs return data
-        console.log('Detected scatter chart widget, providing risk vs return data');
         const riskReturnData = this.dashboardData.filter(row => row.riskValue !== undefined && row.returnValue !== undefined);
         const groupedRiskReturn = riskReturnData.reduce((acc, row) => {
           if (!acc[row.assetCategory]) {
@@ -489,28 +488,23 @@ export class TodayComponent extends BaseDashboardComponent<DashboardDataRow>  {
         
       case 'heatmap':
         // This is a heatmap - provide heatmap data
-        console.log('Detected heatmap widget, providing heatmap data');
         return this.createHeatmapData(this.dashboardData);
         
       case 'gauge':
         // This is a gauge chart - provide simple numeric data
-        console.log('Detected gauge widget, providing gauge data');
         const totalValue = this.dashboardData.reduce((sum, row) => sum + row.totalValue, 0);
         return [{ name: 'Progress', value: Math.min(totalValue / 10, 100) }]; // Scale to percentage
         
       case 'treemap':
         // This is a treemap - provide treemap data
-        console.log('Detected treemap widget, providing treemap data');
         return this.createTreemapData(this.dashboardData);
         
       case 'sunburst':
         // This is a sunburst chart - provide sunburst data
-        console.log('Detected sunburst widget, providing sunburst data');
         return this.createSunburstData(this.dashboardData);
         
       case 'sankey':
         // This is a sankey diagram - provide default sankey data
-        console.log('Detected sankey widget, providing default sankey data');
         return {
           nodes: [
             { name: 'Income' }, { name: 'Expenses' }, { name: 'Savings' }
@@ -566,17 +560,16 @@ export class TodayComponent extends BaseDashboardComponent<DashboardDataRow>  {
         
       case 'Monthly Income vs Expenses':
         // Group by month and sum totalValue (for all asset categories)
-        const monthlyData = this.groupByAndSum(sourceData, 'month', 'totalValue');
-        return monthlyData;
+        return this.groupByAndSum(sourceData, 'month', 'totalValue');
         
       case 'Portfolio Performance':
         // Use AreaChartBuilder's transformation method
-        const { data: portfolioData, xAxisData } = AreaChartBuilder.transformToAreaData(sourceData, {
+        const portfolioResult = AreaChartBuilder.transformToAreaData(sourceData, {
           valueField: 'totalValue',
           nameField: 'month',
           xAxisField: 'month'
         });
-        return portfolioData;
+        return portfolioResult.data;
         
       case 'Risk vs Return Analysis':
         // Filter rows that have both risk and return values, group by assetCategory
@@ -779,6 +772,8 @@ export class TodayComponent extends BaseDashboardComponent<DashboardDataRow>  {
     // Trigger change detection
     setTimeout(() => this.cdr.detectChanges(), 100);
   }
+
+
 
   // Helper methods specific to this component's data transformations
 
@@ -1002,5 +997,43 @@ export class TodayComponent extends BaseDashboardComponent<DashboardDataRow>  {
         children: categoryChildren
       };
     });
+  }
+
+  /**
+   * Create heatmap data from dashboard data
+   */
+  protected override createHeatmapData(
+    data: DashboardDataRow[], 
+    xField: string = 'assetCategory', 
+    yField: string = 'month', 
+    valueField: string = 'totalValue'
+  ): { value: [number, number, number]; name: string; }[] {
+    // Create a simple heatmap using asset categories (x-axis) and months (y-axis)
+    const xCategories = [...new Set(data.map(row => row[xField as keyof DashboardDataRow]))];
+    const yCategories = [...new Set(data.map(row => row[yField as keyof DashboardDataRow]))].sort();
+    
+    const heatmapData: { value: [number, number, number]; name: string; }[] = [];
+    
+    xCategories.forEach((xCategory, xIndex) => {
+      yCategories.forEach((yCategory, yIndex) => {
+        const filteredData = data.filter(row => 
+          row[xField as keyof DashboardDataRow] === xCategory && 
+          row[yField as keyof DashboardDataRow] === yCategory
+        );
+        
+        const value = filteredData.reduce((sum, row) => 
+          sum + Number(row[valueField as keyof DashboardDataRow]), 0
+        );
+        
+        if (value > 0) {
+          heatmapData.push({
+            value: [xIndex, yIndex, value],
+            name: `${xCategory}-${yCategory}`
+          });
+        }
+      });
+    });
+    
+    return heatmapData;
   }
 }

@@ -1,4 +1,4 @@
-import { LineChartBuilder, LineChartData } from './line-chart-builder';
+import { LineChartBuilder, LineChartData } from '../echart-chart-builders/line/line-chart-builder';
 
 /**
  * Line Chart Examples

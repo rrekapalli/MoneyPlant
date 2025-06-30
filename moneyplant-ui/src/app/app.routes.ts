@@ -73,7 +73,49 @@ export const routes: Routes = [
         loadComponent: () => import('./features/dashboard/dashboard.component')
           .then(m => m.DashboardComponent),
         title: 'Dashboard - MoneyPlant',
-        canActivate: [featureFlagGuard('dashboard')]
+        canActivate: [featureFlagGuard('dashboard')],
+        children: [
+          {
+            path: '',
+            redirectTo: 'overall',
+            pathMatch: 'full'
+          },
+          {
+            path: 'overall',
+            loadComponent: () => import('./features/dashboard/overall/overall.component')
+              .then(m => m.OverallComponent),
+            title: 'Overall Dashboard - MoneyPlant',
+            canActivate: [featureFlagGuard('dashboard-overall')]
+          },
+          {
+            path: 'today',
+            loadComponent: () => import('./features/dashboard/today/today.component')
+              .then(m => m.TodayComponent),
+            title: 'Today Dashboard - MoneyPlant',
+            canActivate: [featureFlagGuard('dashboard-today')]
+          },
+          {
+            path: 'week',
+            loadComponent: () => import('./features/dashboard/this-week/this-week.component')
+              .then(m => m.ThisWeekComponent),
+            title: 'This Week Dashboard - MoneyPlant',
+            canActivate: [featureFlagGuard('dashboard-week')]
+          },
+          {
+            path: 'month',
+            loadComponent: () => import('./features/dashboard/this-month/this-month.component')
+              .then(m => m.ThisMonthComponent),
+            title: 'This Month Dashboard - MoneyPlant',
+            canActivate: [featureFlagGuard('dashboard-month')]
+          },
+          {
+            path: 'year',
+            loadComponent: () => import('./features/dashboard/this-year/this-year.component')
+              .then(m => m.ThisYearComponent),
+            title: 'This Year Dashboard - MoneyPlant',
+            canActivate: [featureFlagGuard('dashboard-year')]
+          }
+        ]
       },
       {
         path: 'holdings',
