@@ -1006,7 +1006,7 @@ export class TodayComponent extends BaseDashboardComponent<DashboardDataRow> {
   /**
    * Create heatmap data from dashboard data
    */
-  protected override createHeatmapData(
+  protected createHeatmapData(
     data: DashboardDataRow[], 
     xField: string = 'assetCategory', 
     yField: string = 'month', 

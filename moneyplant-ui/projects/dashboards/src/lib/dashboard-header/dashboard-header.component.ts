@@ -47,27 +47,22 @@ export class DashboardHeaderComponent implements OnInit, OnChanges {
 
   // Create bound methods to avoid context issues
   private boundExportToExcel = () => {
-    console.log('Dashboard header: Export to Excel clicked (bound method)');
     this.exportToExcel();
   };
 
   private boundToggleHighlighting = () => {
-    console.log('Dashboard header: Toggle highlighting clicked (bound method)');
     this.toggleHighlighting();
   };
 
   private boundSetSubtle = () => {
-    console.log('Dashboard header: Set subtle preset (bound method)');
     this.setHighlightingPreset('subtle');
   };
 
-  private boundSetMedium = () => {
-    console.log('Dashboard header: Set medium preset (bound method)');
+  private boundSetMedium = () => {  
     this.setHighlightingPreset('medium');
   };
 
   private boundSetStrong = () => {
-    console.log('Dashboard header: Set strong preset (bound method)');
     this.setHighlightingPreset('strong');
   };
 
@@ -78,7 +73,6 @@ export class DashboardHeaderComponent implements OnInit, OnChanges {
     items.push({
       label: '🧪 Simple Test',
       command: () => {
-        console.log('SIMPLE TEST CLICKED!');
         alert('Simple test works!');
       }
     });
@@ -91,7 +85,6 @@ export class DashboardHeaderComponent implements OnInit, OnChanges {
     items.push({
       label: 'Export to Excel', 
       command: () => {
-        console.log('EXCEL EXPORT CLICKED!');
         this.exportToExcel();
       }
     });
@@ -104,7 +97,6 @@ export class DashboardHeaderComponent implements OnInit, OnChanges {
     items.push({
       label: this.isHighlightingEnabled ? 'Disable Highlighting' : 'Enable Highlighting',
       command: () => {
-        console.log('HIGHLIGHTING TOGGLE CLICKED!');
         this.toggleHighlighting();
       }
     });
@@ -134,18 +126,14 @@ export class DashboardHeaderComponent implements OnInit, OnChanges {
       });
     }
     
-    console.log('Menu items updated - highlighting enabled:', this.isHighlightingEnabled);
-    console.log('Menu structure:', items);
     this.menuItems = items;
   }
 
   exportToExcel() {
-    console.log('Dashboard header: Export to Excel clicked');
     this.onExportToExcel.emit();
   }
 
   toggleHighlighting() {
-    console.log('Dashboard header: Toggle highlighting clicked');
     this.onToggleHighlighting.emit();
     // Force menu rebuild after highlighting state changes
     setTimeout(() => {
@@ -154,38 +142,31 @@ export class DashboardHeaderComponent implements OnInit, OnChanges {
   }
 
   setHighlightingPreset(preset: 'subtle' | 'medium' | 'strong') {
-    console.log('Dashboard header: setHighlightingPreset called with preset:', preset);
     this.onSetHighlightingPreset.emit(preset);
   }
 
   // Template event handlers
   onMenuButtonClick(event: any, menu: any) {
-    console.log('Menu button clicked');
     menu.toggle(event);
   }
 
   onMenuShow() {
-    console.log('Menu shown');
   }
 
   onMenuHide() {
-    console.log('Menu hidden');
   }
 
   // Test method for split button
   testMainAction() {
-    console.log('SPLIT BUTTON MAIN ACTION CLICKED!');
     alert('Split button main action works!');
   }
 
   // Custom menu methods
   toggleCustomMenu() {
-    console.log('Custom menu toggle clicked');
     this.showCustomMenu = !this.showCustomMenu;
   }
 
   testCustomClick(action: string) {
-    console.log('CUSTOM MENU ITEM CLICKED:', action);
     this.showCustomMenu = false; // Close menu
     
     switch (action) {

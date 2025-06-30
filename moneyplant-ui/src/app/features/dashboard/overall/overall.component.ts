@@ -58,6 +58,7 @@ import('echarts-map-collection/custom/world.json').then((worldMapData) => {
 // Import dashboard modules and chart builders
 import { 
   IWidget,
+  IFilterValues,
   DashboardContainerComponent,
   DashboardHeaderComponent,
   // Fluent API
@@ -173,6 +174,7 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
       .setCurrencyFormatter('USD', 'en-US')
       .setPredefinedPalette('business')
       .setTooltip('axis', '{b}: {c}')
+      .setFilterColumn('month')
       .build();
 
     // Risk vs Return Scatter Chart
@@ -182,6 +184,7 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
       .setPosition({ x: 0, y: 11, cols: 6, rows: 8 })
       .setTooltip('item', '{b}: Risk {c[0]}%, Return {c[1]}%')
       .setPredefinedPalette('modern')
+      .setFilterColumn('assetCategory')
       .build();
 
     // Investment Distribution Map (using density map builder)
@@ -190,6 +193,7 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
       .setHeader('Investment Distribution by Region')
       .setPosition({ x: 6, y: 11, cols: 6, rows: 8 })
       .setCurrencyFormatter('USD', 'en-US')
+      .setFilterColumn('market')
       .build();
 
     const filterWidget = createFilterWidget();
@@ -237,204 +241,349 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
       return;
     }
 
-    // Update each widget using dedicated functions
-    this.updateAssetAllocationWidget();
-    this.updateMonthlyIncomeExpensesWidget();
-    this.updateRiskReturnAnalysisWidget();
-    this.updateInvestmentDistributionWidget();
+    // First trigger change detection to ensure widgets are rendered
+    this.cdr.detectChanges();
 
-    // Populate metric tiles with initial data
-    this.updateMetricTilesWithFilters([]);
-
-    // Trigger change detection to ensure widgets are updated
+    // Wait for charts to be initialized before updating data
     setTimeout(() => {
+      // Update each widget using dedicated functions
+      this.updateAssetAllocationWidget();
+      this.updateMonthlyIncomeExpensesWidget();
+      this.updateRiskReturnAnalysisWidget();
+      this.updateInvestmentDistributionWidget();
+
+      // Populate metric tiles with initial data
+      this.updateMetricTilesWithFilters([]);
+
+      // Trigger change detection to ensure widgets are updated
       this.cdr.detectChanges();
-    }, 100);
+      
+      // Add additional delay and retry for any widgets that might not have initialized
+      setTimeout(() => {
+        this.retryWidgetUpdates();
+        this.cdr.detectChanges();
+      }, 500);
+    }, 200);
+  }
+
+  /**
+   * Retry widget updates for any widgets that might not have been ready initially
+   */
+  private retryWidgetUpdates(): void {
+    const widgets = this.dashboardConfig?.widgets?.filter(w => w.config?.component === 'echart') || [];
+    
+    widgets.forEach(widget => {
+      const title = widget.config?.header?.title;
+      
+      if (!widget.chartInstance) {
+        switch (title) {
+          case 'Monthly Income vs Expenses':
+            this.updateMonthlyIncomeExpensesWidget();
+            break;
+          case 'Risk vs Return Analysis':
+            this.updateRiskReturnAnalysisWidget();
+            break;
+          case 'Investment Distribution by Region':
+            this.updateInvestmentDistributionWidget();
+            break;
+        }
+      }
+    });
+  }
+
+  /**
+   * Convert IFilterValues[] to the format expected by applyFiltersToData
+   */
+  private convertFiltersFormat(filters?: IFilterValues[]): any[] {
+    if (!filters || filters.length === 0) {
+      return [];
+    }
+    
+    return filters.map(filter => ({
+      filterColumn: filter['column'] || 'assetCategory',
+      value: filter['value']
+    }));
   }
 
   /**
    * Update Asset Allocation Pie Chart Widget
    */
-  private async updateAssetAllocationWidget(filters?: any[]): Promise<void> {
+  private async updateAssetAllocationWidget(filters?: any[] | IFilterValues[]): Promise<void> {
     try {
-      // Simulate API call for asset allocation data
-      const data = await this.getAssetAllocationData(filters);
-      
       const widget = this.findWidgetByTitle('Asset Allocation');
-      if (widget && data) {
-        PieChartBuilder.updateData(widget, data);
+      if (!widget) return;
+
+      // Convert filter format if needed
+      const convertedFilters = Array.isArray(filters) && filters.length > 0 && 'column' in filters[0] 
+        ? this.convertFiltersFormat(filters as IFilterValues[]) 
+        : filters as any[];
+
+      // Apply filters to base data
+      let sourceData = this.applyFiltersToData(this.dashboardData, convertedFilters);
+      
+      // Transform data using enhanced chart builder transformation for pie chart
+      const transformedData = PieChartBuilder.transformData(sourceData, {
+        valueField: 'totalValue',
+        nameField: 'assetCategory',
+        sortBy: 'value'
+      });
+
+      if (transformedData) {
+        PieChartBuilder.updateData(widget, transformedData);
       }
     } catch (error) {
-      console.error('Error updating Asset Allocation widget:', error);
+      // Silently handle errors
+    }
+  }
+
+  /**
+   * Debug method to inspect chart instances
+   */
+  private debugChartInstances(): void {
+    const widgets = this.dashboardConfig?.widgets?.filter(w => w.config?.component === 'echart') || [];
+    
+    // Update page title with debug info for visibility
+    document.title = `MoneyPlant UI - Charts: ${widgets.filter(w => !!w.chartInstance).length}/${widgets.length} ready`;
+  }
+
+  /**
+   * Alternative approach: Use the base dashboard component's updateEchartWidget method
+   */
+  private updateWidgetUsingBaseMethod(widget: IWidget, data: any[]): void {
+    try {
+      // Use the base dashboard component's updateEchartWidget method
+      this.updateEchartWidget(widget, data);
+      
+      // Force change detection
+      this.cdr.detectChanges();
+    } catch (error) {
+      // Silently handle errors
     }
   }
 
   /**
    * Update Monthly Income vs Expenses Bar Chart Widget
    */
-  private async updateMonthlyIncomeExpensesWidget(filters?: any[]): Promise<void> {
+  private async updateMonthlyIncomeExpensesWidget(filters?: any[] | IFilterValues[]): Promise<void> {
     try {
-      // Simulate API call for monthly income vs expenses data
-      const data = await this.getMonthlyIncomeExpensesData(filters);
-      
       const widget = this.findWidgetByTitle('Monthly Income vs Expenses');
-      if (widget && data) {
-        BarChartBuilder.updateData(widget, data);
+      if (!widget) {
+        return;
+      }
+
+      // Convert filter format if needed
+      const convertedFilters = Array.isArray(filters) && filters.length > 0 && 'column' in filters[0] 
+        ? this.convertFiltersFormat(filters as IFilterValues[]) 
+        : filters as any[];
+
+      // Apply filters to base data
+      let sourceData = this.applyFiltersToData(this.dashboardData, convertedFilters);
+      
+      // Group by month and sum totalValue - sorted by month order  
+      const aggregatedData = sourceData.reduce((acc, row) => {
+        const month = row.month;
+        if (!acc[month]) {
+          acc[month] = { name: month, value: 0 };
+        }
+        acc[month].value += row.totalValue;
+        return acc;
+      }, {} as Record<string, any>);
+      
+      // Sort by month order
+      const monthOrder = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const transformedData = Object.values(aggregatedData).sort((a: any, b: any) => {
+        return monthOrder.indexOf(a.name) - monthOrder.indexOf(b.name);
+      });
+
+      if (transformedData && transformedData.length > 0) {
+        // Method 1: Try BarChartBuilder.updateData
+        BarChartBuilder.updateData(widget, transformedData);
+        
+        // Method 2: Try base dashboard component method
+        setTimeout(() => {
+          this.updateEchartWidget(widget, transformedData);
+          this.cdr.detectChanges();
+        }, 100);
+        
+        // Method 3: Try direct ECharts update if chart instance exists
+        setTimeout(() => {
+          if (widget.chartInstance) {
+            try {
+              const currentOptions = widget.chartInstance.getOption() as any;
+              const newOptions = {
+                ...currentOptions,
+                series: [{
+                  ...currentOptions?.series?.[0],
+                  data: transformedData,
+                  type: 'bar'
+                }]
+              };
+              widget.chartInstance.setOption(newOptions, true);
+            } catch (error) {
+              // Silently handle errors
+            }
+          }
+          this.cdr.detectChanges();
+        }, 200);
       }
     } catch (error) {
-      console.error('Error updating Monthly Income vs Expenses widget:', error);
+      // Silently handle errors
     }
   }
 
   /**
    * Update Risk vs Return Analysis Scatter Chart Widget
    */
-  private async updateRiskReturnAnalysisWidget(filters?: any[]): Promise<void> {
+  private async updateRiskReturnAnalysisWidget(filters?: any[] | IFilterValues[]): Promise<void> {
     try {
-      // Simulate API call for risk vs return analysis data
-      const data = await this.getRiskReturnAnalysisData(filters);
-      
       const widget = this.findWidgetByTitle('Risk vs Return Analysis');
-      if (widget && data) {
-        ScatterChartBuilder.updateData(widget, data);
+      if (!widget) {
+        return;
+      }
+
+      // Convert filter format if needed
+      const convertedFilters = Array.isArray(filters) && filters.length > 0 && 'column' in filters[0] 
+        ? this.convertFiltersFormat(filters as IFilterValues[]) 
+        : filters as any[];
+
+      // Apply filters to base data
+      let sourceData = this.applyFiltersToData(this.dashboardData, convertedFilters);
+      
+      // Filter and aggregate data for scatter chart
+      const riskReturnData = sourceData.filter(row => 
+        row.riskValue !== undefined && row.returnValue !== undefined
+      );
+      
+      // Create aggregated data for scatter chart
+      const aggregatedData = riskReturnData.reduce((acc, row) => {
+        const category = row.assetCategory;
+        if (!acc[category]) {
+          acc[category] = {
+            name: category,
+            riskSum: 0,
+            returnSum: 0,
+            count: 0
+          };
+        }
+        acc[category].riskSum += row.riskValue!;
+        acc[category].returnSum += row.returnValue!;
+        acc[category].count += 1;
+        return acc;
+      }, {} as Record<string, any>);
+      
+      // Transform to scatter chart format using the EXACT SAME pattern as bar chart
+      const transformedData = Object.values(aggregatedData).map((item: any) => ({
+        value: [
+          Math.round((item.riskSum / item.count) * 100) / 100,
+          Math.round((item.returnSum / item.count) * 100) / 100
+        ],
+        name: item.name
+      }));
+
+      if (transformedData && transformedData.length > 0) {
+        // Method 1: Try ScatterChartBuilder.updateData (same as bar chart pattern)
+        ScatterChartBuilder.updateData(widget, transformedData);
+        
+        // Method 2: Try base dashboard component method (same as bar chart pattern)
+        setTimeout(() => {
+          this.updateEchartWidget(widget, transformedData);
+          this.cdr.detectChanges();
+        }, 100);
+        
+        // Method 3: Try direct ECharts update if chart instance exists (same as bar chart pattern)
+        setTimeout(() => {
+          if (widget.chartInstance) {
+            try {
+              const currentOptions = widget.chartInstance.getOption() as any;
+              const newOptions = {
+                ...currentOptions,
+                series: [{
+                  ...currentOptions?.series?.[0],
+                  data: transformedData,
+                  type: 'scatter'
+                }]
+              };
+              widget.chartInstance.setOption(newOptions, true);
+            } catch (error) {
+              // Silently handle errors
+            }
+          }
+          this.cdr.detectChanges();
+        }, 200);
       }
     } catch (error) {
-      console.error('Error updating Risk vs Return Analysis widget:', error);
+      // Silently handle errors
     }
   }
 
   /**
    * Update Investment Distribution Map Widget
    */
-  private async updateInvestmentDistributionWidget(filters?: any[]): Promise<void> {
+  private async updateInvestmentDistributionWidget(filters?: any[] | IFilterValues[]): Promise<void> {
     try {
-      // Simulate API call for investment distribution data
-      const data = await this.getInvestmentDistributionData(filters);
-      
       const widget = this.findWidgetByTitle('Investment Distribution by Region');
-      if (widget && data) {
-        DensityMapBuilder.updateData(widget, data);
+      if (!widget) {
+        return;
+      }
+
+      // Convert filter format if needed
+      const convertedFilters = Array.isArray(filters) && filters.length > 0 && 'column' in filters[0] 
+        ? this.convertFiltersFormat(filters as IFilterValues[]) 
+        : filters as any[];
+
+      // Apply filters to base data
+      let sourceData = this.applyFiltersToData(this.dashboardData, convertedFilters);
+      
+      // Group and aggregate data by market
+      const aggregatedData = sourceData.reduce((acc, row) => {
+        const market = row.market;
+        if (!acc[market]) {
+          acc[market] = { name: market, value: 0 };
+        }
+        acc[market].value += row.totalValue;
+        return acc;
+      }, {} as Record<string, any>);
+      
+      // Convert to array format expected by density map
+      const mapData = Object.values(aggregatedData).map((item: any) => ({
+        name: item.name,
+        value: item.value
+      }));
+
+      if (mapData && mapData.length > 0) {
+        // Method 1: Try DensityMapBuilder.updateData
+        DensityMapBuilder.updateData(widget, mapData);
+        
+        // Method 2: Try base dashboard component method
+        setTimeout(() => {
+          this.updateEchartWidget(widget, mapData);
+          this.cdr.detectChanges();
+        }, 100);
+        
+        // Method 3: Try direct ECharts update if chart instance exists
+        setTimeout(() => {
+          if (widget.chartInstance) {
+            try {
+              const currentOptions = widget.chartInstance.getOption() as any;
+              const newOptions = {
+                ...currentOptions,
+                series: [{
+                  ...currentOptions?.series?.[0],
+                  data: mapData,
+                  type: 'map'
+                }]
+              };
+              widget.chartInstance.setOption(newOptions, true);
+            } catch (error) {
+              // Silently handle errors
+            }
+          }
+          this.cdr.detectChanges();
+        }, 200);
       }
     } catch (error) {
-      console.error('Error updating Investment Distribution widget:', error);
+      // Silently handle errors
     }
-  }
-
-  /**
-   * API call simulation for Asset Allocation data
-   */
-  private async getAssetAllocationData(filters?: any[]): Promise<any[]> {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    // Apply filters to base data
-    let sourceData = this.applyFiltersToData(this.dashboardData, filters);
-    
-    // Aggregate data by asset category
-    const aggregatedData = sourceData.reduce((acc, row) => {
-      const category = row.assetCategory;
-      if (!acc[category]) {
-        acc[category] = { name: category, value: 0 };
-      }
-      acc[category].value += row.totalValue;
-      return acc;
-    }, {} as Record<string, any>);
-    
-    // Convert to array and sort by value
-    return Object.values(aggregatedData).sort((a: any, b: any) => b.value - a.value);
-  }
-
-  /**
-   * API call simulation for Monthly Income vs Expenses data
-   */
-  private async getMonthlyIncomeExpensesData(filters?: any[]): Promise<any[]> {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    // Apply filters to base data
-    let sourceData = this.applyFiltersToData(this.dashboardData, filters);
-    
-    // Aggregate data by month
-    const aggregatedData = sourceData.reduce((acc, row) => {
-      const month = row.month;
-      if (!acc[month]) {
-        acc[month] = { name: month, value: 0 };
-      }
-      acc[month].value += row.totalValue;
-      return acc;
-    }, {} as Record<string, any>);
-    
-    // Convert to array and sort by month order
-    const monthOrder = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return Object.values(aggregatedData).sort((a: any, b: any) => {
-      return monthOrder.indexOf(a.name) - monthOrder.indexOf(b.name);
-    });
-  }
-
-  /**
-   * API call simulation for Risk vs Return Analysis data
-   */
-  private async getRiskReturnAnalysisData(filters?: any[]): Promise<any[]> {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    // Apply filters to base data
-    let sourceData = this.applyFiltersToData(this.dashboardData, filters);
-    
-    // Filter and aggregate data with risk and return values
-    const riskReturnData = sourceData.filter(row => 
-      row.riskValue !== undefined && row.returnValue !== undefined
-    );
-    
-    // Group by asset category and calculate average risk/return
-    const aggregatedData = riskReturnData.reduce((acc, row) => {
-      const category = row.assetCategory;
-      if (!acc[category]) {
-        acc[category] = {
-          name: category,
-          riskSum: 0,
-          returnSum: 0,
-          count: 0
-        };
-      }
-      acc[category].riskSum += row.riskValue!;
-      acc[category].returnSum += row.returnValue!;
-      acc[category].count += 1;
-      return acc;
-    }, {} as Record<string, any>);
-    
-    // Calculate averages and format for scatter chart
-    return Object.values(aggregatedData).map((item: any) => ({
-      name: item.name,
-      value: [
-        Math.round((item.riskSum / item.count) * 100) / 100,
-        Math.round((item.returnSum / item.count) * 100) / 100
-      ]
-    }));
-  }
-
-  /**
-   * API call simulation for Investment Distribution data
-   */
-  private async getInvestmentDistributionData(filters?: any[]): Promise<any[]> {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    // Apply filters to base data
-    let sourceData = this.applyFiltersToData(this.dashboardData, filters);
-    
-    // Aggregate data by market/region
-    const aggregatedData = sourceData.reduce((acc, row) => {
-      const market = row.market;
-      if (!acc[market]) {
-        acc[market] = { name: market, value: 0 };
-      }
-      acc[market].value += row.totalValue;
-      return acc;
-    }, {} as Record<string, any>);
-    
-    // Convert to array and sort by value
-    return Object.values(aggregatedData).sort((a: any, b: any) => b.value - a.value);
   }
 
   /**
@@ -464,74 +613,63 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
   }
 
   /**
+   * @deprecated This method is deprecated. Data retrieval logic has been moved to individual widget update methods.
    * Get data for widget based on chart type detection (simplified)
    */
   protected override getDataByChartType(widget: IWidget): any {
-    const widgetTitle = widget.config?.header?.title;
-    
-    if (widgetTitle) {
-      // Use the widget title to determine data type
-      return this.getFilteredDataForWidget(widgetTitle);
-    }
-    
-    // Fallback: detect by chart type for widgets without titles
-    const chartOptions = widget.config?.options as any;
-    const seriesType = chartOptions?.series?.[0]?.type;
-    
-    switch (seriesType) {
-      case 'map':
-        return this.groupByAndSum(this.dashboardData, 'market', 'totalValue');
-      case 'pie':
-        return this.groupByAndSum(this.dashboardData, 'assetCategory', 'totalValue');
-      case 'bar':
-        return this.groupByAndSum(this.dashboardData, 'month', 'totalValue');
-      case 'scatter':
-        const riskReturnData = this.dashboardData.filter(row => 
-          row.riskValue !== undefined && row.returnValue !== undefined
-        );
-        return riskReturnData.map(row => ({
-          name: row.assetCategory,
-          value: [row.riskValue!, row.returnValue!]
-        }));
-      default:
-        return null;
-    }
+    return null;
   }
 
   /**
    * Get filtered data for a specific widget using enhanced chart builder transformation methods
+   * Temporarily restored for debugging
    */
-  protected getFilteredDataForWidget(widgetTitle: string, data?: DashboardDataRow[]): any {
+  protected override getFilteredDataForWidget(widgetTitle: string, data?: DashboardDataRow[]): any {
     const sourceData = data || this.dashboardData;
 
     switch (widgetTitle) {
       case 'Asset Allocation':
         // Use enhanced data transformation for pie chart
-        return PieChartBuilder.transformData(sourceData, {
+        const assetData = PieChartBuilder.transformData(sourceData, {
           valueField: 'totalValue',
           nameField: 'assetCategory',
           sortBy: 'value'
         });
+        return assetData;
         
       case 'Monthly Income vs Expenses':
-        // Group by month and sum totalValue (for all asset categories)
+        // Group by month and sum totalValue
         const monthlyData = this.groupByAndSum(sourceData, 'month', 'totalValue');
         return monthlyData;
         
       case 'Risk vs Return Analysis':
         // Filter rows that have both risk and return values, group by assetCategory
         const riskReturnData = sourceData.filter(row => row.riskValue !== undefined && row.returnValue !== undefined);
-        // Group by assetCategory and take the first occurrence for each category
-        const groupedRiskReturn = riskReturnData.reduce((acc, row) => {
-          if (!acc[row.assetCategory]) {
-            acc[row.assetCategory] = {
-              name: row.assetCategory,
-              value: [row.riskValue!, row.returnValue!]
+        
+        // Group by assetCategory and calculate average risk/return
+        const aggregatedRiskReturn = riskReturnData.reduce((acc, row) => {
+          const category = row.assetCategory;
+          if (!acc[category]) {
+            acc[category] = {
+              name: category,
+              riskSum: 0,
+              returnSum: 0,
+              count: 0
             };
           }
+          acc[category].riskSum += row.riskValue!;
+          acc[category].returnSum += row.returnValue!;
+          acc[category].count += 1;
           return acc;
         }, {} as Record<string, any>);
-        return Object.values(groupedRiskReturn);
+        
+        // Format data for scatter chart - ScatterChartBuilder expects {x, y, name} format
+        const scatterData = Object.values(aggregatedRiskReturn).map((item: any) => ({
+          x: Math.round((item.riskSum / item.count) * 100) / 100,
+          y: Math.round((item.returnSum / item.count) * 100) / 100,
+          name: item.name
+        }));
+        return scatterData;
         
       case 'Investment Distribution by Region':
         // Group by market (country) and sum totalValue for map visualization
@@ -539,28 +677,47 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
         return investmentData;
         
       default:
-        console.warn(`Unknown widget title: ${widgetTitle}`);
         return null;
     }
   }
 
   /**
+   * @deprecated This method is deprecated. Use individual widget update methods instead.
    * Enhanced data update method using dedicated widget functions
    */
   protected updateWidgetWithEnhancedData(widget: IWidget, sourceData: DashboardDataRow[]): void {
-    // This method is now deprecated in favor of dedicated widget update functions
-    // Keep for backward compatibility but log a warning
-    console.warn('updateWidgetWithEnhancedData is deprecated. Use dedicated widget update functions instead.');
-    
+    // Deprecated - no longer used
+  }
+
+  /**
+   * Override the base updateWidgetWithFilters method to use our custom widget update methods
+   */
+  protected override updateWidgetWithFilters(widget: IWidget, filters: IFilterValues[]): void {
+    if (!widget.config || !widget.config.component) {
+      return;
+    }
+
     const widgetTitle = widget.config?.header?.title;
-    if (!widgetTitle) return;
-
-    // Get transformed data using the legacy approach
-    const transformedData = this.getFilteredDataForWidget(widgetTitle, sourceData);
-    if (!transformedData) return;
-
-    // Fall back to the base update method
-    this.updateEchartWidget(widget, transformedData);
+    
+    // Use our dedicated widget update methods based on widget title
+    switch (widgetTitle) {
+      case 'Asset Allocation':
+        this.updateAssetAllocationWidget(filters);
+        break;
+      case 'Monthly Income vs Expenses':
+        this.updateMonthlyIncomeExpensesWidget(filters);
+        break;
+      case 'Risk vs Return Analysis':
+        this.updateRiskReturnAnalysisWidget(filters);
+        break;
+      case 'Investment Distribution by Region':
+        this.updateInvestmentDistributionWidget(filters);
+        break;
+      default:
+        // For widgets without specific handlers, use the base method
+        super.updateWidgetWithFilters(widget, filters);
+        break;
+    }
   }
 
   /**
@@ -580,56 +737,5 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
 
     // Trigger change detection
     setTimeout(() => this.cdr.detectChanges(), 100);
-  }
-
-  /**
-   * Helper method to create treemap data (required by base class)
-   */
-  protected createTreemapData(data: DashboardDataRow[]): Array<{ name: string; value: number; children?: Array<{ name: string; value: number }> }> {
-    // Group by market and asset category
-    const markets = [...new Set(data.map(row => row.market))];
-    
-    return markets.map(market => {
-      const marketData = data.filter(row => row.market === market);
-      const categories = [...new Set(marketData.map(row => row.assetCategory))];
-      
-      const children = categories.map(category => {
-        const categoryData = marketData.filter(row => row.assetCategory === category);
-        const value = categoryData.reduce((sum, row) => sum + row.totalValue, 0);
-        return { name: category, value };
-      });
-      
-      const totalValue = children.reduce((sum, child) => sum + child.value, 0);
-      
-      return {
-        name: market,
-        value: totalValue,
-        children
-      };
-    });
-  }
-
-  /**
-   * Helper method to create sunburst data (required by base class)
-   */
-  protected createSunburstData(data: DashboardDataRow[]): Array<{ name: string; value?: number; children?: Array<{ name: string; value: number }> }> {
-    // Create hierarchical sunburst data
-    const markets = [...new Set(data.map(row => row.market))];
-    
-    return markets.map(market => {
-      const marketData = data.filter(row => row.market === market);
-      const categories = [...new Set(marketData.map(row => row.assetCategory))];
-      
-      const children = categories.map(category => {
-        const categoryData = marketData.filter(row => row.assetCategory === category);
-        const value = categoryData.reduce((sum, row) => sum + row.totalValue, 0);
-        return { name: category, value };
-      });
-      
-      return {
-        name: market,
-        children
-      };
-    });
   }
 }
