@@ -7,11 +7,26 @@ export interface PieChartData {
   name: string;
 }
 
+/**
+ * Pie Chart Variants enum for different pie chart styles
+ */
+export enum PIE_VARIANTS {
+  STANDARD = 'standard',
+  DOUGHNUT = 'doughnut',
+  NIGHTINGALE = 'nightingale',
+  HALF_DOUGHNUT = 'half_doughnut',
+  NESTED = 'nested'
+}
+
 export interface PieChartSeriesOptions {
   name?: string;
   type?: string;
   radius?: string | string[];
   center?: string | string[];
+  roseType?: string;
+  startAngle?: number;
+  endAngle?: number;
+  avoidLabelOverlap?: boolean;
   itemStyle?: {
     borderRadius?: number;
     color?: string | string[];
@@ -25,11 +40,19 @@ export interface PieChartSeriesOptions {
     fontSize?: number;
     color?: string;
   };
+  labelLine?: {
+    show?: boolean;
+  };
   emphasis?: {
     itemStyle?: {
       shadowBlur?: number;
       shadowOffsetX?: number;
       shadowColor?: string;
+    };
+    label?: {
+      show?: boolean;
+      fontSize?: string | number;
+      fontWeight?: string;
     };
   };
   data?: PieChartData[];
@@ -165,6 +188,138 @@ export class PieChartBuilder extends ApacheEchartBuilder<PieChartOptions, PieCha
   setCenter(center: string | string[]): this {
     this.seriesOptions.center = center;
     return this;
+  }
+
+  /**
+   * Set pie chart variant to change its appearance and behavior
+   * @param variant - The pie chart variant to apply
+   */
+  setVariant(variant: PIE_VARIANTS): this {
+    switch (variant) {
+      case PIE_VARIANTS.STANDARD:
+        this.applyStandardVariant();
+        break;
+      case PIE_VARIANTS.DOUGHNUT:
+        this.applyDoughnutVariant();
+        break;
+      case PIE_VARIANTS.NIGHTINGALE:
+        this.applyNightingaleVariant();
+        break;
+      case PIE_VARIANTS.HALF_DOUGHNUT:
+        this.applyHalfDoughnutVariant();
+        break;
+      case PIE_VARIANTS.NESTED:
+        this.applyNestedVariant();
+        break;
+      default:
+        console.warn(`Unknown pie chart variant: ${variant}`);
+        this.applyStandardVariant();
+    }
+    return this;
+  }
+
+  /**
+   * Apply standard pie chart configuration
+   */
+  private applyStandardVariant(): void {
+    this.seriesOptions.radius = ['0%', '60%'];
+    this.seriesOptions.roseType = undefined;
+    this.seriesOptions.startAngle = undefined;
+    this.seriesOptions.endAngle = undefined;
+    this.seriesOptions.avoidLabelOverlap = true;
+    this.seriesOptions.label = {
+      ...this.seriesOptions.label,
+      show: true,
+      position: 'outside'
+    };
+    this.seriesOptions.labelLine = {
+      show: true
+    };
+  }
+
+  /**
+   * Apply doughnut (ring) chart configuration
+   */
+  private applyDoughnutVariant(): void {
+    this.seriesOptions.radius = ['40%', '70%'];
+    this.seriesOptions.roseType = undefined;
+    this.seriesOptions.startAngle = undefined;
+    this.seriesOptions.endAngle = undefined;
+    this.seriesOptions.avoidLabelOverlap = false;
+    this.seriesOptions.label = {
+      ...this.seriesOptions.label,
+      show: false,
+      position: 'center'
+    };
+    this.seriesOptions.labelLine = {
+      show: false
+    };
+    this.seriesOptions.emphasis = {
+      ...this.seriesOptions.emphasis,
+      label: {
+        show: true,
+        fontSize: '30',
+        fontWeight: 'bold'
+      }
+    };
+  }
+
+  /**
+   * Apply nightingale (rose) chart configuration
+   */
+  private applyNightingaleVariant(): void {
+    this.seriesOptions.radius = ['20%', '80%'];
+    this.seriesOptions.roseType = 'area';
+    this.seriesOptions.startAngle = undefined;
+    this.seriesOptions.endAngle = undefined;
+    this.seriesOptions.avoidLabelOverlap = true;
+    this.seriesOptions.label = {
+      ...this.seriesOptions.label,
+      show: true,
+      position: 'outside'
+    };
+    this.seriesOptions.labelLine = {
+      show: true
+    };
+  }
+
+  /**
+   * Apply half doughnut chart configuration
+   */
+  private applyHalfDoughnutVariant(): void {
+    this.seriesOptions.radius = ['40%', '70%'];
+    this.seriesOptions.roseType = undefined;
+    this.seriesOptions.startAngle = 180;
+    this.seriesOptions.endAngle = 360;
+    this.seriesOptions.center = ['50%', '75%'];
+    this.seriesOptions.avoidLabelOverlap = true;
+    this.seriesOptions.label = {
+      ...this.seriesOptions.label,
+      show: true,
+      position: 'outside'
+    };
+    this.seriesOptions.labelLine = {
+      show: true
+    };
+  }
+
+  /**
+   * Apply nested pie chart configuration (for multiple series)
+   */
+  private applyNestedVariant(): void {
+    this.seriesOptions.radius = ['30%', '60%'];
+    this.seriesOptions.roseType = undefined;
+    this.seriesOptions.startAngle = undefined;
+    this.seriesOptions.endAngle = undefined;
+    this.seriesOptions.avoidLabelOverlap = true;
+    this.seriesOptions.label = {
+      ...this.seriesOptions.label,
+      show: true,
+      position: 'outside'
+    };
+    this.seriesOptions.labelLine = {
+      show: true
+    };
   }
 
   /**

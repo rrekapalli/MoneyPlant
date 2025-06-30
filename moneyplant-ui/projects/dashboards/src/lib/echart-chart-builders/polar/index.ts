@@ -1,1 +1,7 @@
-export * from './polar-chart-builder'; 
+export { 
+  PolarChartBuilder, 
+  POLAR_VARIANTS,
+  PolarChartData,
+  PolarChartSeriesOptions,
+  PolarChartOptions
+} from './polar-chart-builder'; 

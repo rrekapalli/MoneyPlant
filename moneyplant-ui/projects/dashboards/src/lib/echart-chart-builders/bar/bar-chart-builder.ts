@@ -7,14 +7,26 @@ export interface BarChartData {
   value: number;
 }
 
+/**
+ * Bar Chart Variants enum for different bar chart styles
+ */
+export enum BAR_VARIANTS {
+  VERTICAL = 'vertical',
+  HORIZONTAL = 'horizontal',
+  STACKED = 'stacked',
+  WATERFALL = 'waterfall'
+}
+
 export interface BarChartSeriesOptions {
   name?: string;
   type?: string;
   data?: number[] | BarChartData[];
   barWidth?: string;
+  stack?: string;
   itemStyle?: {
     color?: string | string[];
     borderRadius?: number;
+    barBorderColor?: string;
   };
   emphasis?: {
     itemStyle?: {
@@ -259,6 +271,131 @@ export class BarChartBuilder extends ApacheEchartBuilder<BarChartOptions, BarCha
       borderRadius: radius,
     };
     return this;
+  }
+
+  /**
+   * Set bar chart variant to change its appearance and behavior
+   * @param variant - The bar chart variant to apply
+   */
+  setVariant(variant: BAR_VARIANTS): this {
+    switch (variant) {
+      case BAR_VARIANTS.VERTICAL:
+        this.applyVerticalVariant();
+        break;
+      case BAR_VARIANTS.HORIZONTAL:
+        this.applyHorizontalVariant();
+        break;
+      case BAR_VARIANTS.STACKED:
+        this.applyStackedVariant();
+        break;
+      case BAR_VARIANTS.WATERFALL:
+        this.applyWaterfallVariant();
+        break;
+      default:
+        console.warn(`Unknown bar chart variant: ${variant}`);
+        this.applyVerticalVariant();
+    }
+    return this;
+  }
+
+  /**
+   * Apply vertical bar chart configuration (default)
+   */
+  private applyVerticalVariant(): void {
+    this.seriesOptions.stack = undefined;
+    this.chartOptions.xAxis = {
+      ...this.chartOptions.xAxis,
+      type: 'category',
+      data: this.categories
+    };
+    this.chartOptions.yAxis = {
+      ...this.chartOptions.yAxis,
+      type: 'value'
+    };
+    this.chartOptions.tooltip = {
+      ...this.chartOptions.tooltip,
+      trigger: 'axis',
+      axisPointer: {
+        type: 'shadow'
+      }
+    };
+  }
+
+  /**
+   * Apply horizontal bar chart configuration
+   */
+  private applyHorizontalVariant(): void {
+    this.seriesOptions.stack = undefined;
+    // Swap x and y axis for horizontal bars
+    this.chartOptions.xAxis = {
+      ...this.chartOptions.xAxis,
+      type: 'value'
+    };
+    this.chartOptions.yAxis = {
+      ...this.chartOptions.yAxis,
+      type: 'category',
+      data: this.categories
+    };
+    this.chartOptions.tooltip = {
+      ...this.chartOptions.tooltip,
+      trigger: 'axis',
+      axisPointer: {
+        type: 'shadow'
+      }
+    };
+  }
+
+  /**
+   * Apply stacked bar chart configuration
+   */
+  private applyStackedVariant(): void {
+    this.seriesOptions.stack = 'total';
+    this.chartOptions.xAxis = {
+      ...this.chartOptions.xAxis,
+      type: 'category',
+      data: this.categories
+    };
+    this.chartOptions.yAxis = {
+      ...this.chartOptions.yAxis,
+      type: 'value'
+    };
+    this.chartOptions.tooltip = {
+      ...this.chartOptions.tooltip,
+      trigger: 'axis',
+      axisPointer: {
+        type: 'shadow'
+      }
+    };
+  }
+
+  /**
+   * Apply waterfall chart configuration
+   * Note: This creates the foundation for waterfall - additional series may be needed for full implementation
+   */
+  private applyWaterfallVariant(): void {
+    this.seriesOptions.stack = 'waterfall';
+    this.chartOptions.xAxis = {
+      ...this.chartOptions.xAxis,
+      type: 'category',
+      data: this.categories,
+      splitLine: { show: false }
+    };
+    this.chartOptions.yAxis = {
+      ...this.chartOptions.yAxis,
+      type: 'value'
+    };
+    this.chartOptions.tooltip = {
+      ...this.chartOptions.tooltip,
+      trigger: 'axis',
+      axisPointer: {
+        type: 'shadow'
+      }
+    };
+    // Set transparent color for helper bars in waterfall
+    this.seriesOptions.itemStyle = {
+      ...this.seriesOptions.itemStyle,
+      barBorderColor: 'rgba(0,0,0,0)'
+    };
   }
 
   /**

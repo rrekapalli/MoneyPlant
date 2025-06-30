@@ -2,6 +2,14 @@ import { IWidget, WidgetBuilder } from '../../../public-api';
 import { EChartsOption } from 'echarts';
 import { ApacheEchartBuilder, ChartDataTransformOptions, DataFilter, ColorPalette } from '../apache-echart-builder';
 
+// Chart Variants Enum
+export enum POLAR_VARIANTS {
+  BASIC = 'basic',
+  RADAR = 'radar',
+  ROSE = 'rose',
+  HALF = 'half'
+}
+
 export interface PolarChartData {
   value: number;
   name: string;
@@ -724,11 +732,113 @@ export class PolarChartBuilder extends ApacheEchartBuilder<PolarChartOptions, Po
     const title = widget.config?.header?.title || 'Polar Chart';
     return `PolarChart_${title.replace(/[^a-zA-Z0-9]/g, '_')}`;
   }
+
+  /**
+   * Set chart variant
+   */
+  setVariant(variant: POLAR_VARIANTS): this {
+    switch (variant) {
+      case POLAR_VARIANTS.BASIC:
+        this.applyBasicVariant();
+        break;
+      case POLAR_VARIANTS.RADAR:
+        this.applyRadarVariant();
+        break;
+      case POLAR_VARIANTS.ROSE:
+        this.applyRoseVariant();
+        break;
+      case POLAR_VARIANTS.HALF:
+        this.applyHalfVariant();
+        break;
+      default:
+        this.applyBasicVariant();
+    }
+    return this;
+  }
+
+  /**
+   * Apply basic polar chart configuration (standard circular polar chart)
+   */
+  private applyBasicVariant(): void {
+    this.seriesOptions.type = 'line';
+    (this.seriesOptions as any).coordinateSystem = 'polar';
+    this.setPolarRadius(['30%', '80%']);
+    this.setStartAngle(0);
+    this.setEndAngle(360);
+    this.seriesOptions.smooth = false;
+    this.seriesOptions.symbol = 'circle';
+    this.seriesOptions.symbolSize = 6;
+    this.seriesOptions.showSymbol = true;
+  }
+
+  /**
+   * Apply radar chart configuration (spider/radar chart style)
+   */
+  private applyRadarVariant(): void {
+    this.seriesOptions.type = 'line';
+    (this.seriesOptions as any).coordinateSystem = 'polar';
+    this.setPolarRadius(['20%', '75%']);
+    this.seriesOptions.smooth = false;
+    this.seriesOptions.symbol = 'circle';
+    this.seriesOptions.symbolSize = 8;
+    this.seriesOptions.showSymbol = true;
+    this.seriesOptions.areaStyle = {
+      color: '#5470c6',
+      opacity: 0.3,
+    };
+    // Configure radar-specific axis
+    (this.chartOptions as any).angleAxis = {
+      type: 'category',
+      startAngle: 90,
+      splitLine: { show: true },
+      axisLine: { show: true }
+    };
+    (this.chartOptions as any).radiusAxis = {
+      type: 'value',
+      splitLine: { show: true }
+    };
+  }
+
+  /**
+   * Apply rose chart configuration (nightingale chart style)
+   */
+  private applyRoseVariant(): void {
+    this.seriesOptions.type = 'bar';
+    (this.seriesOptions as any).coordinateSystem = 'polar';
+    this.setPolarRadius(['30%', '80%']);
+    this.setStartAngle(0);
+    this.setEndAngle(360);
+    // Configure for rose chart
+    (this.chartOptions as any).angleAxis = {
+      type: 'category',
+      startAngle: 0
+    };
+    (this.chartOptions as any).radiusAxis = {
+      type: 'value'
+    };
+    (this.seriesOptions as any).barWidth = '100%';
+    (this.seriesOptions as any).barGap = 0;
+  }
+
+  /**
+   * Apply half polar chart configuration (semi-circle)
+   */
+  private applyHalfVariant(): void {
+    this.seriesOptions.type = 'line';
+    (this.seriesOptions as any).coordinateSystem = 'polar';
+    this.setPolarRadius(['30%', '80%']);
+    this.setStartAngle(180);
+    this.setEndAngle(360);
+    this.seriesOptions.smooth = true;
+    this.seriesOptions.symbol = 'circle';
+    this.seriesOptions.symbolSize = 6;
+    this.seriesOptions.areaStyle = {
+      color: '#fac858',
+      opacity: 0.5,
+    };
+  }
 }
 
-/**
- * Factory function to create polar chart widget
- */
 export function createPolarChartWidget(data?: PolarChartData[] | number[]): WidgetBuilder {
   return PolarChartBuilder.createPolarChartWidget(data);
 } 

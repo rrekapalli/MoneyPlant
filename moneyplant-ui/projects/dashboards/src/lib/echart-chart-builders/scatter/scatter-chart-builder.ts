@@ -13,14 +13,27 @@ export interface ScatterChartData {
   [key: string]: any;
 }
 
+/**
+ * Scatter Chart Variants enum for different scatter chart styles
+ */
+export enum SCATTER_VARIANTS {
+  BASIC = 'basic',
+  BUBBLE = 'bubble',
+  LARGE_DATASET = 'large_dataset'
+}
+
 export interface ScatterChartSeriesOptions {
   name?: string;
   type?: string;
   data?: ScatterChartData[];
   symbolSize?: number | Function;
   symbol?: string;
+  large?: boolean;
+  largeThreshold?: number;
+  progressive?: number;
+  progressiveThreshold?: number;
   itemStyle?: {
-    color?: string | string[];
+    color?: string;
     opacity?: number;
     borderColor?: string;
     borderWidth?: number;
@@ -33,31 +46,11 @@ export interface ScatterChartSeriesOptions {
       shadowColor?: string;
     };
   };
-  large?: boolean;
-  largeThreshold?: number;
-  progressive?: number;
-  progressiveThreshold?: number;
 }
 
 export interface ScatterChartOptions extends EChartsOption {
-  xAxis?: {
-    type?: string;
-    name?: string;
-    nameLocation?: string;
-    scale?: boolean;
-    axisLabel?: {
-      color?: string;
-    };
-  };
-  yAxis?: {
-    type?: string;
-    name?: string;
-    nameLocation?: string;
-    scale?: boolean;
-    axisLabel?: {
-      color?: string;
-    };
-  };
+  xAxis?: any;
+  yAxis?: any;
   series?: ScatterChartSeriesOptions[];
 }
 
@@ -315,6 +308,78 @@ export class ScatterChartBuilder extends ApacheEchartBuilder<ScatterChartOptions
     this.seriesOptions.progressive = progressive;
     this.seriesOptions.progressiveThreshold = threshold;
     return this;
+  }
+
+  /**
+   * Set scatter chart variant to change its appearance and behavior
+   * @param variant - The scatter chart variant to apply
+   */
+  setVariant(variant: SCATTER_VARIANTS): this {
+    switch (variant) {
+      case SCATTER_VARIANTS.BASIC:
+        this.applyBasicVariant();
+        break;
+      case SCATTER_VARIANTS.BUBBLE:
+        this.applyBubbleVariant();
+        break;
+      case SCATTER_VARIANTS.LARGE_DATASET:
+        this.applyLargeDatasetVariant();
+        break;
+      default:
+        console.warn(`Unknown scatter chart variant: ${variant}`);
+        this.applyBasicVariant();
+    }
+    return this;
+  }
+
+  /**
+   * Apply basic scatter chart configuration
+   */
+  private applyBasicVariant(): void {
+    this.seriesOptions.symbolSize = 8;
+    this.seriesOptions.symbol = 'circle';
+    this.seriesOptions.large = false;
+    this.seriesOptions.largeThreshold = undefined;
+    this.seriesOptions.progressive = undefined;
+    this.seriesOptions.progressiveThreshold = undefined;
+    this.seriesOptions.itemStyle = {
+      color: '#5470c6',
+      opacity: 0.8
+    };
+  }
+
+  /**
+   * Apply bubble chart configuration (varying symbol sizes)
+   */
+  private applyBubbleVariant(): void {
+    this.seriesOptions.symbolSize = (data: any) => {
+      return Math.max(6, Math.min(50, (data[2] || 10) * 2));
+    };
+    this.seriesOptions.symbol = 'circle';
+    this.seriesOptions.large = false;
+    this.seriesOptions.largeThreshold = undefined;
+    this.seriesOptions.progressive = undefined;
+    this.seriesOptions.progressiveThreshold = undefined;
+    this.seriesOptions.itemStyle = {
+      color: '#91cc75',
+      opacity: 0.6
+    };
+  }
+
+  /**
+   * Apply large dataset optimized configuration
+   */
+  private applyLargeDatasetVariant(): void {
+    this.seriesOptions.symbolSize = 4;
+    this.seriesOptions.symbol = 'circle';
+    this.seriesOptions.large = true;
+    this.seriesOptions.largeThreshold = 1000;
+    this.seriesOptions.progressive = 400;
+    this.seriesOptions.progressiveThreshold = 3000;
+    this.seriesOptions.itemStyle = {
+      color: '#fac858',
+      opacity: 0.4
+    };
   }
 
   /**

@@ -90,29 +90,24 @@ export class ScannersComponent implements OnInit {
   }
 
   runScanner(scanner: any) {
-    console.log('Running scanner', scanner);
     // Implementation for running a scanner would go here
     scanner.lastRun = new Date();
   }
 
   viewResults(scanner: any) {
-    console.log('Viewing results for scanner', scanner);
     this.selectedScanner = scanner;
     // Implementation for viewing scanner results would go here
   }
 
   createScanner() {
-    console.log('Create scanner');
     // Implementation for creating a new scanner would go here
   }
 
   editScanner(scanner: any) {
-    console.log('Edit scanner', scanner);
     // Implementation for editing a scanner would go here
   }
 
   deleteScanner(scanner: any) {
-    console.log('Delete scanner', scanner);
     // Implementation for deleting a scanner would go here
   }
 }

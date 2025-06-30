@@ -1,6 +1,14 @@
 import { IWidget, WidgetBuilder } from '../../../public-api';
 import { EChartsOption } from 'echarts';
-import { ApacheEchartBuilder } from '../apache-echart-builder';
+import { ApacheEchartBuilder, ChartDataTransformOptions, DataFilter, ColorPalette } from '../apache-echart-builder';
+
+// Chart Variants Enum
+export enum TREEMAP_VARIANTS {
+  BASIC = 'basic',
+  NESTED = 'nested',
+  DISK = 'disk',
+  SUNBURST = 'sunburst'
+}
 
 export interface TreemapData {
   name: string;
@@ -563,6 +571,128 @@ export class TreemapChartBuilder extends ApacheEchartBuilder<TreemapChartOptions
     }
     
     return result;
+  }
+
+  /**
+   * Set chart variant
+   */
+  setVariant(variant: TREEMAP_VARIANTS): this {
+    switch (variant) {
+      case TREEMAP_VARIANTS.BASIC:
+        this.applyBasicVariant();
+        break;
+      case TREEMAP_VARIANTS.NESTED:
+        this.applyNestedVariant();
+        break;
+      case TREEMAP_VARIANTS.DISK:
+        this.applyDiskVariant();
+        break;
+      case TREEMAP_VARIANTS.SUNBURST:
+        this.applySunburstVariant();
+        break;
+      default:
+        this.applyBasicVariant();
+    }
+    return this;
+  }
+
+  /**
+   * Apply basic treemap configuration (standard rectangular treemap)
+   */
+  private applyBasicVariant(): void {
+    this.seriesOptions.type = 'treemap';
+    this.seriesOptions.roam = false;
+    (this.seriesOptions as any).leafDepth = 1;
+    this.seriesOptions.label = {
+      show: true,
+      formatter: '{b}: {c}'
+    };
+    this.seriesOptions.itemStyle = {
+      borderColor: '#fff',
+      borderWidth: 2,
+      gapWidth: 2
+    };
+  }
+
+  /**
+   * Apply nested treemap configuration (multi-level hierarchy)
+   */
+  private applyNestedVariant(): void {
+    this.seriesOptions.type = 'treemap';
+    this.seriesOptions.roam = false;
+    (this.seriesOptions as any).leafDepth = null; // Show all levels
+    this.seriesOptions.label = {
+      show: true,
+      formatter: '{b}'
+    };
+    this.seriesOptions.itemStyle = {
+      borderColor: '#fff',
+      borderWidth: 1,
+      gapWidth: 1
+    };
+    // Configure breadcrumb for navigation
+    this.seriesOptions.breadcrumb = {
+      show: true,
+      top: '10%',
+      left: '10%'
+    };
+  }
+
+  /**
+   * Apply disk treemap configuration (circular-style layout)
+   */
+  private applyDiskVariant(): void {
+    this.seriesOptions.type = 'treemap';
+    this.seriesOptions.roam = true;
+    (this.seriesOptions as any).leafDepth = 1;
+    // Configure for disk-like appearance
+    (this.seriesOptions as any).squareRatio = 1; // Square aspect ratio
+    this.seriesOptions.label = {
+      show: true,
+      formatter: '{b}'
+    };
+    this.seriesOptions.itemStyle = {
+      borderColor: '#333',
+      borderWidth: 3,
+      gapWidth: 3
+    };
+  }
+
+  /**
+   * Apply sunburst-style configuration (radial treemap)
+   */
+  private applySunburstVariant(): void {
+    // Note: This actually switches to sunburst chart type
+    this.seriesOptions.type = 'sunburst';
+    (this.seriesOptions as any).radius = [0, '90%'];
+    this.seriesOptions.label = {
+      show: true
+    };
+    this.seriesOptions.itemStyle = {
+      borderColor: '#fff',
+      borderWidth: 1
+    };
+    (this.seriesOptions as any).levels = [
+      {},
+      {
+        r0: '15%',
+        r: '35%',
+        itemStyle: {
+          borderWidth: 2
+        }
+      },
+      {
+        r0: '35%',
+        r: '70%'
+      },
+      {
+        r0: '70%',
+        r: '72%',
+        itemStyle: {
+          borderWidth: 3
+        }
+      }
+    ];
   }
 }
 

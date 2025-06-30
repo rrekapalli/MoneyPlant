@@ -2,6 +2,14 @@ import { IWidget, WidgetBuilder } from '../../../public-api';
 import { EChartsOption } from 'echarts';
 import { ApacheEchartBuilder, ChartDataTransformOptions, DataFilter, ColorPalette } from '../apache-echart-builder';
 
+// Chart Variants Enum
+export enum STACKED_AREA_VARIANTS {
+  BASIC = 'basic',
+  PERCENTAGE = 'percentage',
+  STREAMGRAPH = 'streamgraph',
+  RIDGE = 'ridge'
+}
+
 export interface StackedAreaChartData {
   name: string;
   value: number;
@@ -810,6 +818,117 @@ export class StackedAreaChartBuilder extends ApacheEchartBuilder<StackedAreaChar
   static override getExportSheetName(widget: IWidget): string {
     const title = widget.config?.header?.title || 'Stacked Area Chart';
     return `StackedAreaChart_${title.replace(/[^a-zA-Z0-9]/g, '_')}`;
+  }
+
+  /**
+   * Set chart variant
+   */
+  setVariant(variant: STACKED_AREA_VARIANTS): this {
+    switch (variant) {
+      case STACKED_AREA_VARIANTS.BASIC:
+        this.applyBasicVariant();
+        break;
+      case STACKED_AREA_VARIANTS.PERCENTAGE:
+        this.applyPercentageVariant();
+        break;
+      case STACKED_AREA_VARIANTS.STREAMGRAPH:
+        this.applyStreamgraphVariant();
+        break;
+      case STACKED_AREA_VARIANTS.RIDGE:
+        this.applyRidgeVariant();
+        break;
+      default:
+        this.applyBasicVariant();
+    }
+    return this;
+  }
+
+  /**
+   * Apply basic stacked area configuration (traditional stacked areas)
+   */
+  private applyBasicVariant(): void {
+    this.seriesOptions.type = 'line';
+    this.seriesOptions.stack = 'Total';
+    this.seriesOptions.areaStyle = {};
+    this.seriesOptions.smooth = false;
+    this.seriesOptions.showSymbol = false;
+    this.seriesOptions.emphasis = {
+      focus: 'series'
+    };
+  }
+
+  /**
+   * Apply percentage stacked area configuration (100% stacked)
+   */
+  private applyPercentageVariant(): void {
+    this.seriesOptions.type = 'line';
+    this.seriesOptions.stack = 'Total';
+    this.seriesOptions.areaStyle = {};
+    this.seriesOptions.smooth = false;
+    this.seriesOptions.showSymbol = false;
+    this.seriesOptions.emphasis = {
+      focus: 'series'
+    };
+    // Configure Y-axis for percentage
+    (this.chartOptions as any).yAxis = {
+      type: 'value',
+      max: 100,
+      axisLabel: {
+        formatter: '{value}%'
+      }
+    };
+  }
+
+  /**
+   * Apply streamgraph configuration (centered stream)
+   */
+  private applyStreamgraphVariant(): void {
+    this.seriesOptions.type = 'line';
+    this.seriesOptions.stack = 'Total';
+    this.seriesOptions.areaStyle = {
+      opacity: 0.7
+    };
+    this.seriesOptions.smooth = true;
+    this.seriesOptions.showSymbol = false;
+    this.seriesOptions.emphasis = {
+      focus: 'series'
+    };
+    // Configure for streamgraph appearance
+    (this.chartOptions as any).yAxis = {
+      type: 'value',
+      axisLine: { show: false },
+      axisTick: { show: false },
+      axisLabel: { show: false },
+      splitLine: { show: false }
+    };
+    (this.chartOptions as any).xAxis = {
+      type: 'category',
+      axisLine: { show: false },
+      axisTick: { show: false }
+    };
+  }
+
+  /**
+   * Apply ridge plot configuration (separate ridges)
+   */
+  private applyRidgeVariant(): void {
+    this.seriesOptions.type = 'line';
+    (this.seriesOptions as any).stack = null; // No stacking for ridge plots
+    this.seriesOptions.areaStyle = {
+      opacity: 0.6
+    };
+    this.seriesOptions.smooth = true;
+    this.seriesOptions.showSymbol = false;
+    this.seriesOptions.emphasis = {
+      focus: 'series'
+    };
+    // Configure grid for ridge layout
+    (this.chartOptions as any).grid = {
+      left: '3%',
+      right: '4%',
+      bottom: '3%',
+      containLabel: true
+    };
   }
 }
 

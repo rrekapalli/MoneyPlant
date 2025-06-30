@@ -2,6 +2,14 @@ import { IWidget } from '../../../public-api';
 import { EChartsOption } from 'echarts';
 import { ApacheEchartBuilder } from '../apache-echart-builder';
 
+// Chart Variants Enum
+export enum SANKEY_VARIANTS {
+  BASIC = 'basic',
+  FINANCIAL = 'financial',
+  ENERGY = 'energy',
+  CIRCULAR = 'circular'
+}
+
 export interface SankeyNode {
   name: string;
   value?: number;
@@ -452,5 +460,93 @@ export class SankeyChartBuilder extends ApacheEchartBuilder<SankeyChartOptions, 
   static override getExportSheetName(widget: IWidget): string {
     const title = widget.config?.header?.title || 'Sankey Chart';
     return title.replace(/[^a-zA-Z0-9\s]/g, '').substring(0, 31);
+  }
+
+  /**
+   * Set chart variant
+   */
+  setVariant(variant: SANKEY_VARIANTS): this {
+    switch (variant) {
+      case SANKEY_VARIANTS.BASIC:
+        this.applyBasicVariant();
+        break;
+      case SANKEY_VARIANTS.FINANCIAL:
+        this.applyFinancialVariant();
+        break;
+      case SANKEY_VARIANTS.ENERGY:
+        this.applyEnergyVariant();
+        break;
+      case SANKEY_VARIANTS.CIRCULAR:
+        this.applyCircularVariant();
+        break;
+      default:
+        this.applyBasicVariant();
+    }
+    return this;
+  }
+
+  /**
+   * Apply basic sankey configuration (standard flow diagram)
+   */
+  private applyBasicVariant(): void {
+    this.setNodeWidth(20);
+    this.setNodeGap(8);
+    this.setLayout('none');
+    this.setCurveness(0.5);
+    this.setEmphasisFocus('adjacency');
+    this.seriesOptions.lineStyle = {
+      opacity: 0.2,
+      curveness: 0.5,
+    };
+  }
+
+  /**
+   * Apply financial flow configuration (money flow diagram)
+   */
+  private applyFinancialVariant(): void {
+    this.setNodeWidth(25);
+    this.setNodeGap(12);
+    this.setLayout('left');
+    this.setCurveness(0.3);
+    this.setEmphasisFocus('adjacency');
+    this.setNodeColors(['#2E8B57', '#4682B4', '#DAA520', '#DC143C', '#9370DB']);
+    this.seriesOptions.lineStyle = {
+      opacity: 0.4,
+      curveness: 0.3,
+    };
+  }
+
+  /**
+   * Apply energy flow configuration (power system diagram)
+   */
+  private applyEnergyVariant(): void {
+    this.setNodeWidth(15);
+    this.setNodeGap(6);
+    this.setLayout('left');
+    this.setCurveness(0.6);
+    this.setEmphasisFocus('adjacency');
+    this.setNodeColors(['#FF6B35', '#F7931E', '#FFD23F', '#6CBE45', '#1C75BC']);
+    this.seriesOptions.lineStyle = {
+      opacity: 0.6,
+      curveness: 0.6,
+    };
+  }
+
+  /**
+   * Apply circular flow configuration (circular economy diagram)
+   */
+  private applyCircularVariant(): void {
+    this.setNodeWidth(18);
+    this.setNodeGap(10);
+    this.setLayout('none');
+    this.setCurveness(0.8);
+    this.setEmphasisFocus('adjacency');
+    this.setNodeColors(['#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe']);
+    this.seriesOptions.lineStyle = {
+      opacity: 0.5,
+      curveness: 0.8,
+    };
+    // Configure for circular layout appearance
+    this.seriesOptions.layoutIterations = 32;
   }
 } 

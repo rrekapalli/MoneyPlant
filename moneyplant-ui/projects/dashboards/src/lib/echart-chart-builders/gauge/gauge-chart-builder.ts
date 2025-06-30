@@ -8,6 +8,16 @@ export interface GaugeChartData {
   [key: string]: any;
 }
 
+/**
+ * Gauge Chart Variants enum for different gauge chart styles
+ */
+export enum GAUGE_VARIANTS {
+  BASIC = 'basic',
+  PROGRESS = 'progress',
+  KPI = 'kpi',
+  MINI = 'mini'
+}
+
 export interface GaugeChartSeriesOptions {
   name?: string;
   type?: string;
@@ -18,6 +28,7 @@ export interface GaugeChartSeriesOptions {
   endAngle?: number;
   radius?: string | string[];
   center?: string | string[];
+  clockwise?: boolean;
   axisLine?: {
     lineStyle?: {
       width?: number;
@@ -68,9 +79,6 @@ export interface GaugeChartSeriesOptions {
     color?: string;
     fontSize?: number;
     formatter?: string;
-  };
-  itemStyle?: {
-    color?: string;
   };
 }
 
@@ -410,6 +418,148 @@ export class GaugeChartBuilder extends ApacheEchartBuilder<GaugeChartOptions, Ga
       formatter,
     };
     return this;
+  }
+
+  /**
+   * Set gauge chart variant to change its appearance and behavior
+   * @param variant - The gauge chart variant to apply
+   */
+  setVariant(variant: GAUGE_VARIANTS): this {
+    switch (variant) {
+      case GAUGE_VARIANTS.BASIC:
+        this.applyBasicVariant();
+        break;
+      case GAUGE_VARIANTS.PROGRESS:
+        this.applyProgressVariant();
+        break;
+      case GAUGE_VARIANTS.KPI:
+        this.applyKPIVariant();
+        break;
+      case GAUGE_VARIANTS.MINI:
+        this.applyMiniVariant();
+        break;
+      default:
+        console.warn(`Unknown gauge chart variant: ${variant}`);
+        this.applyBasicVariant();
+    }
+    return this;
+  }
+
+  /**
+   * Apply basic gauge chart configuration
+   */
+  private applyBasicVariant(): void {
+    this.seriesOptions.min = 0;
+    this.seriesOptions.max = 100;
+    this.seriesOptions.startAngle = 180;
+    this.seriesOptions.endAngle = 0;
+    this.seriesOptions.radius = '75%';
+    this.seriesOptions.center = ['50%', '60%'];
+    this.seriesOptions.axisLine = {
+      lineStyle: {
+        width: 30,
+        color: [[0.3, '#ff6e76'], [0.7, '#fddd60'], [1, '#58d9f9']]
+      }
+    };
+    this.seriesOptions.progress = { show: true, width: 8 };
+    this.seriesOptions.pointer = { show: true, length: '60%', width: 8 };
+    this.seriesOptions.detail = {
+      show: true,
+      offsetCenter: [0, 40],
+      color: '#464646',
+      fontSize: 30,
+      formatter: '{value}%'
+    };
+  }
+
+  /**
+   * Apply progress gauge chart configuration
+   */
+  private applyProgressVariant(): void {
+    this.seriesOptions.min = 0;
+    this.seriesOptions.max = 100;
+    this.seriesOptions.startAngle = 270;
+    this.seriesOptions.endAngle = -90;
+    this.seriesOptions.radius = '70%';
+    this.seriesOptions.center = ['50%', '50%'];
+    this.seriesOptions.axisLine = {
+      lineStyle: {
+        width: 20,
+        color: [[1, '#e6e6e6']]
+      }
+    };
+    this.seriesOptions.progress = { show: true, width: 20 };
+    this.seriesOptions.pointer = { show: false };
+    this.seriesOptions.detail = {
+      show: true,
+      offsetCenter: [0, 0],
+      color: '#333',
+      fontSize: 24,
+      formatter: '{value}%'
+    };
+  }
+
+  /**
+   * Apply KPI gauge chart configuration
+   */
+  private applyKPIVariant(): void {
+    this.seriesOptions.min = 0;
+    this.seriesOptions.max = 100;
+    this.seriesOptions.startAngle = 180;
+    this.seriesOptions.endAngle = 0;
+    this.seriesOptions.radius = '80%';
+    this.seriesOptions.center = ['50%', '65%'];
+    this.seriesOptions.axisLine = {
+      lineStyle: {
+        width: 25,
+        color: [[0.2, '#ff4757'], [0.8, '#ffa502'], [1, '#2ed573']]
+      }
+    };
+    this.seriesOptions.progress = { show: true, width: 15 };
+    this.seriesOptions.pointer = { show: true, length: '70%', width: 6 };
+    this.seriesOptions.title = {
+      show: true,
+      offsetCenter: [0, -30],
+      color: '#666',
+      fontSize: 16
+    };
+    this.seriesOptions.detail = {
+      show: true,
+      offsetCenter: [0, 70],
+      color: '#333',
+      fontSize: 32,
+      formatter: '{value}%'
+    };
+  }
+
+  /**
+   * Apply mini gauge chart configuration
+   */
+  private applyMiniVariant(): void {
+    this.seriesOptions.min = 0;
+    this.seriesOptions.max = 100;
+    this.seriesOptions.startAngle = 135;
+    this.seriesOptions.endAngle = 45;
+    this.seriesOptions.radius = '85%';
+    this.seriesOptions.center = ['50%', '50%'];
+    this.seriesOptions.axisLine = {
+      lineStyle: {
+        width: 15,
+        color: [[0.3, '#ff6b81'], [0.7, '#70a1ff'], [1, '#7bed9f']]
+      }
+    };
+    this.seriesOptions.progress = { show: false };
+    this.seriesOptions.pointer = { show: true, length: '50%', width: 4 };
+    this.seriesOptions.axisTick = { show: false };
+    this.seriesOptions.splitLine = { show: false };
+    this.seriesOptions.axisLabel = { show: false };
+    this.seriesOptions.detail = {
+      show: true,
+      offsetCenter: [0, 20],
+      color: '#333',
+      fontSize: 18,
+      formatter: '{value}%'
+    };
   }
 
   /**

@@ -1,4 +1,4 @@
-import {Component, Input, EventEmitter, ViewChild, ChangeDetectorRef} from '@angular/core';
+import {Component, Input, EventEmitter, ViewChild, ChangeDetectorRef, OnInit, AfterViewInit, ElementRef, OnDestroy} from '@angular/core';
 import {IWidget} from '../../entities/IWidget';
 import {CommonModule} from '@angular/common';
 import {NgxEchartsDirective, provideEchartsCore} from 'ngx-echarts';
@@ -12,35 +12,85 @@ import { IFilterValues } from '../../entities/IFilterValues';
   template: `<div
     echarts
     [options]="chartOptions"
+    [initOpts]="{renderer: 'canvas'}"
+    [autoResize]="true"
     (chartInit)="onChartInit($event)"
     (chartClick)="onClick($event)"
     (chartDblClick)="onChartDblClick($event)"
+    (chartError)="onChartError($event)"
     #chart
-  ></div>`,
+    [attr.data-widget-id]="widget.id"
+    style="width: 100%; height: 100%; min-height: 200px;"
+  >
+  </div>`,
   imports: [CommonModule, NgxEchartsDirective],
-  providers: [provideEchartsCore({
-    echarts: () => import('echarts'),
-  })],
+  // ECharts provider moved to app.config.ts to avoid conflicts
 })
-export class EchartComponent {
+export class EchartComponent implements OnInit, AfterViewInit, OnDestroy {
   @Input() widget!: IWidget;
   @Input() onDataLoad!: EventEmitter<IWidget>;
   @Input() onUpdateFilter!: EventEmitter<any>;
   @ViewChild('chart', { static: false }) chart!: NgxEchartsDirective;
 
   isSingleClick: boolean = true;
+  private disposed = false;
+  private lastUpdateTime = 0;
   
-  constructor(private cdr: ChangeDetectorRef) {}
+  constructor(private cdr: ChangeDetectorRef, private elementRef: ElementRef) {
+  }
+
+  ngOnInit() {
+    this.disposed = false;
+  }
+
+  ngAfterViewInit() {
+  }
+
+  ngOnDestroy() {
+    this.disposed = true;
+    // Clean up chart instance
+    if (this.widget?.chartInstance) {
+      try {
+        this.widget.chartInstance.dispose();
+        this.widget.chartInstance = null;
+      } catch (error) {
+        // Ignore disposal errors
+      }
+    }
+  }
   
   get chartOptions() {
-    return this.widget?.config?.options as EChartsOption;
+    const options = this.widget?.config?.options as EChartsOption;
+    return options;
+  }
+
+  get debugInfo() {
+    return `Widget: ${this.widget?.config?.header?.title}, HasOptions: ${!!this.widget?.config?.options}`;
   }
 
   onChartInit(instance: any) {
-    this.widget.chartInstance = instance;
+    if (this.widget && !this.disposed) {
+      // Ensure any previous instance is disposed
+      if (this.widget.chartInstance && this.widget.chartInstance !== instance) {
+        try {
+          this.widget.chartInstance.dispose();
+        } catch (error) {
+          // Ignore disposal errors
+        }
+      }
+      
+      this.widget.chartInstance = instance;
+    }
+    
     setTimeout(() => {
-      this.onDataLoad?.emit(this.widget);
+      if (!this.disposed) {
+        this.onDataLoad?.emit(this.widget);
+      }
     });
+  }
+
+  onChartError(error: any) {
+    console.error('Chart Error for widget:', this.widget?.config?.header?.title, error);
   }
 
   onChartDblClick(e: any): void {
@@ -210,10 +260,25 @@ export class EchartComponent {
    * Force chart update when widget data changes
    */
   forceChartUpdate(): void {
-    if (this.widget.chartInstance) {
-      this.widget.chartInstance.setOption(this.chartOptions);
+    if (this.widget?.chartInstance && !this.disposed) {
+      const now = Date.now();
+      // Throttle updates to prevent conflicts (minimum 100ms between updates)
+      if (now - this.lastUpdateTime < 100) {
+        return;
+      }
+      this.lastUpdateTime = now;
+      
+      try {
+        if (!this.widget.chartInstance.isDisposed()) {
+          this.widget.chartInstance.setOption(this.chartOptions, false); // Use merge mode
+        }
+      } catch (error) {
+        console.error('Error updating chart:', error);
+      }
     }
     // Force change detection
-    this.cdr.detectChanges();
+    if (!this.disposed) {
+      this.cdr.detectChanges();
+    }
   }
 }

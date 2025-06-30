@@ -358,44 +358,56 @@ export abstract class ApacheEchartBuilder<T extends EChartsOption = EChartsOptio
    * Static method to update data on an existing chart widget with retry mechanism
    */
   static updateData(widget: IWidget, data: any, retryOptions?: { maxAttempts?: number; baseDelay?: number }): void {
+    
     WidgetBuilder.setData(widget, data);
 
     // Update chart instance if available
-    if (widget.chartInstance) {
+    if (widget.chartInstance && typeof widget.chartInstance.setOption === 'function') {
       try {
-        widget.chartInstance.setOption(widget.config?.options as any, true);
+        // Check if the chart instance is still valid
+        if (!widget.chartInstance.isDisposed()) {
+          widget.chartInstance.setOption(widget.config?.options as any, false); // Use merge mode to avoid conflicts
+        } else {
+          console.warn('Chart instance is disposed');
+        }
       } catch (error) {
         console.error('Error updating chart:', error);
+        // Use retry mechanism if update fails
+        this.retryChartUpdate(widget, retryOptions);
       }
-    } else {
-      // Use retry mechanism for chart updates
-      this.retryChartUpdate(widget, retryOptions);
-    }
+          } else {
+        // Use retry mechanism for chart updates
+        this.retryChartUpdate(widget, retryOptions);
+      }
   }
 
   /**
    * Retry mechanism for chart updates when chart instance is not immediately available
    */
   private static retryChartUpdate(widget: IWidget, options?: { maxAttempts?: number; baseDelay?: number }): void {
-    const maxAttempts = options?.maxAttempts || 10;
-    const baseDelay = options?.baseDelay || 100;
+    const maxAttempts = options?.maxAttempts || 20; // Increased attempts
+    const baseDelay = options?.baseDelay || 200; // Increased base delay
     let attempts = 0;
     
     const retryUpdate = () => {
       attempts++;
-      
-      if (widget.chartInstance) {
+      if (widget.chartInstance && typeof widget.chartInstance.setOption === 'function') {
         try {
-          widget.chartInstance.setOption(widget.config?.options as any, true);
-          return;
+          // Check if the chart instance is still valid
+          if (!widget.chartInstance.isDisposed()) {
+            widget.chartInstance.setOption(widget.config?.options as any, false); // Use merge mode
+            return;
+          }
         } catch (error) {
           console.error('Error updating chart on retry:', error);
         }
       }
       
       if (attempts < maxAttempts) {
-        const delay = Math.min(baseDelay * Math.pow(1.5, attempts - 1), 2000);
+        const delay = Math.min(baseDelay * Math.pow(1.2, attempts - 1), 3000); // More gradual backoff
         setTimeout(retryUpdate, delay);
+      } else {
+        console.error(`Failed to update chart after ${maxAttempts} attempts: ${widget.config?.header?.title}`);
       }
     };
     

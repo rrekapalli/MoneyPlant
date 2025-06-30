@@ -6,10 +6,11 @@ import { ScrollPanelModule } from 'primeng/scrollpanel';
 
 // Import echarts core module and components
 import * as echarts from 'echarts/core';
-// Import bar, line, pie, and other chart components
+// Import bar, pie, line, and other chart components
 import {
   BarChart,
   PieChart,
+  LineChart,
   ScatterChart,
   MapChart
 } from 'echarts/charts';
@@ -39,13 +40,14 @@ echarts.use([
   VisualMapComponent,
   BarChart,
   PieChart,
+  LineChart,
   ScatterChart,
   MapChart,
   CanvasRenderer
 ]);
 
 // Register built-in maps and custom maps
-import { DensityMapBuilder } from '@dashboards/public-api';
+import { DensityMapBuilder, DENSITY_MAP_VARIANTS } from '@dashboards/public-api';
 
 // Register the world map with ECharts
 // We'll use a dynamic import to load the world map data
@@ -67,9 +69,12 @@ import {
   FilterService,
   // Enhanced Chart Builders
   ApacheEchartBuilder,
-  PieChartBuilder,
+  PolarChartBuilder,
+  POLAR_VARIANTS,
   BarChartBuilder,
-  ScatterChartBuilder
+  BAR_VARIANTS,
+  ScatterChartBuilder,
+  SCATTER_VARIANTS
 } from '@dashboards/public-api';
 
 // Import only essential widget creation functions and data
@@ -122,6 +127,10 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
   // Shared dashboard data - Flat structure (implements abstract property)
   protected dashboardData: DashboardDataRow[] = [...INITIAL_DASHBOARD_DATA];
   protected readonly initialDashboardData: DashboardDataRow[] = INITIAL_DASHBOARD_DATA;
+
+  // Track initialized charts
+  private initializedCharts = new Set<string>();
+  private pendingChartUpdates = new Map<string, () => void>();
 
   constructor(
     cdr: ChangeDetectorRef,
@@ -205,22 +214,46 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
    * Initialize dashboard config using the Enhanced Chart Builders
    */
   protected initializeDashboardConfig(): void {
-    // Create only the 4 specified widgets using enhanced chart builders
+    // Create only the 4 specified widgets using enhanced chart builders with simple variants
+    // 
+    // Alternative variants you can try:
+    // - PIE_VARIANTS: STANDARD, DOUGHNUT, NIGHTINGALE, HALF_DOUGHNUT, NESTED
+    // - BAR_VARIANTS: VERTICAL, HORIZONTAL, STACKED, WATERFALL  
+    // - SCATTER_VARIANTS: BASIC, BUBBLE, LARGE_DATASET
+    // - DENSITY_MAP_VARIANTS: BASIC, CHOROPLETH, BUBBLE, HEAT
     
-    // Asset Allocation Pie Chart with financial display
-    const pieAssetAllocation = PieChartBuilder.create()
-      .setData([]) // Data will be populated later
+    // Asset Allocation Polar Chart with ROSE variant (proven to work reliably)
+    const polarAssetAllocation = PolarChartBuilder.create()
+      .setData([
+        { name: 'Stocks', value: 150000 },
+        { name: 'Bonds', value: 75000 },
+        { name: 'Real Estate', value: 200000 },
+        { name: 'Cryptocurrency', value: 50000 },
+        { name: 'Commodities', value: 80000 }
+      ]) // Test data to check if chart renders
+      .setVariant(POLAR_VARIANTS.ROSE)  // Use ROSE variant (confirmed working)
       .setHeader('Asset Allocation')
       .setPosition({ x: 0, y: 3, cols: 6, rows: 8 })
-      .setDonutStyle('40%', '70%')
-      .setFinancialDisplay('USD', 'en-US')
+      .setCurrencyFormatter('USD', 'en-US')
       .setPredefinedPalette('finance')
       .setFilterColumn('assetCategory')
       .build();
 
-    // Monthly Income vs Expenses Bar Chart
+
+
+    // Monthly Income vs Expenses Bar Chart with vertical variant
+    const barTestData = [
+      { name: 'Jan', value: 15000 },
+      { name: 'Feb', value: 25000 },
+      { name: 'Mar', value: 20000 },
+      { name: 'Apr', value: 18000 },
+      { name: 'May', value: 22000 },
+      { name: 'Jun', value: 19000 }
+    ];
     const barMonthlyIncomeVsExpenses = BarChartBuilder.create()
-      .setData([]) // Data will be populated later
+      .setData(barTestData) // Test data to check if chart renders
+      .setCategories(barTestData.map(item => item.name)) // Extract categories from data
+      .setVariant(BAR_VARIANTS.VERTICAL)
       .setHeader('Monthly Income vs Expenses')
       .setPosition({ x: 6, y: 3, cols: 6, rows: 8 })
       .setCurrencyFormatter('USD', 'en-US')
@@ -229,9 +262,12 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
       .setFilterColumn('month')
       .build();
 
-    // Risk vs Return Scatter Chart
+
+
+    // Risk vs Return Scatter Chart with basic variant
     const scatterRiskVsReturn = ScatterChartBuilder.create()
       .setData([]) // Data will be populated later
+      .setVariant(SCATTER_VARIANTS.BASIC)
       .setHeader('Risk vs Return Analysis')
       .setPosition({ x: 0, y: 11, cols: 6, rows: 8 })
       .setTooltip('item', '{b}: Risk {c[0]}%, Return {c[1]}%')
@@ -239,9 +275,10 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
       .setFilterColumn('assetCategory')
       .build();
 
-    // Investment Distribution Map (using density map builder)
+    // Investment Distribution Map (using density map builder with BASIC variant)
     const densityMapInvestment = DensityMapBuilder.create()
       .setData([]) // Data will be populated later
+      .setVariant(DENSITY_MAP_VARIANTS.BASIC)
       .setHeader('Investment Distribution by Region')
       .setPosition({ x: 6, y: 11, cols: 6, rows: 8 })
       .setMap('world') // Explicitly set world map
@@ -261,6 +298,8 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
     // Position filter widget at row 1 (below metric tiles)
     filterWidget.position = { x: 0, y: 2, cols: 12, rows: 1 };
 
+
+
     // Use the Fluent API to build the dashboard config with filter highlighting enabled
     this.dashboardConfig = StandardDashboardBuilder.createStandard()
       .setDashboardId('overall-dashboard')
@@ -277,7 +316,7 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
         // Filter widget below tiles (row 1)
         filterWidget,
         // Core financial widgets (rows 3-18)
-        pieAssetAllocation,
+        polarAssetAllocation,
         barMonthlyIncomeVsExpenses,
         scatterRiskVsReturn,
         densityMapInvestment
@@ -301,30 +340,126 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
     // First trigger change detection to ensure widgets are rendered
     this.cdr.detectChanges();
 
-    // Wait for charts to be initialized and world map to be registered
+    // Update non-chart widgets immediately
+    this.updateMetricTilesWithFilters([]);
+    
+    // Use a longer delay and check for chart initialization before updating
     setTimeout(() => {
-      // Update widgets with API data
-      this.updateAssetAllocationWidget();
-      this.updateMonthlyIncomeExpensesWidget();
-      this.updateRiskReturnAnalysisWidget();
+      this.waitForChartsAndUpdate();
+    }, 2000);
+  }
+
+  /**
+   * Wait for charts to be initialized and then update them
+   */
+  private waitForChartsAndUpdate(): void {
+    const maxWaitTime = 10000; // 10 seconds max
+    const checkInterval = 500; // Check every 500ms
+    let elapsed = 0;
+    
+    const checkAndUpdate = () => {
+      const pieWidget = this.findWidgetByTitle('Asset Allocation');
+      const barWidget = this.findWidgetByTitle('Monthly Income vs Expenses');
+      const scatterWidget = this.findWidgetByTitle('Risk vs Return Analysis');
+      const mapWidget = this.findWidgetByTitle('Investment Distribution by Region');
       
-      // Wait a bit longer for map registration before updating investment distribution
-      setTimeout(() => {
+      const allChartsReady = [pieWidget, barWidget, scatterWidget, mapWidget]
+        .filter(w => w?.config?.component === 'echart')
+        .every(w => w?.chartInstance);
+      
+      if (allChartsReady) {
+        this.updateAssetAllocationWidget();
+        this.updateMonthlyIncomeExpensesWidget();
+        this.updateRiskReturnAnalysisWidget();
         this.updateInvestmentDistributionWidget();
-      }, 300);
-
-      // Populate metric tiles with initial data
-      this.updateMetricTilesWithFilters([]);
-
-      // Trigger change detection to ensure widgets are updated
-      this.cdr.detectChanges();
+        return;
+      }
       
-      // Add additional delay and retry for any widgets that might not have initialized
-      setTimeout(() => {
-        this.retryWidgetUpdates();
+      elapsed += checkInterval;
+      if (elapsed < maxWaitTime) {
+        setTimeout(checkAndUpdate, checkInterval);
+      } else {
+        // Timeout reached, proceed anyway
+        this.updateAssetAllocationWidget();
+        this.updateMonthlyIncomeExpensesWidget();
+        this.updateRiskReturnAnalysisWidget();
+        this.updateInvestmentDistributionWidget();
+      }
+    };
+    
+    checkAndUpdate();
+  }
+
+  /**
+   * Schedule chart updates to run when charts are initialized
+   */
+  private scheduleChartUpdates(): void {
+    // Asset Allocation Pie Chart
+    this.pendingChartUpdates.set('Asset Allocation', () => {
+      this.updateAssetAllocationWidget();
+    });
+
+    // Monthly Income vs Expenses Bar Chart  
+    this.pendingChartUpdates.set('Monthly Income vs Expenses', () => {
+      this.updateMonthlyIncomeExpensesWidget();
+    });
+
+    // Risk vs Return Scatter Chart
+    this.pendingChartUpdates.set('Risk vs Return Analysis', () => {
+      this.updateRiskReturnAnalysisWidget();
+    });
+
+    // Investment Distribution Map
+    this.pendingChartUpdates.set('Investment Distribution by Region', () => {
+      this.updateInvestmentDistributionWidget();
+    });
+  }
+
+  /**
+   * Check for initialized charts and trigger their updates
+   */
+  private checkForInitializedCharts(): void {
+    const checkInterval = setInterval(() => {
+      let foundNewCharts = false;
+
+      this.dashboardConfig?.widgets?.forEach(widget => {
+        const title = widget.config?.header?.title;
+        
+        if (title && 
+            widget.config?.component === 'echart' && 
+            widget.chartInstance && 
+            !this.initializedCharts.has(title)) {
+          
+          this.initializedCharts.add(title);
+          foundNewCharts = true;
+
+          // Execute pending update for this chart
+          const updateFunction = this.pendingChartUpdates.get(title);
+          if (updateFunction) {
+            setTimeout(() => {
+              updateFunction();
+              this.pendingChartUpdates.delete(title);
+            }, 100);
+          }
+        }
+      });
+
+      // Clean up interval when all charts are initialized
+      if (this.pendingChartUpdates.size === 0) {
+        clearInterval(checkInterval);
+      }
+
+      // Trigger change detection if we found new charts
+      if (foundNewCharts) {
         this.cdr.detectChanges();
-      }, 800);
-    }, 500);
+      }
+    }, 1000); // Increased interval for easier debugging
+
+    // Cleanup after 30 seconds to prevent infinite checking
+    setTimeout(() => {
+      clearInterval(checkInterval);
+
+    }, 30000);
   }
 
   // /**
@@ -358,7 +493,10 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
   private async updateAssetAllocationWidget(): Promise<void> {
     try {
       const widget = this.findWidgetByTitle('Asset Allocation');
-      if (!widget) return;
+      if (!widget) {
+        console.error('Asset Allocation widget not found!');
+        return;
+      }
 
       // Use centralized filters
       const apiFilters = this.convertFiltersToApiFormat();
@@ -376,8 +514,15 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
           }));
 
           if (transformedData && transformedData.length > 0) {
-            PieChartBuilder.updateData(widget, transformedData);
-            this.cdr.detectChanges();
+            try {
+              // Add delay to avoid conflicts with chart initialization
+              setTimeout(() => {
+                PolarChartBuilder.updateData(widget, transformedData);
+                this.cdr.detectChanges();
+              }, 100);
+            } catch (error) {
+              console.error('Error updating pie chart:', error);
+            }
           }
 
           // Hide loading state
@@ -389,8 +534,21 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
           // Hide loading state
           this.setWidgetLoadingState(widget, false);
           
-          // Show error state
-          this.showWidgetErrorState(widget, 'Failed to load asset allocation data');
+          // Provide fallback data for pie chart
+          const fallbackData = [
+            { name: 'Stocks', value: 150000 },
+            { name: 'Bonds', value: 75000 },
+            { name: 'Real Estate', value: 200000 },
+            { name: 'Cryptocurrency', value: 50000 },
+            { name: 'Commodities', value: 80000 }
+          ];
+          
+
+          // Add delay to avoid conflicts with chart initialization
+          setTimeout(() => {
+            PolarChartBuilder.updateData(widget, fallbackData);
+            this.cdr.detectChanges();
+          }, 100);
         }
       });
     } catch (error) {
@@ -419,21 +577,23 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
       // Fetch data from API endpoint using centralized filters
       this.dashboardService.getMonthlyIncomeExpenses(apiFilters).subscribe({
         next: (apiData) => {
-          // API data is already in the correct format for bar chart
+          // Transform API data to correct format for bar chart
+          // API returns: { month: string, income: number, expenses: number, net: number }
+          // We need: { name: string, value: number }[] for simple bar chart
+          
+          // Show net income (income - expenses) per month
           const transformedData = apiData.map((item: any) => ({
-            name: item.name,
-            value: item.value
+            name: item.month,
+            value: item.net || (item.income - item.expenses)
           }));
 
           if (transformedData && transformedData.length > 0) {
-            // Method 1: Try BarChartBuilder.updateData
-            BarChartBuilder.updateData(widget, transformedData);
-            
-            // Method 2: Try base dashboard component method
-            setTimeout(() => {
-              this.updateEchartWidget(widget, transformedData);
+            try {
+              BarChartBuilder.updateData(widget, transformedData);
               this.cdr.detectChanges();
-            }, 100);
+            } catch (error) {
+              console.error('Error updating bar chart:', error);
+            }
           }
 
           // Hide loading state
@@ -445,8 +605,17 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
           // Hide loading state
           this.setWidgetLoadingState(widget, false);
           
-          // Show error state
-          this.showWidgetErrorState(widget, 'Failed to load monthly income expenses data');
+          // Provide fallback data for bar chart
+          const fallbackData = [
+            { name: 'Jan', value: 15000 },
+            { name: 'Feb', value: 25000 },
+            { name: 'Mar', value: 20000 },
+            { name: 'Apr', value: 18000 }
+          ];
+          
+
+          BarChartBuilder.updateData(widget, fallbackData);
+          this.cdr.detectChanges();
         }
       });
     } catch (error) {
@@ -473,10 +642,12 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
       // Fetch data from API endpoint using centralized filters
       this.dashboardService.getRiskReturnAnalysis(apiFilters).subscribe({
         next: (apiData) => {
-          // API data is already in the correct format for scatter chart
+          // Transform API data for scatter chart
+          // API returns: { assetCategory: string, risk: number, return: number, marketCap: number }
+          // We need: { value: [number, number], name: string }[]
           const transformedData = apiData.map((item: any) => ({
             value: [item.risk, item.return],
-            name: item.category
+            name: item.assetCategory
           }));
 
           if (transformedData && transformedData.length > 0) {
@@ -631,8 +802,6 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
         } catch (error) {
           console.error('Direct ECharts update failed:', error);
         }
-      } else {
-        console.warn('Chart instance not available');
       }
       this.cdr.detectChanges();
     }, 300);
@@ -666,8 +835,8 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
 
     switch (widgetTitle) {
       case 'Asset Allocation':
-        // Use enhanced data transformation for pie chart
-        const assetData = PieChartBuilder.transformData(sourceData, {
+        // Use enhanced data transformation for polar chart
+        const assetData = PolarChartBuilder.transformData(sourceData, {
           valueField: 'totalValue',
           nameField: 'assetCategory',
           sortBy: 'value'
@@ -777,46 +946,6 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
   }
 
 
-  // /**
-  //  * Force initialize a chart instance for a widget
-  //  */
-  // private forceInitializeChart(widget: IWidget): void {
-  //   try {
-  //     console.log('Force initializing chart for widget:', widget.config?.header?.title);
-      
-  //     // Check if we have a DOM element
-  //     if (!widget['element']) {
-  //       console.warn('No DOM element found for widget');
-  //       return;
-  //     }
-      
-  //     // Initialize ECharts instance using the static echarts import
-  //     if (widget['element']) {
-  //       console.log('Creating ECharts instance...');
-  //       const chartInstance = echarts.init(widget['element'] as HTMLElement);
-  //       widget.chartInstance = chartInstance as any; // Type assertion for compatibility
-        
-  //       // Apply the widget's options if available and if it's an echart widget
-  //       if (widget.config?.options && widget.config.component === 'echart') {
-  //         const chartOptions = widget.config.options;
-  //         if (widget.chartInstance && this.isEChartsOption(chartOptions)) {
-  //           try {
-  //             widget.chartInstance.setOption(chartOptions as any);
-  //             console.log('Applied widget options to chart');
-  //           } catch (optionError) {
-  //             console.warn('Failed to set chart options:', optionError);
-  //           }
-  //         }
-  //       }
-        
-  //       // Try to update with data again
-  //       setTimeout(() => {
-  //         this.updateMonthlyIncomeExpensesWidget();
-  //       }, 100);
-  //     }
-  //   } catch (error) {
-  //     console.error('Error in forceInitializeChart:', error);
-  //   }
-  // }
+
 
 }

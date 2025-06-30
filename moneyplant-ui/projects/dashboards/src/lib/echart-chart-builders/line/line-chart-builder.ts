@@ -8,28 +8,42 @@ export interface LineChartData {
   [key: string]: any;
 }
 
+/**
+ * Line Chart Variants enum for different line chart styles
+ */
+export enum LINE_VARIANTS {
+  BASIC = 'basic',
+  SMOOTH = 'smooth',
+  AREA = 'area',
+  STEPPED = 'stepped',
+  STACKED = 'stacked'
+}
+
 export interface LineChartSeriesOptions {
   name?: string;
   type?: string;
-  data?: LineChartData[] | number[];
-  smooth?: boolean;
+  data?: number[] | LineChartData[];
+  smooth?: boolean | number;
   symbol?: string;
   symbolSize?: number;
+  showSymbol?: boolean;
+  step?: string | boolean;
+  stack?: string;
+  areaStyle?: {
+    color?: string | object;
+    opacity?: number;
+    origin?: string;
+  };
   lineStyle?: {
     width?: number;
     color?: string;
-    type?: string;
+    type?: 'solid' | 'dashed' | 'dotted';
   };
   itemStyle?: {
     color?: string;
     borderColor?: string;
     borderWidth?: number;
   };
-  areaStyle?: {
-    color?: string;
-    opacity?: number;
-  };
-  showSymbol?: boolean;
   emphasis?: {
     focus?: string;
     itemStyle?: {
@@ -41,24 +55,8 @@ export interface LineChartSeriesOptions {
 }
 
 export interface LineChartOptions extends EChartsOption {
-  xAxis?: {
-    type?: string;
-    data?: string[];
-    name?: string;
-    nameLocation?: string;
-    axisLabel?: {
-      rotate?: number;
-      color?: string;
-    };
-  };
-  yAxis?: {
-    type?: string;
-    name?: string;
-    nameLocation?: string;
-    axisLabel?: {
-      color?: string;
-    };
-  };
+  xAxis?: any;
+  yAxis?: any;
   series?: LineChartSeriesOptions[];
 }
 
@@ -321,7 +319,7 @@ export class LineChartBuilder extends ApacheEchartBuilder<LineChartOptions, Line
   /**
    * Set line style
    */
-  setLineStyle(width: number, color: string, type: string = 'solid'): this {
+  setLineStyle(width: number, color: string, type: 'solid' | 'dashed' | 'dotted' = 'solid'): this {
     this.seriesOptions.lineStyle = {
       width,
       color,
@@ -347,6 +345,132 @@ export class LineChartBuilder extends ApacheEchartBuilder<LineChartOptions, Line
   setShowSymbol(show: boolean): this {
     this.seriesOptions.showSymbol = show;
     return this;
+  }
+
+  /**
+   * Set line chart variant to change its appearance and behavior
+   * @param variant - The line chart variant to apply
+   */
+  setVariant(variant: LINE_VARIANTS): this {
+    switch (variant) {
+      case LINE_VARIANTS.BASIC:
+        this.applyBasicVariant();
+        break;
+      case LINE_VARIANTS.SMOOTH:
+        this.applySmoothVariant();
+        break;
+      case LINE_VARIANTS.AREA:
+        this.applyAreaVariant();
+        break;
+      case LINE_VARIANTS.STEPPED:
+        this.applySteppedVariant();
+        break;
+      case LINE_VARIANTS.STACKED:
+        this.applyStackedVariant();
+        break;
+      default:
+        console.warn(`Unknown line chart variant: ${variant}`);
+        this.applyBasicVariant();
+    }
+    return this;
+  }
+
+  /**
+   * Apply basic line chart configuration
+   */
+  private applyBasicVariant(): void {
+    this.seriesOptions.smooth = false;
+    this.seriesOptions.areaStyle = undefined;
+    this.seriesOptions.step = undefined;
+    this.seriesOptions.stack = undefined;
+    this.seriesOptions.symbol = 'circle';
+    this.seriesOptions.symbolSize = 6;
+    this.seriesOptions.showSymbol = true;
+    this.seriesOptions.lineStyle = {
+      width: 2,
+      color: '#5470c6',
+      type: 'solid'
+    };
+  }
+
+  /**
+   * Apply smooth line chart configuration
+   */
+  private applySmoothVariant(): void {
+    this.seriesOptions.smooth = true;
+    this.seriesOptions.areaStyle = undefined;
+    this.seriesOptions.step = undefined;
+    this.seriesOptions.stack = undefined;
+    this.seriesOptions.symbol = 'circle';
+    this.seriesOptions.symbolSize = 4;
+    this.seriesOptions.showSymbol = true;
+    this.seriesOptions.lineStyle = {
+      width: 3,
+      color: '#91cc75',
+      type: 'solid'
+    };
+  }
+
+  /**
+   * Apply area line chart configuration
+   */
+  private applyAreaVariant(): void {
+    this.seriesOptions.smooth = true;
+    this.seriesOptions.areaStyle = {
+      color: '#5470c6',
+      opacity: 0.3,
+      origin: 'auto'
+    };
+    this.seriesOptions.step = undefined;
+    this.seriesOptions.stack = undefined;
+    this.seriesOptions.symbol = 'none';
+    this.seriesOptions.symbolSize = 0;
+    this.seriesOptions.showSymbol = false;
+    this.seriesOptions.lineStyle = {
+      width: 2,
+      color: '#5470c6',
+      type: 'solid'
+    };
+  }
+
+  /**
+   * Apply stepped line chart configuration
+   */
+  private applySteppedVariant(): void {
+    this.seriesOptions.smooth = false;
+    this.seriesOptions.areaStyle = undefined;
+    this.seriesOptions.step = 'middle';
+    this.seriesOptions.stack = undefined;
+    this.seriesOptions.symbol = 'rect';
+    this.seriesOptions.symbolSize = 6;
+    this.seriesOptions.showSymbol = true;
+    this.seriesOptions.lineStyle = {
+      width: 2,
+      color: '#fac858',
+      type: 'solid'
+    };
+  }
+
+  /**
+   * Apply stacked line chart configuration
+   */
+  private applyStackedVariant(): void {
+    this.seriesOptions.smooth = false;
+    this.seriesOptions.areaStyle = {
+      color: '#ee6666',
+      opacity: 0.6,
+      origin: 'auto'
+    };
+    this.seriesOptions.step = undefined;
+    this.seriesOptions.stack = 'total';
+    this.seriesOptions.symbol = 'circle';
+    this.seriesOptions.symbolSize = 4;
+    this.seriesOptions.showSymbol = true;
+    this.seriesOptions.lineStyle = {
+      width: 2,
+      color: '#ee6666',
+      type: 'solid'
+    };
   }
 
   /**

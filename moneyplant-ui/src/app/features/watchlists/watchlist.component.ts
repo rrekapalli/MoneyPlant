@@ -68,7 +68,7 @@ export class WatchlistComponent implements OnInit {
    * @param mode The selected view mode
    */
   onViewModeChange(mode: string): void {
-    console.log(`View mode changed to: ${mode}`);
+    // View mode changed
     // Additional logic for switching between watchlist and portfolio views can be added here
   }
 

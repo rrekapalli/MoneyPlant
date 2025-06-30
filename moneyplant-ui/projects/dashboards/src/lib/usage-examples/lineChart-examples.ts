@@ -1,108 +1,148 @@
-import { LineChartBuilder, LineChartData } from '../echart-chart-builders/line/line-chart-builder';
+import { IWidget } from '../entities/IWidget';
+import { LineChartBuilder, LineChartData, LINE_VARIANTS } from '../echart-chart-builders/line/line-chart-builder';
 
 /**
- * Line Chart Examples
- * This file provides example usage patterns for the LineChartBuilder
+ * Examples demonstrating the usage of LineChartBuilder class with various variants
  */
 
-// Sample data for line charts
-export const sampleLineData: LineChartData[] = [
-  { name: 'Jan', value: 10 },
-  { name: 'Feb', value: 20 },
-  { name: 'Mar', value: 30 },
-  { name: 'Apr', value: 40 },
-  { name: 'May', value: 50 },
-  { name: 'Jun', value: 45 },
+// Sample data for examples
+const sampleLineData: LineChartData[] = [
+  { name: 'Jan', value: 120 },
+  { name: 'Feb', value: 132 },
+  { name: 'Mar', value: 101 },
+  { name: 'Apr', value: 134 },
+  { name: 'May', value: 90 },
+  { name: 'Jun', value: 230 },
 ];
 
-export const sampleLineDataSimple: number[] = [10, 20, 30, 40, 50, 45];
-
-export const sampleXAxisData: string[] = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+const sampleXAxisData = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
 
 /**
- * Example 1: Basic Line Chart
+ * Example 1: Basic line chart with default options
  */
-export function createBasicLineChart() {
+export function createBasicLineChart(): IWidget {
   return LineChartBuilder.create()
-    .setData(sampleLineDataSimple)
+    .setData(sampleLineData)
     .setXAxisData(sampleXAxisData)
-    .setHeader('Monthly Sales')
+    .setVariant(LINE_VARIANTS.BASIC)
+    .setHeader('Basic Line Chart')
     .setPosition({ x: 0, y: 0, cols: 6, rows: 4 })
     .build();
 }
 
 /**
- * Example 2: Smooth Line Chart with Area
+ * Example 2: Smooth line chart variant
  */
-export function createSmoothLineChart() {
+export function createSmoothLineChart(): IWidget {
   return LineChartBuilder.create()
-    .setData(sampleLineDataSimple)
+    .setData(sampleLineData)
     .setXAxisData(sampleXAxisData)
-    .setTitle('Portfolio Performance', 'Last 6 months')
-    .setSmooth(true)
-    .setAreaStyle('#5470c6', 0.3)
-    .setLineStyle(3, '#5470c6', 'solid')
-    .setSymbol('circle', 8)
-    .setTooltip('axis', '{b}: {c}')
-    .setLegend('horizontal', 'bottom')
-    .setHeader('Performance Chart')
-    .setPosition({ x: 0, y: 0, cols: 8, rows: 4 })
+    .setVariant(LINE_VARIANTS.SMOOTH)
+    .setHeader('Smooth Line Chart')
+    .setPosition({ x: 6, y: 0, cols: 6, rows: 4 })
     .build();
 }
 
 /**
- * Example 3: Multi-Series Line Chart
+ * Example 3: Area line chart variant
  */
-export function createMultiSeriesLineChart() {
-  const data1 = [10, 20, 30, 40, 50, 45];
-  const data2 = [15, 25, 35, 45, 55, 50];
-  const data3 = [5, 15, 25, 35, 45, 40];
-
+export function createAreaLineChart(): IWidget {
   return LineChartBuilder.create()
-    .setData(data1)
+    .setData(sampleLineData)
     .setXAxisData(sampleXAxisData)
-    .setTitle('Multi-Series Performance', 'Comparison Chart')
-    .setSmooth(true)
-    .setLineStyle(2, '#5470c6', 'solid')
-    .setSymbol('circle', 6)
-    .setTooltip('axis', '{b}: {c}')
-    .setLegend('horizontal', 'bottom')
-    .setHeader('Multi-Series Chart')
-    .setPosition({ x: 0, y: 0, cols: 10, rows: 6 })
+    .setVariant(LINE_VARIANTS.AREA)
+    .setHeader('Area Line Chart')
+    .setPosition({ x: 0, y: 4, cols: 6, rows: 4 })
     .build();
 }
 
 /**
- * Example 4: Dashed Line Chart
+ * Example 4: Stepped line chart variant
  */
-export function createDashedLineChart() {
+export function createSteppedLineChart(): IWidget {
   return LineChartBuilder.create()
-    .setData(sampleLineDataSimple)
+    .setData(sampleLineData)
     .setXAxisData(sampleXAxisData)
-    .setTitle('Dashed Line Chart', 'Example')
-    .setLineStyle(2, '#91cc75', 'dashed')
+    .setVariant(LINE_VARIANTS.STEPPED)
+    .setHeader('Stepped Line Chart')
+    .setPosition({ x: 6, y: 4, cols: 6, rows: 4 })
+    .build();
+}
+
+/**
+ * Example 5: Stacked line chart variant
+ */
+export function createStackedLineChart(): IWidget {
+  return LineChartBuilder.create()
+    .setData(sampleLineData)
+    .setXAxisData(sampleXAxisData)
+    .setVariant(LINE_VARIANTS.STACKED)
+    .setHeader('Stacked Line Chart')
+    .setPosition({ x: 0, y: 8, cols: 6, rows: 4 })
+    .build();
+}
+
+/**
+ * Example 6: Financial trend line chart with currency formatting
+ */
+export function createFinancialTrendChart(): IWidget {
+  const financialData = [
+    { name: 'Q1', value: 45000 },
+    { name: 'Q2', value: 52000 },
+    { name: 'Q3', value: 48000 },
+    { name: 'Q4', value: 61000 },
+  ];
+
+  return LineChartBuilder.create()
+    .setData(financialData)
+    .setXAxisData(['Q1', 'Q2', 'Q3', 'Q4'])
+    .setVariant(LINE_VARIANTS.SMOOTH)
+    .setCurrencyFormatter('USD', 'en-US')
+    .setXAxisName('Quarter')
+    .setYAxisName('Revenue')
+    .setHeader('Quarterly Revenue Trend')
+    .setPosition({ x: 6, y: 8, cols: 6, rows: 4 })
+    .build();
+}
+
+/**
+ * Example 7: Performance monitoring line chart
+ */
+export function createPerformanceMonitoringChart(): IWidget {
+  const performanceData = [
+    { name: 'Week 1', value: 85 },
+    { name: 'Week 2', value: 90 },
+    { name: 'Week 3', value: 78 },
+    { name: 'Week 4', value: 95 },
+  ];
+
+  return LineChartBuilder.create()
+    .setData(performanceData)
+    .setXAxisData(['Week 1', 'Week 2', 'Week 3', 'Week 4'])
+    .setVariant(LINE_VARIANTS.AREA)
+    .setPercentageFormatter(0)
+    .setXAxisName('Time Period')
+    .setYAxisName('Performance Score')
+    .setHeader('Weekly Performance')
+    .setPosition({ x: 0, y: 12, cols: 6, rows: 4 })
+    .build();
+}
+
+/**
+ * Example 8: Advanced line chart with custom configuration
+ */
+export function createAdvancedLineChart(): IWidget {
+  return LineChartBuilder.create()
+    .setData(sampleLineData)
+    .setXAxisData(sampleXAxisData)
+    .setVariant(LINE_VARIANTS.SMOOTH)
+    .setLineStyle(3, '#e74c3c', 'dashed')
     .setSymbol('diamond', 8)
-    .setShowSymbol(true)
-    .setTooltip('item', '{b}: {c}')
-    .setHeader('Dashed Line Example')
-    .setPosition({ x: 0, y: 0, cols: 6, rows: 4 })
-    .build();
-}
-
-/**
- * Example 5: Line Chart with Custom Colors
- */
-export function createCustomColorLineChart() {
-  return LineChartBuilder.create()
-    .setData(sampleLineDataSimple)
-    .setXAxisData(sampleXAxisData)
-    .setTitle('Custom Color Line Chart', 'Styled Example')
-    .setColors(['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#feca57', '#ff9ff3'])
-    .setLineStyle(3, '#ff6b6b', 'solid')
-    .setSymbol('rect', 10)
-    .setEmphasis(15, 2, 'rgba(255, 107, 107, 0.8)')
-    .setTooltip('axis', '{b}: {c}')
-    .setHeader('Custom Styled Line')
-    .setPosition({ x: 0, y: 0, cols: 8, rows: 5 })
+    .setXAxisName('Months')
+    .setYAxisName('Sales Volume')
+    .setTooltip('axis', '{b}: {c} units')
+    .setLegend('horizontal', 'top')
+    .setHeader('Advanced Line Chart Configuration')
+    .setPosition({ x: 6, y: 12, cols: 6, rows: 4 })
     .build();
 } 

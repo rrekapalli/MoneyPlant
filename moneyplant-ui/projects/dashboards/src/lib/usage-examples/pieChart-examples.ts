@@ -1,8 +1,8 @@
 import { IWidget } from '../entities/IWidget';
-import { PieChartBuilder, PieChartData } from '../echart-chart-builders/pie/pie-chart-builder';
+import { PieChartBuilder, PieChartData, PIE_VARIANTS } from '../echart-chart-builders/pie/pie-chart-builder';
 
 /**
- * Examples demonstrating the usage of PieChartBuilder class
+ * Examples demonstrating the usage of PieChartBuilder class with various variants
  */
 
 // Sample data for examples
@@ -15,156 +15,173 @@ const sampleData: PieChartData[] = [
 ];
 
 /**
- * Example 1: Basic pie chart with default options
+ * Example 1: Basic pie chart with default options (Standard variant)
  */
 export function createBasicPieChart(): IWidget {
   return PieChartBuilder.create()
     .setData(sampleData)
-    .setHeader('Asset Allocation')
+    .setVariant(PIE_VARIANTS.STANDARD)
+    .setHeader('Asset Allocation - Standard Pie Chart')
     .setPosition({ x: 0, y: 0, cols: 4, rows: 4 })
     .build();
 }
 
 /**
- * Example 2: Custom styled pie chart
+ * Example 2: Doughnut chart variant
  */
-export function createCustomStyledPieChart(): IWidget {
+export function createDoughnutChart(): IWidget {
   return PieChartBuilder.create()
     .setData(sampleData)
+    .setVariant(PIE_VARIANTS.DOUGHNUT)
+    .setHeader('Asset Allocation - Doughnut Chart')
+    .setPosition({ x: 4, y: 0, cols: 4, rows: 4 })
+    .build();
+}
+
+/**
+ * Example 3: Nightingale (Rose) chart variant
+ */
+export function createNightingaleChart(): IWidget {
+  return PieChartBuilder.create()
+    .setData(sampleData)
+    .setVariant(PIE_VARIANTS.NIGHTINGALE)
+    .setHeader('Asset Allocation - Nightingale Chart')
+    .setPosition({ x: 8, y: 0, cols: 4, rows: 4 })
+    .build();
+}
+
+/**
+ * Example 4: Half doughnut chart variant
+ */
+export function createHalfDoughnutChart(): IWidget {
+  return PieChartBuilder.create()
+    .setData(sampleData)
+    .setVariant(PIE_VARIANTS.HALF_DOUGHNUT)
+    .setHeader('Asset Allocation - Half Doughnut')
+    .setPosition({ x: 0, y: 4, cols: 4, rows: 4 })
+    .build();
+}
+
+/**
+ * Example 5: Nested pie chart variant
+ */
+export function createNestedPieChart(): IWidget {
+  return PieChartBuilder.create()
+    .setData(sampleData)
+    .setVariant(PIE_VARIANTS.NESTED)
+    .setHeader('Asset Allocation - Nested Pie')
+    .setPosition({ x: 4, y: 4, cols: 4, rows: 4 })
+    .build();
+}
+
+/**
+ * Example 6: Advanced doughnut chart with custom styling
+ */
+export function createAdvancedDoughnutChart(): IWidget {
+  return PieChartBuilder.create()
+    .setData(sampleData)
+    .setVariant(PIE_VARIANTS.DOUGHNUT)
     .setTitle('Portfolio Distribution', 'As of December 2024')
-    .setRadius(['40%', '70%'])
-    .setCenter(['50%', '60%'])
-    .setLabelFormatter('{b}: {c} ({d}%)')
     .setColors(['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de'])
-    .setBorderRadius(8)
-    .setBorder('#fff', 2)
     .setTooltip('item', '{b}: {c} ({d}%)')
     .setLegend('horizontal', 'bottom')
-    .setHeader('Custom Pie Chart')
-    .setPosition({ x: 0, y: 0, cols: 6, rows: 4 })
+    .setHeader('Advanced Doughnut Chart')
+    .setPosition({ x: 8, y: 4, cols: 4, rows: 4 })
     .build();
 }
 
 /**
- * Example 3: Donut chart with emphasis effects
+ * Example 7: Financial doughnut chart with currency formatting
  */
-export function createDonutChart(): IWidget {
+export function createFinancialDoughnutChart(): IWidget {
+  const financialData: PieChartData[] = [
+    { value: 125000, name: 'Stocks' },
+    { value: 75000, name: 'Bonds' },
+    { value: 45000, name: 'Cash' },
+    { value: 30000, name: 'Real Estate' },
+    { value: 15000, name: 'Commodities' },
+  ];
+
+  return PieChartBuilder.create()
+    .setData(financialData)
+    .setVariant(PIE_VARIANTS.DOUGHNUT)
+    .setFinancialDisplay('USD', 'en-US')
+    .setHeader('Financial Portfolio - Doughnut')
+    .setPosition({ x: 0, y: 8, cols: 6, rows: 4 })
+    .build();
+}
+
+/**
+ * Example 8: Nightingale chart with percentage labels
+ */
+export function createNightingaleWithPercentages(): IWidget {
   return PieChartBuilder.create()
     .setData(sampleData)
-    .setRadius(['50%', '80%'])
-    .setCenter(['50%', '50%'])
-    .setLabelShow(false)
-    .setColors(['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#feca57'])
-    .setEmphasis(20, 0, 'rgba(0, 0, 0, 0.7)')
-    .setTooltip('item', '{b}: ${c} ({d}%)')
-    .setLegend('vertical', 'right')
-    .setHeader('Donut Chart')
-    .setPosition({ x: 0, y: 0, cols: 4, rows: 4 })
+    .setVariant(PIE_VARIANTS.NIGHTINGALE)
+    .setPercentageLabels(true, 2)
+    .setColors(['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#ffeaa7'])
+    .setHeader('Nightingale Chart with Percentages')
+    .setPosition({ x: 6, y: 8, cols: 6, rows: 4 })
     .build();
 }
 
 /**
- * Example 4: Compact pie chart for small spaces
+ * Example 9: Comparison of all variants in a dashboard
  */
-export function createCompactPieChart(): IWidget {
+export function createAllVariantsComparison(): IWidget[] {
+  const widgets: IWidget[] = [];
+
+  // Standard pie chart
+  widgets.push(
+    PieChartBuilder.create()
+      .setData(sampleData)
+      .setVariant(PIE_VARIANTS.STANDARD)
+      .setHeader('Standard Pie')
+      .setPosition({ x: 0, y: 0, cols: 3, rows: 3 })
+      .build()
+  );
+
+  // Doughnut chart
+  widgets.push(
+    PieChartBuilder.create()
+      .setData(sampleData)
+      .setVariant(PIE_VARIANTS.DOUGHNUT)
+      .setHeader('Doughnut')
+      .setPosition({ x: 3, y: 0, cols: 3, rows: 3 })
+      .build()
+  );
+
+  // Nightingale chart
+  widgets.push(
+    PieChartBuilder.create()
+      .setData(sampleData)
+      .setVariant(PIE_VARIANTS.NIGHTINGALE)
+      .setHeader('Nightingale')
+      .setPosition({ x: 6, y: 0, cols: 3, rows: 3 })
+      .build()
+  );
+
+  // Half doughnut
+  widgets.push(
+    PieChartBuilder.create()
+      .setData(sampleData)
+      .setVariant(PIE_VARIANTS.HALF_DOUGHNUT)
+      .setHeader('Half Doughnut')
+      .setPosition({ x: 9, y: 0, cols: 3, rows: 3 })
+      .build()
+  );
+
+  return widgets;
+}
+
+/**
+ * Example 10: Dynamic variant switching (for interactive dashboards)
+ */
+export function createDynamicPieChart(variant: PIE_VARIANTS = PIE_VARIANTS.STANDARD): IWidget {
   return PieChartBuilder.create()
     .setData(sampleData)
-    .setRadius('60%')
-    .setCenter(['50%', '50%'])
-    .setLabelFormatter('{d}%')
-    .setLabelPosition('inside')
-    .setColors(['#ff9999', '#99ccff', '#99ff99', '#ffcc99', '#cc99ff'])
-    .setGrid({ top: '10%', bottom: '10%' })
-    .setHeader('Compact View')
-    .setPosition({ x: 0, y: 0, cols: 2, rows: 2 })
-    .build();
-}
-
-/**
- * Example 5: Pie chart with custom grid and positioning
- */
-export function createCustomGridPieChart(): IWidget {
-  return PieChartBuilder.create()
-    .setData(sampleData)
-    .setTitle('Investment Breakdown')
-    .setRadius(['30%', '55%'])
-    .setCenter(['50%', '55%'])
-    .setLabelFormatter('{b}\n{c}%')
-    .setColors(['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6'])
-    .setGrid({ 
-      top: '20%', 
-      left: '10%', 
-      right: '10%', 
-      bottom: '20%',
-      height: '60%'
-    })
-    .setLegend('horizontal', 'bottom')
-    .setHeader('Investment Portfolio')
-    .setPosition({ x: 0, y: 0, cols: 5, rows: 5 })
-    .build();
-}
-
-/**
- * Example 6: Dynamic data update demonstration
- */
-export function createDynamicPieChart(): IWidget {
-  const widget = PieChartBuilder.create()
-    .setData(sampleData)
-    .setHeader('Dynamic Chart')
-    .setPosition({ x: 0, y: 0, cols: 4, rows: 4 })
-    .build();
-
-  // Example of updating data dynamically
-  setTimeout(() => {
-    const updatedData: PieChartData[] = [
-      { value: 50, name: 'Stocks' },
-      { value: 20, name: 'Bonds' },
-      { value: 20, name: 'Cash' },
-      { value: 8, name: 'Real Estate' },
-      { value: 2, name: 'Commodities' },
-    ];
-    
-    // Update the widget data
-    PieChartBuilder.updateData(widget, updatedData);
-  }, 5000);
-
-  return widget;
-}
-
-/**
- * Example 7: Pie chart with custom tooltip and legend styling
- */
-export function createStyledPieChart(): IWidget {
-  return PieChartBuilder.create()
-    .setData(sampleData)
-    .setTitle('Financial Portfolio', 'Monthly Update')
-    .setRadius(['35%', '65%'])
-    .setCenter(['50%', '50%'])
-    .setLabelFormatter('{b}\n${c}')
-    .setColors(['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd'])
-    .setBorderRadius(4)
-    .setBorder('#fff', 1)
-    .setTooltip('item', (params: any) => {
-      return `${params.name}<br/>Value: $${params.value}<br/>Percentage: ${params.percent}%`;
-    })
-    .setLegend('vertical', 'left')
-    .setHeader('Financial Overview')
-    .setPosition({ x: 0, y: 0, cols: 4, rows: 4 })
-    .build();
-}
-
-/**
- * Example 8: Minimal pie chart with no labels
- */
-export function createMinimalPieChart(): IWidget {
-  return PieChartBuilder.create()
-    .setData(sampleData)
-    .setRadius('70%')
-    .setCenter(['50%', '50%'])
-    .setLabelShow(false)
-    .setColors(['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#feca57'])
-    .setGrid({ top: '5%', bottom: '5%' })
-    .setHeader('Minimal Chart')
-    .setPosition({ x: 0, y: 0, cols: 3, rows: 3 })
+    .setVariant(variant)
+    .setHeader(`Dynamic Pie Chart - ${variant.charAt(0).toUpperCase() + variant.slice(1)}`)
+    .setPosition({ x: 0, y: 0, cols: 6, rows: 6 })
     .build();
 } 

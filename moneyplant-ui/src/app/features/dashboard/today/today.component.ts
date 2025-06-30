@@ -188,7 +188,7 @@ export class TodayComponent extends BaseDashboardComponent<DashboardDataRow> {
    * This method is called whenever filters change and coordinates all widget updates
    */
   protected onFiltersChanged(filters: IFilterValues[]): void {
-    console.log('TodayComponent: Centralized filter handling triggered:', filters);
+    // Centralized filter handling triggered
     
     // Update all widgets with new filters using the existing method
     this.updateWidgetsWithFilters(filters);
@@ -539,7 +539,7 @@ export class TodayComponent extends BaseDashboardComponent<DashboardDataRow> {
         
       // case 'candlestick':
       //   // This is a candlestick chart - provide sample OHLC data
-      //   console.log('Detected candlestick widget, providing sample OHLC data');
+      //   Sample OHLC data for candlestick charts
       //   // Sample OHLC data based on totalValue from dashboard data
       //   const stockData = [];
       //   const dateLabels = [];

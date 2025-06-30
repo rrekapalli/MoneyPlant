@@ -2,6 +2,14 @@ import { IWidget } from '../../../public-api';
 import { EChartsOption } from 'echarts';
 import { ApacheEchartBuilder, ChartDataTransformOptions, DataFilter, ColorPalette } from '../apache-echart-builder';
 
+// Chart Variants Enum
+export enum CANDLESTICK_VARIANTS {
+  BASIC = 'basic',
+  HOLLOW = 'hollow', 
+  OHLC = 'ohlc',
+  VOLUME = 'volume'
+}
+
 export interface CandlestickChartData {
   date: string;
   open: number;
@@ -522,5 +530,140 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
    */
   static override getExportSheetName(widget: IWidget): string {
     return 'Candlestick Chart Data';
+  }
+
+  /**
+   * Set chart variant
+   */
+  setVariant(variant: CANDLESTICK_VARIANTS): this {
+    switch (variant) {
+      case CANDLESTICK_VARIANTS.BASIC:
+        this.applyBasicVariant();
+        break;
+      case CANDLESTICK_VARIANTS.HOLLOW:
+        this.applyHollowVariant();
+        break;
+      case CANDLESTICK_VARIANTS.OHLC:
+        this.applyOHLCVariant();
+        break;
+      case CANDLESTICK_VARIANTS.VOLUME:
+        this.applyVolumeVariant();
+        break;
+      default:
+        this.applyBasicVariant();
+    }
+    return this;
+  }
+
+  /**
+   * Apply basic candlestick configuration (standard filled candlesticks)
+   */
+  private applyBasicVariant(): void {
+    this.seriesOptions.type = 'candlestick';
+    this.seriesOptions.itemStyle = {
+      color: '#ec0000',        // up/bull color
+      color0: '#00da3c',       // down/bear color
+      borderColor: '#8A0000',  // up border color
+      borderColor0: '#008F28', // down border color
+      borderWidth: 1,
+    };
+  }
+
+  /**
+   * Apply hollow candlestick configuration (outline only)
+   */
+  private applyHollowVariant(): void {
+    this.seriesOptions.type = 'candlestick';
+    this.seriesOptions.itemStyle = {
+      color: 'transparent',     // hollow up candle
+      color0: '#00da3c',        // filled down candle
+      borderColor: '#ec0000',   // up border color (red)
+      borderColor0: '#00da3c',  // down border color (green)
+      borderWidth: 2,
+    };
+  }
+
+  /**
+   * Apply OHLC bar configuration (traditional OHLC bars instead of candlesticks)
+   */
+  private applyOHLCVariant(): void {
+    this.seriesOptions.type = 'candlestick';
+    this.seriesOptions.itemStyle = {
+      color: '#ec0000',
+      color0: '#00da3c',
+      borderColor: '#ec0000',
+      borderColor0: '#00da3c',
+      borderWidth: 1,
+    };
+    // Additional styling for OHLC appearance
+    (this.seriesOptions as any).barWidth = 1;
+    (this.seriesOptions as any).barMaxWidth = 3;
+  }
+
+  /**
+   * Apply volume candlestick configuration (candlesticks with volume bars)
+   */
+  private applyVolumeVariant(): void {
+    this.applyBasicVariant();
+    
+    // Configure chart options for volume display (cast to any for advanced configuration)
+    (this.chartOptions as any).grid = [
+      {
+        left: '10%',
+        right: '10%',
+        top: '15%',
+        height: '50%',
+        containLabel: true
+      },
+      {
+        left: '10%',
+        right: '10%',
+        top: '70%',
+        height: '20%',
+        containLabel: true
+      }
+    ];
+
+    // Configure dual y-axes
+    (this.chartOptions as any).yAxis = [
+      {
+        type: 'value',
+        scale: true,
+        gridIndex: 0,
+        splitNumber: 2,
+        axisLabel: { inside: true, showMinLabel: false }
+      },
+      {
+        type: 'value',
+        scale: true,
+        gridIndex: 1,
+        splitNumber: 2,
+        axisLabel: { inside: true, showMinLabel: false }
+      }
+    ];
+
+    // Configure dual x-axes
+    (this.chartOptions as any).xAxis = [
+      {
+        type: 'category',
+        gridIndex: 0,
+        data: this.xAxisData,
+        boundaryGap: false,
+        axisLine: { onZero: false },
+        splitLine: { show: false },
+        min: 'dataMin',
+        max: 'dataMax'
+      },
+      {
+        type: 'category',
+        gridIndex: 1,
+        data: this.xAxisData,
+        boundaryGap: false,
+        axisLine: { onZero: false },
+        splitLine: { show: false },
+        min: 'dataMin',
+        max: 'dataMax'
+      }
+    ];
   }
 } 

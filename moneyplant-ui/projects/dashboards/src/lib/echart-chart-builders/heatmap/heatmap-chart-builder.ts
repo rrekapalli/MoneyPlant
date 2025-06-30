@@ -2,6 +2,14 @@ import { IWidget, WidgetBuilder } from '../../../public-api';
 import { EChartsOption } from 'echarts';
 import { ApacheEchartBuilder, ChartDataTransformOptions, DataFilter, ColorPalette } from '../apache-echart-builder';
 
+// Chart Variants Enum
+export enum HEATMAP_VARIANTS {
+  BASIC = 'basic',
+  CALENDAR = 'calendar',
+  CORRELATION = 'correlation',
+  LARGE_DATASET = 'large_dataset'
+}
+
 export interface HeatmapChartData {
   value: [number, number, number]; // [x, y, value]
   name?: string;
@@ -654,9 +662,110 @@ export class HeatmapChartBuilder extends ApacheEchartBuilder<HeatmapChartOptions
   static override getExportSheetName(widget: IWidget): string {
     return 'Heatmap Chart Data';
   }
+
+  /**
+   * Set chart variant
+   */
+  setVariant(variant: HEATMAP_VARIANTS): this {
+    switch (variant) {
+      case HEATMAP_VARIANTS.BASIC:
+        this.applyBasicVariant();
+        break;
+      case HEATMAP_VARIANTS.CALENDAR:
+        this.applyCalendarVariant();
+        break;
+      case HEATMAP_VARIANTS.CORRELATION:
+        this.applyCorrelationVariant();
+        break;
+      case HEATMAP_VARIANTS.LARGE_DATASET:
+        this.applyLargeDatasetVariant();
+        break;
+      default:
+        this.applyBasicVariant();
+    }
+    return this;
+  }
+
+  /**
+   * Apply basic heatmap configuration (standard matrix heatmap)
+   */
+  private applyBasicVariant(): void {
+    this.seriesOptions.type = 'heatmap';
+    this.seriesOptions.itemStyle = {
+      borderColor: '#fff',
+      borderWidth: 1,
+    };
+    this.setVisualMap(0, 10, ['#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8', '#ffffcc', '#fee090', '#fdae61', '#f46d43', '#d73027', '#a50026']);
+    this.seriesOptions.progressive = 1000;
+    this.seriesOptions.progressiveThreshold = 3000;
+  }
+
+  /**
+   * Apply calendar heatmap configuration (calendar-style layout)
+   */
+  private applyCalendarVariant(): void {
+    this.seriesOptions.type = 'heatmap';
+    (this.chartOptions as any).calendar = {
+      range: new Date().getFullYear(),
+      cellSize: ['auto', 20],
+      yearLabel: { show: false },
+      dayLabel: { 
+        show: true,
+        firstDay: 1,
+        nameMap: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+      },
+      monthLabel: { show: true }
+    };
+    (this.seriesOptions as any).coordinateSystem = 'calendar';
+    this.setVisualMap(0, 100, ['#ebedf0', '#c6e48b', '#7bc96f', '#239a3b', '#196127']);
+    this.seriesOptions.itemStyle = {
+      borderColor: '#fff',
+      borderWidth: 2,
+    };
+  }
+
+  /**
+   * Apply correlation matrix configuration (symmetric correlation matrix)
+   */
+  private applyCorrelationVariant(): void {
+    this.seriesOptions.type = 'heatmap';
+    this.setVisualMap(-1, 1, ['#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8', '#ffffcc', '#fee090', '#fdae61', '#f46d43', '#d73027', '#a50026']);
+    this.seriesOptions.itemStyle = {
+      borderColor: '#333',
+      borderWidth: 1,
+    };
+    // Configure for correlation matrix display
+    (this.chartOptions as any).visualMap = {
+      ...((this.chartOptions as any).visualMap || {}),
+      text: ['High Correlation', 'Low Correlation'],
+      orient: 'vertical',
+      left: 'right',
+      top: 'center'
+    };
+  }
+
+  /**
+   * Apply large dataset configuration (optimized for performance)
+   */
+  private applyLargeDatasetVariant(): void {
+    this.seriesOptions.type = 'heatmap';
+    this.seriesOptions.progressive = 500;
+    this.seriesOptions.progressiveThreshold = 1000;
+    this.seriesOptions.animation = false;
+    this.seriesOptions.itemStyle = {
+      borderColor: 'rgba(255,255,255,0.1)',
+      borderWidth: 0.5,
+    };
+    this.setVisualMap(0, 100, ['#313695', '#74add1', '#e0f3f8', '#fee090', '#d73027']);
+    // Optimize visual map for performance
+    (this.chartOptions as any).visualMap = {
+      ...((this.chartOptions as any).visualMap || {}),
+      calculable: false,
+      realtime: false
+    };
+  }
 }
 
-// Legacy function for backward compatibility
 export function createHeatmapChartWidget(data?: HeatmapChartData[], xAxisData?: string[], yAxisData?: string[]): WidgetBuilder {
   return HeatmapChartBuilder.createHeatmapChartWidget(data, xAxisData, yAxisData);
 } 

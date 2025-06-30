@@ -12,6 +12,14 @@ import {
   TOOLTIP_TEMPLATES 
 } from '../../dashboard-container/dashboard-constants';
 
+// Chart Variants Enum
+export enum DENSITY_MAP_VARIANTS {
+  BASIC = 'basic',
+  CHOROPLETH = 'choropleth',
+  BUBBLE = 'bubble',
+  HEAT = 'heat'
+}
+
 export interface DensityMapData {
   name: string;
   value: number;
@@ -908,11 +916,119 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
     return baseZoom - (zoomAdjustment * 0.1) - aspectAdjustment;
   }
 
+  /**
+   * Set chart variant
+   */
+  setVariant(variant: DENSITY_MAP_VARIANTS): this {
+    switch (variant) {
+      case DENSITY_MAP_VARIANTS.BASIC:
+        this.applyBasicVariant();
+        break;
+      case DENSITY_MAP_VARIANTS.CHOROPLETH:
+        this.applyChoroplethVariant();
+        break;
+      case DENSITY_MAP_VARIANTS.BUBBLE:
+        this.applyBubbleVariant();
+        break;
+      case DENSITY_MAP_VARIANTS.HEAT:
+        this.applyHeatVariant();
+        break;
+      default:
+        this.applyBasicVariant();
+    }
+    return this;
+  }
+
+  /**
+   * Apply basic density map configuration (standard color-coded regions)
+   */
+  private applyBasicVariant(): void {
+    this.seriesOptions.type = 'map';
+    this.setVisualMap(0, 100, [...getColorPalette(ColorScheme.DENSITY_BLUE)]);
+    this.setLabelShow(false);
+    this.seriesOptions.itemStyle = {
+      areaColor: '#eee',
+      borderColor: '#999',
+      borderWidth: 0.5,
+      shadowBlur: 10,
+      shadowColor: 'rgba(0, 0, 0, 0.3)',
+    };
+  }
+
+  /**
+   * Apply choropleth map configuration (distinct color categories)
+   */
+  private applyChoroplethVariant(): void {
+    this.seriesOptions.type = 'map';
+    // Use discrete color palette for choropleth
+    (this.chartOptions as any).visualMap = {
+      type: 'piecewise',
+      pieces: [
+        { min: 0, max: 20, color: '#313695' },
+        { min: 21, max: 40, color: '#4575b4' },
+        { min: 41, max: 60, color: '#74add1' },
+        { min: 61, max: 80, color: '#abd9e9' },
+        { min: 81, max: 100, color: '#e0f3f8' }
+      ],
+      left: 'left',
+      top: 'bottom',
+      text: ['High', 'Low'],
+      calculable: false
+    };
+    this.setLabelShow(true, 'inside', '{b}');
+    this.seriesOptions.itemStyle = {
+      areaColor: '#eee',
+      borderColor: '#333',
+      borderWidth: 1,
+    };
+  }
+
+  /**
+   * Apply bubble overlay configuration (bubbles on map)
+   */
+  private applyBubbleVariant(): void {
+    this.seriesOptions.type = 'map';
+    this.setVisualMap(0, 100, ['#fee5d9', '#fcae91', '#fb6a4a', '#de2d26', '#a50f15']);
+    this.setLabelShow(false);
+    this.seriesOptions.itemStyle = {
+      areaColor: '#f5f5f5',
+      borderColor: '#ccc',
+      borderWidth: 0.5,
+    };
+    // Configure emphasis for bubble effect
+    this.seriesOptions.emphasis = {
+      itemStyle: {
+        areaColor: '#ffeb3b',
+        shadowBlur: 20,
+        shadowColor: 'rgba(0, 0, 0, 0.7)',
+      },
+    };
+  }
+
+  /**
+   * Apply heat map style configuration (intense heat colors)
+   */
+  private applyHeatVariant(): void {
+    this.seriesOptions.type = 'map';
+    this.setVisualMap(0, 100, ['#000080', '#0000ff', '#00ffff', '#ffff00', '#ff8000', '#ff0000']);
+    this.setLabelShow(false);
+    this.seriesOptions.itemStyle = {
+      areaColor: '#000033',
+      borderColor: '#000066',
+      borderWidth: 0.2,
+      shadowBlur: 15,
+      shadowColor: 'rgba(255, 0, 0, 0.5)',
+    };
+    this.seriesOptions.emphasis = {
+      itemStyle: {
+        areaColor: '#ff0000',
+        shadowBlur: 25,
+        shadowColor: 'rgba(255, 0, 0, 0.8)',
+      },
+    };
+  }
 }
 
-/**
- * Convenience function to create a density map widget
- */
 export function createDensityMapWidget(
   data?: DensityMapData[],
   mapName?: string

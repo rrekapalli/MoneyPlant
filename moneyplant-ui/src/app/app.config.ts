@@ -8,6 +8,7 @@ import Nora from '@primeng/themes/nora';
 import Lara from '@primeng/themes/lara';
 import { GlobalErrorHandler } from './core/error-handler';
 import { csrfInterceptor } from './services/security';
+import { provideEchartsCore } from 'ngx-echarts';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -26,6 +27,10 @@ export const appConfig: ApplicationConfig = {
       theme: {
           preset: Lara
       }
+    }),
+    // Provide ECharts globally for ngx-echarts
+    provideEchartsCore({
+      echarts: () => import('echarts'),
     }),
     { 
       provide: ErrorHandler, 

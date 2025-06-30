@@ -69,17 +69,14 @@ export class PortfoliosComponent implements OnInit {
   }
 
   createPortfolio() {
-    console.log('Create portfolio');
     // Implementation for creating a new portfolio would go here
   }
 
   editPortfolio(portfolio: any) {
-    console.log('Edit portfolio', portfolio);
     // Implementation for editing a portfolio would go here
   }
 
   deletePortfolio(portfolio: any) {
-    console.log('Delete portfolio', portfolio);
     // Implementation for deleting a portfolio would go here
   }
 }

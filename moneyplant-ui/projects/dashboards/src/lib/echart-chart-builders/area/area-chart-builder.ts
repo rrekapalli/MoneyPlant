@@ -8,17 +8,30 @@ export interface AreaChartData {
   [key: string]: any;
 }
 
+/**
+ * Area Chart Variants enum for different area chart styles
+ */
+export enum AREA_VARIANTS {
+  BASIC = 'basic',
+  STACKED = 'stacked',
+  SMOOTH = 'smooth',
+  GRADIENT = 'gradient'
+}
+
 export interface AreaChartSeriesOptions {
   name?: string;
   type?: string;
-  data?: AreaChartData[] | number[];
-  smooth?: boolean;
+  data?: number[] | AreaChartData[];
+  smooth?: boolean | number;
   symbol?: string;
   symbolSize?: number;
+  showSymbol?: boolean;
+  stack?: string;
+  sampling?: string;
   lineStyle?: {
     width?: number;
     color?: string;
-    type?: string;
+    type?: 'solid' | 'dashed' | 'dotted';
   };
   itemStyle?: {
     color?: string;
@@ -30,7 +43,6 @@ export interface AreaChartSeriesOptions {
     opacity?: number;
     origin?: string;
   };
-  showSymbol?: boolean;
   emphasis?: {
     focus?: string;
     itemStyle?: {
@@ -39,29 +51,11 @@ export interface AreaChartSeriesOptions {
       shadowColor?: string;
     };
   };
-  stack?: string;
-  sampling?: string;
 }
 
 export interface AreaChartOptions extends EChartsOption {
-  xAxis?: {
-    type?: string;
-    data?: string[];
-    name?: string;
-    nameLocation?: string;
-    axisLabel?: {
-      rotate?: number;
-      color?: string;
-    };
-  };
-  yAxis?: {
-    type?: string;
-    name?: string;
-    nameLocation?: string;
-    axisLabel?: {
-      color?: string;
-    };
-  };
+  xAxis?: any;
+  yAxis?: any;
   series?: AreaChartSeriesOptions[];
 }
 
@@ -261,7 +255,7 @@ export class AreaChartBuilder extends ApacheEchartBuilder<AreaChartOptions, Area
   /**
    * Set line style
    */
-  setLineStyle(width: number, color: string, type: string = 'solid'): this {
+  setLineStyle(width: number, color: string, type: 'solid' | 'dashed' | 'dotted' = 'solid'): this {
     this.seriesOptions.lineStyle = {
       width,
       color,
@@ -338,6 +332,125 @@ export class AreaChartBuilder extends ApacheEchartBuilder<AreaChartOptions, Area
   setSampling(sampling: string): this {
     this.seriesOptions.sampling = sampling;
     return this;
+  }
+
+  /**
+   * Set area chart variant to change its appearance and behavior
+   * @param variant - The area chart variant to apply
+   */
+  setVariant(variant: AREA_VARIANTS): this {
+    switch (variant) {
+      case AREA_VARIANTS.BASIC:
+        this.applyBasicVariant();
+        break;
+      case AREA_VARIANTS.STACKED:
+        this.applyStackedVariant();
+        break;
+      case AREA_VARIANTS.SMOOTH:
+        this.applySmoothVariant();
+        break;
+      case AREA_VARIANTS.GRADIENT:
+        this.applyGradientVariant();
+        break;
+      default:
+        console.warn(`Unknown area chart variant: ${variant}`);
+        this.applyBasicVariant();
+    }
+    return this;
+  }
+
+  /**
+   * Apply basic area chart configuration
+   */
+  private applyBasicVariant(): void {
+    this.seriesOptions.smooth = false;
+    this.seriesOptions.stack = undefined;
+    this.seriesOptions.symbol = 'circle';
+    this.seriesOptions.symbolSize = 6;
+    this.seriesOptions.showSymbol = true;
+    this.seriesOptions.lineStyle = {
+      width: 2,
+      color: '#5470c6',
+      type: 'solid'
+    };
+    this.seriesOptions.areaStyle = {
+      color: '#5470c6',
+      opacity: 0.3,
+      origin: 'auto'
+    };
+  }
+
+  /**
+   * Apply stacked area chart configuration
+   */
+  private applyStackedVariant(): void {
+    this.seriesOptions.smooth = false;
+    this.seriesOptions.stack = 'total';
+    this.seriesOptions.symbol = 'circle';
+    this.seriesOptions.symbolSize = 4;
+    this.seriesOptions.showSymbol = true;
+    this.seriesOptions.lineStyle = {
+      width: 2,
+      color: '#91cc75',
+      type: 'solid'
+    };
+    this.seriesOptions.areaStyle = {
+      color: '#91cc75',
+      opacity: 0.6,
+      origin: 'auto'
+    };
+  }
+
+  /**
+   * Apply smooth area chart configuration
+   */
+  private applySmoothVariant(): void {
+    this.seriesOptions.smooth = true;
+    this.seriesOptions.stack = undefined;
+    this.seriesOptions.symbol = 'none';
+    this.seriesOptions.symbolSize = 0;
+    this.seriesOptions.showSymbol = false;
+    this.seriesOptions.lineStyle = {
+      width: 3,
+      color: '#fac858',
+      type: 'solid'
+    };
+    this.seriesOptions.areaStyle = {
+      color: '#fac858',
+      opacity: 0.4,
+      origin: 'auto'
+    };
+  }
+
+  /**
+   * Apply gradient area chart configuration
+   */
+  private applyGradientVariant(): void {
+    this.seriesOptions.smooth = true;
+    this.seriesOptions.stack = undefined;
+    this.seriesOptions.symbol = 'circle';
+    this.seriesOptions.symbolSize = 4;
+    this.seriesOptions.showSymbol = false;
+    this.seriesOptions.lineStyle = {
+      width: 2,
+      color: '#ee6666',
+      type: 'solid'
+    };
+    this.seriesOptions.areaStyle = {
+      color: {
+        type: 'linear',
+        x: 0,
+        y: 0,
+        x2: 0,
+        y2: 1,
+        colorStops: [
+          { offset: 0, color: '#ee6666' },
+          { offset: 1, color: '#73c0de' }
+        ]
+      },
+      opacity: 0.5,
+      origin: 'auto'
+    };
   }
 
   /**

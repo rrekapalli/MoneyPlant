@@ -7,7 +7,7 @@ import {TableComponent} from '../table/table.component';
 import {TileComponent} from '../tile/tile.component';
 import {MarkdownCellComponent} from '../markdown-cell/markdown-cell.component';
 import {CodeCellComponent} from '../code-cell/code-cell.component';
-import { provideEchartsCore } from 'ngx-echarts';
+
 import {ITableOptions} from '../../entities/ITableOptions';
 
 /**
@@ -44,11 +44,7 @@ const onGetWidget = (widget: IWidget) => {
   standalone: true,
   templateUrl:'./widget.component.html',
   imports: [NgComponentOutlet],
-  providers: [
-    provideEchartsCore({
-      echarts: () => import('echarts'),
-    })
-  ]
+  // ECharts provider moved to app.config.ts to avoid conflicts
 })
 export class WidgetComponent {
   /** Widget configuration to render */
