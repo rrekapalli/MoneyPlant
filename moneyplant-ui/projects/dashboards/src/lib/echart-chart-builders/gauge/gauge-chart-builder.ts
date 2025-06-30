@@ -1,6 +1,6 @@
 import { IWidget, WidgetBuilder } from '../../../public-api';
 import { EChartsOption } from 'echarts';
-import { ApacheEchartBuilder } from '../apache-echart-builder';
+import { ApacheEchartBuilder, ChartDataTransformOptions, DataFilter, ColorPalette } from '../apache-echart-builder';
 
 export interface GaugeChartData {
   value: number;
@@ -79,38 +79,45 @@ export interface GaugeChartOptions extends EChartsOption {
 }
 
 /**
- * Gauge Chart Builder extending the generic ApacheEchartBuilder
+ * Enhanced Gauge Chart Builder extending the generic ApacheEchartBuilder
+ * 
+ * Features:
+ * - Generic data transformation from any[] to gauge chart format
+ * - Support for KPI monitoring and progress tracking
+ * - Predefined color palettes and gradients
+ * - Built-in formatters for currency, percentage, and numbers
+ * - Filter integration and sample data generation
+ * - Configuration presets for common use cases
+ * - Enhanced update methods with retry mechanisms
  * 
  * Usage examples:
  * 
- * // Basic usage with default options
+ * // Basic usage with generic data transformation
  * const widget = GaugeChartBuilder.create()
- *   .setData([{ value: 75, name: 'Progress' }])
- *   .setHeader('Savings Goal Progress')
+ *   .setData(genericDataArray)
+ *   .transformData({ valueField: 'progress', nameField: 'title' })
+ *   .setHeader('Progress Monitor')
  *   .setPosition({ x: 0, y: 0, cols: 4, rows: 4 })
  *   .build();
  * 
- * // Advanced usage with custom options
+ * // Advanced usage with KPI monitoring
  * const widget = GaugeChartBuilder.create()
- *   .setData([{ value: 85, name: 'Portfolio Performance' }])
- *   .setTitle('Portfolio Performance', 'Current Year')
- *   .setRange(0, 100)
- *   .setRadius('60%')
- *   .setCenter(['50%', '60%'])
- *   .setProgress(true, 10)
- *   .setPointer(true, '80%', 6)
- *   .setAxisLine(20, [[0.3, '#ff6e76'], [0.7, '#fddd60'], [1, '#58d9f9']])
- *   .setDetail(true, [0, '70%'], '#333', 20, '{value}%')
- *   .setTitle(true, [0, '-40%'], '#333', 16)
- *   .setHeader('Performance Gauge')
+ *   .setData(kpiData)
+ *   .transformData({ valueField: 'current', nameField: 'metric' })
+ *   .setKPIMonitoringConfiguration()
+ *   .setPercentageFormatter(0)
+ *   .setPredefinedPalette('business')
+ *   .setFilterColumn('department')
+ *   .setHeader('KPI Dashboard')
  *   .setPosition({ x: 0, y: 0, cols: 6, rows: 4 })
  *   .build();
  * 
- * // Update widget data dynamically
+ * // Update with enhanced data transformation
  * GaugeChartBuilder.updateData(widget, newData);
  */
 export class GaugeChartBuilder extends ApacheEchartBuilder<GaugeChartOptions, GaugeChartSeriesOptions> {
   protected override seriesOptions: GaugeChartSeriesOptions;
+  private filterColumn: string = '';
 
   private constructor() {
     super();
@@ -211,16 +218,61 @@ export class GaugeChartBuilder extends ApacheEchartBuilder<GaugeChartOptions, Ga
   }
 
   /**
+   * Transform generic data array to gauge chart format
+   */
+  transformData(options: ChartDataTransformOptions = {}): this {
+    if (!this.data || !Array.isArray(this.data)) {
+      return this;
+    }
+
+    const {
+      nameField = 'name',
+      valueField = 'value',
+      sortBy,
+      sortOrder = 'desc',
+      limit
+    } = options;
+
+    try {
+      let transformedData = this.data.map(item => ({
+        value: parseFloat(item[valueField]) || 0,
+        name: item[nameField] || 'Gauge',
+        originalItem: item
+      }));
+
+      // Apply sorting
+      if (sortBy === 'value') {
+        transformedData.sort((a, b) => sortOrder === 'asc' ? a.value - b.value : b.value - a.value);
+      } else if (sortBy === 'name') {
+        transformedData.sort((a, b) => sortOrder === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name));
+      }
+
+      // Apply limit (typically gauge shows single value)
+      if (limit && limit > 0) {
+        transformedData = transformedData.slice(0, limit);
+      }
+
+      // For gauge, usually we show the first/primary value
+      this.seriesOptions.data = transformedData.length > 0 ? [transformedData[0]] : [];
+
+    } catch (error) {
+      console.error('Error transforming gauge chart data:', error);
+    }
+
+    return this;
+  }
+
+  /**
    * Set the data for the gauge chart
    */
   override setData(data: any): this {
-    this.seriesOptions.data = data as GaugeChartData[];
+    this.seriesOptions.data = Array.isArray(data) ? data : [data];
     super.setData(data);
     return this;
   }
 
   /**
-   * Set the range (min and max values)
+   * Set gauge range
    */
   setRange(min: number, max: number): this {
     this.seriesOptions.min = min;
@@ -229,7 +281,7 @@ export class GaugeChartBuilder extends ApacheEchartBuilder<GaugeChartOptions, Ga
   }
 
   /**
-   * Set the start and end angles
+   * Set gauge angles
    */
   setAngles(startAngle: number, endAngle: number): this {
     this.seriesOptions.startAngle = startAngle;
@@ -238,7 +290,7 @@ export class GaugeChartBuilder extends ApacheEchartBuilder<GaugeChartOptions, Ga
   }
 
   /**
-   * Set the radius of the gauge
+   * Set gauge radius
    */
   setRadius(radius: string | string[]): this {
     this.seriesOptions.radius = radius;
@@ -246,7 +298,7 @@ export class GaugeChartBuilder extends ApacheEchartBuilder<GaugeChartOptions, Ga
   }
 
   /**
-   * Set the center position of the gauge
+   * Set gauge center position
    */
   setCenter(center: string | string[]): this {
     this.seriesOptions.center = center;
@@ -254,109 +306,247 @@ export class GaugeChartBuilder extends ApacheEchartBuilder<GaugeChartOptions, Ga
   }
 
   /**
-   * Set the axis line style
+   * Set axis line configuration
    */
   setAxisLine(width: number, colors: Array<[number, string]>): this {
-    if (!this.seriesOptions.axisLine) this.seriesOptions.axisLine = {};
-    this.seriesOptions.axisLine.lineStyle = {
-      width,
-      color: colors,
+    this.seriesOptions.axisLine = {
+      lineStyle: {
+        width,
+        color: colors,
+      },
     };
     return this;
   }
 
   /**
-   * Set progress bar
+   * Set progress bar configuration
    */
   setProgress(show: boolean, width: number = 8): this {
-    if (!this.seriesOptions.progress) this.seriesOptions.progress = {};
-    this.seriesOptions.progress.show = show;
-    this.seriesOptions.progress.width = width;
+    this.seriesOptions.progress = {
+      show,
+      width,
+    };
     return this;
   }
 
   /**
-   * Set pointer
+   * Set pointer configuration
    */
   setPointer(show: boolean, length: string | number = '60%', width: number = 8): this {
-    if (!this.seriesOptions.pointer) this.seriesOptions.pointer = {};
-    this.seriesOptions.pointer.show = show;
-    this.seriesOptions.pointer.length = length;
-    this.seriesOptions.pointer.width = width;
+    this.seriesOptions.pointer = {
+      show,
+      length,
+      width,
+    };
     return this;
   }
 
   /**
-   * Set axis ticks
+   * Set axis tick configuration
    */
   setAxisTick(show: boolean, splitNumber: number = 5, length: number = 8, width: number = 2, color: string = '#999'): this {
-    if (!this.seriesOptions.axisTick) this.seriesOptions.axisTick = {};
-    this.seriesOptions.axisTick.show = show;
-    this.seriesOptions.axisTick.splitNumber = splitNumber;
-    this.seriesOptions.axisTick.length = length;
-    this.seriesOptions.axisTick.lineStyle = {
-      width,
-      color,
+    this.seriesOptions.axisTick = {
+      show,
+      splitNumber,
+      length,
+      lineStyle: {
+        width,
+        color,
+      },
     };
     return this;
   }
 
   /**
-   * Set split lines
+   * Set split line configuration
    */
   setSplitLine(show: boolean, length: number = 30, width: number = 4, color: string = '#999'): this {
-    if (!this.seriesOptions.splitLine) this.seriesOptions.splitLine = {};
-    this.seriesOptions.splitLine.show = show;
-    this.seriesOptions.splitLine.length = length;
-    this.seriesOptions.splitLine.lineStyle = {
-      width,
-      color,
+    this.seriesOptions.splitLine = {
+      show,
+      length,
+      lineStyle: {
+        width,
+        color,
+      },
     };
     return this;
   }
 
   /**
-   * Set axis labels
+   * Set axis label configuration
    */
   setAxisLabel(show: boolean, distance: number = 5, color: string = '#999', fontSize: number = 12): this {
-    if (!this.seriesOptions.axisLabel) this.seriesOptions.axisLabel = {};
-    this.seriesOptions.axisLabel.show = show;
-    this.seriesOptions.axisLabel.distance = distance;
-    this.seriesOptions.axisLabel.color = color;
-    this.seriesOptions.axisLabel.fontSize = fontSize;
+    this.seriesOptions.axisLabel = {
+      show,
+      distance,
+      color,
+      fontSize,
+    };
     return this;
   }
 
   /**
-   * Set gauge title (renamed to avoid conflict with base class setTitle)
+   * Set gauge title configuration
    */
   setGaugeTitle(show: boolean, offsetCenter: [number, number] = [0, 70], color: string = '#464646', fontSize: number = 14): this {
-    if (!this.seriesOptions.title) this.seriesOptions.title = {};
-    this.seriesOptions.title.show = show;
-    this.seriesOptions.title.offsetCenter = offsetCenter;
-    this.seriesOptions.title.color = color;
-    this.seriesOptions.title.fontSize = fontSize;
+    this.seriesOptions.title = {
+      show,
+      offsetCenter,
+      color,
+      fontSize,
+    };
     return this;
   }
 
   /**
-   * Set detail
+   * Set detail configuration
    */
   setDetail(show: boolean, offsetCenter: [number, number] = [0, 40], color: string = '#464646', fontSize: number = 30, formatter: string = '{value}%'): this {
-    if (!this.seriesOptions.detail) this.seriesOptions.detail = {};
-    this.seriesOptions.detail.show = show;
-    this.seriesOptions.detail.offsetCenter = offsetCenter;
-    this.seriesOptions.detail.color = color;
-    this.seriesOptions.detail.fontSize = fontSize;
-    this.seriesOptions.detail.formatter = formatter;
+    this.seriesOptions.detail = {
+      show,
+      offsetCenter,
+      color,
+      fontSize,
+      formatter,
+    };
     return this;
+  }
+
+  /**
+   * Set predefined color palette for axis line
+   */
+  override setPredefinedPalette(palette: ColorPalette): this {
+    const colors = this.getPaletteColors(palette);
+    const colorStops: Array<[number, string]> = [];
+    
+    for (let i = 0; i < colors.length && i < 3; i++) {
+      colorStops.push([(i + 1) / 3, colors[i]]);
+    }
+    
+    if (colorStops.length === 0) {
+      colorStops.push([0.3, '#ff6e76'], [0.7, '#fddd60'], [1, '#58d9f9']);
+    }
+    
+    this.setAxisLine(30, colorStops);
+    return this;
+  }
+
+  /**
+   * Set currency formatter for gauge
+   */
+  override setCurrencyFormatter(currency: string = 'USD', locale: string = 'en-US'): this {
+    const formatter = this.createCurrencyFormatter(currency, locale);
+    this.setDetail(true, [0, 40], '#464646', 30, `{value | ${formatter.name}}`);
+    return this;
+  }
+
+  /**
+   * Set percentage formatter for gauge
+   */
+  override setPercentageFormatter(decimals: number = 1): this {
+    this.setDetail(true, [0, 40], '#464646', 30, `{value}%`);
+    return this;
+  }
+
+  /**
+   * Set number formatter for gauge with custom options
+   */
+  setCustomNumberFormatter(decimals: number = 0, locale: string = 'en-US'): this {
+    const formatter = this.createNumberFormatter(decimals, locale);
+    this.setDetail(true, [0, 40], '#464646', 30, `{value}`);
+    return this;
+  }
+
+  /**
+   * Set filter column for filtering integration
+   */
+  override setFilterColumn(column: string): this {
+    this.filterColumn = column;
+    return this;
+  }
+
+  /**
+   * Create filter from chart data
+   */
+  createFilterFromChartData(): DataFilter[] {
+    if (!this.filterColumn || !this.data) return [];
+
+    const uniqueValues = [...new Set(this.data.map(item => item[this.filterColumn]))];
+    return [{
+      column: this.filterColumn,
+      operator: 'in',
+      value: uniqueValues
+    }];
+  }
+
+  /**
+   * Generate sample data for testing
+   */
+  generateSampleData(count: number = 1): this {
+    const sampleData = [];
+    
+    for (let i = 0; i < count; i++) {
+      sampleData.push({
+        value: Math.floor(Math.random() * 100),
+        name: `Gauge ${i + 1}`,
+        progress: Math.floor(Math.random() * 100),
+        target: 100,
+        category: ['Performance', 'Efficiency', 'Quality'][Math.floor(Math.random() * 3)]
+      });
+    }
+
+    return this.setData(sampleData);
+  }
+
+  /**
+   * Configuration preset for KPI monitoring
+   */
+  setKPIMonitoringConfiguration(): this {
+    return this
+      .setRange(0, 100)
+      .setRadius('70%')
+      .setCenter(['50%', '55%'])
+      .setProgress(true, 10)
+      .setPointer(true, '70%', 6)
+      .setPredefinedPalette('business')
+      .setDetail(true, [0, 70], '#333', 24, '{value}%')
+      .setGaugeTitle(true, [0, -30], '#666', 16);
+  }
+
+  /**
+   * Configuration preset for performance tracking
+   */
+  setPerformanceTrackingConfiguration(): this {
+    return this
+      .setRange(0, 100)
+      .setRadius('80%')
+      .setCenter(['50%', '60%'])
+      .setProgress(true, 15)
+      .setPointer(false)
+      .setPredefinedPalette('finance')
+      .setDetail(true, [0, 10], '#333', 32, '{value}%')
+      .setGaugeTitle(true, [0, -40], '#666', 18);
+  }
+
+  /**
+   * Configuration preset for progress indicator
+   */
+  setProgressIndicatorConfiguration(): this {
+    return this
+      .setRange(0, 100)
+      .setRadius('60%')
+      .setCenter(['50%', '50%'])
+      .setProgress(true, 8)
+      .setPointer(true, '60%', 4)
+      .setPredefinedPalette('modern')
+      .setDetail(true, [0, 60], '#333', 20, '{value}%')
+      .setGaugeTitle(true, [0, -50], '#666', 14);
   }
 
   /**
    * Override build method to merge series options
    */
   override build(): IWidget {
-    // Merge series options with chart options
     const finalOptions: GaugeChartOptions = {
       ...this.chartOptions,
       series: [{
@@ -371,10 +561,50 @@ export class GaugeChartBuilder extends ApacheEchartBuilder<GaugeChartOptions, Ga
   }
 
   /**
-   * Static method to update data on an existing gauge chart widget
+   * Enhanced updateData with retry mechanism
    */
   static override updateData(widget: IWidget, data: any): void {
-    ApacheEchartBuilder.updateData(widget, data);
+    const maxRetries = 3;
+    let retryCount = 0;
+
+    const updateWithRetry = () => {
+      try {
+        if (widget.chartInstance) {
+          // Transform data if needed
+          let transformedData = data;
+          if (Array.isArray(data) && data.length > 0 && typeof data[0] === 'object') {
+            transformedData = data.map(item => ({
+              value: parseFloat(item.value) || 0,
+              name: item.name || 'Gauge'
+            }));
+          } else if (typeof data === 'number') {
+            transformedData = [{ value: data, name: 'Gauge' }];
+          }
+
+          const currentOptions = widget.chartInstance.getOption();
+          const newOptions = {
+            ...currentOptions,
+            series: [{
+              ...(currentOptions as any)['series'][0],
+              data: Array.isArray(transformedData) ? transformedData : [transformedData]
+            }]
+          };
+
+          widget.chartInstance.setOption(newOptions, true);
+        } else if (retryCount < maxRetries) {
+          retryCount++;
+          setTimeout(updateWithRetry, 100 * retryCount);
+        }
+      } catch (error) {
+        console.error('Error updating gauge chart data:', error);
+        if (retryCount < maxRetries) {
+          retryCount++;
+          setTimeout(updateWithRetry, 100 * retryCount);
+        }
+      }
+    };
+
+    updateWithRetry();
   }
 
   /**
@@ -385,81 +615,65 @@ export class GaugeChartBuilder extends ApacheEchartBuilder<GaugeChartOptions, Ga
   }
 
   /**
-   * Static method to create a gauge chart widget with default configuration
-   * (for backward compatibility)
+   * Static method to create gauge chart widget
    */
   static createGaugeChartWidget(data?: GaugeChartData[]): WidgetBuilder {
     const builder = GaugeChartBuilder.create();
+    
     if (data) {
       builder.setData(data);
     }
     
-    const finalOptions: GaugeChartOptions = {
-      ...builder['chartOptions'],
-      series: [{
-        ...builder['seriesOptions'],
-        type: 'gauge',
-      }],
-    };
-
-    return builder['widgetBuilder']
-      .setEChartsOptions(finalOptions)
-      .setData(data || []);
+    return builder.getWidgetBuilder();
   }
 
   /**
    * Export gauge chart data for Excel/CSV export
-   * Extracts metric name, current value, target value, and calculated percentage
-   * @param widget - Widget containing gauge chart data
-   * @returns Array of data rows for export
    */
   static override exportData(widget: IWidget): any[] {
-    const series = (widget.config?.options as any)?.series?.[0];
+    const exportData: any[] = [];
     
-    if (!series?.data) {
-      console.warn('GaugeChartBuilder.exportData - No series data found');
-      return [];
+    if (widget['echart_options']?.series?.[0]?.data) {
+      const seriesData = widget['echart_options'].series[0].data;
+      
+      seriesData.forEach((item: any) => {
+        if (item) {
+          exportData.push({
+            Name: item.name || 'Gauge',
+            Value: item.value || 0,
+            Percentage: this.calculatePercentage(item.value || 0, widget['echart_options'].series[0].max || 100)
+          });
+        }
+      });
     }
-
-    const data = series.data[0];
-    const max = series.max || 100;
     
-    return [[
-      widget.config?.header?.title || 'Metric',
-      data?.value || 0,
-      max,
-      GaugeChartBuilder.calculatePercentage(data?.value || 0, max)
-    ]];
+    return exportData;
   }
 
   /**
-   * Get headers for gauge chart export
+   * Get export headers for Excel/CSV export
    */
   static override getExportHeaders(widget: IWidget): string[] {
-    return ['Metric', 'Value', 'Target', 'Percentage'];
+    return ['Name', 'Value', 'Percentage'];
   }
 
   /**
-   * Get sheet name for gauge chart export
+   * Get export sheet name for Excel export
    */
   static override getExportSheetName(widget: IWidget): string {
-    const title = widget.config?.header?.title || 'Sheet';
-    return title.replace(/[^\w\s]/gi, '').substring(0, 31).trim();
+    return 'Gauge Chart Data';
   }
 
   /**
-   * Calculate percentage for gauge chart data
+   * Calculate percentage for export
    */
   private static calculatePercentage(value: number, max: number): string {
-    if (max === 0) return '0%';
-    return `${((value / max) * 100).toFixed(2)}%`;
+    const percentage = (value / max) * 100;
+    return `${percentage.toFixed(1)}%`;
   }
 }
 
-/**
- * Legacy function for backward compatibility
- * @deprecated Use GaugeChartBuilder.create() instead
- */
+// Legacy function for backward compatibility
 export function createGaugeChartWidget(data?: GaugeChartData[]): WidgetBuilder {
   return GaugeChartBuilder.createGaugeChartWidget(data);
 } 

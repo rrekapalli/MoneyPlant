@@ -1,6 +1,6 @@
 import { IWidget, WidgetBuilder } from '../../../public-api';
 import { EChartsOption } from 'echarts';
-import { ApacheEchartBuilder } from '../apache-echart-builder';
+import { ApacheEchartBuilder, ChartDataTransformOptions, DataFilter, ColorPalette } from '../apache-echart-builder';
 
 export interface HeatmapChartData {
   value: [number, number, number]; // [x, y, value]
@@ -68,45 +68,22 @@ export interface HeatmapChartOptions extends EChartsOption {
 }
 
 /**
- * Heatmap Chart Builder extending the generic ApacheEchartBuilder
+ * Enhanced Heatmap Chart Builder extending the generic ApacheEchartBuilder
  * 
- * Usage examples:
- * 
- * // Basic usage with default options
- * const data = [
- *   { value: [0, 0, 5], name: 'Mon-Morning' },
- *   { value: [1, 0, 7], name: 'Tue-Morning' },
- *   { value: [2, 0, 3], name: 'Wed-Morning' }
- * ];
- * const widget = HeatmapChartBuilder.create()
- *   .setData(data)
- *   .setXAxisData(['Mon', 'Tue', 'Wed', 'Thu', 'Fri'])
- *   .setYAxisData(['Morning', 'Afternoon', 'Evening'])
- *   .setHeader('Weekly Activity Heatmap')
- *   .setPosition({ x: 0, y: 0, cols: 8, rows: 4 })
- *   .build();
- * 
- * // Advanced usage with custom options
- * const widget = HeatmapChartBuilder.create()
- *   .setData(data)
- *   .setXAxisData(['Mon', 'Tue', 'Wed', 'Thu', 'Fri'])
- *   .setYAxisData(['Morning', 'Afternoon', 'Evening'])
- *   .setTitle('Portfolio Activity Heatmap', 'Last Week')
- *   .setVisualMap(0, 10, ['#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8', '#ffffcc', '#fee090', '#fdae61', '#f46d43', '#d73027', '#a50026'])
- *   .setXAxisName('Days')
- *   .setYAxisName('Time Periods')
- *   .setTooltip('item', '{b}: {c}')
- *   .setHeader('Activity Heatmap')
- *   .setPosition({ x: 0, y: 0, cols: 10, rows: 6 })
- *   .build();
- * 
- * // Update widget data dynamically
- * HeatmapChartBuilder.updateData(widget, newData);
+ * Features:
+ * - Generic data transformation from any[] to heatmap format
+ * - Advanced formatting (currency, percentage, number)
+ * - Predefined color palettes
+ * - Filter integration
+ * - Sample data generation
+ * - Configuration presets for various use cases
+ * - Enhanced update methods with retry mechanism
  */
 export class HeatmapChartBuilder extends ApacheEchartBuilder<HeatmapChartOptions, HeatmapChartSeriesOptions> {
   protected override seriesOptions: HeatmapChartSeriesOptions;
   private xAxisData: string[] = [];
   private yAxisData: string[] = [];
+  private filterColumn: string = '';
 
   private constructor() {
     super();
@@ -201,6 +178,103 @@ export class HeatmapChartBuilder extends ApacheEchartBuilder<HeatmapChartOptions
   }
 
   /**
+   * Transform generic data to heatmap format
+   */
+  transformData(options: { 
+    xField?: string; 
+    yField?: string; 
+    valueField?: string; 
+    nameField?: string; 
+  } & ChartDataTransformOptions = {}): this {
+    if (!this.data || !Array.isArray(this.data)) {
+      return this;
+    }
+
+    const {
+      xField = 'x',
+      yField = 'y',
+      valueField = 'value',
+      nameField = 'name',
+      sortBy,
+      sortOrder = 'desc',
+      limit
+    } = options;
+
+    try {
+      let transformedData: HeatmapChartData[] = [];
+      const xAxisSet = new Set<string>();
+      const yAxisSet = new Set<string>();
+
+      // Apply filters first
+      let filteredData = this.data;
+      if ((options as any).filters && (options as any).filters.length > 0) {
+        filteredData = ApacheEchartBuilder.applyFilters(this.data, (options as any).filters);
+      }
+
+      // Transform data to heatmap format [x, y, value]
+      filteredData.forEach((item, index) => {
+        const xValue = item[xField] || index % 10;
+        const yValue = item[yField] || Math.floor(index / 10);
+        const value = parseFloat(item[valueField]) || 0;
+        const name = item[nameField] || `${xValue}-${yValue}`;
+
+        // Convert to indices if they're strings
+        const xIndex = typeof xValue === 'string' ? this.getAxisIndex(xValue, xAxisSet) : xValue;
+        const yIndex = typeof yValue === 'string' ? this.getAxisIndex(yValue, yAxisSet) : yValue;
+
+        transformedData.push({
+          value: [xIndex, yIndex, value] as [number, number, number],
+          name,
+          originalItem: item
+        });
+
+        if (typeof xValue === 'string') xAxisSet.add(xValue);
+        if (typeof yValue === 'string') yAxisSet.add(yValue);
+      });
+
+      // Apply sorting
+      if (sortBy === 'value') {
+        transformedData.sort((a, b) => sortOrder === 'asc' ? a.value[2] - b.value[2] : b.value[2] - a.value[2]);
+      }
+
+      // Apply limit
+      if (limit && limit > 0) {
+        transformedData = transformedData.slice(0, limit);
+      }
+
+      this.seriesOptions.data = transformedData;
+
+      // Set axis data if we have string categories
+      if (xAxisSet.size > 0) {
+        this.setXAxisData(Array.from(xAxisSet).sort());
+      }
+      if (yAxisSet.size > 0) {
+        this.setYAxisData(Array.from(yAxisSet).sort());
+      }
+
+      // Update visual map range based on data
+      const values = transformedData.map(item => item.value[2]);
+      const minValue = Math.min(...values);
+      const maxValue = Math.max(...values);
+      this.setVisualMap(minValue, maxValue);
+
+    } catch (error) {
+      console.error('Error transforming heatmap chart data:', error);
+    }
+
+    return this;
+  }
+
+  /**
+   * Helper method to get axis index for string values
+   */
+  private getAxisIndex(value: string, axisSet: Set<string>): number {
+    const sorted = Array.from(axisSet).sort();
+    const index = sorted.indexOf(value);
+    return index !== -1 ? index : sorted.length;
+  }
+
+  /**
    * Set the data for the heatmap chart
    */
   override setData(data: any): this {
@@ -214,7 +288,10 @@ export class HeatmapChartBuilder extends ApacheEchartBuilder<HeatmapChartOptions
    */
   setXAxisData(data: string[]): this {
     this.xAxisData = data;
-    (this.chartOptions as any).xAxis.data = data;
+    (this.chartOptions as any).xAxis = {
+      ...(this.chartOptions as any).xAxis,
+      data: data,
+    };
     return this;
   }
 
@@ -223,7 +300,10 @@ export class HeatmapChartBuilder extends ApacheEchartBuilder<HeatmapChartOptions
    */
   setYAxisData(data: string[]): this {
     this.yAxisData = data;
-    (this.chartOptions as any).yAxis.data = data;
+    (this.chartOptions as any).yAxis = {
+      ...(this.chartOptions as any).yAxis,
+      data: data,
+    };
     return this;
   }
 
@@ -231,8 +311,10 @@ export class HeatmapChartBuilder extends ApacheEchartBuilder<HeatmapChartOptions
    * Set X-axis name
    */
   setXAxisName(name: string): this {
-    if (!(this.chartOptions as any).xAxis) (this.chartOptions as any).xAxis = {};
-    (this.chartOptions as any).xAxis.name = name;
+    (this.chartOptions as any).xAxis = {
+      ...(this.chartOptions as any).xAxis,
+      name,
+    };
     return this;
   }
 
@@ -240,41 +322,183 @@ export class HeatmapChartBuilder extends ApacheEchartBuilder<HeatmapChartOptions
    * Set Y-axis name
    */
   setYAxisName(name: string): this {
-    if (!(this.chartOptions as any).yAxis) (this.chartOptions as any).yAxis = {};
-    (this.chartOptions as any).yAxis.name = name;
+    (this.chartOptions as any).yAxis = {
+      ...(this.chartOptions as any).yAxis,
+      name,
+    };
     return this;
   }
 
   /**
    * Set visual map configuration
    */
-  setVisualMap(min: number, max: number, colors: string[], text: [string, string] = ['High', 'Low']): this {
-    if (!(this.chartOptions as any).visualMap) (this.chartOptions as any).visualMap = {};
-    (this.chartOptions as any).visualMap.min = min;
-    (this.chartOptions as any).visualMap.max = max;
-    (this.chartOptions as any).visualMap.inRange = { color: colors };
-    (this.chartOptions as any).visualMap.text = text;
+  setVisualMap(min: number, max: number, colors?: string[], text: [string, string] = ['High', 'Low']): this {
+    (this.chartOptions as any).visualMap = {
+      ...(this.chartOptions as any).visualMap,
+      min,
+      max,
+      inRange: {
+        color: colors || ['#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8', '#ffffcc', '#fee090', '#fdae61', '#f46d43', '#d73027', '#a50026'],
+      },
+      text,
+    };
     return this;
+  }
+
+  /**
+   * Set predefined color palette
+   */
+  override setPredefinedPalette(palette: ColorPalette): this {
+    const colors = this.getPaletteColors(palette);
+    if (colors.length > 0) {
+      (this.chartOptions as any).visualMap = {
+        ...(this.chartOptions as any).visualMap,
+        inRange: {
+          color: colors,
+        },
+      };
+    }
+    return this;
+  }
+
+  /**
+   * Set currency formatter for values
+   */
+  override setCurrencyFormatter(currency: string = 'USD', locale: string = 'en-US'): this {
+    const formatter = this.createCurrencyFormatter(currency, locale);
+    this.setTooltip('item', (params: any) => {
+      const [x, y, value] = params.data.value;
+      return `${params.data.name || `(${x}, ${y})`}: ${formatter(value)}`;
+    });
+    return this;
+  }
+
+  /**
+   * Set percentage formatter for values
+   */
+  override setPercentageFormatter(decimals: number = 1): this {
+    const formatter = this.createPercentageFormatter(decimals);
+    this.setTooltip('item', (params: any) => {
+      const [x, y, value] = params.data.value;
+      return `${params.data.name || `(${x}, ${y})`}: ${formatter(value)}`;
+    });
+    return this;
+  }
+
+  /**
+   * Set number formatter for values with custom options
+   */
+  setCustomNumberFormatter(decimals: number = 1, locale: string = 'en-US'): this {
+    const formatter = this.createNumberFormatter(decimals, locale);
+    this.setTooltip('item', (params: any) => {
+      const [x, y, value] = params.data.value;
+      return `${params.data.name || `(${x}, ${y})`}: ${formatter(value)}`;
+    });
+    return this;
+  }
+
+  /**
+   * Set filter column for filtering integration
+   */
+  override setFilterColumn(column: string): this {
+    this.filterColumn = column;
+    return this;
+  }
+
+  /**
+   * Create filter from chart data
+   */
+  createFilterFromChartData(): DataFilter[] {
+    if (!this.filterColumn || !this.data) return [];
+
+    const uniqueValues = [...new Set(this.data.map(item => item[this.filterColumn]))];
+    return [{
+      column: this.filterColumn,
+      operator: 'in',
+      value: uniqueValues
+    }];
+  }
+
+  /**
+   * Generate sample data for testing
+   */
+  generateSampleData(xCount: number = 7, yCount: number = 5): this {
+    const sampleData = [];
+    const xCategories = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].slice(0, xCount);
+    const yCategories = ['Morning', 'Afternoon', 'Evening', 'Night', 'Late Night'].slice(0, yCount);
+    
+    for (let x = 0; x < xCount; x++) {
+      for (let y = 0; y < yCount; y++) {
+        sampleData.push({
+          x: xCategories[x],
+          y: yCategories[y],
+          value: Math.floor(Math.random() * 100),
+          category: ['High', 'Medium', 'Low'][Math.floor(Math.random() * 3)],
+          department: ['Sales', 'Marketing', 'Operations'][Math.floor(Math.random() * 3)]
+        });
+      }
+    }
+
+    return this.setData(sampleData);
+  }
+
+  /**
+   * Configuration preset for activity analysis
+   */
+  setActivityAnalysisConfiguration(): this {
+    return this
+      .setPredefinedPalette('business')
+      .setCustomNumberFormatter(0, 'en-US')
+      .setXAxisName('Time Period')
+      .setYAxisName('Activity Type')
+      .setVisualMapPosition('horizontal', 'center', '5%');
+  }
+
+  /**
+   * Configuration preset for correlation analysis
+   */
+  setCorrelationAnalysisConfiguration(): this {
+    return this
+      .setPredefinedPalette('modern')
+      .setPercentageFormatter(2)
+      .setXAxisName('Variable X')
+      .setYAxisName('Variable Y')
+      .setVisualMapPosition('vertical', 'right', 'center');
+  }
+
+  /**
+   * Configuration preset for performance matrix
+   */
+  setPerformanceMatrixConfiguration(): this {
+    return this
+      .setPredefinedPalette('finance')
+      .setCurrencyFormatter('USD', 'en-US')
+      .setXAxisName('Time')
+      .setYAxisName('Metrics')
+      .setVisualMapPosition('horizontal', 'center', 'bottom');
   }
 
   /**
    * Set visual map position
    */
   setVisualMapPosition(orient: string = 'horizontal', left: string | number = 'center', top: string | number = '5%'): this {
-    if (!(this.chartOptions as any).visualMap) (this.chartOptions as any).visualMap = {};
-    (this.chartOptions as any).visualMap.orient = orient;
-    (this.chartOptions as any).visualMap.left = left;
-    (this.chartOptions as any).visualMap.top = top;
+    (this.chartOptions as any).visualMap = {
+      ...(this.chartOptions as any).visualMap,
+      orient,
+      left,
+      top,
+    };
     return this;
   }
 
   /**
-   * Set item style (border color and width)
+   * Set item style for heatmap cells
    */
   setItemStyle(borderColor: string = '#fff', borderWidth: number = 1): this {
-    if (!this.seriesOptions.itemStyle) this.seriesOptions.itemStyle = {};
-    this.seriesOptions.itemStyle.borderColor = borderColor;
-    this.seriesOptions.itemStyle.borderWidth = borderWidth;
+    this.seriesOptions.itemStyle = {
+      borderColor,
+      borderWidth,
+    };
     return this;
   }
 
@@ -299,7 +523,6 @@ export class HeatmapChartBuilder extends ApacheEchartBuilder<HeatmapChartOptions
    * Override build method to merge series options
    */
   override build(): IWidget {
-    // Merge series options with chart options
     const finalOptions: HeatmapChartOptions = {
       ...this.chartOptions,
       series: [{
@@ -314,10 +537,53 @@ export class HeatmapChartBuilder extends ApacheEchartBuilder<HeatmapChartOptions
   }
 
   /**
-   * Static method to update data on an existing heatmap chart widget
+   * Enhanced updateData with retry mechanism
    */
   static override updateData(widget: IWidget, data: any): void {
-    ApacheEchartBuilder.updateData(widget, data);
+    const maxRetries = 3;
+    let retryCount = 0;
+
+    const updateWithRetry = () => {
+      try {
+        if (widget.chartInstance) {
+          // Transform data if needed
+          let transformedData = data;
+          if (Array.isArray(data) && data.length > 0 && typeof data[0] === 'object') {
+            transformedData = data.map((item, index) => ({
+              value: [
+                item.x || index % 10,
+                item.y || Math.floor(index / 10),
+                parseFloat(item.value) || 0
+              ] as [number, number, number],
+              name: item.name || `${item.x || index % 10}-${item.y || Math.floor(index / 10)}`,
+              ...item
+            }));
+          }
+
+          const currentOptions = widget.chartInstance.getOption();
+          const newOptions = {
+            ...currentOptions,
+            series: [{
+              ...(currentOptions as any)['series'][0],
+              data: transformedData
+            }]
+          };
+
+          widget.chartInstance.setOption(newOptions, true);
+        } else if (retryCount < maxRetries) {
+          retryCount++;
+          setTimeout(updateWithRetry, 100 * retryCount);
+        }
+      } catch (error) {
+        console.error('Error updating heatmap chart data:', error);
+        if (retryCount < maxRetries) {
+          retryCount++;
+          setTimeout(updateWithRetry, 100 * retryCount);
+        }
+      }
+    };
+
+    updateWithRetry();
   }
 
   /**
@@ -328,75 +594,69 @@ export class HeatmapChartBuilder extends ApacheEchartBuilder<HeatmapChartOptions
   }
 
   /**
-   * Static method to create a heatmap chart widget with default configuration
-   * (for backward compatibility)
+   * Static method to create heatmap chart widget
    */
   static createHeatmapChartWidget(data?: HeatmapChartData[], xAxisData?: string[], yAxisData?: string[]): WidgetBuilder {
     const builder = HeatmapChartBuilder.create();
+    
     if (data) {
       builder.setData(data);
     }
+    
     if (xAxisData) {
       builder.setXAxisData(xAxisData);
     }
+    
     if (yAxisData) {
       builder.setYAxisData(yAxisData);
     }
     
-    const finalOptions: HeatmapChartOptions = {
-      ...builder['chartOptions'],
-      series: [{
-        ...builder['seriesOptions'],
-        type: 'heatmap',
-      }],
-    };
-
-    return builder['widgetBuilder']
-      .setEChartsOptions(finalOptions)
-      .setData(data || []);
+    return builder.getWidgetBuilder();
   }
 
   /**
    * Export heatmap chart data for Excel/CSV export
-   * Extracts x-axis, y-axis, and value data points
-   * @param widget - Widget containing heatmap chart data
-   * @returns Array of data rows for export
    */
   static override exportData(widget: IWidget): any[] {
-    const series = (widget.config?.options as any)?.series?.[0];
+    const exportData: any[] = [];
     
-    if (!series?.data) {
-      console.warn('HeatmapChartBuilder.exportData - No series data found');
-      return [];
+    if (widget['echart_options']?.series?.[0]?.data) {
+      const seriesData = widget['echart_options'].series[0].data;
+      const xAxisData = widget['echart_options']?.xAxis?.data || [];
+      const yAxisData = widget['echart_options']?.yAxis?.data || [];
+      
+      seriesData.forEach((item: any) => {
+        if (item && item.value) {
+          const [x, y, value] = item.value;
+          exportData.push({
+            X: xAxisData[x] || x,
+            Y: yAxisData[y] || y,
+            Value: value,
+            Name: item.name || `${x}-${y}`
+          });
+        }
+      });
     }
-
-    return series.data.map((point: any) => [
-      point[0] || 'X',
-      point[1] || 'Y',
-      point[2] || 0
-    ]);
+    
+    return exportData;
   }
 
   /**
-   * Get headers for heatmap chart export
+   * Get export headers for Excel/CSV export
    */
   static override getExportHeaders(widget: IWidget): string[] {
-    return ['X Axis', 'Y Axis', 'Value'];
+    return ['X', 'Y', 'Value', 'Name'];
   }
 
   /**
-   * Get sheet name for heatmap chart export
+   * Get export sheet name for Excel export
    */
   static override getExportSheetName(widget: IWidget): string {
-    const title = widget.config?.header?.title || 'Sheet';
-    return title.replace(/[^\w\s]/gi, '').substring(0, 31).trim();
+    return 'Heatmap Chart Data';
   }
 }
 
-/**
- * Legacy function for backward compatibility
- * @deprecated Use HeatmapChartBuilder.create() instead
- */
+// Legacy function for backward compatibility
 export function createHeatmapChartWidget(data?: HeatmapChartData[], xAxisData?: string[], yAxisData?: string[]): WidgetBuilder {
   return HeatmapChartBuilder.createHeatmapChartWidget(data, xAxisData, yAxisData);
 } 

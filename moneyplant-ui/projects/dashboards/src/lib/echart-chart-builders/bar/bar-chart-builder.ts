@@ -1,6 +1,6 @@
 import { IWidget } from '../../../public-api';
 import { EChartsOption } from 'echarts';
-import { ApacheEchartBuilder } from '../apache-echart-builder';
+import { ApacheEchartBuilder, ChartDataTransformOptions, DataFilter, ColorPalette } from '../apache-echart-builder';
 
 export interface BarChartData {
   name: string;
@@ -32,35 +32,46 @@ export interface BarChartOptions extends EChartsOption {
 }
 
 /**
- * Bar Chart Builder extending the generic ApacheEchartBuilder
+ * Enhanced Bar Chart Builder extending the generic ApacheEchartBuilder
+ * 
+ * Features:
+ * - Generic data transformation from any[] to bar chart format
+ * - Predefined color palettes and gradients
+ * - Built-in formatters for currency, percentage, and numbers
+ * - Filter integration and sample data generation
+ * - Configuration presets for common use cases
+ * - Enhanced update methods with retry mechanisms
  * 
  * Usage examples:
  * 
- * // Basic usage with default options
+ * // Basic usage with generic data transformation
  * const widget = BarChartBuilder.create()
- *   .setData([10, 20, 30, 40, 50])
+ *   .setData(genericDataArray)
+ *   .transformData({ nameField: 'category', valueField: 'amount' })
  *   .setCategories(['Jan', 'Feb', 'Mar', 'Apr', 'May'])
  *   .setHeader('Monthly Sales')
  *   .setPosition({ x: 0, y: 0, cols: 4, rows: 4 })
  *   .build();
  * 
- * // Advanced usage with custom options
+ * // Advanced usage with presets and formatting
  * const widget = BarChartBuilder.create()
- *   .setData([10, 20, 30, 40, 50])
- *   .setCategories(['Jan', 'Feb', 'Mar', 'Apr', 'May'])
- *   .setTitle('Monthly Sales Report', 'Q1 2024')
- *   .setColors(['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de'])
- *   .setBarWidth('60%')
- *   .setBarBorderRadius(4)
- *   .setTooltip('axis', '{b}: {c}')
- *   .setLegend('horizontal', 'bottom')
- *   .setHeader('Custom Bar Chart')
+ *   .setData(genericDataArray)
+ *   .transformData({ nameField: 'category', valueField: 'revenue' })
+ *   .setSalesRevenueConfiguration()
+ *   .setCurrencyFormatter('USD', 'en-US')
+ *   .setPredefinedPalette('finance')
+ *   .setFilterColumn('department')
+ *   .setHeader('Revenue by Department')
  *   .setPosition({ x: 0, y: 0, cols: 6, rows: 4 })
  *   .build();
+ * 
+ * // Update with enhanced data transformation
+ * BarChartBuilder.updateData(widget, newData);
  */
 export class BarChartBuilder extends ApacheEchartBuilder<BarChartOptions, BarChartSeriesOptions> {
   protected override seriesOptions: BarChartSeriesOptions;
   private categories: string[] = [];
+  private filterColumn: string = '';
 
   private constructor() {
     super();
@@ -135,6 +146,66 @@ export class BarChartBuilder extends ApacheEchartBuilder<BarChartOptions, BarCha
   }
 
   /**
+   * Transform generic data array to bar chart format
+   */
+  transformData(options: ChartDataTransformOptions = {}): this {
+    if (!this.data || !Array.isArray(this.data)) {
+      return this;
+    }
+
+    const {
+      nameField = 'name',
+      valueField = 'value',
+      aggregateBy,
+      sortBy,
+      sortOrder = 'desc',
+      limit
+    } = options;
+
+    try {
+      let transformedData = this.data.map(item => ({
+        name: item[nameField] || 'Unknown',
+        value: parseFloat(item[valueField]) || 0
+      }));
+
+      // Apply aggregation if specified
+      if (aggregateBy) {
+        const aggregated = new Map<string, number>();
+        transformedData.forEach(item => {
+          const key = item.name;
+          aggregated.set(key, (aggregated.get(key) || 0) + item.value);
+        });
+        transformedData = Array.from(aggregated.entries()).map(([name, value]) => ({ name, value }));
+      }
+
+      // Apply sorting
+      if (sortBy === 'name') {
+        transformedData.sort((a, b) => sortOrder === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name));
+      } else if (sortBy === 'value') {
+        transformedData.sort((a, b) => sortOrder === 'asc' ? a.value - b.value : b.value - a.value);
+      }
+
+      // Apply limit
+      if (limit && limit > 0) {
+        transformedData = transformedData.slice(0, limit);
+      }
+
+      this.seriesOptions.data = transformedData;
+      
+      // Auto-generate categories if not provided
+      if (this.categories.length === 0) {
+        this.categories = transformedData.map(item => item.name);
+        this.setCategories(this.categories);
+      }
+
+    } catch (error) {
+      console.error('Error transforming bar chart data:', error);
+    }
+
+    return this;
+  }
+
+  /**
    * Set the data for the bar chart
    */
   override setData(data: any): this {
@@ -159,9 +230,16 @@ export class BarChartBuilder extends ApacheEchartBuilder<BarChartOptions, BarCha
    * Set colors for the bars
    */
   override setColors(colors: string[]): this {
-    // For bar charts, set colors directly on the series
     (this.seriesOptions as any).color = colors;
     return this;
+  }
+
+  /**
+   * Set predefined color palette
+   */
+  override setPredefinedPalette(palette: ColorPalette): this {
+    const colors = this.getPaletteColors(palette);
+    return this.setColors(colors);
   }
 
   /**
@@ -210,10 +288,116 @@ export class BarChartBuilder extends ApacheEchartBuilder<BarChartOptions, BarCha
   }
 
   /**
+   * Set currency formatter for values
+   */
+  override setCurrencyFormatter(currency: string = 'USD', locale: string = 'en-US'): this {
+    const formatter = this.createCurrencyFormatter(currency, locale);
+    this.setValueFormatter(formatter);
+    return this;
+  }
+
+  /**
+   * Set percentage formatter for values
+   */
+  override setPercentageFormatter(decimals: number = 1): this {
+    const formatter = this.createPercentageFormatter(decimals);
+    this.setValueFormatter(formatter);
+    return this;
+  }
+
+  /**
+   * Set number formatter for values with custom options
+   */
+  setCustomNumberFormatter(decimals: number = 0, locale: string = 'en-US'): this {
+    const formatter = this.createNumberFormatter(decimals, locale);
+    this.setValueFormatter(formatter);
+    return this;
+  }
+
+  /**
+   * Set filter column for filtering integration
+   */
+  override setFilterColumn(column: string): this {
+    this.filterColumn = column;
+    return this;
+  }
+
+  /**
+   * Create filter from chart data
+   */
+  createFilterFromChartData(): DataFilter[] {
+    if (!this.filterColumn || !this.data) return [];
+
+    const uniqueValues = [...new Set(this.data.map(item => item[this.filterColumn]))];
+    return [{
+      column: this.filterColumn,
+      operator: 'in',
+      value: uniqueValues
+    }];
+  }
+
+  /**
+   * Generate sample data for testing
+   */
+  generateSampleData(count: number = 5): this {
+    const sampleData = [];
+    const categories = ['Q1', 'Q2', 'Q3', 'Q4', 'Q5'];
+    
+    for (let i = 0; i < Math.min(count, categories.length); i++) {
+      sampleData.push({
+        name: categories[i],
+        value: Math.floor(Math.random() * 100) + 10,
+        category: categories[i],
+        department: ['Sales', 'Marketing', 'Operations'][Math.floor(Math.random() * 3)]
+      });
+    }
+
+    return this.setData(sampleData);
+  }
+
+  /**
+   * Configuration preset for sales revenue
+   */
+  setSalesRevenueConfiguration(): this {
+    return this
+      .setBarWidth('60%')
+      .setBarBorderRadius(4)
+      .setYAxisName('Revenue ($)')
+      .setXAxisName('Time Period')
+      .setPredefinedPalette('finance')
+      .setTooltip('axis', '{b}: ${c}');
+  }
+
+  /**
+   * Configuration preset for performance metrics
+   */
+  setPerformanceConfiguration(): this {
+    return this
+      .setBarWidth('70%')
+      .setBarBorderRadius(6)
+      .setYAxisName('Performance Score')
+      .setXAxisName('Metrics')
+      .setPredefinedPalette('business')
+      .setTooltip('axis', '{b}: {c}%');
+  }
+
+  /**
+   * Configuration preset for comparison analysis
+   */
+  setComparisonConfiguration(): this {
+    return this
+      .setBarWidth('50%')
+      .setBarBorderRadius(2)
+      .setYAxisName('Value')
+      .setXAxisName('Categories')
+      .setPredefinedPalette('modern')
+      .setTooltip('axis', '{b}: {c}');
+  }
+
+  /**
    * Override build method to merge series options
    */
   override build(): IWidget {
-    // Merge series options with chart options
     const finalOptions: BarChartOptions = {
       ...this.chartOptions,
       series: [{
@@ -228,10 +412,48 @@ export class BarChartBuilder extends ApacheEchartBuilder<BarChartOptions, BarCha
   }
 
   /**
-   * Static method to update data on an existing bar chart widget
+   * Enhanced updateData with retry mechanism
    */
   static override updateData(widget: IWidget, data: any): void {
-    ApacheEchartBuilder.updateData(widget, data);
+    const maxRetries = 3;
+    let retryCount = 0;
+
+    const updateWithRetry = () => {
+      try {
+        if (widget.chartInstance) {
+          // Transform data if needed
+          let transformedData = data;
+          if (Array.isArray(data) && data.length > 0 && typeof data[0] === 'object') {
+            transformedData = data.map(item => ({
+              name: item.name || item.category || 'Unknown',
+              value: parseFloat(item.value) || 0
+            }));
+          }
+
+                     const currentOptions = widget.chartInstance.getOption();
+           const newOptions = {
+             ...currentOptions,
+             series: [{
+               ...(currentOptions as any)['series'][0],
+               data: transformedData
+             }]
+           };
+
+          widget.chartInstance.setOption(newOptions, true);
+        } else if (retryCount < maxRetries) {
+          retryCount++;
+          setTimeout(updateWithRetry, 100 * retryCount);
+        }
+      } catch (error) {
+        console.error('Error updating bar chart data:', error);
+        if (retryCount < maxRetries) {
+          retryCount++;
+          setTimeout(updateWithRetry, 100 * retryCount);
+        }
+      }
+    };
+
+    updateWithRetry();
   }
 
   /**
@@ -243,56 +465,47 @@ export class BarChartBuilder extends ApacheEchartBuilder<BarChartOptions, BarCha
 
   /**
    * Export bar chart data for Excel/CSV export
-   * Extracts categories and their corresponding values
-   * @param widget - Widget containing bar chart data
-   * @returns Array of data rows for export
    */
   static override exportData(widget: IWidget): any[] {
-    const series = (widget.config?.options as any)?.series?.[0];
-    const xAxis = (widget.config?.options as any)?.xAxis;
+    const exportData: any[] = [];
     
-    if (!series?.data) {
-      console.warn('BarChartBuilder.exportData - No series data found');
-      return [];
-    }
-
-    // Handle different xAxis structures
-    let categories: string[] = [];
-    
-    if (xAxis) {
-      // Handle array of xAxis objects
-      if (Array.isArray(xAxis)) {
-        categories = xAxis[0]?.data || [];
-      } 
-      // Handle single xAxis object
-      else if (xAxis.data) {
-        categories = xAxis.data;
+    if (widget['echart_options']?.series?.[0]?.data && widget['echart_options']?.xAxis?.data) {
+      const seriesData = widget['echart_options'].series[0].data;
+      const categories = widget['echart_options'].xAxis.data;
+      
+      for (let i = 0; i < seriesData.length; i++) {
+        const item = seriesData[i];
+        const category = categories[i] || `Category ${i + 1}`;
+        
+        if (typeof item === 'object' && item !== null) {
+          exportData.push({
+            Category: item.name || category,
+            Value: item.value || 0,
+            ...item
+          });
+        } else {
+          exportData.push({
+            Category: category,
+            Value: item || 0
+          });
+        }
       }
     }
-
-    // If no categories found, create default ones
-    if (categories.length === 0) {
-      categories = series.data.map((_: any, index: number) => `Category ${index + 1}`);
-    }
-
-    return series.data.map((value: any, index: number) => [
-      categories[index] || `Category ${index + 1}`,
-      value || 0
-    ]);
+    
+    return exportData;
   }
 
   /**
-   * Get headers for bar chart export
+   * Get export headers for Excel/CSV export
    */
   static override getExportHeaders(widget: IWidget): string[] {
     return ['Category', 'Value'];
   }
 
   /**
-   * Get sheet name for bar chart export
+   * Get export sheet name for Excel export
    */
   static override getExportSheetName(widget: IWidget): string {
-    const title = widget.config?.header?.title || 'Sheet';
-    return title.replace(/[^\w\s]/gi, '').substring(0, 31).trim();
+    return 'Bar Chart Data';
   }
 } 

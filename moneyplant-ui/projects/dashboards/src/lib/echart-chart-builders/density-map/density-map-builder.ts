@@ -1,6 +1,6 @@
 import { IWidget, WidgetBuilder } from '../../../public-api';
 import { EChartsOption } from 'echarts';
-import { ApacheEchartBuilder } from '../apache-echart-builder';
+import { ApacheEchartBuilder, ChartDataTransformOptions, DataFilter, ColorPalette } from '../apache-echart-builder';
 import * as echarts from 'echarts/core';
 import { 
   ColorScheme, 
@@ -85,43 +85,20 @@ export interface DensityMapOptions extends EChartsOption {
 }
 
 /**
- * Density Map Chart Builder extending the generic ApacheEchartBuilder
+ * Enhanced Density Map Chart Builder extending the generic ApacheEchartBuilder
  * 
  * Features:
+ * - Generic data transformation from any[] to density map format
  * - Automatic map centering and zoom calculation based on widget dimensions
  * - Support for various map types (world, country-specific, custom)
  * - Conditional labeling for regions with data
  * - Customizable visual mapping and styling
- * 
- * Usage examples:
- * 
- * // Basic usage with automatic centering and zoom
- * const widget = DensityMapBuilder.create()
- *   .setData([
- *     { name: 'Hong Kong Island', value: 100 },
- *     { name: 'Kowloon', value: 80 },
- *     { name: 'New Territories', value: 60 }
- *   ])
- *   .setMap('HK')
- *   .setHeader('Population Density')
- *   .setPosition({ x: 0, y: 0, cols: 6, rows: 4 }) // Auto-centers and zooms based on 6x4 dimensions
- *   .build();
- * 
- * // Advanced usage with custom options (auto-centering still applies)
- * const widget = DensityMapBuilder.create()
- *   .setData(densityData)
- *   .setMap('HK')
- *   .setTitle('Hong Kong Population Density', '2023 Data')
- *   .setVisualMap(0, 100, ['#e0f3f8', '#abd9e9', '#74add1', '#4575b4', '#313695'])
- *   .setRoam(true)
- *   .setPosition({ x: 0, y: 0, cols: 8, rows: 6 }) // Auto-centers and zooms based on 8x6 dimensions
- *   .build();
- * 
- * // Update widget data dynamically
- * DensityMapBuilder.updateData(widget, newData);
- * 
- * // Update existing widget with auto-adjusted center and zoom
- * DensityMapBuilder.updateMapSettings(widget);
+ * - Advanced formatting (currency, percentage, number)
+ * - Predefined color palettes
+ * - Filter integration
+ * - Sample data generation
+ * - Configuration presets
+ * - Enhanced update methods with retry mechanism
  */
 export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, DensityMapSeriesOptions> {
   protected override seriesOptions: DensityMapSeriesOptions;
@@ -131,6 +108,7 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
   private centerCoords: [number, number] = [0, 0];
   private visualMapRange: [number, number] = [0, 100];
   private visualMapColors: readonly string[] = getColorPalette(ColorScheme.DENSITY_BLUE);
+  private filterColumn: string = '';
 
   private constructor() {
     super();
@@ -516,39 +494,254 @@ export class DensityMapBuilder extends ApacheEchartBuilder<DensityMapOptions, De
   }
 
   /**
-   * Update data for an existing density map widget
+   * Transform generic data to density map format
    */
-  static override updateData(widget: IWidget, data: DensityMapData[]): void {
-    if ((widget.config.options as any)?.series?.[0]) {
-      (widget.config.options as any).series[0].data = data;
+  transformData(options: { 
+    nameField?: string; 
+    valueField?: string; 
+    regionField?: string; 
+  } & ChartDataTransformOptions = {}): this {
+    if (!this.data || !Array.isArray(this.data)) {
+      return this;
     }
-    widget.data = data;
+
+    const {
+      nameField = 'name',
+      valueField = 'value',
+      regionField = 'region',
+      sortBy,
+      sortOrder = 'desc',
+      limit
+    } = options;
+
+    try {
+      let transformedData: DensityMapData[] = [];
+
+      // Apply filters first
+      let filteredData = this.data;
+      if ((options as any).filters && (options as any).filters.length > 0) {
+        filteredData = ApacheEchartBuilder.applyFilters(this.data, (options as any).filters);
+      }
+
+      // Transform data to density map format
+      filteredData.forEach(item => {
+        const name = item[nameField] || item[regionField] || 'Unknown';
+        const value = parseFloat(item[valueField]) || 0;
+        
+        transformedData.push({
+          name,
+          value,
+          originalItem: item
+        });
+      });
+
+      // Apply sorting
+      if (sortBy === 'value') {
+        transformedData.sort((a, b) => sortOrder === 'asc' ? a.value - b.value : b.value - a.value);
+      } else if (sortBy === 'name') {
+        transformedData.sort((a, b) => sortOrder === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name));
+      }
+
+      // Apply limit
+      if (limit && limit > 0) {
+        transformedData = transformedData.slice(0, limit);
+      }
+
+      this.seriesOptions.data = transformedData;
+
+      // Update visual map range based on data
+      const values = transformedData.map(item => item.value);
+      const minValue = Math.min(...values);
+      const maxValue = Math.max(...values);
+      this.setVisualMap(minValue, maxValue);
+
+    } catch (error) {
+      console.error('Error transforming density map data:', error);
+    }
+
+    return this;
   }
 
   /**
-   * Update existing density map widget with auto-adjusted center and zoom
-   * based on its current dimensions
+   * Set predefined color palette
    */
-  static updateMapSettings(widget: IWidget): void {
-    if (!DensityMapBuilder.isDensityMap(widget)) {
-      return;
+  override setPredefinedPalette(palette: ColorPalette): this {
+    const colors = this.getPaletteColors(palette);
+    if (colors.length > 0) {
+      this.setVisualMap(this.visualMapRange[0], this.visualMapRange[1], colors);
+    }
+    return this;
+  }
+
+  /**
+   * Set currency formatter for values
+   */
+  override setCurrencyFormatter(currency: string = 'USD', locale: string = 'en-US'): this {
+    const formatter = this.createCurrencyFormatter(currency, locale);
+    this.setTooltip('item', (params: any) => {
+      return `${params.name}: ${formatter(params.value)}`;
+    });
+    return this;
+  }
+
+  /**
+   * Set percentage formatter for values
+   */
+  override setPercentageFormatter(decimals: number = 1): this {
+    const formatter = this.createPercentageFormatter(decimals);
+    this.setTooltip('item', (params: any) => {
+      return `${params.name}: ${formatter(params.value)}`;
+    });
+    return this;
+  }
+
+  /**
+   * Set number formatter for values with custom options
+   */
+  setCustomNumberFormatter(decimals: number = 0, locale: string = 'en-US'): this {
+    const formatter = this.createNumberFormatter(decimals, locale);
+    this.setTooltip('item', (params: any) => {
+      return `${params.name}: ${formatter(params.value)}`;
+    });
+    return this;
+  }
+
+  /**
+   * Set filter column for filtering integration
+   */
+  override setFilterColumn(column: string): this {
+    this.filterColumn = column;
+    return this;
+  }
+
+  /**
+   * Create filter from chart data
+   */
+  createFilterFromChartData(): DataFilter[] {
+    if (!this.filterColumn || !this.data) return [];
+
+    const uniqueValues = [...new Set(this.data.map(item => item[this.filterColumn]))];
+    return [{
+      column: this.filterColumn,
+      operator: 'in',
+      value: uniqueValues
+    }];
+  }
+
+  /**
+   * Generate sample data for testing
+   */
+  generateSampleData(count: number = 10, mapType: string = 'world'): this {
+    const sampleData = [];
+    const regions = mapType === 'world' ? 
+      ['China', 'United States', 'India', 'Brazil', 'Russia', 'Japan', 'Germany', 'United Kingdom', 'France', 'Italy'] :
+      ['Region 1', 'Region 2', 'Region 3', 'Region 4', 'Region 5', 'Region 6', 'Region 7', 'Region 8', 'Region 9', 'Region 10'];
+    
+    for (let i = 0; i < Math.min(count, regions.length); i++) {
+      sampleData.push({
+        name: regions[i],
+        value: Math.floor(Math.random() * 1000) + 100,
+        density: Math.floor(Math.random() * 500) + 50,
+        population: Math.floor(Math.random() * 1000000) + 100000,
+        category: ['High', 'Medium', 'Low'][Math.floor(Math.random() * 3)]
+      });
     }
 
-    const position = widget.position;
-    if (!position) {
-      return;
-    }
+    return this.setData(sampleData);
+  }
 
-    // Calculate new center and zoom
-    const builder = new DensityMapBuilder();
-    const center = builder.calculateMapCenter(position.cols, position.rows);
-    const zoom = builder.calculateMapZoom(position.cols, position.rows);
+  /**
+   * Configuration preset for population density analysis
+   */
+  setPopulationDensityConfiguration(): this {
+    return this
+      .setMap('world')
+      .setPredefinedPalette('business')
+      .setCustomNumberFormatter(0, 'en-US')
+      .setVisualMapOptions({
+        text: ['High Density', 'Low Density'],
+        orient: 'vertical',
+        left: 'left',
+        top: 'center'
+      });
+  }
 
-    // Update the widget's series configuration
-    if ((widget.config.options as any)?.series?.[0]) {
-      (widget.config.options as any).series[0].center = center;
-      (widget.config.options as any).series[0].zoom = zoom;
-    }
+  /**
+   * Configuration preset for economic indicators
+   */
+  setEconomicIndicatorsConfiguration(): this {
+    return this
+      .setMap('world')
+      .setPredefinedPalette('finance')
+      .setCurrencyFormatter('USD', 'en-US')
+      .setVisualMapOptions({
+        text: ['Highest', 'Lowest'],
+        orient: 'horizontal',
+        left: 'center',
+        bottom: '10%'
+      });
+  }
+
+  /**
+   * Configuration preset for risk assessment
+   */
+  setRiskAssessmentConfiguration(): this {
+    return this
+      .setMap('world')
+      .setPredefinedPalette('modern')
+      .setPercentageFormatter(1)
+      .setVisualMapOptions({
+        text: ['High Risk', 'Low Risk'],
+        orient: 'vertical',
+        right: '10%',
+        top: 'center'
+      });
+  }
+
+  /**
+   * Enhanced updateData with retry mechanism
+   */
+  static override updateData(widget: IWidget, data: DensityMapData[]): void {
+    const maxRetries = 3;
+    let retryCount = 0;
+
+    const updateWithRetry = () => {
+      try {
+        if (widget.chartInstance) {
+          // Transform data if needed
+          let transformedData = data;
+          if (Array.isArray(data) && data.length > 0 && typeof data[0] === 'object') {
+            transformedData = data.map(item => ({
+              ...item,
+              name: item.name || 'Unknown',
+              value: typeof item.value === 'number' ? item.value : parseFloat(item.value) || 0
+            }));
+          }
+
+          const currentOptions = widget.chartInstance.getOption();
+          const newOptions = {
+            ...currentOptions,
+            series: [{
+              ...(currentOptions as any)['series'][0],
+              data: transformedData
+            }]
+          };
+
+          widget.chartInstance.setOption(newOptions, true);
+        } else if (retryCount < maxRetries) {
+          retryCount++;
+          setTimeout(updateWithRetry, 100 * retryCount);
+        }
+      } catch (error) {
+        console.error('Error updating density map data:', error);
+        if (retryCount < maxRetries) {
+          retryCount++;
+          setTimeout(updateWithRetry, 100 * retryCount);
+        }
+      }
+    };
+
+    updateWithRetry();
   }
 
   /**

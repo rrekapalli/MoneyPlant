@@ -354,15 +354,103 @@ export class AreaChartBuilder extends ApacheEchartBuilder<AreaChartOptions, Area
   }
 
   /**
-   * Update widget data
+   * Update widget data with enhanced retry mechanism
    */
-  static override updateData(widget: IWidget, data: any): void {
+  static override updateData(widget: IWidget, data: any, retryOptions?: { maxAttempts?: number; baseDelay?: number }): void {
     if (AreaChartBuilder.isAreaChart(widget)) {
       const options = widget.config?.options as any;
       if (options?.series && options.series.length > 0) {
         options.series[0].data = data;
       }
     }
+    ApacheEchartBuilder.updateData(widget, data, retryOptions);
+  }
+
+  /**
+   * Transform generic data array to area chart format
+   */
+  static transformToAreaData(data: any[], options?: { 
+    valueField?: string; 
+    nameField?: string; 
+    xAxisField?: string;
+    multiSeries?: boolean;
+    seriesNameField?: string;
+  }): { data: AreaChartData[] | number[], xAxisData?: string[] } {
+    if (!data || data.length === 0) return { data: [] };
+
+    const valueField = options?.valueField || 'value';
+    const nameField = options?.nameField || 'name';
+    const xAxisField = options?.xAxisField || nameField;
+
+    if (options?.multiSeries) {
+      // Handle multi-series data
+      const seriesNameField = options.seriesNameField || 'series';
+      const seriesMap = new Map<string, any[]>();
+      
+      data.forEach(item => {
+        const seriesName = item[seriesNameField] || 'Series 1';
+        if (!seriesMap.has(seriesName)) {
+          seriesMap.set(seriesName, []);
+        }
+        seriesMap.get(seriesName)!.push({
+          name: String(item[nameField]) || 'Unknown',
+          value: Number(item[valueField]) || 0
+        });
+      });
+
+      // Return first series for now (can be extended)
+      const firstSeries = Array.from(seriesMap.values())[0] || [];
+      return {
+        data: firstSeries,
+        xAxisData: firstSeries.map((item: any) => item.name)
+      };
+    }
+
+    // Single series data
+    const transformedData = data.map(item => ({
+      name: String(item[nameField]) || 'Unknown',
+      value: Number(item[valueField]) || 0
+    }));
+
+    return {
+      data: transformedData,
+      xAxisData: data.map(item => String(item[xAxisField]) || 'Unknown')
+    };
+  }
+
+  /**
+   * Set financial trend configuration
+   */
+  setFinancialTrend(currencyCode: string = 'USD', locale: string = 'en-US'): this {
+    this.setCurrencyFormatter(currencyCode, locale);
+    
+    return this
+      .setSmooth(true)
+      .setSymbol('circle', 6)
+      .setLineStyle(3, '#5470c6', 'solid')
+      .setGradientAreaStyle('#5470c6', '#91cc75', 0.4);
+  }
+
+  /**
+   * Set performance monitoring configuration
+   */
+  setPerformanceMonitoring(): this {
+    return this
+      .setSmooth(true)
+      .setSampling('average')
+      .setShowSymbol(false)
+      .setLineStyle(1, '#ff6b6b', 'solid')
+      .setGradientAreaStyle('#ff6b6b', '#4ecdc4', 0.3);
+  }
+
+  /**
+   * Add data randomization for testing/demo purposes
+   */
+  static addRandomVariation(data: AreaChartData[], variationPercent: number = 25): AreaChartData[] {
+    return data.map(item => ({
+      ...item,
+      value: Math.max(0, item.value + (Math.random() - 0.5) * 2 * (item.value * variationPercent / 100))
+    }));
   }
 
   /**

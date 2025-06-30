@@ -85,43 +85,30 @@ import {
   // Fluent API
   StandardDashboardBuilder,
   ExcelExportService,
-  FilterService
+  FilterService,
+  // Enhanced Chart Builders
+  ApacheEchartBuilder,
+  PieChartBuilder,
+  AreaChartBuilder,
+  TreemapChartBuilder,
+  SankeyChartBuilder,
+  // Other builders and utilities
+  BarChartBuilder,
+  ScatterChartBuilder,
+  GaugeChartBuilder,
+  HeatmapChartBuilder,
+  PolarChartBuilder,
+  CandlestickChartBuilder,
+  SunburstChartBuilder
 } from '@dashboards/public-api';
 
-// Import widget creation functions
+// Import only essential widget creation functions and data
 import {
-  createAssetAllocationWidget,
-  createMonthlyIncomeExpensesWidget,
-  createPortfolioPerformanceWidget,
-  createRiskReturnWidget,
-  createSavingsGoalWidget,
-  createSpendingHeatmapWidget,
-  createInvestmentDistributionWidget,
-  createAreaChartWidget,
-  createPolarChartWidget,
-  createNewStackedAreaChartWidget,
-  createPerformanceStackedAreaChartWidget,
-  createMarketTrendStackedAreaChartWidget,
-  createTreemapChartWidget,
-  createExpenseTreemapWidget,
-  createLargeScaleTreemapWidget,
-  createSunburstChartWidget,
-  createOrganizationalSunburstWidget,
-  createLargeScaleSunburstWidget,
-  createSankeyChartWidget,
-  createInvestmentFlowSankeyWidget,
-  createBudgetAllocationSankeyWidget,
-  createMinimalSankeyChartWidget,
-  createCandlestickChartWidget,
-  createAdvancedCandlestickChartWidget,
   createFilterWidget,
   createMetricTiles,
   // Dashboard data
   INITIAL_DASHBOARD_DATA
 } from './widgets';
-
-// Import test filter widget directly
-import { createTestFilterWidget } from './widgets/test-filter-widget';
 
 // Import base dashboard component
 import { BaseDashboardComponent } from '@dashboards/public-api';
@@ -189,36 +176,160 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
   }
 
   /**
-   * Initialize dashboard config using the Fluent API
+   * Initialize dashboard config using the Enhanced Chart Builders
    */
   protected initializeDashboardConfig(): void {
-    // Create widgets using the new widget functions
-    const pieAssetAllocation = createAssetAllocationWidget();
-    const barMonthlyIncomeVsExpenses = createMonthlyIncomeExpensesWidget();
-    const linePortfolioPerformance = createPortfolioPerformanceWidget();
-    const scatterRiskVsReturn = createRiskReturnWidget();
-    const gaugeSavingsGoal = createSavingsGoalWidget();
-    const heatmapSpending = createSpendingHeatmapWidget();
-    const densityMapInvestment = createInvestmentDistributionWidget();
-    const areaChart = createAreaChartWidget();
-    const polarChart = createPolarChartWidget();
-    const stackedAreaChart = createNewStackedAreaChartWidget();
-    const performanceStackedAreaChart = createPerformanceStackedAreaChartWidget();
-    const marketTrendStackedAreaChart = createMarketTrendStackedAreaChartWidget();
-    const treemapChart = createTreemapChartWidget();
-    const expenseTreemap = createExpenseTreemapWidget();
-    const largeScaleTreemap = createLargeScaleTreemapWidget();
-    const sunburstChart = createSunburstChartWidget();
-    const organizationalSunburst = createOrganizationalSunburstWidget();
-    const largeScaleSunburst = createLargeScaleSunburstWidget();
-    const sankeyChart = createSankeyChartWidget();
-    const investmentFlowSankey = createInvestmentFlowSankeyWidget();
-    const budgetAllocationSankey = createBudgetAllocationSankeyWidget();
-    const minimalSankeyTest = createMinimalSankeyChartWidget();
-    const candlestickChart = createCandlestickChartWidget();
-    const advancedCandlestickChart = createAdvancedCandlestickChartWidget();
+    // Create widgets using enhanced chart builders
+    
+    // Asset Allocation Pie Chart with financial display
+    const pieAssetAllocation = PieChartBuilder.create()
+      .setData([]) // Data will be populated later
+      .setHeader('Asset Allocation')
+      .setPosition({ x: 9, y: 11, cols: 4, rows: 8 })
+      .setDonutStyle('40%', '70%')
+      .setFinancialDisplay('USD', 'en-US')
+      .setPredefinedPalette('finance')
+      .setFilterColumn('assetCategory')
+      .build();
+
+    // Monthly Income vs Expenses Bar Chart
+    const barMonthlyIncomeVsExpenses = BarChartBuilder.create()
+      .setData([]) // Data will be populated later
+      .setHeader('Monthly Income vs Expenses')
+      .setPosition({ x: 0, y: 13, cols: 8, rows: 8 })
+      .setCurrencyFormatter('USD', 'en-US')
+      .setPredefinedPalette('business')
+      .setTooltip('axis', '{b}: {c}')
+      .build();
+
+    // Portfolio Performance Area Chart
+    const linePortfolioPerformance = AreaChartBuilder.create()
+      .setData([]) // Data will be populated later
+      .setHeader('Portfolio Performance')
+      .setPosition({ x: 6, y: 0, cols: 6, rows: 8 })
+      .setFinancialTrend('USD', 'en-US')
+      .setPredefinedPalette('finance')
+      .build();
+
+    // Risk vs Return Scatter Chart
+    const scatterRiskVsReturn = ScatterChartBuilder.create()
+      .setData([]) // Data will be populated later
+      .setHeader('Risk vs Return Analysis')
+      .setPosition({ x: 0, y: 21, cols: 6, rows: 8 })
+      .setTooltip('item', '{b}: Risk {c[0]}%, Return {c[1]}%')
+      .setPredefinedPalette('modern')
+      .build();
+
+    // Savings Goal Gauge
+    const gaugeSavingsGoal = GaugeChartBuilder.create()
+      .setData([]) // Data will be populated later
+      .setHeader('Savings Goal Progress')
+      .setPosition({ x: 6, y: 21, cols: 3, rows: 4 })
+      .setPercentageFormatter(0)
+      .build();
+
+    // Spending Heatmap
+    const heatmapSpending = HeatmapChartBuilder.create()
+      .setData([]) // Data will be populated later
+      .setHeader('Weekly Spending Heatmap')
+      .setPosition({ x: 9, y: 21, cols: 3, rows: 8 })
+      .setCurrencyFormatter('USD', 'en-US')
+      .build();
+
+    // Investment Distribution Map (using density map builder)
+    const densityMapInvestment = DensityMapBuilder.create()
+      .setData([]) // Data will be populated later
+      .setHeader('Investment Distribution by Region')
+      .setPosition({ x: 0, y: 3, cols: 8, rows: 8 })
+      .setCurrencyFormatter('USD', 'en-US')
+      .build();
+
+    // Revenue Trend Area Chart
+    const areaChart = AreaChartBuilder.create()
+      .setData([]) // Data will be populated later
+      .setHeader('Revenue Trend')
+      .setPosition({ x: 12, y: 0, cols: 6, rows: 8 })
+      .setFinancialTrend('USD', 'en-US')
+      .build();
+
+    // Performance Metrics Polar Chart
+    const polarChart = PolarChartBuilder.create()
+      .setData([]) // Data will be populated later
+      .setHeader('Performance Metrics')
+      .setPosition({ x: 9, y: 15, cols: 4, rows: 8 })
+      .setPercentageFormatter(1)
+      .build();
+
+    // Financial Overview Stacked Area
+    const stackedAreaChart = AreaChartBuilder.create()
+      .setData([]) // Data will be populated later
+      .setHeader('Financial Overview')
+      .setPosition({ x: 0, y: 29, cols: 8, rows: 4 })
+      .setFinancialTrend('USD', 'en-US')
+      .setStack('total')
+      .build();
+
+    // Portfolio Distribution Treemap
+    const treemapChart = TreemapChartBuilder.create()
+      .setData([]) // Data will be populated later
+      .setHeader('Portfolio Distribution')
+      .setPosition({ x: 0, y: 8, cols: 6, rows: 8 })
+      .setPortfolioConfiguration()
+      .setFinancialDisplay('USD', 'en-US')
+      .build();
+
+    // Monthly Expenses Treemap
+    const expenseTreemap = TreemapChartBuilder.create()
+      .setData([]) // Data will be populated later
+      .setHeader('Monthly Expenses')
+      .setPosition({ x: 6, y: 8, cols: 6, rows: 8 })
+      .setExpenseConfiguration()
+      .setFinancialDisplay('USD', 'en-US')
+      .build();
+
+    // Organizational Structure Sunburst
+    const sunburstChart = SunburstChartBuilder.create()
+      .setData([]) // Data will be populated later
+      .setHeader('Organizational Structure')
+      .setPosition({ x: 12, y: 8, cols: 6, rows: 8 })
+      .build();
+
+    // Financial Flow Sankey
+    const sankeyChart = SankeyChartBuilder.create()
+      .setData({ nodes: [], links: [] }) // Data will be populated later
+      .setHeader('Financial Flow')
+      .setPosition({ x: 0, y: 33, cols: 8, rows: 8 })
+      .setFinancialFlow()
+      .setCurrencyDisplay('USD', 'en-US')
+      .build();
+
+    // Investment Flow Sankey
+    const investmentFlowSankey = SankeyChartBuilder.create()
+      .setData({ nodes: [], links: [] }) // Data will be populated later
+      .setHeader('Investment Flow')
+      .setPosition({ x: 8, y: 33, cols: 8, rows: 8 })
+      .setInvestmentFlow()
+      .setCurrencyDisplay('USD', 'en-US')
+      .build();
+
+    // Budget Allocation Sankey
+    const budgetAllocationSankey = SankeyChartBuilder.create()
+      .setData({ nodes: [], links: [] }) // Data will be populated later
+      .setHeader('Budget Allocation')
+      .setPosition({ x: 16, y: 33, cols: 8, rows: 8 })
+      .setBudgetAllocation()
+      .setCurrencyDisplay('USD', 'en-US')
+      .build();
+
+    // Stock Price Candlestick
+    const candlestickChart = CandlestickChartBuilder.create()
+      .setData([]) // Data will be populated later
+      .setHeader('Stock Price Analysis')
+      .setPosition({ x: 12, y: 16, cols: 6, rows: 8 })
+      .setCurrencyFormatter('USD', 'en-US')
+      .build();
+
     const filterWidget = createFilterWidget();
-    const testFilterWidget = createTestFilterWidget();
     const metricTiles = createMetricTiles(INITIAL_DASHBOARD_DATA);
 
     // Position metric tiles at row 0 (top of dashboard)
@@ -248,14 +359,24 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
         ...metricTiles,
         // Filter widget below tiles (row 1)
         filterWidget,
-        // Other widgets starting from row 2
-        densityMapInvestment,
+        // Core financial widgets
         pieAssetAllocation,
-        polarChart,
         barMonthlyIncomeVsExpenses,
-        candlestickChart,
-        advancedCandlestickChart,
-        testFilterWidget  // Enable test filter widget to demo highlighting
+        linePortfolioPerformance,
+        scatterRiskVsReturn,
+        gaugeSavingsGoal,
+        heatmapSpending,
+        densityMapInvestment,
+        areaChart,
+        polarChart,
+        stackedAreaChart,
+        treemapChart,
+        expenseTreemap,
+        sunburstChart,
+        sankeyChart,
+        investmentFlowSankey,
+        budgetAllocationSankey,
+        candlestickChart
       ])
       .setEditMode(false)
       .build();
@@ -421,17 +542,19 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
   }
 
   /**
-   * Get filtered data for a specific widget based on its requirements
-   * This method handles the specific data transformation for each widget type
+   * Get filtered data for a specific widget using enhanced chart builder transformation methods
    */
   protected getFilteredDataForWidget(widgetTitle: string, data?: DashboardDataRow[]): any {
     const sourceData = data || this.dashboardData;
 
     switch (widgetTitle) {
       case 'Asset Allocation':
-        // Group by assetCategory and sum totalValue (for current month or all data)
-        const assetData = this.groupByAndSum(sourceData, 'assetCategory', 'totalValue');
-        return assetData;
+        // Use enhanced data transformation for pie chart
+        return PieChartBuilder.transformData(sourceData, {
+          valueField: 'totalValue',
+          nameField: 'assetCategory',
+          sortBy: 'value'
+        });
         
       case 'Monthly Income vs Expenses':
         // Group by month and sum totalValue (for all asset categories)
@@ -439,8 +562,12 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
         return monthlyData;
         
       case 'Portfolio Performance':
-        // Group by month and sum totalValue (for all asset categories)
-        const portfolioData = this.groupByAndSum(sourceData, 'month', 'totalValue');
+        // Use AreaChartBuilder's transformation method
+        const { data: portfolioData, xAxisData } = AreaChartBuilder.transformToAreaData(sourceData, {
+          valueField: 'totalValue',
+          nameField: 'month',
+          xAxisField: 'month'
+        });
         return portfolioData;
         
       case 'Risk vs Return Analysis':
@@ -456,8 +583,7 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
           }
           return acc;
         }, {} as Record<string, any>);
-        const riskReturnResult = Object.values(groupedRiskReturn);
-        return riskReturnResult;
+        return Object.values(groupedRiskReturn);
         
       case 'Investment Distribution by Region':
         // Group by market (country) and sum totalValue for map visualization
@@ -514,14 +640,20 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
         return marketData;
         
       case 'Portfolio Distribution':
-        // Create treemap data from asset categories and markets
-        const treemapData = this.createTreemapData(sourceData);
-        return treemapData;
+        // Use TreemapChartBuilder's transformation method
+        return TreemapChartBuilder.transformToTreemapData(sourceData, {
+          valueField: 'totalValue',
+          nameField: 'market',
+          childrenField: 'assetCategory'
+        });
         
       case 'Monthly Expenses':
-        // Create alternative treemap data
-        const expenseTreemapData = this.createExpenseTreemapData(sourceData);
-        return expenseTreemapData;
+        // Use TreemapChartBuilder's transformation method for expenses
+        return TreemapChartBuilder.transformToTreemapData(sourceData, {
+          valueField: 'totalValue',
+          nameField: 'assetCategory',
+          childrenField: 'month'
+        });
         
       case 'Financial Overview Treemap':
         // Create large-scale treemap data
@@ -538,6 +670,17 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
         const largeSunburstData = this.createLargeSunburstData(sourceData);
         return largeSunburstData;
         
+      case 'Financial Flow':
+      case 'Investment Flow':
+      case 'Budget Allocation':
+        // Use SankeyChartBuilder's transformation method
+        return SankeyChartBuilder.transformToSankeyData(sourceData, {
+          sourceField: 'assetCategory',
+          targetField: 'market',
+          valueField: 'totalValue',
+          aggregateBy: 'sum'
+        });
+        
       case 'Test Filter Widget':
         // Group by assetCategory and sum totalValue (same as Asset Allocation)
         const testData = this.groupByAndSum(sourceData, 'assetCategory', 'totalValue');
@@ -547,6 +690,86 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
         console.warn(`Unknown widget title: ${widgetTitle}`);
         return null;
     }
+  }
+
+  /**
+   * Enhanced data update method using chart builder transformation methods
+   */
+  protected updateWidgetWithEnhancedData(widget: IWidget, sourceData: DashboardDataRow[]): void {
+    const widgetTitle = widget.config?.header?.title;
+    if (!widgetTitle) return;
+
+    // Get transformed data using the new approach
+    const transformedData = this.getFilteredDataForWidget(widgetTitle, sourceData);
+    if (!transformedData) return;
+
+    // Use enhanced update methods with retry mechanism
+    // Check if this is an ECharts widget
+    if (widget.config?.component !== 'echart') {
+      this.updateEchartWidget(widget, transformedData);
+      return;
+    }
+
+    const chartOptions = widget.config.options as any;
+    const chartType = chartOptions?.series?.[0]?.type;
+    
+    switch (chartType) {
+      case 'pie':
+        PieChartBuilder.updateData(widget, transformedData, { maxAttempts: 5, baseDelay: 200 });
+        break;
+      case 'line':
+        if (chartOptions?.series?.[0]?.areaStyle) {
+          // This is an area chart
+          AreaChartBuilder.updateData(widget, transformedData, { maxAttempts: 5, baseDelay: 200 });
+        }
+        break;
+      case 'treemap':
+        TreemapChartBuilder.updateData(widget, transformedData, { maxAttempts: 5, baseDelay: 200 });
+        break;
+      case 'sankey':
+        SankeyChartBuilder.updateData(widget, transformedData, { maxAttempts: 5, baseDelay: 200 });
+        break;
+      default:
+        // Fall back to the base update method
+        this.updateEchartWidget(widget, transformedData);
+        break;
+    }
+  }
+
+  /**
+   * Enhanced filtering method that applies filters and updates all widgets
+   */
+  protected applyEnhancedFilters(filters: any[]): void {
+    if (!this.dashboardConfig?.widgets) return;
+
+    // Apply filters to base data
+    let filteredData = this.dashboardData;
+    
+    if (filters && filters.length > 0) {
+      // Use the enhanced filtering from the base chart builder
+      const dataFilters = filters.map(filter => ({
+        property: filter.filterColumn || 'assetCategory',
+        operator: 'equals' as const,
+        value: filter.value
+      }));
+      
+      filteredData = ApacheEchartBuilder.applyFilters(this.dashboardData, dataFilters);
+    }
+
+    // Update all chart widgets with filtered data
+    const chartWidgets = this.dashboardConfig.widgets.filter(widget => 
+      widget.config?.component === 'echart'
+    );
+
+    chartWidgets.forEach(widget => {
+      this.updateWidgetWithEnhancedData(widget, filteredData);
+    });
+
+    // Update metric tiles
+    this.updateMetricTilesWithFilters(filters);
+
+    // Trigger change detection
+    setTimeout(() => this.cdr.detectChanges(), 100);
   }
 
   // Helper methods specific to this component's data transformations

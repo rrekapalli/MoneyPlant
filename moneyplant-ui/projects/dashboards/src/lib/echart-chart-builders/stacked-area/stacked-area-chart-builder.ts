@@ -1,6 +1,6 @@
 import { IWidget, WidgetBuilder } from '../../../public-api';
 import { EChartsOption } from 'echarts';
-import { ApacheEchartBuilder } from '../apache-echart-builder';
+import { ApacheEchartBuilder, ChartDataTransformOptions, DataFilter, ColorPalette } from '../apache-echart-builder';
 
 export interface StackedAreaChartData {
   name: string;
@@ -72,50 +72,23 @@ export interface StackedAreaChartOptions extends EChartsOption {
 }
 
 /**
- * Stacked Area Chart Builder extending the generic ApacheEchartBuilder
+ * Enhanced Stacked Area Chart Builder extending the generic ApacheEchartBuilder
  * 
- * Usage examples:
- * 
- * // Basic usage with multiple series
- * const widget = StackedAreaChartBuilder.create()
- *   .setMultiSeriesData([
- *     { name: 'Revenue', data: [120, 132, 101, 134, 90, 230, 210] },
- *     { name: 'Expenses', data: [80, 92, 71, 94, 60, 180, 160] },
- *     { name: 'Profit', data: [40, 40, 30, 40, 30, 50, 50] }
- *   ])
- *   .setXAxisData(['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'])
- *   .setHeader('Financial Overview')
- *   .setPosition({ x: 0, y: 0, cols: 8, rows: 4 })
- *   .build();
- * 
- * // Advanced usage with custom styling
- * const widget = StackedAreaChartBuilder.create()
- *   .setMultiSeriesData([
- *     { name: 'Revenue', data: [120, 132, 101, 134, 90, 230, 210] },
- *     { name: 'Expenses', data: [80, 92, 71, 94, 60, 180, 160] }
- *   ])
- *   .setXAxisData(['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'])
- *   .setTitle('Financial Performance', 'Revenue vs Expenses')
- *   .setSmooth(true)
- *   .setStack('total')
- *   .setColors(['#5470c6', '#91cc75', '#fac858'])
- *   .setAreaStyle('#5470c6', 0.6)
- *   .setLineStyle(2, '#5470c6', 'solid')
- *   .setSymbol('circle', 5)
- *   .setTooltip('axis', '{b}: ${c}K')
- *   .setLegend('horizontal', 'bottom')
- *   .setHeader('Financial Performance')
- *   .setPosition({ x: 0, y: 0, cols: 8, rows: 4 })
- *   .build();
- * 
- * // Update widget data dynamically
- * StackedAreaChartBuilder.updateData(widget, newMultiSeriesData);
+ * Features:
+ * - Generic data transformation from any[] to stacked area format
+ * - Advanced formatting (currency, percentage, number)
+ * - Predefined color palettes
+ * - Filter integration
+ * - Sample data generation
+ * - Configuration presets for financial and performance analysis
+ * - Enhanced update methods with retry mechanism
  */
 export class StackedAreaChartBuilder extends ApacheEchartBuilder<StackedAreaChartOptions, StackedAreaChartSeriesOptions> {
   protected override seriesOptions: StackedAreaChartSeriesOptions;
   private xAxisData: string[] = [];
   private multiSeriesData: StackedAreaSeriesData[] = [];
   private colors: string[] = ['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de', '#3ba272', '#fc8452', '#9a60b4'];
+  private filterColumn: string = '';
 
   private constructor() {
     super();
@@ -227,6 +200,89 @@ export class StackedAreaChartBuilder extends ApacheEchartBuilder<StackedAreaChar
   override setData(data: any): this {
     this.seriesOptions.data = data;
     super.setData(data);
+    return this;
+  }
+
+  /**
+   * Transform generic data to stacked area format
+   */
+  transformData(options: { 
+    seriesField?: string; 
+    valueField?: string; 
+    categoryField?: string; 
+    timeField?: string; 
+  } & ChartDataTransformOptions = {}): this {
+    if (!this.data || !Array.isArray(this.data)) {
+      return this;
+    }
+
+    const {
+      seriesField = 'series',
+      valueField = 'value',
+      categoryField = 'category',
+      timeField = 'time',
+      sortBy,
+      sortOrder = 'asc',
+      limit
+    } = options;
+
+    try {
+      // Apply filters first
+      let filteredData = this.data;
+      if ((options as any).filters && (options as any).filters.length > 0) {
+        filteredData = ApacheEchartBuilder.applyFilters(this.data, (options as any).filters);
+      }
+
+      // Group data by series and category/time
+      const grouped = new Map<string, Map<string, number>>();
+      const categories = new Set<string>();
+
+      filteredData.forEach(item => {
+        const series = item[seriesField] || 'Default';
+        const category = item[categoryField] || item[timeField] || 'Unknown';
+        const value = parseFloat(item[valueField]) || 0;
+
+        if (!grouped.has(series)) {
+          grouped.set(series, new Map());
+        }
+        grouped.get(series)!.set(category, (grouped.get(series)!.get(category) || 0) + value);
+        categories.add(category);
+      });
+
+      // Sort categories
+      const sortedCategories = Array.from(categories).sort();
+      this.setXAxisData(sortedCategories);
+
+      // Transform to multi-series format
+      const transformedSeries: StackedAreaSeriesData[] = [];
+      grouped.forEach((categoryMap, seriesName) => {
+        const data = sortedCategories.map(category => categoryMap.get(category) || 0);
+        transformedSeries.push({
+          name: seriesName,
+          data
+        });
+      });
+
+      // Apply sorting
+      if (sortBy === 'total') {
+        transformedSeries.sort((a, b) => {
+          const totalA = a.data.reduce((sum, val) => sum + val, 0);
+          const totalB = b.data.reduce((sum, val) => sum + val, 0);
+          return sortOrder === 'asc' ? totalA - totalB : totalB - totalA;
+        });
+      }
+
+      // Apply limit
+      if (limit && limit > 0) {
+        transformedSeries.splice(limit);
+      }
+
+      this.setMultiSeriesData(transformedSeries);
+
+    } catch (error) {
+      console.error('Error transforming stacked area chart data:', error);
+    }
+
     return this;
   }
 
@@ -363,6 +419,152 @@ export class StackedAreaChartBuilder extends ApacheEchartBuilder<StackedAreaChar
   }
 
   /**
+   * Set predefined color palette
+   */
+  override setPredefinedPalette(palette: ColorPalette): this {
+    const colors = this.getPaletteColors(palette);
+    if (colors.length > 0) {
+      this.setColors(colors);
+    }
+    return this;
+  }
+
+  /**
+   * Set currency formatter for values
+   */
+  override setCurrencyFormatter(currency: string = 'USD', locale: string = 'en-US'): this {
+    const formatter = this.createCurrencyFormatter(currency, locale);
+    this.setTooltip('axis', (params: any) => {
+      if (!Array.isArray(params)) return '';
+      let result = `${params[0].name}<br/>`;
+      params.forEach((param: any) => {
+        result += `${param.seriesName}: ${formatter(param.value)}<br/>`;
+      });
+      return result;
+    });
+    return this;
+  }
+
+  /**
+   * Set percentage formatter for values
+   */
+  override setPercentageFormatter(decimals: number = 1): this {
+    const formatter = this.createPercentageFormatter(decimals);
+    this.setTooltip('axis', (params: any) => {
+      if (!Array.isArray(params)) return '';
+      let result = `${params[0].name}<br/>`;
+      params.forEach((param: any) => {
+        result += `${param.seriesName}: ${formatter(param.value)}<br/>`;
+      });
+      return result;
+    });
+    return this;
+  }
+
+  /**
+   * Set number formatter for values with custom options
+   */
+  setCustomNumberFormatter(decimals: number = 0, locale: string = 'en-US'): this {
+    const formatter = this.createNumberFormatter(decimals, locale);
+    this.setTooltip('axis', (params: any) => {
+      if (!Array.isArray(params)) return '';
+      let result = `${params[0].name}<br/>`;
+      params.forEach((param: any) => {
+        result += `${param.seriesName}: ${formatter(param.value)}<br/>`;
+      });
+      return result;
+    });
+    return this;
+  }
+
+  /**
+   * Set filter column for filtering integration
+   */
+  override setFilterColumn(column: string): this {
+    this.filterColumn = column;
+    return this;
+  }
+
+  /**
+   * Create filter from chart data
+   */
+  createFilterFromChartData(): DataFilter[] {
+    if (!this.filterColumn || !this.data) return [];
+
+    const uniqueValues = [...new Set(this.data.map(item => item[this.filterColumn]))];
+    return [{
+      column: this.filterColumn,
+      operator: 'in',
+      value: uniqueValues
+    }];
+  }
+
+  /**
+   * Generate sample data for testing
+   */
+  generateSampleData(seriesCount: number = 3, categoryCount: number = 7): this {
+    const sampleData = [];
+    const seriesNames = ['Revenue', 'Expenses', 'Profit', 'Investment', 'Savings'].slice(0, seriesCount);
+    const categories = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].slice(0, categoryCount);
+    
+    for (const series of seriesNames) {
+      const data = [];
+      for (let i = 0; i < categoryCount; i++) {
+        data.push(Math.floor(Math.random() * 200) + 50);
+      }
+      sampleData.push({
+        name: series,
+        data,
+        category: ['Primary', 'Secondary', 'Tertiary'][Math.floor(Math.random() * 3)]
+      });
+    }
+
+    this.setMultiSeriesData(sampleData);
+    this.setXAxisData(categories);
+    return this;
+  }
+
+  /**
+   * Configuration preset for financial analysis
+   */
+  setFinancialAnalysisConfiguration(): this {
+    return this
+      .setPredefinedPalette('finance')
+      .setCurrencyFormatter('USD', 'en-US')
+      .setXAxisName('Time Period')
+      .setYAxisName('Amount')
+      .setStack('financial')
+      .setSmooth(true);
+  }
+
+  /**
+   * Configuration preset for performance monitoring
+   */
+  setPerformanceMonitoringConfiguration(): this {
+    return this
+      .setPredefinedPalette('business')
+      .setPercentageFormatter(1)
+      .setXAxisName('Metrics')
+      .setYAxisName('Performance')
+      .setStack('performance')
+      .setAreaStyle('#5470c6', 0.5);
+  }
+
+  /**
+   * Configuration preset for trend analysis
+   */
+  setTrendAnalysisConfiguration(): this {
+    return this
+      .setPredefinedPalette('modern')
+      .setCustomNumberFormatter(0, 'en-US')
+      .setXAxisName('Period')
+      .setYAxisName('Value')
+      .setStack('trend')
+      .setSmooth(false)
+      .setSymbol('circle', 4);
+  }
+
+  /**
    * Build the widget with stacked area chart configuration
    */
   override build(): IWidget {
@@ -406,20 +608,48 @@ export class StackedAreaChartBuilder extends ApacheEchartBuilder<StackedAreaChar
   }
 
   /**
-   * Update widget data
+   * Enhanced updateData with retry mechanism
    */
   static override updateData(widget: IWidget, data: StackedAreaSeriesData[]): void {
-    if (StackedAreaChartBuilder.isStackedAreaChart(widget)) {
-      const options = widget.config?.options as any;
-      if (options?.series && Array.isArray(data)) {
-        data.forEach((seriesData, index) => {
-          if (options.series[index]) {
-            options.series[index].data = seriesData.data;
-            options.series[index].name = seriesData.name;
+    const maxRetries = 3;
+    let retryCount = 0;
+
+    const updateWithRetry = () => {
+      try {
+        if (widget.chartInstance) {
+          // Transform data if needed
+          let transformedData = data;
+          if (Array.isArray(data) && data.length > 0 && typeof data[0] === 'object') {
+            transformedData = data.map(series => ({
+              name: series.name || 'Series',
+              data: series.data || [],
+              type: 'line',
+              stack: 'total',
+              areaStyle: {}
+            }));
           }
-        });
+
+          const currentOptions = widget.chartInstance.getOption();
+          const newOptions = {
+            ...currentOptions,
+            series: transformedData
+          };
+
+          widget.chartInstance.setOption(newOptions, true);
+        } else if (retryCount < maxRetries) {
+          retryCount++;
+          setTimeout(updateWithRetry, 100 * retryCount);
+        }
+      } catch (error) {
+        console.error('Error updating stacked area chart data:', error);
+        if (retryCount < maxRetries) {
+          retryCount++;
+          setTimeout(updateWithRetry, 100 * retryCount);
+        }
       }
-    }
+    };
+
+    updateWithRetry();
   }
 
   /**
