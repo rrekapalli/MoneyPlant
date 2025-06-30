@@ -830,6 +830,66 @@ export abstract class BaseDashboardComponent<T = any> implements OnInit, OnDestr
     }, 100);
   }
 
+  // =============================================================================
+  // WIDGET UTILITY METHODS
+  // =============================================================================
+
+  /**
+   * Find widget by title
+   */
+  protected findWidgetByTitle(title: string): IWidget | undefined {
+    return this.dashboardConfig?.widgets?.find(widget => 
+      widget.config?.header?.title === title
+    );
+  }
+
+  /**
+   * Find widget by ID
+   */
+  protected findWidgetById(id: string): IWidget | undefined {
+    return this.dashboardConfig?.widgets?.find(widget => 
+      widget.id === id
+    );
+  }
+
+  /**
+   * Type guard to check if options are ECharts options
+   */
+  protected isEChartsOption(options: any): options is any {
+    return options && (options.series || options.xAxis || options.yAxis || options.tooltip);
+  }
+
+  /**
+   * Set loading state for a widget
+   */
+  protected setWidgetLoadingState(widget: IWidget, isLoading: boolean): void {
+    // Update widget loading state if it has that capability
+    if (widget.config?.options && 'isLoading' in widget.config.options) {
+      (widget.config.options as any).isLoading = isLoading;
+    }
+    
+    // Trigger change detection to update UI
+    this.cdr.detectChanges();
+  }
+
+  /**
+   * Show error state for a widget
+   */
+  protected showWidgetErrorState(widget: IWidget, errorMessage: string): void {
+    // Log the error for debugging
+    console.error(`Error in widget ${widget.config?.header?.title}: ${errorMessage}`);
+    
+    // Update widget error state if it has that capability
+    if (widget.config?.options) {
+      const options = widget.config.options as any;
+      options.hasError = true;
+      options.errorMessage = errorMessage;
+    }
+    
+    // Trigger change detection to update UI
+    this.cdr.detectChanges();
+  }
+
   ngOnDestroy(): void {
     // Cleanup code when component is destroyed
     if (this.widgetUpdateTimeout) {

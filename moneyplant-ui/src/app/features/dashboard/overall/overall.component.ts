@@ -136,12 +136,6 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
   protected onChildInit(): void {
     // Register world map for density map charts with better error handling
     this.registerWorldMap();
-    
-    // Force immediate data population for testing
-    setTimeout(() => {
-      this.updateMonthlyIncomeExpensesWidgetFallback();
-      this.updateAssetAllocationWidgetFallback();
-    }, 1000);
   }
 
   /**
@@ -309,14 +303,14 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
 
     // Wait for charts to be initialized and world map to be registered
     setTimeout(() => {
-      // Force fallback methods initially to ensure data displays
-      this.updateAssetAllocationWidgetFallback();
-      this.updateMonthlyIncomeExpensesWidgetFallback();
-      this.updateRiskReturnAnalysisWidgetFallback();
+      // Update widgets with API data
+      this.updateAssetAllocationWidget();
+      this.updateMonthlyIncomeExpensesWidget();
+      this.updateRiskReturnAnalysisWidget();
       
       // Wait a bit longer for map registration before updating investment distribution
       setTimeout(() => {
-        this.updateInvestmentDistributionWidgetFallback();
+        this.updateInvestmentDistributionWidget();
       }, 300);
 
       // Populate metric tiles with initial data
@@ -333,9 +327,9 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
     }, 500);
   }
 
-  /**
-   * Retry widget updates for any widgets that might not have been ready initially
-   */
+  // /**
+  //  * Retry widget updates for any widgets that might not have been ready initially
+  //  */
   private retryWidgetUpdates(): void {
     const widgets = this.dashboardConfig?.widgets?.filter(w => w.config?.component === 'echart') || [];
     
@@ -392,9 +386,6 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
         error: (error) => {
           console.error('Failed to fetch asset allocation data:', error);
           
-          // Fallback to static data processing
-          this.updateAssetAllocationWidgetFallback();
-          
           // Hide loading state
           this.setWidgetLoadingState(widget, false);
           
@@ -407,58 +398,7 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
     }
   }
 
-  /**
-   * Fallback asset allocation update using static data with centralized filters
-   */
-  private updateAssetAllocationWidgetFallback(): void {
-    try {
-      const widget = this.findWidgetByTitle('Asset Allocation');
-      if (!widget) return;
 
-      // Use centralized filters for fallback data
-      const apiFilters = this.convertFiltersToApiFormat();
-      let sourceData = this.applyFiltersToData(this.dashboardData, apiFilters);
-      
-      // Transform data using enhanced chart builder transformation for pie chart
-      const transformedData = PieChartBuilder.transformData(sourceData, {
-        valueField: 'totalValue',
-        nameField: 'assetCategory',
-        sortBy: 'value'
-      });
-
-      if (transformedData) {
-        PieChartBuilder.updateData(widget, transformedData);
-        this.cdr.detectChanges();
-      }
-    } catch (error) {
-      console.error('Fallback asset allocation update failed:', error);
-    }
-  }
-
-  /**
-   * Debug method to inspect chart instances
-   */
-  private debugChartInstances(): void {
-    const widgets = this.dashboardConfig?.widgets?.filter(w => w.config?.component === 'echart') || [];
-    
-    // Update page title with debug info for visibility
-    document.title = `MoneyPlant UI - Charts: ${widgets.filter(w => !!w.chartInstance).length}/${widgets.length} ready`;
-  }
-
-  /**
-   * Alternative approach: Use the base dashboard component's updateEchartWidget method
-   */
-  private updateWidgetUsingBaseMethod(widget: IWidget, data: any[]): void {
-    try {
-      // Use the base dashboard component's updateEchartWidget method
-      this.updateEchartWidget(widget, data);
-      
-      // Force change detection
-      this.cdr.detectChanges();
-    } catch (error) {
-      // Silently handle errors
-    }
-  }
 
   /**
    * Update Monthly Income vs Expenses Bar Chart Widget - Using centralized filters and API calls
@@ -494,8 +434,6 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
               this.updateEchartWidget(widget, transformedData);
               this.cdr.detectChanges();
             }, 100);
-          } else {
-            this.updateMonthlyIncomeExpensesWidgetFallback();
           }
 
           // Hide loading state
@@ -503,9 +441,6 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
         },
         error: (error) => {
           console.error('Failed to fetch monthly income expenses data:', error);
-          
-          // Fallback to static data processing
-          this.updateMonthlyIncomeExpensesWidgetFallback();
           
           // Hide loading state
           this.setWidgetLoadingState(widget, false);
@@ -516,47 +451,6 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
       });
     } catch (error) {
       console.error('Error in updateMonthlyIncomeExpensesWidget:', error);
-      // Try fallback on any error
-      this.updateMonthlyIncomeExpensesWidgetFallback();
-    }
-  }
-
-  /**
-   * Fallback monthly income expenses update using static data with centralized filters
-   */
-  private updateMonthlyIncomeExpensesWidgetFallback(): void {
-    try {
-      const widget = this.findWidgetByTitle('Monthly Income vs Expenses');
-      if (!widget) {
-        return;
-      }
-
-      // Use centralized filters for fallback data
-      const apiFilters = this.convertFiltersToApiFormat();
-      let sourceData = this.applyFiltersToData(this.dashboardData, apiFilters);
-      
-      // Group by month and sum totalValue - sorted by month order  
-      const aggregatedData = sourceData.reduce((acc, row) => {
-        const month = row.month;
-        if (!acc[month]) {
-          acc[month] = { name: month, value: 0 };
-        }
-        acc[month].value += row.totalValue;
-        return acc;
-      }, {} as Record<string, any>);
-      
-      // Sort by month order
-      const monthOrder = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      const transformedData = Object.values(aggregatedData).sort((a: any, b: any) => {
-        return monthOrder.indexOf(a.name) - monthOrder.indexOf(b.name);
-      });
-
-      if (transformedData && transformedData.length > 0) {
-        BarChartBuilder.updateData(widget, transformedData);
-        this.cdr.detectChanges();
-      }
-    } catch (error) {
-      console.error('Fallback monthly income expenses update failed:', error);
     }
   }
 
@@ -623,9 +517,6 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
         error: (error) => {
           console.error('Failed to fetch risk return analysis data:', error);
           
-          // Fallback to static data processing
-          this.updateRiskReturnAnalysisWidgetFallback();
-          
           // Hide loading state
           this.setWidgetLoadingState(widget, false);
           
@@ -635,58 +526,6 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
       });
     } catch (error) {
       console.error('Error in updateRiskReturnAnalysisWidget:', error);
-    }
-  }
-
-  /**
-   * Fallback risk return analysis update using static data with centralized filters
-   */
-  private updateRiskReturnAnalysisWidgetFallback(): void {
-    try {
-      const widget = this.findWidgetByTitle('Risk vs Return Analysis');
-      if (!widget) return;
-
-      // Use centralized filters for fallback data
-      const apiFilters = this.convertFiltersToApiFormat();
-      let sourceData = this.applyFiltersToData(this.dashboardData, apiFilters);
-      
-      // Filter and aggregate data for scatter chart
-      const riskReturnData = sourceData.filter(row => 
-        row.riskValue !== undefined && row.returnValue !== undefined
-      );
-      
-      // Create aggregated data for scatter chart
-      const aggregatedData = riskReturnData.reduce((acc, row) => {
-        const category = row.assetCategory;
-        if (!acc[category]) {
-          acc[category] = {
-            name: category,
-            riskSum: 0,
-            returnSum: 0,
-            count: 0
-          };
-        }
-        acc[category].riskSum += row.riskValue!;
-        acc[category].returnSum += row.returnValue!;
-        acc[category].count += 1;
-        return acc;
-      }, {} as Record<string, any>);
-      
-      // Transform to scatter chart format
-      const transformedData = Object.values(aggregatedData).map((item: any) => ({
-        value: [
-          Math.round((item.riskSum / item.count) * 100) / 100,
-          Math.round((item.returnSum / item.count) * 100) / 100
-        ],
-        name: item.name
-      }));
-
-      if (transformedData && transformedData.length > 0) {
-        ScatterChartBuilder.updateData(widget, transformedData);
-        this.cdr.detectChanges();
-      }
-    } catch (error) {
-      console.error('Fallback risk return analysis update failed:', error);
     }
   }
 
@@ -725,9 +564,6 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
         },
         error: (error) => {
           console.error('Failed to fetch investment distribution data:', error);
-          
-          // Fallback to static data on API failure
-          this.updateInvestmentDistributionWidgetFallback();
           
           // Hide loading state
           this.setWidgetLoadingState(widget, false);
@@ -812,87 +648,6 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
     }, 500);
   }
 
-  /**
-   * Fallback method using static data with centralized filters when API fails
-   */
-  private updateInvestmentDistributionWidgetFallback(): void {
-    try {
-      const widget = this.findWidgetByTitle('Investment Distribution by Region');
-      if (!widget) return;
-
-      // Use centralized filters for fallback data
-      const apiFilters = this.convertFiltersToApiFormat();
-      let sourceData = this.applyFiltersToData(this.dashboardData, apiFilters);
-      
-      // Group and aggregate data by market
-      const aggregatedData = sourceData.reduce((acc, row) => {
-        const market = row.market;
-        if (!acc[market]) {
-          acc[market] = { name: market, value: 0 };
-        }
-        acc[market].value += row.totalValue;
-        return acc;
-      }, {} as Record<string, any>);
-      
-      // Convert to array format expected by density map
-      const mapData = Object.values(aggregatedData).map((item: any) => ({
-        name: item.name,
-        value: item.value
-      }));
-
-      if (mapData && mapData.length > 0) {
-        // Use the same improved update strategy
-        this.updateMapWidget(widget, mapData);
-      }
-    } catch (error) {
-      console.error('Fallback update failed:', error);
-    }
-  }
-
-  /**
-   * Set loading state for a widget (simplified approach)
-   */
-  private setWidgetLoadingState(widget: IWidget, isLoading: boolean): void {
-    // For now, just trigger change detection
-    // In a full implementation, you could show a loading spinner
-    this.cdr.detectChanges();
-  }
-
-  /**
-   * Show error state for a widget (simplified approach)
-   */
-  private showWidgetErrorState(widget: IWidget, errorMessage: string): void {
-    // For now, just log the error
-    // In a full implementation, you could show an error message in the widget
-    console.error(`Error in widget ${widget.config?.header?.title}: ${errorMessage}`);
-    this.cdr.detectChanges();
-  }
-
-  /**
-   * Helper function to apply filters to data
-   */
-  private applyFiltersToData(data: DashboardDataRow[], filters?: any[]): DashboardDataRow[] {
-    if (!filters || filters.length === 0) {
-      return data;
-    }
-    
-    return data.filter(row => {
-      return filters.every(filter => {
-        const filterColumn = filter.filterColumn || 'assetCategory';
-        const rowValue = row[filterColumn as keyof DashboardDataRow];
-        return rowValue === filter.value;
-      });
-    });
-  }
-
-  /**
-   * Helper function to find widget by title
-   */
-  private findWidgetByTitle(title: string): IWidget | undefined {
-    return this.dashboardConfig?.widgets?.find(widget => 
-      widget.config?.header?.title === title
-    );
-  }
 
   /**
    * @deprecated This method is deprecated. Data retrieval logic has been moved to individual widget update methods.
@@ -1022,88 +777,46 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
   }
 
 
-  /**
-   * Force initialize a chart instance for a widget
-   */
-  private forceInitializeChart(widget: IWidget): void {
-    try {
-      console.log('Force initializing chart for widget:', widget.config?.header?.title);
+  // /**
+  //  * Force initialize a chart instance for a widget
+  //  */
+  // private forceInitializeChart(widget: IWidget): void {
+  //   try {
+  //     console.log('Force initializing chart for widget:', widget.config?.header?.title);
       
-      // Check if we have a DOM element
-      if (!widget['element']) {
-        console.warn('No DOM element found for widget');
-        return;
-      }
+  //     // Check if we have a DOM element
+  //     if (!widget['element']) {
+  //       console.warn('No DOM element found for widget');
+  //       return;
+  //     }
       
-      // Initialize ECharts instance using the static echarts import
-      if (widget['element']) {
-        console.log('Creating ECharts instance...');
-        const chartInstance = echarts.init(widget['element'] as HTMLElement);
-        widget.chartInstance = chartInstance as any; // Type assertion for compatibility
+  //     // Initialize ECharts instance using the static echarts import
+  //     if (widget['element']) {
+  //       console.log('Creating ECharts instance...');
+  //       const chartInstance = echarts.init(widget['element'] as HTMLElement);
+  //       widget.chartInstance = chartInstance as any; // Type assertion for compatibility
         
-        // Apply the widget's options if available and if it's an echart widget
-        if (widget.config?.options && widget.config.component === 'echart') {
-          const chartOptions = widget.config.options;
-          if (widget.chartInstance && this.isEChartsOption(chartOptions)) {
-            try {
-              widget.chartInstance.setOption(chartOptions as any);
-              console.log('Applied widget options to chart');
-            } catch (optionError) {
-              console.warn('Failed to set chart options:', optionError);
-            }
-          }
-        }
+  //       // Apply the widget's options if available and if it's an echart widget
+  //       if (widget.config?.options && widget.config.component === 'echart') {
+  //         const chartOptions = widget.config.options;
+  //         if (widget.chartInstance && this.isEChartsOption(chartOptions)) {
+  //           try {
+  //             widget.chartInstance.setOption(chartOptions as any);
+  //             console.log('Applied widget options to chart');
+  //           } catch (optionError) {
+  //             console.warn('Failed to set chart options:', optionError);
+  //           }
+  //         }
+  //       }
         
-        // Try to update with data again
-        setTimeout(() => {
-          this.updateMonthlyIncomeExpensesWidgetFallback();
-        }, 100);
-      }
-    } catch (error) {
-      console.error('Error in forceInitializeChart:', error);
-    }
-  }
-
-  /**
-   * Type guard to check if options are ECharts options
-   */
-  private isEChartsOption(options: any): options is any {
-    return options && (options.series || options.xAxis || options.yAxis || options.tooltip);
-  }
-
-  /**
-   * Force all widgets to re-initialize their chart instances
-   */
-  public forceInitAllCharts(): void {
-    console.log('Force initializing all chart instances...');
-    
-    if (!this.dashboardConfig?.widgets) {
-      console.warn('No widgets to initialize');
-      return;
-    }
-    
-    const echartWidgets = this.dashboardConfig.widgets.filter(w => 
-      w.config?.component === 'echart'
-    );
-    
-    echartWidgets.forEach(widget => {
-      if (!widget.chartInstance && widget['element']) {
-        console.log(`Initializing chart for: ${widget.config?.header?.title}`);
-        this.forceInitializeChart(widget);
-      }
-    });
-  }
-
-
-  /**
-   * Force refresh all widgets - for testing
-   */
-  public forceRefreshWidgets(): void {
-    this.updateAssetAllocationWidgetFallback();
-    this.updateMonthlyIncomeExpensesWidgetFallback();
-    this.updateRiskReturnAnalysisWidgetFallback();
-    this.updateInvestmentDistributionWidgetFallback();
-    this.cdr.detectChanges();
-  }
+  //       // Try to update with data again
+  //       setTimeout(() => {
+  //         this.updateMonthlyIncomeExpensesWidget();
+  //       }, 100);
+  //     }
+  //   } catch (error) {
+  //     console.error('Error in forceInitializeChart:', error);
+  //   }
+  // }
 
 }
