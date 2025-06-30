@@ -23,5 +23,9 @@ import { TooltipModule } from 'primeng/tooltip';
   styleUrls: ['./this-year.component.scss']
 })
 export class ThisYearComponent {
+  // Header content variables
+  headerTitle = 'Annual Performance Review';
+  headerDescription = 'Year-to-date portfolio analysis and long-term growth tracking';
+
   constructor() {}
 }

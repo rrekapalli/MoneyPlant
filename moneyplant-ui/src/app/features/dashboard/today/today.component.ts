@@ -150,6 +150,10 @@ export interface DashboardDataRow {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class TodayComponent extends BaseDashboardComponent<DashboardDataRow> {
+  // Header content variables
+  headerTitle = "Today's Market Performance";
+  headerDescription = 'Real-time insights into your portfolio performance for today';
+
   // Shared dashboard data - Flat structure (implements abstract property)
   protected dashboardData: DashboardDataRow[] = [...INITIAL_DASHBOARD_DATA];
   protected readonly initialDashboardData: DashboardDataRow[] = INITIAL_DASHBOARD_DATA;

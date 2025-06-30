@@ -111,6 +111,10 @@ export interface DashboardDataRow {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
+  // Header content variables
+  headerTitle = 'Overall Portfolio Performance';
+  headerDescription = 'Complete overview of your financial portfolio across all time periods';
+
   // Shared dashboard data - Flat structure (implements abstract property)
   protected dashboardData: DashboardDataRow[] = [...INITIAL_DASHBOARD_DATA];
   protected readonly initialDashboardData: DashboardDataRow[] = INITIAL_DASHBOARD_DATA;

@@ -1,6 +1,12 @@
+<!-- Dynamic Dashboard Header -->
+<div class="dashboard-header">
+  <h1>{{ headerTitle }}</h1>
+  <p>{{ headerDescription }}</p>
+</div>
+
 <!-- Dashboard Header -->
 <vis-dashboard-header 
-  title="Financial Dashboard"
+  [title]="headerTitle"
   [isHighlightingEnabled]="isHighlightingEnabled"
   [isExportingExcel]="isExportingExcel"
   (onExportToExcel)="exportDashboardToExcel()"

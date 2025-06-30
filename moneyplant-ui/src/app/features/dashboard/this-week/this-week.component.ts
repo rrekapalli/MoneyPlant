@@ -23,5 +23,9 @@ import { TooltipModule } from 'primeng/tooltip';
   styleUrls: ['./this-week.component.scss']
 })
 export class ThisWeekComponent {
+  // Header content variables
+  headerTitle = 'This Week Overview';
+  headerDescription = 'Weekly performance analysis and portfolio insights';
+
   constructor() {}
 }

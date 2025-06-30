@@ -23,5 +23,9 @@ import { TooltipModule } from 'primeng/tooltip';
   styleUrls: ['./this-month.component.scss']
 })
 export class ThisMonthComponent {
+  // Header content variables
+  headerTitle = 'This Month Summary';
+  headerDescription = 'Monthly trends and comprehensive portfolio performance review';
+
   constructor() {}
 }
