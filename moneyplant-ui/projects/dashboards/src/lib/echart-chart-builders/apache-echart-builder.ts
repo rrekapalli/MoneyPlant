@@ -1,4 +1,5 @@
-import { IWidget, WidgetBuilder } from '../../public-api';
+import { IWidget } from '../entities/IWidget';
+import { WidgetBuilder } from '../widgets/widget/widget-builder';
 import { v4 as uuidv4 } from 'uuid';
 import { EChartsOption } from 'echarts';
 

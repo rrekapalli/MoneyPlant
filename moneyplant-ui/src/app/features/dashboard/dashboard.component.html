@@ -1,35 +1,40 @@
-<div class="grid">
-  <div class="col-12">
-      <p-tabView [(activeIndex)]="activeTabIndex">
-        <p-tabPanel header="Overall">
-          <ng-container *featureFlag="'dashboard-overall'">
-            <app-overall></app-overall>
-          </ng-container>
-        </p-tabPanel>
+<div class="dashboard-container">
+  <div class="dashboard-header">
+    <h1>Financial Dashboard</h1>
+    <p>Comprehensive overview of your financial portfolio</p>
+  </div>
 
-        <p-tabPanel header="Today">
-          <ng-container *featureFlag="'dashboard-today'">
-            <app-today></app-today>
-          </ng-container>
-        </p-tabPanel>
+  <!-- Custom tab navigation using router links -->
+  <nav class="dashboard-nav">
+    <a routerLink="/dashboard/overall" 
+       routerLinkActive="active" 
+       class="dashboard-tab">
+      Overall
+    </a>
+    <a routerLink="/dashboard/today" 
+       routerLinkActive="active" 
+       class="dashboard-tab">
+      Today
+    </a>
+    <a routerLink="/dashboard/week" 
+       routerLinkActive="active" 
+       class="dashboard-tab">
+      This Week
+    </a>
+    <a routerLink="/dashboard/month" 
+       routerLinkActive="active" 
+       class="dashboard-tab">
+      This Month
+    </a>
+    <a routerLink="/dashboard/year" 
+       routerLinkActive="active" 
+       class="dashboard-tab">
+      This Year
+    </a>
+  </nav>
 
-        <p-tabPanel header="This Week">
-          <ng-container *featureFlag="'dashboard-week'">
-            <app-this-week></app-this-week>
-          </ng-container>
-        </p-tabPanel>
-
-        <p-tabPanel header="This Month">
-          <ng-container *featureFlag="'dashboard-month'">
-            <app-this-month></app-this-month>
-          </ng-container>
-        </p-tabPanel>
-
-        <p-tabPanel header="This Year">
-          <ng-container *featureFlag="'dashboard-year'">
-            <app-this-year></app-this-year>
-          </ng-container>
-        </p-tabPanel>
-      </p-tabView>
+  <!-- Router outlet will load the appropriate dashboard component -->
+  <div class="dashboard-content">
+    <router-outlet></router-outlet>
   </div>
 </div>

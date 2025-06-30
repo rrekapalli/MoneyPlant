@@ -1,4 +1,4 @@
-import { GaugeChartBuilder, GaugeChartData } from './gauge-chart-builder';
+import { GaugeChartBuilder, GaugeChartData } from '../echart-chart-builders/gauge/gauge-chart-builder';
 
 /**
  * Gauge Chart Examples

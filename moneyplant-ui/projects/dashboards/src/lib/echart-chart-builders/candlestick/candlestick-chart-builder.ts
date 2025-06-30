@@ -315,6 +315,18 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
   }
 
   /**
+   * Set border colors for candlestick chart
+   */
+  setBorderColors(upBorderColor: string, downBorderColor: string): this {
+    if (!this.seriesOptions.itemStyle) {
+      this.seriesOptions.itemStyle = {};
+    }
+    this.seriesOptions.itemStyle.borderColor = upBorderColor;
+    this.seriesOptions.itemStyle.borderColor0 = downBorderColor;
+    return this;
+  }
+
+  /**
    * Set filter column for filtering integration
    */
   override setFilterColumn(column: string): this {

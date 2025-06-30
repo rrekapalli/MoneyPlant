@@ -14,6 +14,7 @@
   <div class="dashboard-container" #dashboardContainer>
     <!-- Dashboard Container Component -->
     <vis-dashboard-container 
+      *ngIf="dashboardConfig"
       #dashboardContainerComponent
       [widgets]="dashboardConfig.widgets" 
       [options]="dashboardConfig.config"

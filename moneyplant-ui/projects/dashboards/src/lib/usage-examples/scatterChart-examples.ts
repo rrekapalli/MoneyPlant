@@ -1,4 +1,4 @@
-import { ScatterChartBuilder, ScatterChartData } from './scatter-chart-builder';
+import { ScatterChartBuilder, ScatterChartData } from '../echart-chart-builders/scatter/scatter-chart-builder';
 
 /**
  * Scatter Chart Examples
