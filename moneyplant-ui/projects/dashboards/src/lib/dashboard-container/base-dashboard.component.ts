@@ -31,6 +31,9 @@ export abstract class BaseDashboardComponent<T = any> implements OnInit, OnDestr
   protected widgetUpdateTimeout?: any;
   protected filterSubscription?: Subscription;
 
+  // Centralized dashboard filters
+  protected dashboardFilters: IFilterValues[] = [];
+
   // Filter highlighting mode control
   public isHighlightingEnabled: boolean = true;
   public highlightingOpacity: number = 0.25;
@@ -79,11 +82,31 @@ export abstract class BaseDashboardComponent<T = any> implements OnInit, OnDestr
 
     this.isUpdatingFilters = true;
     
+    // Update centralized dashboard filters
+    this.dashboardFilters = [...filters];
+    
     // Set filter values in the service
     this.filterService.setFilterValues(filters);
     
+    // Call centralized filter handling method
+    this.onFiltersChanged(filters);
+    
     this.isUpdatingFilters = false;
   }
+
+  /**
+   * Get current dashboard filters
+   * This method should be used by all API calls and data fetching
+   */
+  public getFilters(): IFilterValues[] {
+    return [...this.dashboardFilters];
+  }
+
+  /**
+   * Abstract method for centralized filter handling
+   * Each dashboard implementation should override this to handle filter changes
+   */
+  protected abstract onFiltersChanged(filters: IFilterValues[]): void;
 
   /**
    * Update all widgets with current filters

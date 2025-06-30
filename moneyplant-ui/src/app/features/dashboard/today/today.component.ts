@@ -80,6 +80,7 @@ import('echarts-map-collection/custom/world.json').then((worldMapData) => {
 // Import dashboard modules and chart builders
 import { 
   IWidget,
+  IFilterValues,
   DashboardContainerComponent,
   DashboardHeaderComponent,
   // Fluent API
@@ -180,6 +181,23 @@ export class TodayComponent extends BaseDashboardComponent<DashboardDataRow> {
 
   protected onChildDestroy(): void {
     // Child-specific cleanup if needed
+  }
+
+  /**
+   * Centralized filter handling - implements abstract method from BaseDashboardComponent
+   * This method is called whenever filters change and coordinates all widget updates
+   */
+  protected onFiltersChanged(filters: IFilterValues[]): void {
+    console.log('TodayComponent: Centralized filter handling triggered:', filters);
+    
+    // Update all widgets with new filters using the existing method
+    this.updateWidgetsWithFilters(filters);
+    
+    // Update metric tiles
+    this.updateMetricTilesWithFilters(filters);
+    
+    // Trigger change detection
+    this.cdr.detectChanges();
   }
 
 
