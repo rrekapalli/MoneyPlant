@@ -41,7 +41,7 @@
   padding: 1rem;
   
   .dashboard-header {
-    text-align: center;
+    text-align: left;
     margin-bottom: 2rem;
     
     h1 {
@@ -58,7 +58,7 @@
   
   .dashboard-nav {
     display: flex;
-    justify-content: center;
+    justify-content: left;
     margin-bottom: 2rem;
     border-bottom: 2px solid var(--surface-border);
     background: var(--surface-ground);
