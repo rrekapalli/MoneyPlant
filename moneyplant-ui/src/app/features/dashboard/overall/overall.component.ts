@@ -180,23 +180,36 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
    */
   protected initializeDashboardConfig(): void {
     // Create widgets using enhanced chart builders
+
+
+     // Investment Distribution Map (using density map builder)
+     const densityMapInvestment = DensityMapBuilder.create()
+     .setData([]) // Data will be populated later
+     .setHeader('Investment Distribution by Region')
+     .setCurrencyFormatter('USD', 'en-US')
+     .build();
     
     // Asset Allocation Pie Chart with financial display
     const pieAssetAllocation = PieChartBuilder.create()
       .setData([]) // Data will be populated later
       .setHeader('Asset Allocation')
-      .setPosition({ x: 9, y: 11, cols: 4, rows: 8 })
       .setDonutStyle('40%', '70%')
       .setFinancialDisplay('USD', 'en-US')
       .setPredefinedPalette('finance')
       .setFilterColumn('assetCategory')
       .build();
 
+    // Performance Metrics Polar Chart
+    const polarChart = PolarChartBuilder.create()
+    .setData([]) // Data will be populated later
+    .setHeader('Performance Metrics')
+    .setPercentageFormatter(1)
+    .build();
+
     // Monthly Income vs Expenses Bar Chart
     const barMonthlyIncomeVsExpenses = BarChartBuilder.create()
       .setData([]) // Data will be populated later
       .setHeader('Monthly Income vs Expenses')
-      .setPosition({ x: 0, y: 13, cols: 8, rows: 8 })
       .setCurrencyFormatter('USD', 'en-US')
       .setPredefinedPalette('business')
       .setTooltip('axis', '{b}: {c}')
@@ -206,7 +219,6 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
     const linePortfolioPerformance = AreaChartBuilder.create()
       .setData([]) // Data will be populated later
       .setHeader('Portfolio Performance')
-      .setPosition({ x: 6, y: 0, cols: 6, rows: 8 })
       .setFinancialTrend('USD', 'en-US')
       .setPredefinedPalette('finance')
       .build();
@@ -215,7 +227,6 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
     const scatterRiskVsReturn = ScatterChartBuilder.create()
       .setData([]) // Data will be populated later
       .setHeader('Risk vs Return Analysis')
-      .setPosition({ x: 0, y: 21, cols: 6, rows: 8 })
       .setTooltip('item', '{b}: Risk {c[0]}%, Return {c[1]}%')
       .setPredefinedPalette('modern')
       .build();
@@ -224,7 +235,6 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
     const gaugeSavingsGoal = GaugeChartBuilder.create()
       .setData([]) // Data will be populated later
       .setHeader('Savings Goal Progress')
-      .setPosition({ x: 6, y: 21, cols: 3, rows: 4 })
       .setPercentageFormatter(0)
       .build();
 
@@ -232,39 +242,24 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
     const heatmapSpending = HeatmapChartBuilder.create()
       .setData([]) // Data will be populated later
       .setHeader('Weekly Spending Heatmap')
-      .setPosition({ x: 9, y: 21, cols: 3, rows: 8 })
       .setCurrencyFormatter('USD', 'en-US')
       .build();
 
-    // Investment Distribution Map (using density map builder)
-    const densityMapInvestment = DensityMapBuilder.create()
-      .setData([]) // Data will be populated later
-      .setHeader('Investment Distribution by Region')
-      .setPosition({ x: 0, y: 3, cols: 8, rows: 8 })
-      .setCurrencyFormatter('USD', 'en-US')
-      .build();
+   
 
     // Revenue Trend Area Chart
     const areaChart = AreaChartBuilder.create()
       .setData([]) // Data will be populated later
       .setHeader('Revenue Trend')
-      .setPosition({ x: 12, y: 0, cols: 6, rows: 8 })
       .setFinancialTrend('USD', 'en-US')
       .build();
 
-    // Performance Metrics Polar Chart
-    const polarChart = PolarChartBuilder.create()
-      .setData([]) // Data will be populated later
-      .setHeader('Performance Metrics')
-      .setPosition({ x: 9, y: 15, cols: 4, rows: 8 })
-      .setPercentageFormatter(1)
-      .build();
+
 
     // Financial Overview Stacked Area
     const stackedAreaChart = AreaChartBuilder.create()
       .setData([]) // Data will be populated later
       .setHeader('Financial Overview')
-      .setPosition({ x: 0, y: 29, cols: 8, rows: 4 })
       .setFinancialTrend('USD', 'en-US')
       .setStack('total')
       .build();
@@ -273,7 +268,6 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
     const treemapChart = TreemapChartBuilder.create()
       .setData([]) // Data will be populated later
       .setHeader('Portfolio Distribution')
-      .setPosition({ x: 0, y: 8, cols: 6, rows: 8 })
       .setPortfolioConfiguration()
       .setFinancialDisplay('USD', 'en-US')
       .build();
@@ -282,7 +276,6 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
     const expenseTreemap = TreemapChartBuilder.create()
       .setData([]) // Data will be populated later
       .setHeader('Monthly Expenses')
-      .setPosition({ x: 6, y: 8, cols: 6, rows: 8 })
       .setExpenseConfiguration()
       .setFinancialDisplay('USD', 'en-US')
       .build();
@@ -291,14 +284,12 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
     const sunburstChart = SunburstChartBuilder.create()
       .setData([]) // Data will be populated later
       .setHeader('Organizational Structure')
-      .setPosition({ x: 12, y: 8, cols: 6, rows: 8 })
       .build();
 
     // Financial Flow Sankey
     const sankeyChart = SankeyChartBuilder.create()
       .setData({ nodes: [], links: [] }) // Data will be populated later
       .setHeader('Financial Flow')
-      .setPosition({ x: 0, y: 33, cols: 8, rows: 8 })
       .setFinancialFlow()
       .setCurrencyDisplay('USD', 'en-US')
       .build();
@@ -307,7 +298,6 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
     const investmentFlowSankey = SankeyChartBuilder.create()
       .setData({ nodes: [], links: [] }) // Data will be populated later
       .setHeader('Investment Flow')
-      .setPosition({ x: 8, y: 33, cols: 8, rows: 8 })
       .setInvestmentFlow()
       .setCurrencyDisplay('USD', 'en-US')
       .build();
@@ -316,7 +306,6 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
     const budgetAllocationSankey = SankeyChartBuilder.create()
       .setData({ nodes: [], links: [] }) // Data will be populated later
       .setHeader('Budget Allocation')
-      .setPosition({ x: 16, y: 33, cols: 8, rows: 8 })
       .setBudgetAllocation()
       .setCurrencyDisplay('USD', 'en-US')
       .build();
@@ -325,7 +314,6 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
     const candlestickChart = CandlestickChartBuilder.create()
       .setData([]) // Data will be populated later
       .setHeader('Stock Price Analysis')
-      .setPosition({ x: 12, y: 16, cols: 6, rows: 8 })
       .setCurrencyFormatter('USD', 'en-US')
       .build();
 
@@ -336,13 +324,13 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
     // Metric tiles are already positioned at y: 0 in the createMetricTiles function
 
     // Position filter widget at row 1 (below metric tiles)
-    filterWidget.position = { x: 0, y: 2, cols: 12, rows: 1 };
+    filterWidget.position = { x: 0, y: 3, cols: 12, rows: 1 };
 
     // Position other widgets starting from row 2 (below filter)
-    densityMapInvestment.position = { x: 0, y: 3, cols: 8, rows: 8 };
-    pieAssetAllocation.position = { x: 9, y: 11, cols: 4, rows: 8 };
-    polarChart.position = { x: 9, y: 15, cols: 4, rows: 8 };
-    barMonthlyIncomeVsExpenses.position = { x: 0, y: 13, cols: 8, rows: 8 };
+    densityMapInvestment.position = { x: 0, y: 4, cols: 8, rows: 8 };
+    pieAssetAllocation.position = { x: 8, y: 4, cols: 4, rows: 6 };
+    polarChart.position = { x: 8, y: 8, cols: 4, rows: 6 };
+    barMonthlyIncomeVsExpenses.position = { x: 0, y: 12, cols: 8, rows: 8 };
 
     // Use the Fluent API to build the dashboard config with filter highlighting enabled
     this.dashboardConfig = StandardDashboardBuilder.createStandard()

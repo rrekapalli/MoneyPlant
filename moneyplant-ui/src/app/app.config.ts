@@ -4,7 +4,6 @@ import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { routes } from './app.routes';
 import { providePrimeNG } from 'primeng/config';
-import Nora from '@primeng/themes/nora';
 import Lara from '@primeng/themes/lara';
 import { GlobalErrorHandler } from './core/error-handler';
 import { csrfInterceptor } from './services/security';
