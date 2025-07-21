@@ -1,11 +1,11 @@
 # MoneyPlant
 
-MoneyPlant is a microservices-based financial portfolio management application that allows users to track investments, monitor stocks, and manage their financial portfolios.
+MoneyPlant is a financial portfolio management application that allows users to track investments, monitor stocks, and manage their financial portfolios. It is built using Spring Boot Modulith architecture.
 
 ## Table of Contents
 
 - [Architecture Overview](#architecture-overview)
-- [Services](#services)
+- [Modules](#modules)
 - [Technologies](#technologies)
 - [Prerequisites](#prerequisites)
 - [Setup Instructions](#setup-instructions)
@@ -15,36 +15,33 @@ MoneyPlant is a microservices-based financial portfolio management application t
 
 ## Architecture Overview
 
-MoneyPlant follows a microservices architecture with the following components:
+MoneyPlant follows the Spring Boot Modulith architecture, which provides a modular approach to building monolithic applications. The application is structured into well-defined modules with clear boundaries, allowing for:
 
-- **API Gateway**: Entry point for all client requests, handles routing, authentication, and rate limiting
-- **Discovery Server**: Service registry for dynamic service discovery (Eureka)
-- **Config Server**: Centralized configuration management
-- **Core Services**: Portfolio, Stock, Transaction, and Watchlist services
+- **Modularity**: Each functional area is a separate module with clear boundaries
+- **Testability**: Modules can be tested in isolation
+- **Maintainability**: Clear separation of concerns makes the codebase easier to maintain
+- **Evolvability**: Modules can evolve independently while maintaining integration
 
-## Services
+## Modules
 
-- **api-gateway**: Routes requests to appropriate services, handles authentication and rate limiting
-- **config-server**: Provides centralized configuration for all services
-- **discovery-server**: Service registry for dynamic service discovery (Eureka)
-- **money-plant-core**: Common code and utilities shared across services
-- **portfolio-service**: Manages user portfolios
-- **stock-service**: Provides stock information and market data
-- **transaction-service**: Handles investment transactions
-- **watchlist-service**: Manages user watchlists for tracking stocks
+The application is organized into the following modules:
+
+- **core**: Common entities, repositories, and utilities shared across modules
+- **stock**: Provides stock information and market data
+- **portfolio**: Manages user portfolios
+- **transaction**: Handles investment transactions
+- **watchlist**: Manages user watchlists for tracking stocks
 
 ## Technologies
 
 - **Java 21**: Core programming language
 - **Spring Boot 3.3.0**: Application framework
-- **Spring Cloud**: Microservices ecosystem
+- **Spring Boot Modulith**: Modular monolith architecture
 - **Spring Data JPA**: Data access layer
 - **PostgreSQL**: Database (configurable per environment)
-- **RabbitMQ**: Message queue for asynchronous communication
 - **Docker**: Containerization
 - **Kubernetes**: Container orchestration (for production)
 - **Resilience4j**: Circuit breaker implementation
-- **Zipkin**: Distributed tracing
 - **OpenAPI/Swagger**: API documentation
 
 ## Prerequisites
@@ -52,8 +49,7 @@ MoneyPlant follows a microservices architecture with the following components:
 - Java 21 or higher
 - Maven 3.8 or higher
 - Docker and Docker Compose (for local development)
-- PostgreSQL (if running services directly)
-- RabbitMQ (if running services directly)
+- PostgreSQL (if running the application directly)
 
 ## Setup Instructions
 
@@ -75,16 +71,15 @@ For more details, see the [Docker Image Building Guide](README-docker-images.md)
    ```bash
    mvn clean package
    ```
-   This will also build Docker images for all services automatically.
+   This will also build Docker images for the application automatically.
 
-3. Start the services using Docker Compose:
+3. Start the application using Docker Compose:
    ```bash
    docker-compose up -d
    ```
 
-4. Access the services:
-   - API Gateway: http://localhost:8080
-   - Eureka Dashboard: http://localhost:8761
+4. Access the application:
+   - Application: http://localhost:8080
    - Swagger UI: http://localhost:8080/swagger-ui.html
 
 ### Manual Setup
@@ -100,15 +95,9 @@ For more details, see the [Docker Image Building Guide](README-docker-images.md)
    mvn clean package
    ```
 
-3. Start the services in the following order:
-   - Config Server
-   - Discovery Server
-   - Other services
-   - API Gateway
-
+3. Start the application:
    ```bash
-   # Example for starting the Config Server
-   cd config-server
+   cd moneyplant-app
    mvn spring-boot:run
    ```
 
@@ -116,21 +105,17 @@ For more details, see the [Docker Image Building Guide](README-docker-images.md)
 
 ### Swagger UI Access
 
-The API documentation is available through Swagger UI for each service:
+The API documentation is available through Swagger UI:
 
-- **Main Application**: http://localhost:8080/swagger-ui.html
-- **Stock Service**: http://localhost:8081/swagger-ui.html
-- **Portfolio Service**: http://localhost:8082/swagger-ui.html
-- **Transaction Service**: http://localhost:8083/swagger-ui.html
-- **Watchlist Service**: http://localhost:8084/swagger-ui.html
+- **Application**: http://localhost:8080/swagger-ui.html
 
-When running in monolithic mode (through the main application), all services' APIs are accessible through the main Swagger UI at http://localhost:8080/swagger-ui.html.
+The Swagger UI provides documentation for all modules' APIs, organized by module.
 
 ### API Versioning
 
 All APIs follow a versioned approach with the format:
 ```
-/api/v{version_number}/{resource}
+/api/v{version_number}/{module}/{resource}
 ```
 
 For more details, see the [API Versioning Strategy](docs/api-versioning-strategy.md).
