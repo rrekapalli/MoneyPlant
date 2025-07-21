@@ -79,7 +79,7 @@
                 <artifactId>frontend-maven-plugin</artifactId>
                 <version>1.12.1</version>
                 <configuration>
-                    <workingDirectory>src/main/java/com/moneyplant/ui</workingDirectory>
+                    <workingDirectory>src/main/moneyplant-app</workingDirectory>
                     <installDirectory>target</installDirectory>
                 </configuration>
                 <executions>
@@ -90,7 +90,7 @@
                             <goal>install-node-and-npm</goal>
                         </goals>
                         <configuration>
-                            <nodeVersion>v18.16.0</nodeVersion>
+                            <nodeVersion>v20.19.0</nodeVersion>
                             <npmVersion>9.5.1</npmVersion>
                         </configuration>
                     </execution>
@@ -132,7 +132,7 @@
                             <outputDirectory>${project.build.directory}/classes/static</outputDirectory>
                             <resources>
                                 <resource>
-                                    <directory>src/main/java/com/moneyplant/ui/dist/money-plant-frontend</directory>
+                                    <directory>src/main/moneyplant-app/dist/money-plant-frontend</directory>
                                 </resource>
                             </resources>
                         </configuration>

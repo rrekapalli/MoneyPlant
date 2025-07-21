@@ -21,7 +21,7 @@ public class SecurityConfig {
                 // Swagger UI endpoints
                 .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v1/api-docs/**").permitAll()
                 // Angular frontend static resources
-                .requestMatchers("/", "/index.html", "/*.js", "/*.css", "/*.ico", "/assets/**", "/*.woff2", "/*.woff", "/*.ttf").permitAll()
+                .requestMatchers("/", "/index.html", "/*.js", "/chunk-*.js", "/*.css", "/*.ico", "/assets/**", "/*.woff2", "/*.woff", "/*.ttf").permitAll()
                 // API endpoints require authentication
                 .requestMatchers("/api/**").authenticated()
                 // Allow all other requests to access the Angular frontend

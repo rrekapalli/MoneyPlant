@@ -37,21 +37,8 @@ const path = require('path');
 
 module.exports = {
   optimization: {
-    runtimeChunk: 'single',
-    splitChunks: {
-      cacheGroups: {
-        vendor: {
-          test: /[\\/]node_modules[\\/]/,
-          name: 'vendor',
-          chunks: 'all',
-        },
-        app: {
-          test: /[\\/]src[\\/]/,
-          name: 'app',
-          chunks: 'all',
-        },
-      },
-    },
+    runtimeChunk: false,
+    splitChunks: false,
   },
 };
 EOL
@@ -59,7 +46,7 @@ EOL
 # Build the Angular frontend with single bundle configuration
 echo "Building Angular frontend with single bundle configuration..."
 # Use the updated build command for Angular 20
-node src/main/java/com/moneyplant/ui/build-single-bundle.js
+node build-single-bundle.js
 
 # Create the static directory if it doesn't exist
 mkdir -p "$STATIC_DIR"
@@ -110,16 +97,23 @@ if [ -d "$BROWSER_DIR" ]; then
     cp "$BROWSER_DIR"/*.css "$STATIC_DIR/" || true
   fi
 
-  # Copy JS files as module bundles
-  echo "Copying JS bundles..."
-  # Copy main bundle
-  cp "$BROWSER_DIR/main*.js" "$STATIC_DIR/main.js" || true
-  # Copy vendor bundle
-  cp "$BROWSER_DIR/vendor*.js" "$STATIC_DIR/vendor.js" || true
-  # Copy polyfills bundle
-  cp "$BROWSER_DIR/polyfills*.js" "$STATIC_DIR/polyfills.js" || true
-  # Copy runtime bundle
-  cp "$BROWSER_DIR/runtime*.js" "$STATIC_DIR/runtime.js" || true
+  # Copy single JS bundle
+  echo "Copying single JS bundle..."
+  # Copy the single bundle file
+  cp "$BROWSER_DIR/app.js" "$STATIC_DIR/app.js" || true
+
+  # Fallback to copying individual files if app.js doesn't exist
+  if [ ! -f "$STATIC_DIR/app.js" ]; then
+    echo "Single bundle not found, falling back to individual files..."
+    # Copy main bundle
+    cp "$BROWSER_DIR/main*.js" "$STATIC_DIR/main.js" || true
+    # Copy vendor bundle
+    cp "$BROWSER_DIR/vendor*.js" "$STATIC_DIR/vendor.js" || true
+    # Copy polyfills bundle
+    cp "$BROWSER_DIR/polyfills*.js" "$STATIC_DIR/polyfills.js" || true
+    # Copy runtime bundle
+    cp "$BROWSER_DIR/runtime*.js" "$STATIC_DIR/runtime.js" || true
+  fi
 
   # Copy license files if they exist
   if [ -f "$DIST_DIR/3rdpartylicenses.txt" ]; then
