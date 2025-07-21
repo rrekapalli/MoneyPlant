@@ -23,6 +23,13 @@ The MoneyPlant application consists of the following modules:
 - **watchlist-service**: Manages user watchlists
 - **moneyplant-app**: The main application module that integrates all other modules
 
+## Project Structure
+
+The project is organized as follows:
+- **src/main/java/com/moneyplant**: Contains the Java code for all modules
+- **src/main/moneyplant-app**: Contains the Angular frontend application
+- **src/main/resources/static**: Contains the built frontend files served by the Spring Boot application
+
 ## Running the Application
 
 To run the MoneyPlant application as a modulith, follow these steps:
