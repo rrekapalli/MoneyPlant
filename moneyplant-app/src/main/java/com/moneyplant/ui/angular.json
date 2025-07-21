@@ -125,7 +125,11 @@
               "optimization": true,
               "aot": true,
               "namedChunks": false,
-              "verbose": true
+              "buildOptimizer": true,
+              "vendorChunk": false,
+              "commonChunk": false,
+              "verbose": true,
+              "sourceMap": false
             },
             "development": {
               "optimization": false,

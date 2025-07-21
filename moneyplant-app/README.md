@@ -32,13 +32,19 @@ To run the MoneyPlant application as a modulith, follow these steps:
    mvn clean install
    ```
 
-2. Run the application:
+2. Build the Angular frontend:
+   ```
+   ./build-frontend.sh
+   ```
+   This script will build the Angular frontend and copy the dist files to the resources/static directory.
+
+3. Run the application:
    ```
    cd moneyplant-app
    mvn spring-boot:run
    ```
 
-3. Access the application at http://localhost:8080
+4. Access the application at http://localhost:8080
 
 ## API Documentation
 

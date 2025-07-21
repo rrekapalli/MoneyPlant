@@ -53,6 +53,27 @@ The application is organized into the following modules:
 
 ## Setup Instructions
 
+### Building the Angular Frontend
+
+The project includes an Angular frontend that needs to be built and deployed to the `resources/static` directory for the Spring Boot application to serve it. A convenience script is provided to automate this process:
+
+1. Make sure the script is executable:
+   ```bash
+   chmod +x moneyplant-app/build-frontend.sh
+   ```
+
+2. Run the script to build the frontend and deploy it:
+   ```bash
+   ./moneyplant-app/build-frontend.sh
+   ```
+
+This script will:
+- Install the necessary dependencies (using `--legacy-peer-deps` to handle version conflicts)
+- Build the Angular application
+- Copy the built files to the `resources/static` directory
+
+After running this script, the frontend will be accessible when you start the Spring Boot application.
+
 ### Docker Image Building
 
 The project is configured to automatically build Docker images whenever a Maven package is created. This is done using the Maven Exec Plugin, which runs a script after the package phase.
