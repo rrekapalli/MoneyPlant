@@ -123,12 +123,13 @@
               ],
               "outputHashing": "all",
               "optimization": true,
-              "namedChunks": false,
-              "verbose": true,
-              "sourceMap": false,
               "aot": true,
+              "namedChunks": false,
               "buildOptimizer": true,
-              "commonChunk": false
+              "vendorChunk": false,
+              "commonChunk": false,
+              "verbose": true,
+              "sourceMap": false
             },
             "development": {
               "optimization": false,
