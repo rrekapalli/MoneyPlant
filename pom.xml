@@ -16,12 +16,8 @@
         <relativePath/> <!-- lookup parent from a repository -->
     </parent>
 
+    <!-- All modules have been consolidated into moneyplant-app using Spring Boot Modulith -->
     <modules>
-        <module>moneyplant-core</module>
-        <module>stock-service</module>
-        <module>portfolio-service</module>
-        <module>watchlist-service</module>
-        <module>transaction-service</module>
         <module>moneyplant-app</module>
     </modules>
 
@@ -53,6 +49,24 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Spring Boot Modulith -->
+        <dependency>
+            <groupId>org.springframework.modulith</groupId>
+            <artifactId>spring-modulith-starter-core</artifactId>
+            <version>1.1.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.modulith</groupId>
+            <artifactId>spring-modulith-starter-jpa</artifactId>
+            <version>1.1.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.modulith</groupId>
+            <artifactId>spring-modulith-test</artifactId>
+            <version>1.1.2</version>
             <scope>test</scope>
         </dependency>
 
