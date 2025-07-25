@@ -61,9 +61,12 @@
       </p-table>
     </div>
 
-    <!-- Tab View for Watchlists -->
-    <p-tabView [(activeIndex)]="activeTabIndex">
-      <p-tabPanel *ngFor="let watchlist of watchlists; let i = index" [header]="(i + 1).toString()">
+    <!-- Tabs for Watchlists -->
+    <p-tabs [(activeIndex)]="activeTabIndex">
+      <ng-template pTemplate="tab" let-watchlist let-i="index" *ngFor="let watchlist of watchlists; let i = index">
+        <span>{{ i + 1 }}</span>
+      </ng-template>
+      <ng-template pTemplate="content" let-watchlist let-i="index" *ngFor="let watchlist of watchlists; let i = index">
         <div class="watchlist-container">
             <p-scrollPanel [style]="{width: '100%', height: 'auto', minHeight: '60px', maxHeight: '60px'}">
             <div class="m-0">{{ watchlist.name }}</div>
@@ -102,14 +105,17 @@
             </div>
             </p-scrollPanel>
         </div>
-      </p-tabPanel>
+      </ng-template>
 
-      <p-tabPanel *ngIf="watchlists.length === 0" header="1">
+      <ng-template pTemplate="tab" *ngIf="watchlists.length === 0">
+        <span>1</span>
+      </ng-template>
+      <ng-template pTemplate="content" *ngIf="watchlists.length === 0">
         <div class="p-4 text-center">
           <p>No watchlist found. Create your first watchlist to get started.</p>
         </div>
-      </p-tabPanel>
-    </p-tabView>
+      </ng-template>
+    </p-tabs>
   </div>
 
   <!-- Portfolio View -->
