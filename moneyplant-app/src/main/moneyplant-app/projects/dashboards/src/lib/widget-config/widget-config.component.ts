@@ -6,7 +6,7 @@ import {MenuItem} from 'primeng/api';
 import {ButtonModule} from 'primeng/button';
 import {ScrollPanelModule} from 'primeng/scrollpanel';
 import {PanelModule} from 'primeng/panel';
-import {TabMenuModule} from 'primeng/tabmenu';
+import {TabsModule} from 'primeng/tabs';
 import {InputTextModule} from 'primeng/inputtext';
 import { ToastModule } from 'primeng/toast';
 
@@ -20,7 +20,7 @@ import { ToastModule } from 'primeng/toast';
     ButtonModule,
     ScrollPanelModule,
     PanelModule,
-    TabMenuModule,
+    TabsModule,
     InputTextModule,
     ToastModule,
   ],

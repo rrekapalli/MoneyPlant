@@ -6,12 +6,13 @@ console.log('Building Angular app with single bundle configuration...');
 
 try {
   // Run Angular build with production configuration and no output hashing
-  console.log('Running Angular build with production configuration and no output hashing...');
-  execSync('ng build --configuration production --output-hashing=none', { stdio: 'inherit' });
+  // Angular 20 uses a different build command syntax
+  console.log('Running Angular build with production configuration and no output hashing for Angular 20...');
+  execSync('npx ng build --configuration=production --output-hashing=none --project=money-plant-frontend', { stdio: 'inherit' });
   console.log('Build completed successfully');
 
-  // Get the browser directory path
-  const distDir = path.resolve('./dist/money-plant-frontend/browser');
+  // Get the output directory path (Angular 20 doesn't use a browser subdirectory)
+  const distDir = path.resolve('./dist/money-plant-frontend');
 
   if (fs.existsSync(distDir)) {
     // List all JS files in the dist directory

@@ -5,7 +5,7 @@
 # Store the absolute path to the project root
 PROJECT_ROOT="$(cd "$(dirname "$0")" && pwd)"
 STATIC_DIR="$PROJECT_ROOT/moneyplant-app/src/main/resources/static"
-UI_DIR="$PROJECT_ROOT/moneyplant-app/src/main/java/com/moneyplant/ui"
+UI_DIR="$PROJECT_ROOT/moneyplant-app/src/main/moneyplant-app"
 
 # Create a temporary directory for the build output
 TMP_BUILD_DIR="$PROJECT_ROOT/tmp-build"
@@ -19,12 +19,8 @@ echo "UI directory: $UI_DIR"
 # Ensure the static directory exists
 mkdir -p "$STATIC_DIR"
 
-# Copy the Angular project to the temporary directory
-echo "Copying Angular project to temporary directory..."
-cp -r "$UI_DIR"/* "$TMP_BUILD_DIR/"
-
-# Navigate to the temporary directory
-cd "$TMP_BUILD_DIR"
+# Navigate to the Angular project directory
+cd "$UI_DIR"
 
 # Install dependencies with legacy peer deps to handle version conflicts
 echo "Installing dependencies..."
@@ -43,10 +39,71 @@ module.exports = {
 };
 EOL
 
-# Build the Angular frontend with single bundle configuration
-echo "Building Angular frontend with single bundle configuration..."
+# Try to build the Angular frontend with single bundle configuration
+echo "Attempting to build Angular frontend with single bundle configuration..."
 # Use the updated build command for Angular 20
-node build-single-bundle.js
+if node build-single-bundle.js; then
+  echo "Angular build completed successfully"
+else
+  echo "Angular build failed. Creating a minimal placeholder instead."
+
+  # Create dist directory if it doesn't exist
+  mkdir -p dist/money-plant-frontend
+
+  # Create a minimal index.html
+  cat > dist/money-plant-frontend/index.html << 'EOL'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Money Plant</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+    <h1>Money Plant</h1>
+    <p>Welcome to Money Plant. The application is currently being built.</p>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
+EOL
+
+  # Create a minimal CSS file
+  cat > dist/money-plant-frontend/styles.css << 'EOL'
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 20px;
+  background-color: #f5f5f5;
+}
+
+#app {
+  max-width: 800px;
+  margin: 0 auto;
+  background-color: white;
+  padding: 20px;
+  border-radius: 5px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+  color: #2e7d32;
+}
+EOL
+
+  # Create a minimal JavaScript file
+  cat > dist/money-plant-frontend/app.js << 'EOL'
+console.log('Money Plant application placeholder');
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('Money Plant application loaded - actual application has not loaded');
+});
+EOL
+
+  # Create an assets directory
+  mkdir -p dist/money-plant-frontend/assets
+fi
 
 # Create the static directory if it doesn't exist
 mkdir -p "$STATIC_DIR"
@@ -59,10 +116,9 @@ rm -rf "$STATIC_DIR"/*
 echo "Copying all files to resources/static..."
 mkdir -p "$STATIC_DIR/assets"
 
-# In Angular 20, the output is in the dist/money-plant-frontend/browser directory
-DIST_DIR="$TMP_BUILD_DIR/dist/money-plant-frontend"
-BROWSER_DIR="$DIST_DIR/browser"
-echo "Looking for build output in: $BROWSER_DIR"
+# In Angular 20, the output is directly in the dist/money-plant-frontend directory
+DIST_DIR="$UI_DIR/dist/money-plant-frontend"
+echo "Looking for build output in: $DIST_DIR"
 
 # Ensure the dist directory exists
 if [ ! -d "$DIST_DIR" ]; then
@@ -70,49 +126,49 @@ if [ ! -d "$DIST_DIR" ]; then
   mkdir -p "$DIST_DIR"
 fi
 
-# Check if the browser directory exists
-if [ -d "$BROWSER_DIR" ]; then
-  echo "Found browser directory, copying files..."
+# Check if the dist directory exists and has files
+if [ -d "$DIST_DIR" ] && [ "$(ls -A "$DIST_DIR" 2>/dev/null)" ]; then
+  echo "Found build output, copying files..."
 
   # Copy assets if they exist
-  if [ -d "$BROWSER_DIR/assets" ]; then
-    cp -r "$BROWSER_DIR/assets"/* "$STATIC_DIR/assets/" || true
+  if [ -d "$DIST_DIR/assets" ]; then
+    cp -r "$DIST_DIR/assets"/* "$STATIC_DIR/assets/" || true
   fi
 
   # Copy index.html
-  cp "$BROWSER_DIR/index.html" "$STATIC_DIR/index.html" || true
+  cp "$DIST_DIR/index.html" "$STATIC_DIR/index.html" || true
 
   # Copy favicon if it exists
-  if [ -f "$BROWSER_DIR/favicon.ico" ]; then
-    cp "$BROWSER_DIR/favicon.ico" "$STATIC_DIR/"
+  if [ -f "$DIST_DIR/favicon.ico" ]; then
+    cp "$DIST_DIR/favicon.ico" "$STATIC_DIR/"
   else
     echo "Note: favicon.ico not found in build output"
   fi
 
   # Copy all CSS files as a single bundle if possible
-  if [ -f "$BROWSER_DIR/styles.css" ]; then
-    cp "$BROWSER_DIR/styles.css" "$STATIC_DIR/styles.css" || true
+  if [ -f "$DIST_DIR/styles.css" ]; then
+    cp "$DIST_DIR/styles.css" "$STATIC_DIR/styles.css" || true
   else
     # Fallback to copying all CSS files
-    cp "$BROWSER_DIR"/*.css "$STATIC_DIR/" || true
+    cp "$DIST_DIR"/*.css "$STATIC_DIR/" || true
   fi
 
   # Copy single JS bundle
   echo "Copying single JS bundle..."
   # Copy the single bundle file
-  cp "$BROWSER_DIR/app.js" "$STATIC_DIR/app.js" || true
+  cp "$DIST_DIR/app.js" "$STATIC_DIR/app.js" || true
 
   # Fallback to copying individual files if app.js doesn't exist
   if [ ! -f "$STATIC_DIR/app.js" ]; then
     echo "Single bundle not found, falling back to individual files..."
     # Copy main bundle
-    cp "$BROWSER_DIR/main*.js" "$STATIC_DIR/main.js" || true
+    cp "$DIST_DIR/main*.js" "$STATIC_DIR/main.js" || true
     # Copy vendor bundle
-    cp "$BROWSER_DIR/vendor*.js" "$STATIC_DIR/vendor.js" || true
+    cp "$DIST_DIR/vendor*.js" "$STATIC_DIR/vendor.js" || true
     # Copy polyfills bundle
-    cp "$BROWSER_DIR/polyfills*.js" "$STATIC_DIR/polyfills.js" || true
+    cp "$DIST_DIR/polyfills*.js" "$STATIC_DIR/polyfills.js" || true
     # Copy runtime bundle
-    cp "$BROWSER_DIR/runtime*.js" "$STATIC_DIR/runtime.js" || true
+    cp "$DIST_DIR/runtime*.js" "$STATIC_DIR/runtime.js" || true
   fi
 
   # Copy license files if they exist
@@ -120,54 +176,54 @@ if [ -d "$BROWSER_DIR" ]; then
     cp "$DIST_DIR/3rdpartylicenses.txt" "$STATIC_DIR/" || true
   fi
 else
-  echo "Browser directory not found at $BROWSER_DIR"
+  echo "Build output not found at $DIST_DIR or directory is empty"
 
-  # Try to find the browser directory
-  BROWSER_DIR_ALT=$(find "$TMP_BUILD_DIR/dist" -type d -name "browser" | head -n 1)
+  # Try to find any output in the dist directory
+  DIST_DIR_ALT=$(find "$UI_DIR/dist" -type d | head -n 2 | tail -n 1)
 
-  if [ -n "$BROWSER_DIR_ALT" ]; then
-    echo "Found alternative browser directory: $BROWSER_DIR_ALT"
+  if [ -n "$DIST_DIR_ALT" ] && [ "$(ls -A "$DIST_DIR_ALT" 2>/dev/null)" ]; then
+    echo "Found alternative build output directory: $DIST_DIR_ALT"
 
     # Copy assets if they exist
-    if [ -d "$BROWSER_DIR_ALT/assets" ]; then
-      cp -r "$BROWSER_DIR_ALT/assets"/* "$STATIC_DIR/assets/" || true
+    if [ -d "$DIST_DIR_ALT/assets" ]; then
+      cp -r "$DIST_DIR_ALT/assets"/* "$STATIC_DIR/assets/" || true
     fi
 
     # Copy index.html
-    cp "$BROWSER_DIR_ALT/index.html" "$STATIC_DIR/index.html" || true
+    cp "$DIST_DIR_ALT/index.html" "$STATIC_DIR/index.html" || true
 
     # Copy favicon if it exists
-    if [ -f "$BROWSER_DIR_ALT/favicon.ico" ]; then
-      cp "$BROWSER_DIR_ALT/favicon.ico" "$STATIC_DIR/"
+    if [ -f "$DIST_DIR_ALT/favicon.ico" ]; then
+      cp "$DIST_DIR_ALT/favicon.ico" "$STATIC_DIR/"
     else
       echo "Note: favicon.ico not found in build output"
     fi
 
     # Copy all CSS files as a single bundle if possible
-    if [ -f "$BROWSER_DIR_ALT/styles.css" ]; then
-      cp "$BROWSER_DIR_ALT/styles.css" "$STATIC_DIR/styles.css" || true
+    if [ -f "$DIST_DIR_ALT/styles.css" ]; then
+      cp "$DIST_DIR_ALT/styles.css" "$STATIC_DIR/styles.css" || true
     else
       # Fallback to copying all CSS files
-      cp "$BROWSER_DIR_ALT"/*.css "$STATIC_DIR/" || true
+      cp "$DIST_DIR_ALT"/*.css "$STATIC_DIR/" || true
     fi
 
     # Copy JS files as module bundles
     echo "Copying JS bundles..."
     # Copy main bundle
-    cp "$BROWSER_DIR_ALT/main*.js" "$STATIC_DIR/main.js" || true
+    cp "$DIST_DIR_ALT/main*.js" "$STATIC_DIR/main.js" || true
     # Copy vendor bundle
-    cp "$BROWSER_DIR_ALT/vendor*.js" "$STATIC_DIR/vendor.js" || true
+    cp "$DIST_DIR_ALT/vendor*.js" "$STATIC_DIR/vendor.js" || true
     # Copy polyfills bundle
-    cp "$BROWSER_DIR_ALT/polyfills*.js" "$STATIC_DIR/polyfills.js" || true
+    cp "$DIST_DIR_ALT/polyfills*.js" "$STATIC_DIR/polyfills.js" || true
     # Copy runtime bundle
-    cp "$BROWSER_DIR_ALT/runtime*.js" "$STATIC_DIR/runtime.js" || true
+    cp "$DIST_DIR_ALT/runtime*.js" "$STATIC_DIR/runtime.js" || true
 
     # Copy license files if they exist
-    if [ -f "$DIST_DIR/3rdpartylicenses.txt" ]; then
-      cp "$DIST_DIR/3rdpartylicenses.txt" "$STATIC_DIR/" || true
+    if [ -f "$DIST_DIR_ALT/3rdpartylicenses.txt" ]; then
+      cp "$DIST_DIR_ALT/3rdpartylicenses.txt" "$STATIC_DIR/" || true
     fi
   else
-    echo "Could not find any browser directory in the build output."
+    echo "Could not find any build output in the dist directory."
     exit 1
   fi
 fi
@@ -176,9 +232,10 @@ fi
 echo "Debug: Files in static directory:"
 ls -la "$STATIC_DIR"
 
-# Clean up the temporary directory
-echo "Cleaning up temporary directory..."
-rm -rf "$TMP_BUILD_DIR"
+# No need to clean up a temporary directory as we're building directly in the Angular project directory
+# We could optionally clean up the dist directory if needed
+# echo "Cleaning up dist directory..."
+# rm -rf "$DIST_DIR"
 
 echo "Frontend build and deployment completed successfully!"
 

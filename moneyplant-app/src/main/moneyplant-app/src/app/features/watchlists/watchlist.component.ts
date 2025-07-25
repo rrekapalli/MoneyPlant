@@ -12,7 +12,7 @@ import { WatchlistService, MarketService } from '../../services';
 import { Watchlist, WatchlistItem, MarketData } from '../../services/entities';
 import { ScrollerModule } from "primeng/scroller";
 import { ScrollPanelModule } from 'primeng/scrollpanel';
-import { TabViewModule } from 'primeng/tabview';
+import { TabsModule } from 'primeng/tabs';
 import { RadioButtonModule } from 'primeng/radiobutton';
 import { TooltipModule } from 'primeng/tooltip';
 
@@ -31,7 +31,7 @@ import { TooltipModule } from 'primeng/tooltip';
     ScrollerModule,
     DataViewModule,
     ScrollPanelModule,
-    TabViewModule,
+    TabsModule,
     RadioButtonModule,
     TooltipModule
   ],

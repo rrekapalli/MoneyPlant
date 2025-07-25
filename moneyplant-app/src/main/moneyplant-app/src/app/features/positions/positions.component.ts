@@ -5,7 +5,7 @@ import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
 import { TableModule } from 'primeng/table';
 import { TooltipModule } from 'primeng/tooltip';
-import { TabViewModule } from 'primeng/tabview';
+import { TabsModule } from 'primeng/tabs';
 import { ChartModule } from 'primeng/chart';
 import { DividerModule } from 'primeng/divider';
 import { TagModule } from 'primeng/tag';
@@ -28,7 +28,7 @@ interface Position {
     ButtonModule,
     TableModule,
     TooltipModule,
-    TabViewModule,
+    TabsModule,
     ChartModule,
     DividerModule,
     TagModule

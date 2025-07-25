@@ -4,7 +4,7 @@ import { ButtonModule } from 'primeng/button';
 import { MenuModule } from 'primeng/menu';
 import { MenuItem } from 'primeng/api';
 import { SplitButtonModule } from 'primeng/splitbutton';
-import { DropdownModule } from 'primeng/dropdown';
+import { SelectModule } from 'primeng/select';
 
 @Component({
   selector: 'vis-dashboard-header',
@@ -14,7 +14,7 @@ import { DropdownModule } from 'primeng/dropdown';
     ButtonModule,
     MenuModule,
     SplitButtonModule,
-    DropdownModule,
+    SelectModule,
   ],
   templateUrl: './dashboard-header.component.html',
   styleUrls: ['./dashboard-header.component.css'],
@@ -23,14 +23,14 @@ export class DashboardHeaderComponent implements OnInit, OnChanges {
   @Input() title: string = 'Dashboard';
   @Input() isHighlightingEnabled: boolean = true;
   @Input() isExportingExcel: boolean = false;
-  
+
   @Output() onExportToExcel = new EventEmitter<void>();
   @Output() onToggleHighlighting = new EventEmitter<void>();
   @Output() onSetHighlightingPreset = new EventEmitter<'subtle' | 'medium' | 'strong'>();
 
   // Convert getter to property for better change detection
   menuItems: MenuItem[] = [];
-  
+
   // Custom menu state
   showCustomMenu = false;
 
@@ -73,7 +73,7 @@ export class DashboardHeaderComponent implements OnInit, OnChanges {
 
   private updateMenuItems(): void {
     const items: MenuItem[] = [];
-    
+
     // Add simple test menu items first to verify basic functionality
     items.push({
       label: '🧪 Simple Test',
@@ -82,11 +82,11 @@ export class DashboardHeaderComponent implements OnInit, OnChanges {
         alert('Simple test works!');
       }
     });
-    
+
     items.push({
       separator: true
     });
-    
+
     // Add export options - Excel only
     items.push({
       label: 'Export to Excel', 
@@ -95,11 +95,11 @@ export class DashboardHeaderComponent implements OnInit, OnChanges {
         this.exportToExcel();
       }
     });
-    
+
     items.push({
       separator: true
     });
-    
+
     // Add highlighting toggle with CORRECT logic
     items.push({
       label: this.isHighlightingEnabled ? 'Disable Highlighting' : 'Enable Highlighting',
@@ -108,13 +108,13 @@ export class DashboardHeaderComponent implements OnInit, OnChanges {
         this.toggleHighlighting();
       }
     });
-    
+
     // Add highlighting presets ONLY if highlighting is enabled
     if (this.isHighlightingEnabled) {
       items.push({
         separator: true
       });
-      
+
       items.push({
         label: 'Highlighting Intensity',
         items: [
@@ -133,7 +133,7 @@ export class DashboardHeaderComponent implements OnInit, OnChanges {
         ]
       });
     }
-    
+
     console.log('Menu items updated - highlighting enabled:', this.isHighlightingEnabled);
     console.log('Menu structure:', items);
     this.menuItems = items;
@@ -187,7 +187,7 @@ export class DashboardHeaderComponent implements OnInit, OnChanges {
   testCustomClick(action: string) {
     console.log('CUSTOM MENU ITEM CLICKED:', action);
     this.showCustomMenu = false; // Close menu
-    
+
     switch (action) {
       case 'test':
         alert('Custom test menu item works!');

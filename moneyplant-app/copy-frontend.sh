@@ -6,7 +6,7 @@
 PROJECT_ROOT="$(dirname "$0")"
 STATIC_DIR="$PROJECT_ROOT/src/main/resources/static"
 UI_DIR="$PROJECT_ROOT/src/main/moneyplant-app"
-BROWSER_DIR="$UI_DIR/dist/money-plant-frontend/browser"
+BROWSER_DIR="$UI_DIR/dist/money-plant-frontend"
 
 # Print paths for debugging
 echo "Project root: $PROJECT_ROOT"
@@ -45,8 +45,11 @@ if [ -d "$BROWSER_DIR" ]; then
   if [ -f "$STATIC_DIR/index.html" ]; then
     # Check if app.js exists
     if [ -f "$BROWSER_DIR/app.js" ]; then
-      # Update index.html to use app.js
-      sed -i 's/<\/body>/<script src="app.js"><\/script><\/body>/g' "$STATIC_DIR/index.html"
+      # Check if index.html already has a script tag for app.js
+      if ! grep -q '<script src="app.js">' "$STATIC_DIR/index.html"; then
+        # Update index.html to use app.js
+        sed -i 's/<\/body>/<script src="app.js"><\/script><\/body>/g' "$STATIC_DIR/index.html"
+      fi
       # Remove modulepreload links
       sed -i '/<link rel="modulepreload"/d' "$STATIC_DIR/index.html"
       echo "Updated index.html to use app.js"
@@ -106,8 +109,11 @@ else
     if [ -f "$STATIC_DIR/index.html" ]; then
       # Check if app.js exists
       if [ -f "$BROWSER_DIR/app.js" ]; then
-        # Update index.html to use app.js
-        sed -i 's/<\/body>/<script src="app.js"><\/script><\/body>/g' "$STATIC_DIR/index.html"
+        # Check if index.html already has a script tag for app.js
+        if ! grep -q '<script src="app.js">' "$STATIC_DIR/index.html"; then
+          # Update index.html to use app.js
+          sed -i 's/<\/body>/<script src="app.js"><\/script><\/body>/g' "$STATIC_DIR/index.html"
+        fi
         # Remove modulepreload links
         sed -i '/<link rel="modulepreload"/d' "$STATIC_DIR/index.html"
         echo "Updated index.html to use app.js"
