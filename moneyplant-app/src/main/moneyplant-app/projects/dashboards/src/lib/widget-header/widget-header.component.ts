@@ -1,7 +1,7 @@
 import {Component, EventEmitter, Input, Output} from '@angular/core';
 import {IWidget} from '../entities/IWidget';
 import {PanelModule} from 'primeng/panel';
-import {SidebarModule} from 'primeng/sidebar';
+import {DrawerModule} from 'primeng/drawer';
 import {WidgetConfigComponent} from '../widget-config/widget-config.component';
 import {CommonModule} from '@angular/common';
 import {ButtonModule} from 'primeng/button';
@@ -14,7 +14,7 @@ import {ExcelExportService, ExcelExportOptions} from '../services/excel-export.s
   standalone: true,
   imports: [
     CommonModule,
-    SidebarModule,
+    DrawerModule,
     PanelModule,
     WidgetConfigComponent,
     ButtonModule,
@@ -44,7 +44,7 @@ export class WidgetHeaderComponent {
 
   get menuItems(): MenuItem[] {
     const items: MenuItem[] = [];
-    
+
     // Add view toggle option based on current mode
     if (this.currentViewMode === 'chart') {
       items.push({
@@ -59,7 +59,7 @@ export class WidgetHeaderComponent {
         command: () => this.toggleToChartView()
       });
     }
-    
+
     // Add export options
     items.push(
       // {
@@ -73,7 +73,7 @@ export class WidgetHeaderComponent {
         command: () => this.exportToExcel()
       }
     );
-    
+
     return items;
   }
 

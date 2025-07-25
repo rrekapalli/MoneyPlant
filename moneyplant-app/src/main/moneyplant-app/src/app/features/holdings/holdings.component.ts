@@ -5,7 +5,7 @@ import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
 import { TableModule } from 'primeng/table';
 import { InputTextModule } from 'primeng/inputtext';
-import { InputTextarea } from 'primeng/inputtextarea';
+import { TextareaModule } from 'primeng/textarea';
 import { DividerModule } from 'primeng/divider';
 import { FormsModule } from '@angular/forms';
 
@@ -37,7 +37,7 @@ interface HoldingGroup {
     ButtonModule,
     TableModule,
     InputTextModule,
-    InputTextarea,
+    TextareaModule,
     DividerModule,
     FormsModule
   ],

@@ -4,7 +4,7 @@ import { RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { TableModule } from 'primeng/table';
 import { CardModule } from 'primeng/card';
-import { TabViewModule } from 'primeng/tabview';
+import { TabsModule } from 'primeng/tabs';
 
 @Component({
   selector: 'app-scanners',
@@ -15,7 +15,7 @@ import { TabViewModule } from 'primeng/tabview';
     ButtonModule,
     TableModule,
     CardModule,
-    TabViewModule
+    TabsModule
   ],
   templateUrl: './scanners.component.html',
   styleUrl: './scanners.component.scss'
@@ -64,7 +64,7 @@ export class ScannersComponent implements OnInit {
           results: 5
         }
       ];
-      
+
       this.customScanners = [
         {
           id: '4',
@@ -83,7 +83,7 @@ export class ScannersComponent implements OnInit {
           results: 7
         }
       ];
-      
+
       this.scanners = [...this.predefinedScanners, ...this.customScanners];
       this.loading = false;
     }, 1000);
