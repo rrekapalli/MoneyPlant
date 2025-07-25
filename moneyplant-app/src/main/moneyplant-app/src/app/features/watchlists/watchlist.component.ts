@@ -50,7 +50,12 @@ export class WatchlistComponent implements OnInit {
   isSearching: boolean = false;
 
   // Tab functionality
-  activeTabIndex: number = 0;
+  activeTab: string = '0';
+
+  // Helper method to get current watchlist index from activeTab
+  private getCurrentWatchlistIndex(): number {
+    return parseInt(this.activeTab, 10);
+  }
 
   constructor(
     private route: ActivatedRoute, 
@@ -92,7 +97,7 @@ export class WatchlistComponent implements OnInit {
         const index = this.watchlists.findIndex(w => w.id === id);
         if (index !== -1) {
           this.watchlists[index] = data;
-          this.activeTabIndex = index;
+          this.activeTab = index.toString();
         }
       },
       error: (error) => {
@@ -139,7 +144,7 @@ export class WatchlistComponent implements OnInit {
       next: (createdWatchlist) => {
         this.watchlists.push(createdWatchlist);
         // Switch to the new watchlist tab
-        this.activeTabIndex = this.watchlists.length - 1;
+        this.activeTab = (this.watchlists.length - 1).toString();
       },
       error: (error) => {
         // Handle error (e.g., show a notification)
@@ -150,13 +155,13 @@ export class WatchlistComponent implements OnInit {
   viewWatchlist(watchlist: Watchlist): void {
     const index = this.watchlists.findIndex(w => w.id === watchlist.id);
     if (index !== -1) {
-      this.activeTabIndex = index;
+      this.activeTab = index.toString();
     }
   }
 
   editWatchlist(): void {
     // Get the current watchlist from the active tab
-    const currentWatchlist = this.watchlists[this.activeTabIndex];
+    const currentWatchlist = this.watchlists[this.getCurrentWatchlistIndex()];
     if (!currentWatchlist) return;
 
     // This would typically open a dialog or form with the current data
@@ -169,7 +174,7 @@ export class WatchlistComponent implements OnInit {
     this.watchlistService.updateWatchlist(currentWatchlist.id, updatedWatchlist).subscribe({
       next: (updated) => {
         // Update the watchlist in the array
-        this.watchlists[this.activeTabIndex] = updated;
+        this.watchlists[this.getCurrentWatchlistIndex()] = updated;
       },
       error: (error) => {
         // Handle error (e.g., show a notification)
@@ -191,12 +196,12 @@ export class WatchlistComponent implements OnInit {
         // Adjust the active tab index if needed
         if (this.watchlists.length > 0) {
           // If we deleted the last tab or a tab before the current one, adjust the active index
-          if (deletedIndex <= this.activeTabIndex) {
-            this.activeTabIndex = Math.max(0, this.activeTabIndex - 1);
+          if (deletedIndex <= this.getCurrentWatchlistIndex()) {
+            this.activeTab = Math.max(0, this.getCurrentWatchlistIndex() - 1).toString();
           }
         } else {
           // No watchlists left
-          this.activeTabIndex = 0;
+          this.activeTab = '0';
         }
       },
       error: (error) => {
@@ -207,7 +212,7 @@ export class WatchlistComponent implements OnInit {
 
   addSymbol(): void {
     // Get the current watchlist from the active tab
-    const currentWatchlist = this.watchlists[this.activeTabIndex];
+    const currentWatchlist = this.watchlists[this.getCurrentWatchlistIndex()];
     if (!currentWatchlist) return;
 
     // This would typically open a dialog to search for and select a symbol
@@ -217,7 +222,7 @@ export class WatchlistComponent implements OnInit {
     this.watchlistService.addSymbol(currentWatchlist.id, symbol).subscribe({
       next: (updated) => {
         // Update the watchlist in the array
-        this.watchlists[this.activeTabIndex] = updated;
+        this.watchlists[this.getCurrentWatchlistIndex()] = updated;
       },
       error: (error) => {
         // Handle error (e.g., show a notification)
@@ -227,13 +232,13 @@ export class WatchlistComponent implements OnInit {
 
   removeSymbol(item: WatchlistItem): void {
     // Get the current watchlist from the active tab
-    const currentWatchlist = this.watchlists[this.activeTabIndex];
+    const currentWatchlist = this.watchlists[this.getCurrentWatchlistIndex()];
     if (!currentWatchlist) return;
 
     this.watchlistService.removeSymbol(currentWatchlist.id, item.symbol).subscribe({
       next: (updated) => {
         // Update the watchlist in the array
-        this.watchlists[this.activeTabIndex] = updated;
+        this.watchlists[this.getCurrentWatchlistIndex()] = updated;
       },
       error: (error) => {
         // Handle error (e.g., show a notification)
@@ -245,7 +250,7 @@ export class WatchlistComponent implements OnInit {
   // Kept for backward compatibility
   backToList(): void {
     // Reset the active tab index
-    this.activeTabIndex = 0;
+    this.activeTab = '0';
   }
 
   /**
@@ -277,13 +282,13 @@ export class WatchlistComponent implements OnInit {
    */
   addStockFromSearch(stock: MarketData): void {
     // Get the current watchlist from the active tab
-    const currentWatchlist = this.watchlists[this.activeTabIndex];
+    const currentWatchlist = this.watchlists[this.getCurrentWatchlistIndex()];
     if (!currentWatchlist) return;
 
     this.watchlistService.addSymbol(currentWatchlist.id, stock.symbol).subscribe({
       next: (updated) => {
         // Update the watchlist in the array
-        this.watchlists[this.activeTabIndex] = updated;
+        this.watchlists[this.getCurrentWatchlistIndex()] = updated;
         // Optionally clear search results or show a success message
         this.searchResults = [];
         this.searchQuery = '';
