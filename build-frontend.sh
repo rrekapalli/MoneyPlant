@@ -116,9 +116,10 @@ rm -rf "$STATIC_DIR"/*
 echo "Copying all files to resources/static..."
 mkdir -p "$STATIC_DIR/assets"
 
-# In Angular 20, the output is directly in the dist/money-plant-frontend directory
+# In Angular 20, the output is in the dist/money-plant-frontend/browser directory
 DIST_DIR="$UI_DIR/dist/money-plant-frontend"
-echo "Looking for build output in: $DIST_DIR"
+BROWSER_DIR="$DIST_DIR/browser"
+echo "Looking for build output in: $BROWSER_DIR"
 
 # Ensure the dist directory exists
 if [ ! -d "$DIST_DIR" ]; then
@@ -126,57 +127,79 @@ if [ ! -d "$DIST_DIR" ]; then
   mkdir -p "$DIST_DIR"
 fi
 
-# Check if the dist directory exists and has files
-if [ -d "$DIST_DIR" ] && [ "$(ls -A "$DIST_DIR" 2>/dev/null)" ]; then
+# Check if the browser directory exists and has files
+if [ -d "$BROWSER_DIR" ] && [ "$(ls -A "$BROWSER_DIR" 2>/dev/null)" ]; then
   echo "Found build output, copying files..."
 
   # Copy assets if they exist
-  if [ -d "$DIST_DIR/assets" ]; then
-    cp -r "$DIST_DIR/assets"/* "$STATIC_DIR/assets/" || true
+  if [ -d "$BROWSER_DIR/assets" ]; then
+    cp -r "$BROWSER_DIR/assets"/* "$STATIC_DIR/assets/" || true
   fi
 
   # Copy index.html
-  cp "$DIST_DIR/index.html" "$STATIC_DIR/index.html" || true
+  cp "$BROWSER_DIR/index.html" "$STATIC_DIR/index.html" || true
 
   # Copy favicon if it exists
-  if [ -f "$DIST_DIR/favicon.ico" ]; then
-    cp "$DIST_DIR/favicon.ico" "$STATIC_DIR/"
+  if [ -f "$BROWSER_DIR/favicon.ico" ]; then
+    cp "$BROWSER_DIR/favicon.ico" "$STATIC_DIR/"
   else
     echo "Note: favicon.ico not found in build output"
   fi
 
   # Copy all CSS files as a single bundle if possible
-  if [ -f "$DIST_DIR/styles.css" ]; then
-    cp "$DIST_DIR/styles.css" "$STATIC_DIR/styles.css" || true
+  if [ -f "$BROWSER_DIR/styles.css" ]; then
+    cp "$BROWSER_DIR/styles.css" "$STATIC_DIR/styles.css" || true
   else
     # Fallback to copying all CSS files
-    cp "$DIST_DIR"/*.css "$STATIC_DIR/" || true
+    cp "$BROWSER_DIR"/*.css "$STATIC_DIR/" || true
   fi
 
   # Copy single JS bundle
   echo "Copying single JS bundle..."
-  # Copy the single bundle file
-  cp "$DIST_DIR/app.js" "$STATIC_DIR/app.js" || true
+  # Copy the single bundle file if it exists in the root directory
+  if [ -f "$DIST_DIR/app.js" ]; then
+    cp "$DIST_DIR/app.js" "$STATIC_DIR/app.js" || true
+  else
+    # Try to copy from browser directory
+    cp "$BROWSER_DIR/app.js" "$STATIC_DIR/app.js" 2>/dev/null || true
+  fi
 
   # Fallback to copying individual files if app.js doesn't exist
   if [ ! -f "$STATIC_DIR/app.js" ]; then
     echo "Single bundle not found, falling back to individual files..."
     # Copy main bundle
-    cp "$DIST_DIR/main*.js" "$STATIC_DIR/main.js" || true
+    cp "$BROWSER_DIR/main*.js" "$STATIC_DIR/main.js" || true
     # Copy vendor bundle
-    cp "$DIST_DIR/vendor*.js" "$STATIC_DIR/vendor.js" || true
+    cp "$BROWSER_DIR/vendor*.js" "$STATIC_DIR/vendor.js" || true
     # Copy polyfills bundle
-    cp "$DIST_DIR/polyfills*.js" "$STATIC_DIR/polyfills.js" || true
+    cp "$BROWSER_DIR/polyfills*.js" "$STATIC_DIR/polyfills.js" || true
     # Copy runtime bundle
-    cp "$DIST_DIR/runtime*.js" "$STATIC_DIR/runtime.js" || true
+    cp "$BROWSER_DIR/runtime*.js" "$STATIC_DIR/runtime.js" || true
+  fi
+
+  # Ensure index.html has a script tag for app.js with type="module"
+  echo "Ensuring index.html has a script tag for app.js with type=\"module\"..."
+  if [ -f "$STATIC_DIR/index.html" ]; then
+    # Remove any existing app.js script tag without type="module"
+    if grep -q '<script src="app.js"></script>' "$STATIC_DIR/index.html"; then
+      echo "Replacing existing script tag with module type..."
+      sed -i 's|<script src="app.js"></script>|<script src="app.js" type="module"></script>|' "$STATIC_DIR/index.html"
+    # If no script tag exists, add one with type="module"
+    elif ! grep -q '<script src="app.js" type="module"></script>' "$STATIC_DIR/index.html"; then
+      echo "Adding script tag for app.js to index.html with type=\"module\"..."
+      # Add script tag before closing body tag
+      sed -i 's|</body>|  <script src="app.js" type="module"></script>\n</body>|' "$STATIC_DIR/index.html"
+    fi
   fi
 
   # Copy license files if they exist
   if [ -f "$DIST_DIR/3rdpartylicenses.txt" ]; then
     cp "$DIST_DIR/3rdpartylicenses.txt" "$STATIC_DIR/" || true
+  elif [ -f "$BROWSER_DIR/3rdpartylicenses.txt" ]; then
+    cp "$BROWSER_DIR/3rdpartylicenses.txt" "$STATIC_DIR/" || true
   fi
 else
-  echo "Build output not found at $DIST_DIR or directory is empty"
+  echo "Build output not found at $BROWSER_DIR or directory is empty"
 
   # Try to find any output in the dist directory
   DIST_DIR_ALT=$(find "$UI_DIR/dist" -type d | head -n 2 | tail -n 1)
