@@ -8,7 +8,7 @@
       <p-button [outlined]="true" class="p-button-sm" type="button" (click)="sidebarVisible = true" [outlined]="true"
                 icon="pi pi-cog"></p-button>
     }
-    
+
     <!-- Three-dot menu for widget actions -->
     <p-button #menuButton
               [outlined]="true" 
@@ -27,8 +27,8 @@
         appendTo="body">
 </p-menu>
 
-<!-- Settings Sidebar -->
-<p-sidebar [(visible)]="sidebarVisible" position="right" model="false" [appendTo]="'body'" [style]="{
+<!-- Settings Drawer -->
+<p-drawer [(visible)]="sidebarVisible" position="right" [modal]="false" [appendTo]="'body'" [style]="{
       'width': '30%',
       height: '100%',
       padding: '0px',
@@ -39,7 +39,5 @@
       {{ title }} Settings
     </div>
   </ng-template>
-  <ng-template pTemplate="content">
-    <vis-widget-config [selectedDashboardId]="dashboardId" [widget]="widget" (onUpdate)="onUpdateOptions($event)"/>
-  </ng-template>
-</p-sidebar>
+  <vis-widget-config [selectedDashboardId]="dashboardId" [widget]="widget" (onUpdate)="onUpdateOptions($event)"/>
+</p-drawer>

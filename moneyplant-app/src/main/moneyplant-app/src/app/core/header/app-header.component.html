@@ -4,7 +4,7 @@
         <div class="logo-container">
             <span class="app-title">{{ title }}</span>
         </div>
-        <p-menubar [model]="menuItems" styleClass="menu-items" [autoDisplay]="false" [style]="{'height': '3rem'}" (onMenuItemClick)="updateActiveMenuItem()"></p-menubar>
+        <p-menubar [model]="menuItems" styleClass="menu-items" [autoDisplay]="false" [style]="{'height': '3rem'}"></p-menubar>
     </div>
 
     <div class="header-right">
@@ -20,8 +20,8 @@
           >
             <span *ngIf="unreadCount() > 0" class="p-badge p-badge-sm">{{ unreadCount() }}</span>
           </button>
-          <p-overlayPanel #notificationsPanel [showCloseIcon]="true" [style]="{width: '350px'}">
-            <ng-template pTemplate>
+          <p-popover #notificationsPanel [style]="{width: '350px'}" [showTransitionOptions]="'0.12s'" [hideTransitionOptions]="'0.1s'">
+            <ng-template pTemplate="content">
               <div class="notifications-panel">
                 <div class="notifications-header">
                   <h3>Notifications</h3>
@@ -73,7 +73,7 @@
                 </div>
               </div>
             </ng-template>
-          </p-overlayPanel>
+          </p-popover>
         </ng-container>
         <ng-container *featureFlag="'settings'">
           <button pButton icon="pi pi-cog" class="p-button-rounded p-button-text p-button-plain" aria-label="Settings"></button>

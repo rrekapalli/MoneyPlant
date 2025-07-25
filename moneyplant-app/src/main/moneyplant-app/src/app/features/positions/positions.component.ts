@@ -41,6 +41,14 @@ export class PositionsComponent implements OnInit {
   selectedPositionId: string | null = null;
   selectedPosition: Position | null = null;
 
+  // Define tabs for the new p-tabs component
+  detailTabs = [
+    { label: 'Performance', value: 'performance' },
+    { label: 'Transactions', value: 'transactions' },
+    { label: 'Analysis', value: 'analysis' }
+  ];
+  activeDetailTab = 'performance';
+
   constructor(private route: ActivatedRoute, private router: Router) {}
 
   ngOnInit(): void {

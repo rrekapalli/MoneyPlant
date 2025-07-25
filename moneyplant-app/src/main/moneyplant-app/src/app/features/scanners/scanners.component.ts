@@ -27,6 +27,14 @@ export class ScannersComponent implements OnInit {
   selectedScanner: any = null;
   loading = false;
 
+  // Define tabs for the new p-tabs component
+  tabs = [
+    { label: 'All Scanners', value: 'all' },
+    { label: 'Predefined Scanners', value: 'predefined' },
+    { label: 'Custom Scanners', value: 'custom' }
+  ];
+  activeTab = 'all';
+
   constructor() {}
 
   ngOnInit() {

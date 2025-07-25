@@ -4,7 +4,7 @@ import { RouterModule, Router, NavigationEnd } from '@angular/router';
 import { MenubarModule } from 'primeng/menubar';
 import { ButtonModule } from 'primeng/button';
 import { BadgeModule } from 'primeng/badge';
-import { OverlayModule } from 'primeng/overlay';
+import { PopoverModule } from 'primeng/popover';
 import { MenuItem } from 'primeng/api';
 import { filter, Subscription, Observable } from 'rxjs';
 import { FeatureFlagDirective } from '../../core/directives';
@@ -20,7 +20,7 @@ import { Notification, NotificationType } from '../../services/entities/notifica
     MenubarModule,
     ButtonModule,
     BadgeModule,
-    OverlayModule,
+    PopoverModule,
     FeatureFlagDirective
   ],
   templateUrl: './app-header.component.html',
