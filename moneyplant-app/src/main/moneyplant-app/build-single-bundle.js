@@ -11,8 +11,8 @@ try {
   execSync('npx ng build --configuration=production --output-hashing=none --project=money-plant-frontend', { stdio: 'inherit' });
   console.log('Build completed successfully');
 
-  // Get the output directory path (Angular 20 doesn't use a browser subdirectory)
-  const distDir = path.resolve('./dist/money-plant-frontend');
+  // Get the output directory path (Angular 20 uses a browser subdirectory)
+  const distDir = path.resolve('./dist/money-plant-frontend/browser');
 
   if (fs.existsSync(distDir)) {
     // List all JS files in the dist directory
