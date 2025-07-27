@@ -23,6 +23,13 @@ The MoneyPlant application consists of the following modules:
 - **watchlist-service**: Manages user watchlists
 - **moneyplant-app**: The main application module that integrates all other modules
 
+## Project Structure
+
+The project is organized as follows:
+- **src/main/java/com/moneyplant**: Contains the Java code for all modules
+- **src/main/moneyplant-app**: Contains the Angular frontend application
+- **src/main/resources/static**: Contains the built frontend files served by the Spring Boot application
+
 ## Running the Application
 
 To run the MoneyPlant application as a modulith, follow these steps:
@@ -32,13 +39,19 @@ To run the MoneyPlant application as a modulith, follow these steps:
    mvn clean install
    ```
 
-2. Run the application:
+2. Build the Angular frontend:
+   ```
+   ./build-frontend.sh
+   ```
+   This script will build the Angular frontend and copy the dist files to the resources/static directory.
+
+3. Run the application:
    ```
    cd moneyplant-app
    mvn spring-boot:run
    ```
 
-3. Access the application at http://localhost:8080
+4. Access the application at http://localhost:8080
 
 ## API Documentation
 
