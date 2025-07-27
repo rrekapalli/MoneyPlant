@@ -40,7 +40,26 @@ try {
 
     // Combine all files
     sortedFiles.forEach(file => {
-      const content = fs.readFileSync(path.join(distDir, file), 'utf8');
+      let content = fs.readFileSync(path.join(distDir, file), 'utf8');
+
+      // Check if this is not the first file and contains a declaration of 'xe'
+      if (combinedContent.includes('c as xe') && content.includes('c as xe')) {
+        // Replace 'c as xe' with 'c as xe2' to avoid duplicate declaration
+        content = content.replace(/c as xe/g, 'c as xe2');
+
+        // Also replace all usages of 'xe' with 'xe2' in this file
+        // First handle cases where xe is surrounded by non-alphanumeric characters
+        content = content.replace(/([^a-zA-Z0-9_])xe([^a-zA-Z0-9_])/g, '$1xe2$2');
+
+        // Handle cases where xe is at the beginning of a line or statement
+        content = content.replace(/^xe([^a-zA-Z0-9_])/gm, 'xe2$1');
+
+        // Handle cases where xe is used as a property accessor (e.g., obj.xe or obj["xe"])
+        content = content.replace(/\.xe([^a-zA-Z0-9_])/g, '.xe2$1');
+        content = content.replace(/\["xe"\]/g, '["xe2"]');
+        content = content.replace(/\['xe'\]/g, "['xe2']");
+      }
+
       combinedContent += content + '\n';
 
       // Remove the individual file as we're combining them
@@ -48,9 +67,9 @@ try {
     });
 
     // Write the combined content to a single bundle file
-    fs.writeFileSync(path.join(distDir, 'app.js'), combinedContent);
+    fs.writeFileSync(path.join(distDir, 'app.jsm'), combinedContent);
 
-    console.log('Created single app.js file successfully');
+    console.log('Created single app.jsm file successfully');
 
     // Update index.html to reference the single bundle file
     const indexPath = path.join(distDir, 'index.html');
@@ -61,22 +80,24 @@ try {
       const modulepreloadRegex = /<link[^>]*rel="modulepreload"[^>]*>/g;
       indexContent = indexContent.replace(modulepreloadRegex, '');
 
-      // Replace all script tags referencing JS files with a single script tag for app.js
-      const scriptRegex = /<script[^>]*src="[^"]*\.js"[^>]*><\/script>/g;
-      const scriptTags = indexContent.match(scriptRegex) || [];
+      // Remove any existing script tags (Angular 20 might use different formats)
+      const scriptRegex = /<script[^>]*src="[^"]*\.js[^"]*"[^>]*>[\s\S]*?<\/script>/g;
+      indexContent = indexContent.replace(scriptRegex, '');
 
-      if (scriptTags.length > 0) {
-        // Replace the first script tag with our app.js and remove the rest
-        indexContent = indexContent.replace(scriptRegex, '<script src="app.js"></script>');
-        // Remove any additional script tags
-        indexContent = indexContent.replace(scriptRegex, '');
-      } else {
-        // If no script tags found, add one before the closing body tag
-        indexContent = indexContent.replace('</body>', '<script src="app.js"></script></body>');
+      // Also remove any type="module" script tags that Angular 20 might use
+      const moduleScriptRegex = /<script[^>]*type="module"[^>]*>[\s\S]*?<\/script>/g;
+      indexContent = indexContent.replace(moduleScriptRegex, '');
+
+      // Always add our app.jsm script tag before the closing body tag
+      // Make sure it doesn't already exist and ensure we add type="module"
+      if (!indexContent.includes('<script src="app.jsm" type="module"></script>')) {
+        indexContent = indexContent.replace('</body>', '<script src="app.jsm" type="module"></script></body>');
       }
+      // Ensure the type="module" attribute is present for app.jsm script tag
+      indexContent = indexContent.replace('<script src="app.jsm"></script>', '<script src="app.jsm" type="module"></script>');
 
       fs.writeFileSync(indexPath, indexContent);
-      console.log('Updated index.html to use single app.js');
+      console.log('Updated index.html to use single app.jsm');
     }
   } else {
     console.log('Dist directory not found:', distDir);

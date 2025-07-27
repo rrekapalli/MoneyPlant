@@ -6,7 +6,7 @@
 PROJECT_ROOT="$(dirname "$0")"
 STATIC_DIR="$PROJECT_ROOT/src/main/resources/static"
 UI_DIR="$PROJECT_ROOT/src/main/moneyplant-app"
-BROWSER_DIR="$UI_DIR/dist/money-plant-frontend"
+BROWSER_DIR="$UI_DIR/dist/money-plant-frontend/browser"
 
 # Print paths for debugging
 echo "Project root: $PROJECT_ROOT"
@@ -43,35 +43,24 @@ if [ -d "$BROWSER_DIR" ]; then
   # Update index.html to ensure proper script loading
   echo "Updating index.html to ensure proper script loading..."
   if [ -f "$STATIC_DIR/index.html" ]; then
-    # Check if app.js exists
-    if [ -f "$BROWSER_DIR/app.js" ]; then
-      # Check if index.html already has a script tag for app.js
-      if ! grep -q '<script src="app.js">' "$STATIC_DIR/index.html"; then
-        # Update index.html to use app.js
-        sed -i 's/<\/body>/<script src="app.js"><\/script><\/body>/g' "$STATIC_DIR/index.html"
-      fi
-      # Remove modulepreload links
-      sed -i '/<link rel="modulepreload"/d' "$STATIC_DIR/index.html"
-      echo "Updated index.html to use app.js"
-    else
-      # If using chunk files, ensure they're loaded with script tags
-      CHUNK_FILES=$(find "$BROWSER_DIR" -name "chunk-*.js" -printf "%f\n")
-      SCRIPT_TAGS=""
-      for chunk in $CHUNK_FILES; do
-        SCRIPT_TAGS="$SCRIPT_TAGS<script type=\"module\" src=\"$chunk\"></script>"
-      done
-      # Add script tags before closing body tag
-      sed -i "s/<\/body>/$SCRIPT_TAGS<\/body>/g" "$STATIC_DIR/index.html"
-      echo "Updated index.html to load chunk files with script tags"
-    fi
+    # Always use chunk files, as only the chunking model is working
+    # If using chunk files, ensure they're loaded with script tags
+    CHUNK_FILES=$(find "$BROWSER_DIR" -name "chunk-*.js" -printf "%f\n")
+    SCRIPT_TAGS=""
+    for chunk in $CHUNK_FILES; do
+      SCRIPT_TAGS="$SCRIPT_TAGS<script type=\"module\" src=\"$chunk\"></script>"
+    done
+    # Add script tags before closing body tag
+    sed -i "s/<\/body>/$SCRIPT_TAGS<\/body>/g" "$STATIC_DIR/index.html"
+    echo "Updated index.html to load chunk files with script tags"
   fi
 
   # Copy JavaScript files
   echo "Copying JavaScript files..."
-  # Check if app.js exists and copy it
-  if [ -f "$BROWSER_DIR/app.js" ]; then
-    echo "Found single app.js, copying it..."
-    cp "$BROWSER_DIR/app.js" "$STATIC_DIR/app.js" || true
+  # Check if app.jsm exists and copy it
+  if [ -f "$BROWSER_DIR/app.jsm" ]; then
+    echo "Found single app.jsm, copying it..."
+    cp "$BROWSER_DIR/app.jsm" "$STATIC_DIR/app.jsm" || true
   else
     # Fallback to copying all JS files
     echo "No single bundle found, copying all JS files..."
@@ -107,16 +96,18 @@ else
     # Update index.html to ensure proper script loading
     echo "Updating index.html to ensure proper script loading..."
     if [ -f "$STATIC_DIR/index.html" ]; then
-      # Check if app.js exists
-      if [ -f "$BROWSER_DIR/app.js" ]; then
-        # Check if index.html already has a script tag for app.js
-        if ! grep -q '<script src="app.js">' "$STATIC_DIR/index.html"; then
-          # Update index.html to use app.js
-          sed -i 's/<\/body>/<script src="app.js"><\/script><\/body>/g' "$STATIC_DIR/index.html"
+      # Check if app.jsm exists
+      if [ -f "$BROWSER_DIR/app.jsm" ]; then
+        # Check if index.html already has a script tag for app.jsm
+        if ! grep -q '<script src="app.jsm"' "$STATIC_DIR/index.html"; then
+          # Update index.html to use app.jsm with type="module"
+          sed -i 's/<\/body>/<script src="app.jsm" type="module"><\/script><\/body>/g' "$STATIC_DIR/index.html"
         fi
         # Remove modulepreload links
         sed -i '/<link rel="modulepreload"/d' "$STATIC_DIR/index.html"
-        echo "Updated index.html to use app.js"
+        # Ensure type="module" attribute is present for app.jsm script tag
+        sed -i 's/<script src="app.jsm"><\/script>/<script src="app.jsm" type="module"><\/script>/g' "$STATIC_DIR/index.html"
+        echo "Updated index.html to use app.jsm"
       else
         # If using chunk files, ensure they're loaded with script tags
         CHUNK_FILES=$(find "$BROWSER_DIR" -name "chunk-*.js" -printf "%f\n")
@@ -132,10 +123,10 @@ else
 
     # Copy JavaScript files
     echo "Copying JavaScript files..."
-    # Check if app.js exists and copy it
-    if [ -f "$BROWSER_DIR/app.js" ]; then
-      echo "Found single app.js, copying it..."
-      cp "$BROWSER_DIR/app.js" "$STATIC_DIR/app.js" || true
+    # Check if app.jsm exists and copy it
+    if [ -f "$BROWSER_DIR/app.jsm" ]; then
+      echo "Found single app.jsm, copying it..."
+      cp "$BROWSER_DIR/app.jsm" "$STATIC_DIR/app.jsm" || true
     else
       # Fallback to copying all JS files
       echo "No single bundle found, copying all JS files..."

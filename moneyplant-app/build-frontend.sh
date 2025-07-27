@@ -25,9 +25,9 @@ if [ ! -d "node_modules" ]; then
   npm install
 fi
 
-# Run the build-single-bundle.js script
-echo "Building Angular app with single bundle..."
-node build-single-bundle.js
+# Run the build-chunked.js script
+echo "Building Angular app with chunking model..."
+node build-chunked.js
 
 # Check if build was successful
 if [ $? -ne 0 ]; then
@@ -40,6 +40,14 @@ cd "$PROJECT_ROOT" || exit 1
 
 # Run the copy-frontend.sh script to copy the build output to the static directory
 echo "Copying frontend files to static directory..."
-./copy-frontend.sh
+# Get the absolute path to the copy-frontend.sh script
+COPY_SCRIPT="/home/raja/IdeaProjects/MoneyPlant/moneyplant-app/copy-frontend.sh"
+echo "Copy script path: $COPY_SCRIPT"
+if [ -f "$COPY_SCRIPT" ]; then
+  bash "$COPY_SCRIPT"
+else
+  echo "Error: copy-frontend.sh not found at $COPY_SCRIPT"
+  ls -la
+fi
 
 echo "Frontend build and copy completed successfully!"
