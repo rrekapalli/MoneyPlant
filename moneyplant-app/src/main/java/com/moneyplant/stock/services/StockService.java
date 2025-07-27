@@ -137,4 +137,43 @@ public class StockService {
         log.error("Circuit breaker triggered for getStockById with id {}: {}", id, e.getMessage());
         throw new ServiceException("Service unavailable", e);
     }
+
+    /**
+     * Gets a stock by symbol.
+     * 
+     * @param symbol The symbol of the stock to retrieve
+     * @return The stock response
+     * @throws ResourceNotFoundException if the stock is not found
+     * @throws ServiceException if there is an error retrieving the stock
+     */
+    @CircuitBreaker(name = STOCK_SERVICE, fallbackMethod = "getStockBySymbolFallback")
+    public StockResponseDto getStockBySymbol(String symbol) {
+        try {
+            Stock stock = stockRepository.findBySymbolIgnoreCase(symbol)
+                    .orElseThrow(() -> new ResourceNotFoundException("Stock not found with symbol: " + symbol));
+
+            return new StockResponseDto(
+                    stock.getId(),
+                    stock.getName(),
+                    stock.getSymbol()
+            );
+        } catch (ResourceNotFoundException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Error retrieving stock with symbol {}: {}", symbol, e.getMessage());
+            throw new ServiceException("Error retrieving stock: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Fallback method for getStockBySymbol when the circuit is open.
+     * 
+     * @param symbol The symbol of the stock that was being retrieved
+     * @param e The exception that triggered the fallback
+     * @return null
+     */
+    public StockResponseDto getStockBySymbolFallback(String symbol, Exception e) {
+        log.error("Circuit breaker triggered for getStockBySymbol with symbol {}: {}", symbol, e.getMessage());
+        throw new ServiceException("Service unavailable", e);
+    }
 }
