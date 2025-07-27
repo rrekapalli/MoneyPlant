@@ -12,7 +12,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.3.0</version>
+        <version>3.5.4</version>
         <relativePath/> <!-- lookup parent from a repository -->
     </parent>
 
@@ -24,7 +24,7 @@
     <properties>
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
-        <spring-cloud.version>2023.0.1</spring-cloud.version>
+        <spring-cloud.version>2025.0.0</spring-cloud.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
@@ -147,41 +147,6 @@
                     </configuration>
                 </plugin>
                 <plugin>
-                    <groupId>com.google.cloud.tools</groupId>
-                    <artifactId>jib-maven-plugin</artifactId>
-                    <version>3.4.3</version>
-                    <configuration>
-                        <from>
-                            <image>eclipse-temurin:21-jre@sha256:3186dd88a59659929855a6bb785b0528c812eb0b03d97fd6e2221526547ed322</image>
-                        </from>
-                        <to>
-                            <image>rrekapalli/money-plant:${project.artifactId}</image>
-                            <tags>
-                                <tag>${project.version}</tag>
-                                <tag>latest</tag>
-                            </tags>
-                        </to>
-                        <container>
-                            <jvmFlags>
-                                <jvmFlag>-Xms256m</jvmFlag>
-                                <jvmFlag>-Xmx512m</jvmFlag>
-                            </jvmFlags>
-                            <ports>
-                                <port>8080</port>
-                            </ports>
-                        </container>
-                        <skip>true</skip> <!-- Skip in parent, enable in child modules -->
-                    </configuration>
-                    <executions>
-                        <execution>
-                            <phase>package</phase>
-                            <goals>
-                                <goal>build</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                </plugin>
-                <plugin>
                     <groupId>org.owasp</groupId>
                     <artifactId>dependency-check-maven</artifactId>
                     <version>8.4.3</version>
@@ -203,23 +168,6 @@
                         </execution>
                     </executions>
                 </plugin>
-                <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>exec-maven-plugin</artifactId>
-                    <version>3.1.1</version>
-                    <executions>
-                        <execution>
-                            <id>build-docker-images</id>
-                            <phase>package</phase>
-                            <goals>
-                                <goal>exec</goal>
-                            </goals>
-                            <configuration>
-                                <executable>${project.basedir}/build-docker-images.${script.extension}</executable>
-                            </configuration>
-                        </execution>
-                    </executions>
-                </plugin>
             </plugins>
         </pluginManagement>
 
@@ -229,16 +177,8 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
             <plugin>
-                <groupId>com.google.cloud.tools</groupId>
-                <artifactId>jib-maven-plugin</artifactId>
-            </plugin>
-            <plugin>
                 <groupId>org.owasp</groupId>
                 <artifactId>dependency-check-maven</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
             </plugin>
         </plugins>
     </build>
