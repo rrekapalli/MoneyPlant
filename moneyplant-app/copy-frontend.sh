@@ -51,7 +51,9 @@ if [ -d "$BROWSER_DIR" ]; then
       SCRIPT_TAGS="$SCRIPT_TAGS<script type=\"module\" src=\"$chunk\"></script>"
     done
     # Add script tags before closing body tag
-    sed -i "s/<\/body>/$SCRIPT_TAGS<\/body>/g" "$STATIC_DIR/index.html"
+    # Escape special characters in script tags
+    ESCAPED_SCRIPT_TAGS=$(echo "$SCRIPT_TAGS" | sed 's/[\/&]/\\&/g')
+    sed -i "s/<\/body>/$ESCAPED_SCRIPT_TAGS<\/body>/g" "$STATIC_DIR/index.html"
     echo "Updated index.html to load chunk files with script tags"
   fi
 
@@ -98,7 +100,9 @@ else
         SCRIPT_TAGS="$SCRIPT_TAGS<script type=\"module\" src=\"$chunk\"></script>"
       done
       # Add script tags before closing body tag
-      sed -i "s/<\/body>/$SCRIPT_TAGS<\/body>/g" "$STATIC_DIR/index.html"
+      # Escape special characters in script tags
+      ESCAPED_SCRIPT_TAGS=$(echo "$SCRIPT_TAGS" | sed 's/[\/&]/\\&/g')
+      sed -i "s/<\/body>/$ESCAPED_SCRIPT_TAGS<\/body>/g" "$STATIC_DIR/index.html"
       echo "Updated index.html to load chunk files with script tags"
     fi
 
