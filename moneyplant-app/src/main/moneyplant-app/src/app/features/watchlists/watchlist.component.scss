@@ -140,16 +140,24 @@
   }
 }
 
-/* Search input styling in tab header */
+/* Search input styling - now inline with dropdown */
 .search-input {
   width: 200px;
   font-size: 0.875rem;
+  min-width: 150px; /* Ensure minimum width on smaller screens */
 }
 
-/* Tab header search container */
-::ng-deep .p-tablist {
-  .flex {
-    width: 100%;
-    align-items: center;
+/* Responsive adjustments for dropdown and search container */
+@media (max-width: 768px) {
+  .search-input {
+    width: 150px;
+    min-width: 120px;
+  }
+}
+
+@media (max-width: 576px) {
+  .search-input {
+    width: 120px;
+    min-width: 100px;
   }
 }
