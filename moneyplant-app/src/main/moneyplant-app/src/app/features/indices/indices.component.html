@@ -1,0 +1,120 @@
+<div class="container mx-auto p-3">
+  <!-- Search Box -->
+  <div class="col-12 mb-2">
+    <div class="flex flex-wrap gap-1 align-items-center col-md-11">
+      <input type="text" pInputText [(ngModel)]="searchQuery"
+             placeholder="Search for indices..." 
+             (keyup.enter)="searchIndices(searchQuery)"
+             class="mr-2 search-input col-md-10">
+      <button type="button" size="small"
+              pButton icon="pi pi-search"
+              (click)="searchIndices(searchQuery)"
+              class="p-button-sm"></button>
+    </div>
+  </div>
+
+  <!-- Indices View -->
+  <div class="indices-view-container">
+
+    <!-- Search Results -->
+    <div *ngIf="searchResults.length > 0" class="mb-4">
+      <div>Search Results</div>
+      <p-table [value]="searchResults" styleClass="p-datatable-sm">
+        <ng-template pTemplate="header">
+          <tr>
+            <th>Symbol</th>
+            <th>Name</th>
+            <th>Price</th>
+            <th>Change</th>
+            <th>Action</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-index>
+          <tr>
+            <td>{{ index.symbol }}</td>
+            <td>{{ index.name }}</td>
+            <td>{{ index.price | currency }}</td>
+            <td [ngClass]="index.change >= 0 ? 'text-green-500' : 'text-red-500'">
+              {{ index.change | percent }}
+            </td>
+            <td>
+              <button pButton icon="pi pi-plus" 
+                      (click)="addIndexFromSearch(index)" 
+                      class="p-button-sm"></button>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+
+    <!-- Tabs for Indices Lists -->
+    <p-tabs [(value)]="activeTab">
+      <p-tablist>
+        <div class="flex">
+          @for(indicesList of indicesLists; track indicesList.id; let i = $index) {
+            <p-tab [value]="i.toString()">
+              <span>{{ i === 0 ? 'Indices' : (i + 1) }}</span>
+            </p-tab>
+          }
+          @if(indicesLists.length === 0) {
+            <p-tab value="0">
+              <span>Indices</span>
+            </p-tab>
+          }
+        </div>
+      </p-tablist>
+
+      @for(indicesList of indicesLists; track indicesList.id; let i = $index) {
+        <p-tabpanel [value]="i.toString()">
+          <div class="indices-container">
+            <p-scrollPanel [style]="{width: '100%', height: '75vh'}">
+              <div class="flex justify-between items-center mb-2">
+                <!-- Loading indicator for indices -->
+                <div *ngIf="i === 0 && isLoadingIndices" class="p-2 text-center w-full">
+                  <p>Loading market indices...</p>
+                </div>
+
+                <!-- Indices List Items -->
+                <div *ngIf="indicesList.items.length > 0 && !(i === 0 && isLoadingIndices)" class="indices-list">
+                  <div *ngFor="let item of indicesList.items" class="index-item p-2 mb-2 border-round surface-card" [pTooltip]="item.name" tooltipPosition="top">
+                    <div class="grid">
+                      <div class="col-12 md:col-6">
+                        <div class="flex align-items-center">
+                          <div class="index-symbol mr-2">{{ item.symbol }}</div>
+                        </div>
+                      </div>
+                      <div class="col-12 md:col-4">
+                        <div class="flex align-items-center justify-content-end">
+                          <div class="index-price mr-2">{{ item.price | currency }}</div>
+                          <div class="index-change" [ngClass]="item.change >= 0 ? 'text-green-500' : 'text-red-500'">
+                            {{ item.change | percent }}
+                          </div>
+                        </div>
+                      </div>
+<!--                      <div class="col-12 md:col-2 flex justify-content-end">-->
+<!--                        <button pButton icon="pi pi-times" size="small"-->
+<!--                                (click)="removeIndex(item)"-->
+<!--                                class="p-button-danger p-button-sm"></button>-->
+<!--                      </div>-->
+                    </div>
+                  </div>
+                </div>
+                <div *ngIf="indicesList.items.length === 0 && !(i === 0 && isLoadingIndices)" class="p-2 text-center">
+                  <p>No indices in this list yet. Use the search box above to add indices.</p>
+                </div>
+              </div>
+            </p-scrollPanel>
+          </div>
+        </p-tabpanel>
+      }
+
+      @if(indicesLists.length === 0) {
+        <p-tabpanel value="0">
+          <div class="p-4 text-center">
+            <p>No indices list found. Create your first indices list to get started.</p>
+          </div>
+        </p-tabpanel>
+      }
+    </p-tabs>
+  </div>
+</div>
