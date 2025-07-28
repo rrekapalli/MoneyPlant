@@ -1,0 +1,5 @@
+<div [style.height.px]="widget.height">
+    <ng-container
+        *ngComponentOutlet="currentWidget.component; inputs: currentWidget.inputs">
+    </ng-container>
+</div>

@@ -324,13 +324,13 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
     // Metric tiles are already positioned at y: 0 in the createMetricTiles function
 
     // Position filter widget at row 1 (below metric tiles)
-    filterWidget.position = { x: 0, y: 3, cols: 12, rows: 1 };
+    filterWidget.position = { x: 0, y: 1, cols: 12, rows: 1 };
 
     // Position other widgets starting from row 2 (below filter)
     densityMapInvestment.position = { x: 0, y: 4, cols: 8, rows: 8 };
-    pieAssetAllocation.position = { x: 8, y: 4, cols: 4, rows: 6 };
+    pieAssetAllocation.position = { x: 8, y: 2, cols: 4, rows: 6 };
     polarChart.position = { x: 8, y: 8, cols: 4, rows: 6 };
-    barMonthlyIncomeVsExpenses.position = { x: 0, y: 12, cols: 8, rows: 8 };
+    barMonthlyIncomeVsExpenses.position = { x: 0, y: 2, cols: 8, rows: 8 };
 
     // Use the Fluent API to build the dashboard config with filter highlighting enabled
     this.dashboardConfig = StandardDashboardBuilder.createStandard()
@@ -350,21 +350,21 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
         // Core financial widgets
         pieAssetAllocation,
         barMonthlyIncomeVsExpenses,
-        linePortfolioPerformance,
-        scatterRiskVsReturn,
-        gaugeSavingsGoal,
-        heatmapSpending,
-        densityMapInvestment,
-        areaChart,
-        polarChart,
-        stackedAreaChart,
-        treemapChart,
-        expenseTreemap,
-        sunburstChart,
-        sankeyChart,
-        investmentFlowSankey,
-        budgetAllocationSankey,
-        candlestickChart
+        //linePortfolioPerformance,
+        //scatterRiskVsReturn,
+        //gaugeSavingsGoal,
+        //heatmapSpending,
+        //densityMapInvestment,
+        //areaChart,
+        //polarChart,
+        //stackedAreaChart,
+        //treemapChart,
+        //expenseTreemap,
+        //sunburstChart,
+        //sankeyChart,
+        //investmentFlowSankey,
+        //budgetAllocationSankey,
+        //candlestickChart
       ])
       .setEditMode(false)
       .build();

@@ -1,0 +1,49 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "outDir": "./dist/out-tsc",
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "sourceMap": true,
+    "declaration": false,
+    "experimentalDecorators": true,
+    "moduleResolution": "bundler",
+    "importHelpers": true,
+    "target": "ES2022",
+    "module": "ES2022",
+    "useDefineForClassFields": false,
+    "typeRoots": [
+      "node_modules/@types",
+      "src/types"
+    ],
+    "paths": {
+      "dashboards": ["./dist/dashboards", "./projects/dashboards/src/public-api"],
+      "dashboards/*": ["./dist/dashboards/*"],
+      "@dashboards/*": ["./projects/dashboards/src/lib/*"],
+      "@dashboards/public-api": ["./projects/dashboards/src/public-api"],
+      "superset-integration": ["./dist/superset-integration", "./projects/superset-integration/src/public-api"],
+      "superset-integration/*": ["./dist/superset-integration/*"],
+      "@superset-integration/*": ["./projects/superset-integration/src/lib/*"],
+      "@superset-integration/public-api": ["./projects/superset-integration/src/public-api"],
+      "echarts": ["./src/types/echarts"]
+    },
+    "lib": [
+      "ES2022",
+      "dom"
+    ],
+    "skipLibCheck": true
+  },
+  "angularCompilerOptions": {
+    "enableI18nLegacyMessageIdFormat": false,
+    "strictInjectionParameters": true,
+    "strictInputAccessModifiers": true,
+    "strictTemplates": true
+  }
+}
