@@ -69,6 +69,20 @@ export const routes: Routes = [
         canActivate: [featureFlagGuard('watchlist')]
       },
       {
+        path: 'indices',
+        loadComponent: () => import('./features/indices/indices.component')
+          .then(m => m.IndicesComponent),
+        title: 'Indices - MoneyPlant',
+        canActivate: [featureFlagGuard('indices')]
+      },
+      {
+        path: 'indices/:id',
+        loadComponent: () => import('./features/indices/indices.component')
+          .then(m => m.IndicesComponent),
+        title: 'Indices Details - MoneyPlant',
+        canActivate: [featureFlagGuard('indices')]
+      },
+      {
         path: 'dashboard',
         loadComponent: () => import('./features/dashboard/dashboard.component')
           .then(m => m.DashboardComponent),
