@@ -66,12 +66,12 @@
       <p-tablist>
         @for(watchlist of watchlists; track watchlist.id; let i = $index) {
           <p-tab [value]="i.toString()">
-            <span>{{ i + 1 }}</span>
+            <span>{{ i === 0 ? 'NSE' : (i + 1) }}</span>
           </p-tab>
         }
         @if(watchlists.length === 0) {
           <p-tab value="0">
-            <span>1</span>
+            <span>NSE</span>
           </p-tab>
         }
       </p-tablist>
@@ -79,11 +79,16 @@
       @for(watchlist of watchlists; track watchlist.id; let i = $index) {
         <p-tabpanel [value]="i.toString()">
           <div class="watchlist-container">
-            <p-scrollPanel [style]="{width: '100%', height: 'auto', minHeight: '60px', maxHeight: '60px'}">
-              <div class="m-0">{{ watchlist.name }}</div>
+            <p-scrollPanel [style]="{width: '100%', height: 'auto'}">
+              <div class="m-0">{{ i === 0 ? 'All NSE Equities' : watchlist.name }}</div>
               <div class="flex justify-between items-center mb-2">
+                <!-- Loading indicator for NSE equities -->
+                <div *ngIf="i === 0 && isLoadingNseEquities" class="p-2 text-center w-full">
+                  <p>Loading NSE equities...</p>
+                </div>
+
                 <!-- Watchlist Stocks -->
-                <div *ngIf="watchlist.items.length > 0" class="stock-list">
+                <div *ngIf="watchlist.items.length > 0 && !(i === 0 && isLoadingNseEquities)" class="stock-list">
                   <div *ngFor="let item of watchlist.items" class="stock-item p-2 mb-2 border-round surface-card" [pTooltip]="item.name" tooltipPosition="top">
                     <div class="grid">
                       <div class="col-12 md:col-6">
@@ -107,7 +112,7 @@
                     </div>
                   </div>
                 </div>
-                <div *ngIf="watchlist.items.length === 0" class="p-2 text-center">
+                <div *ngIf="watchlist.items.length === 0 && !(i === 0 && isLoadingNseEquities)" class="p-2 text-center">
                   <p>No stocks in this watchlist yet. Use the search box above to add stocks.</p>
                 </div>
               </div>
