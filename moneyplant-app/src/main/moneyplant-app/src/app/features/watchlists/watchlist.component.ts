@@ -83,7 +83,7 @@ export class WatchlistComponent implements OnInit {
   private loadNseEquities(): void {
     this.isLoadingNseEquities = true;
     this.nseEquityService.getAllNseEquities().subscribe({
-      next: (data) => {
+      next: ( data: NseEquity[]) => {
         this.nseEquities = data;
         this.isLoadingNseEquities = false;
 
@@ -95,7 +95,7 @@ export class WatchlistComponent implements OnInit {
         // Load additional watchlists after NSE equities are loaded
         this.loadWatchlists();
       },
-      error: (error) => {
+      error: (error: any): void => {
         console.error('Failed to load NSE equities:', error);
         this.isLoadingNseEquities = false;
 
@@ -209,7 +209,7 @@ export class WatchlistComponent implements OnInit {
   private loadWatchlists(): void {
     // Get all stocks from the API
     this.stockService.getAllStocks().subscribe({
-      next: (stocks) => {
+      next: (stocks: any[]) => {
         // Create a watchlist item for each stock
         const items = stocks.map(stock => ({
           symbol: stock.symbol,
@@ -232,7 +232,7 @@ export class WatchlistComponent implements OnInit {
         // Set the active tab to the first watchlist
         this.activeTab = '0';
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Failed to load stocks:', error);
         
         // If there's an error, use empty watchlist
