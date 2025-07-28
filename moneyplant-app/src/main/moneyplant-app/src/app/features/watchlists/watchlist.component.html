@@ -1,11 +1,16 @@
 <div class="container mx-auto p-3">
-  <!-- Index Selection Button -->
+  <!-- Search Box -->
   <div class="col-12 mb-2">
-    <button type="button" pButton 
-            label="Select Available Indices" 
-            icon="pi pi-list"
-            (click)="selectIndices()"
-            class="p-button-outlined"></button>
+    <div class="flex flex-wrap gap-1 align-items-center col-md-11">
+      <input type="text" pInputText [(ngModel)]="searchQuery"
+             placeholder="Search for stocks..." 
+             (keyup.enter)="searchStocks(searchQuery)"
+             class="mr-2 search-input col-md-10">
+      <button type="button" size="small"
+              pButton icon="pi pi-search"
+              (click)="searchStocks(searchQuery)"
+              class="p-button-sm"></button>
+    </div>
   </div>
 
   <!-- Watchlist View -->
@@ -45,30 +50,17 @@
     <!-- Tabs for Watchlists -->
     <p-tabs [(value)]="activeTab">
       <p-tablist>
-        <div class="flex justify-between items-center w-full">
-          <div class="flex">
-            @for(watchlist of watchlists; track watchlist.id; let i = $index) {
-              <p-tab [value]="i.toString()">
-                <span>{{ i === 0 ? 'NSE' : (i + 1) }}</span>
-              </p-tab>
-            }
-            @if(watchlists.length === 0) {
-              <p-tab value="0">
-                <span>NSE</span>
-              </p-tab>
-            }
-          </div>
-          <!-- Search Box in Tab Header -->
-          <div class="flex items-center ml-auto">
-            <input type="text" pInputText [(ngModel)]="searchQuery" 
-                   placeholder="Search for stocks..." 
-                   (keyup.enter)="searchStocks(searchQuery)"
-                   class="mr-2 search-input">
-            <button type="button" size="small"
-                    pButton icon="pi pi-search"
-                    (click)="searchStocks(searchQuery)"
-                    class="p-button-sm"></button>
-          </div>
+        <div class="flex">
+          @for(watchlist of watchlists; track watchlist.id; let i = $index) {
+            <p-tab [value]="i.toString()">
+              <span>{{ i === 0 ? 'NSE' : (i + 1) }}</span>
+            </p-tab>
+          }
+          @if(watchlists.length === 0) {
+            <p-tab value="0">
+              <span>NSE</span>
+            </p-tab>
+          }
         </div>
       </p-tablist>
 

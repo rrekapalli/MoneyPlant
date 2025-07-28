@@ -15,7 +15,6 @@ import { TooltipModule } from 'primeng/tooltip';
 import { NseEquityService } from '../../services/apis/nse-equity.api';
 import { NseEquity } from '../../services/entities/nse-equity';
 import { StockService } from '../../services/apis/stock.api';
-import { Stock } from '../../services/entities/stock';
 
 @Component({
   selector: 'app-watchlist',
@@ -54,6 +53,7 @@ export class WatchlistComponent implements OnInit {
 
   // Tab functionality
   activeTab: string = '0';
+
 
   // Helper method to get current watchlist index from activeTab
   private getCurrentWatchlistIndex(): number {
@@ -129,14 +129,6 @@ export class WatchlistComponent implements OnInit {
     this.activeTab = '0';
   }
 
-  /**
-   * Handle index selection
-   */
-  selectIndices(): void {
-    console.log('Select indices button clicked');
-    // Logic for selecting available indices can be added here
-    // This could open a dialog or dropdown to select different market indices
-  }
 
   /**
    * Search for stocks by symbol or name within the loaded NSE equities
