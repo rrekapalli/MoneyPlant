@@ -25,9 +25,29 @@ export class MockApiService {
   get<T>(url: string, params?: HttpParams | { [param: string]: string | string[] }, headers?: HttpHeaders): Observable<T> {
     console.log(`MockApiService: GET ${url}`, { params, headers });
     
-    // Simulate a successful response with mock data
-    // In a real implementation, you would return different mock data based on the URL
-    return of({} as T).pipe(delay(this.delay));
+    // Return appropriate mock data based on the URL
+    let mockData: any;
+    
+    if (url === '/notifications') {
+      // Return an empty array for notifications to prevent filter errors
+      mockData = [];
+    } else if (url.startsWith('/notifications/')) {
+      // Return a single notification object for specific notification requests
+      mockData = {
+        id: 'mock-notification-1',
+        title: 'Mock Notification',
+        message: 'This is a mock notification',
+        type: 'info',
+        isRead: false,
+        timestamp: new Date(),
+        link: null
+      };
+    } else {
+      // Default to empty object for other endpoints
+      mockData = {};
+    }
+    
+    return of(mockData as T).pipe(delay(this.delay));
   }
 
   /**
