@@ -1,34 +1,15 @@
 <div class="container mx-auto p-3">
-  <!-- Search Box -->
-  <div class="col-12 p-inputgroup mb-4">
-    <input type="text" pInputText [(ngModel)]="searchQuery" 
-           placeholder="Search for stocks..." 
-           (keyup.enter)="searchStocks(searchQuery)"
-           [disabled]="selectedViewMode !== 'watchlist'">
-    <button class="ml-2" type="button" size="small"
-            pButton icon="pi pi-search"
-            (click)="searchStocks(searchQuery)"
-            [disabled]="selectedViewMode !== 'watchlist'"></button>
-    <small *ngIf="selectedViewMode !== 'watchlist'" class="search-disabled-message">
-      Search is only available in Watchlist view
-    </small>
-  </div>
-
-  <div class="flex justify-between items-center mb-4">
-    <div class="view-mode-selector">
-      <div class="p-field-radiobutton inline-radio">
-        <p-radioButton name="viewMode" value="watchlist" [(ngModel)]="selectedViewMode" inputId="watchlist" (onClick)="onViewModeChange('watchlist')"></p-radioButton>
-        <label for="watchlist" class="ml-2 mr-4">Watchlist</label>
-      </div>
-      <div class="p-field-radiobutton inline-radio">
-        <p-radioButton name="viewMode" value="portfolio" [(ngModel)]="selectedViewMode" inputId="portfolio" (onClick)="onViewModeChange('portfolio')"></p-radioButton>
-        <label for="portfolio" class="ml-2">Portfolio</label>
-      </div>
-    </div>
+  <!-- Index Selection Button -->
+  <div class="col-12 mb-2">
+    <button type="button" pButton 
+            label="Select Available Indices" 
+            icon="pi pi-list"
+            (click)="selectIndices()"
+            class="p-button-outlined"></button>
   </div>
 
   <!-- Watchlist View -->
-  <div *ngIf="selectedViewMode === 'watchlist'" class="watchlist-view-container">
+  <div class="watchlist-view-container">
 
     <!-- Search Results -->
     <div *ngIf="searchResults.length > 0" class="mb-4">
@@ -64,16 +45,31 @@
     <!-- Tabs for Watchlists -->
     <p-tabs [(value)]="activeTab">
       <p-tablist>
-        @for(watchlist of watchlists; track watchlist.id; let i = $index) {
-          <p-tab [value]="i.toString()">
-            <span>{{ i === 0 ? 'NSE' : (i + 1) }}</span>
-          </p-tab>
-        }
-        @if(watchlists.length === 0) {
-          <p-tab value="0">
-            <span>NSE</span>
-          </p-tab>
-        }
+        <div class="flex justify-between items-center w-full">
+          <div class="flex">
+            @for(watchlist of watchlists; track watchlist.id; let i = $index) {
+              <p-tab [value]="i.toString()">
+                <span>{{ i === 0 ? 'NSE' : (i + 1) }}</span>
+              </p-tab>
+            }
+            @if(watchlists.length === 0) {
+              <p-tab value="0">
+                <span>NSE</span>
+              </p-tab>
+            }
+          </div>
+          <!-- Search Box in Tab Header -->
+          <div class="flex items-center ml-auto">
+            <input type="text" pInputText [(ngModel)]="searchQuery" 
+                   placeholder="Search for stocks..." 
+                   (keyup.enter)="searchStocks(searchQuery)"
+                   class="mr-2 search-input">
+            <button type="button" size="small"
+                    pButton icon="pi pi-search"
+                    (click)="searchStocks(searchQuery)"
+                    class="p-button-sm"></button>
+          </div>
+        </div>
       </p-tablist>
 
       @for(watchlist of watchlists; track watchlist.id; let i = $index) {
@@ -128,13 +124,5 @@
         </p-tabpanel>
       }
     </p-tabs>
-  </div>
-
-  <!-- Portfolio View -->
-  <div *ngIf="selectedViewMode === 'portfolio'" class="portfolio-container p-4">
-    <div class="p-4 text-center">
-      <div>Portfolio View</div>
-      <p>This is a placeholder for the portfolio view. The actual portfolio functionality will be implemented in a future update.</p>
-    </div>
   </div>
 </div>

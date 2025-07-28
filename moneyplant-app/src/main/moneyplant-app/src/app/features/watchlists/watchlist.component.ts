@@ -11,7 +11,6 @@ import { DataViewModule } from 'primeng/dataview';
 import { ScrollerModule } from "primeng/scroller";
 import { ScrollPanelModule } from 'primeng/scrollpanel';
 import { TabsModule } from 'primeng/tabs';
-import { RadioButtonModule } from 'primeng/radiobutton';
 import { TooltipModule } from 'primeng/tooltip';
 import { NseEquityService } from '../../services/apis/nse-equity.api';
 import { NseEquity } from '../../services/entities/nse-equity';
@@ -34,7 +33,6 @@ import { Stock } from '../../services/entities/stock';
     DataViewModule,
     ScrollPanelModule,
     TabsModule,
-    RadioButtonModule,
     TooltipModule
   ],
   templateUrl: './watchlist.component.html',
@@ -48,8 +46,6 @@ export class WatchlistComponent implements OnInit {
   nseEquities: NseEquity[] = [];
   isLoadingNseEquities: boolean = false;
 
-  // View mode selection
-  selectedViewMode: string = 'watchlist'; // Default to watchlist view
 
   // Search functionality
   searchQuery: string = '';
@@ -134,12 +130,12 @@ export class WatchlistComponent implements OnInit {
   }
 
   /**
-   * Handle view mode change
-   * @param mode The selected view mode
+   * Handle index selection
    */
-  onViewModeChange(mode: string): void {
-    console.log(`View mode changed to: ${mode}`);
-    // Additional logic for switching between watchlist and portfolio views can be added here
+  selectIndices(): void {
+    console.log('Select indices button clicked');
+    // Logic for selecting available indices can be added here
+    // This could open a dialog or dropdown to select different market indices
   }
 
   /**
