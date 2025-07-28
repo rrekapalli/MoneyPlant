@@ -140,11 +140,16 @@
   }
 }
 
-/* Search disabled message styling */
-.search-disabled-message {
-  display: block;
-  color: var(--text-color-secondary, #6c757d);
-  font-style: italic;
-  margin-top: var(--spacing-xs);
-  font-size: var(--font-size);
+/* Search input styling in tab header */
+.search-input {
+  width: 200px;
+  font-size: 0.875rem;
+}
+
+/* Tab header search container */
+::ng-deep .p-tablist {
+  .flex {
+    width: 100%;
+    align-items: center;
+  }
 }
