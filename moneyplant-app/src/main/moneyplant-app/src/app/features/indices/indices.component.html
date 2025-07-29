@@ -91,23 +91,23 @@
                             (click)="onRowClick(rowData)" 
                             [style.cursor]="!rowData.isCategory ? 'pointer' : 'default'"
                             [class.clickable-row]="!rowData.isCategory">
-                          <td>
+                          <td [attr.colspan]="rowData.isCategory ? 5 : null">
                             <p-treeTableToggler [rowNode]="rowNode" *ngIf="rowData.isCategory"></p-treeTableToggler>
                             <span [ngClass]="{'font-bold': rowData.isCategory}">
                               {{ rowData.isCategory ? rowData.keyCategory : '' }}
                             </span>
                           </td>
-                          <td>
+                          <td *ngIf="!rowData.isCategory">
                             <span [ngClass]="{'font-bold': rowData.isCategory}">
                               {{ rowData.symbol }}
                             </span>
                           </td>
-                          <td>
+                          <td *ngIf="!rowData.isCategory">
                             <span [ngClass]="{'font-bold': rowData.isCategory}">
                               {{ rowData.lastPrice ? (rowData.lastPrice | currency) : '' }}
                             </span>
                           </td>
-                          <td>
+                          <td *ngIf="!rowData.isCategory">
                             <span [ngClass]="{
                               'font-bold': rowData.isCategory,
                               'text-green-500': !rowData.isCategory && rowData.variation >= 0,
@@ -116,7 +116,7 @@
                               {{ rowData.variation ? (rowData.variation | number:'1.2-2') : '' }}
                             </span>
                           </td>
-                          <td>
+                          <td *ngIf="!rowData.isCategory">
                             <span [ngClass]="{
                               'font-bold': rowData.isCategory,
                               'text-green-500': !rowData.isCategory && rowData.percentChange >= 0,
