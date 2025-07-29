@@ -5,6 +5,7 @@ import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
 import { TableModule } from 'primeng/table';
+import { TreeTableModule } from 'primeng/treetable';
 import { DividerModule } from 'primeng/divider';
 import { InputTextModule } from 'primeng/inputtext';
 import { DataViewModule } from 'primeng/dataview';
@@ -12,6 +13,7 @@ import { ScrollerModule } from "primeng/scroller";
 import { ScrollPanelModule } from 'primeng/scrollpanel';
 import { TabsModule } from 'primeng/tabs';
 import { TooltipModule } from 'primeng/tooltip';
+import { TreeNode } from 'primeng/api';
 import { IndicesService } from '../../services/apis/indices.api';
 import { IndexResponseDto } from '../../services/entities/indices';
 
@@ -25,6 +27,7 @@ import { IndexResponseDto } from '../../services/entities/indices';
     CardModule,
     ButtonModule,
     TableModule,
+    TreeTableModule,
     DividerModule,
     InputTextModule,
     ScrollerModule,
@@ -44,10 +47,16 @@ export class IndicesComponent implements OnInit {
   indices: IndexResponseDto[] = [];
   isLoadingIndices: boolean = false;
 
+  // TreeTable data
+  indicesTreeData: TreeNode[] = [];
+
   // Search functionality
   searchQuery: string = '';
   isSearching: boolean = false;
   searchResults: any[] = [];
+
+  // Global filter for TreeTable
+  globalFilterValue: string = '';
 
   // Tab functionality
   activeTab: string = '0';
@@ -57,15 +66,32 @@ export class IndicesComponent implements OnInit {
     return parseInt(this.activeTab, 10);
   }
 
+  // TrackBy function for ngFor performance optimization
+  trackBySymbol(index: number, item: any): string {
+    return item.symbol;
+  }
+
   constructor(
     private route: ActivatedRoute, 
     private router: Router,
     private indicesService: IndicesService
-  ) {}
+  ) {
+    console.log('[DEBUG_LOG] IndicesComponent constructor called');
+    console.log('[DEBUG_LOG] ActivatedRoute:', this.route);
+    console.log('[DEBUG_LOG] Router:', this.router);
+    console.log('[DEBUG_LOG] IndicesService:', this.indicesService);
+  }
 
   ngOnInit(): void {
-    // Load indices directly from the indices API
-    this.loadIndicesLists();
+    console.log('[DEBUG_LOG] ngOnInit called');
+    try {
+      // Load indices directly from the indices API
+      console.log('[DEBUG_LOG] About to call loadIndicesLists');
+      this.loadIndicesLists();
+      console.log('[DEBUG_LOG] loadIndicesLists called successfully');
+    } catch (error) {
+      console.error('[DEBUG_LOG] Error in ngOnInit:', error);
+    }
   }
 
   /**
@@ -129,16 +155,66 @@ export class IndicesComponent implements OnInit {
   }
 
   /**
+   * Transform flat indices data to hierarchical TreeNode structure
+   * Groups indices by keyCategory for TreeTable display
+   */
+  private transformToTreeData(indices: IndexResponseDto[]): TreeNode[] {
+    const groupedData: { [key: string]: IndexResponseDto[] } = {};
+    
+    // Group indices by keyCategory
+    indices.forEach(index => {
+      const category = index.keyCategory || 'Uncategorized';
+      if (!groupedData[category]) {
+        groupedData[category] = [];
+      }
+      groupedData[category].push(index);
+    });
+
+    // Transform to TreeNode structure
+    const treeData: TreeNode[] = [];
+    Object.keys(groupedData).forEach(category => {
+      const categoryNode: TreeNode = {
+        data: {
+          keyCategory: category,
+          symbol: '',
+          lastPrice: null,
+          variation: null,
+          percentChange: null,
+          isCategory: true
+        },
+        children: groupedData[category].map(index => ({
+          data: {
+            keyCategory: category,
+            symbol: index.indexSymbol,
+            lastPrice: index.lastPrice,
+            variation: index.variation,
+            percentChange: index.percentChange,
+            isCategory: false
+          }
+        })),
+        expanded: true // All rows expanded by default
+      };
+      treeData.push(categoryNode);
+    });
+
+    return treeData;
+  }
+
+  /**
    * Load indices lists from the indices API
    * Gets all indices from the API and fills the list with indices data
    */
   private loadIndicesLists(): void {
+    console.log('[DEBUG_LOG] loadIndicesLists method called');
     this.isLoadingIndices = true;
     // Get all indices from the API
     this.indicesService.getAllIndices().subscribe({
       next: (indices: IndexResponseDto[]) => {
         this.indices = indices;
         this.isLoadingIndices = false;
+
+        // Transform to TreeTable data
+        this.indicesTreeData = this.transformToTreeData(indices);
 
         // Create an indices list item for each index
         const items = indices.map(index => ({
