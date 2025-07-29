@@ -79,7 +79,7 @@
                             Variation
                             <p-sortIcon field="variation"></p-sortIcon>
                           </th>
-                          <th pSortableColumn="percentChange" style="width:25%">
+                          <th pSortableColumn="percentChange" style="width:15%">
                             Change (%)
                             <p-sortIcon field="percentChange"></p-sortIcon>
                           </th>
@@ -131,23 +131,25 @@
                 <!-- Indices List Items for other tabs -->
                 @if (i !== 0 && indicesList.items.length > 0 && !(i === 0 && isLoadingIndices)) {
                   <div class="indices-list">
-                    <div *ngFor="let item of indicesList.items; trackBy: trackBySymbol" class="index-item p-2 mb-2 border-round surface-card" [pTooltip]="item.name" tooltipPosition="top">
-                      <div class="grid">
-                        <div class="col-12 md:col-6">
-                          <div class="flex align-items-center">
-                            <div class="index-symbol mr-2">{{ item.symbol }}</div>
+                    @for(item of indicesList.items; track $index) {
+                      <div class="index-item p-2 mb-2 border-round surface-card" [pTooltip]="item.name" tooltipPosition="top">
+                        <div class="grid">
+                          <div class="col-12 md:col-6">
+                            <div class="flex align-items-center">
+                              <div class="index-symbol mr-2">{{ item.symbol }}</div>
+                            </div>
                           </div>
-                        </div>
-                        <div class="col-12 md:col-4">
-                          <div class="flex align-items-center justify-content-end">
-                            <div class="index-price mr-2">{{ item.price | currency }}</div>
-                            <div class="index-change" [ngClass]="item.change >= 0 ? 'text-green-500' : 'text-red-500'">
-                              {{ item.change | percent }}
+                          <div class="col-12 md:col-4">
+                            <div class="flex align-items-center justify-content-end">
+                              <div class="index-price mr-2">{{ item.price | currency }}</div>
+                              <div class="index-change" [ngClass]="item.change >= 0 ? 'text-green-500' : 'text-red-500'">
+                                {{ item.change | percent }}
+                              </div>
                             </div>
                           </div>
                         </div>
                       </div>
-                    </div>
+                    }
                   </div>
                 }
                 @if (indicesList.items.length === 0 && !(i === 0 && isLoadingIndices)) {
