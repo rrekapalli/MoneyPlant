@@ -16,6 +16,7 @@ import { TooltipModule } from 'primeng/tooltip';
 import { TreeNode } from 'primeng/api';
 import { IndicesService } from '../../services/apis/indices.api';
 import { IndexResponseDto } from '../../services/entities/indices';
+import { ComponentCommunicationService, SelectedIndexData } from '../../services/component-communication.service';
 
 @Component({
   selector: 'app-indices',
@@ -74,7 +75,8 @@ export class IndicesComponent implements OnInit {
   constructor(
     private route: ActivatedRoute, 
     private router: Router,
-    private indicesService: IndicesService
+    private indicesService: IndicesService,
+    private componentCommunicationService: ComponentCommunicationService
   ) {
     console.log('[DEBUG_LOG] IndicesComponent constructor called');
     console.log('[DEBUG_LOG] ActivatedRoute:', this.route);
@@ -198,6 +200,36 @@ export class IndicesComponent implements OnInit {
     });
 
     return treeData;
+  }
+
+  /**
+   * Handle row click event in the tree table
+   * @param rowData The clicked row data
+   */
+  onRowClick(rowData: any): void {
+    // Only handle clicks on non-category rows (actual indices)
+    if (rowData.isCategory) {
+      return;
+    }
+
+    console.log('[DEBUG_LOG] Row clicked:', rowData);
+
+    // Transform the row data to SelectedIndexData format
+    const selectedIndexData: SelectedIndexData = {
+      id: rowData.symbol || 'unknown',
+      symbol: rowData.symbol || '',
+      name: rowData.symbol || '', // Using symbol as name since name might not be available
+      lastPrice: rowData.lastPrice || 0,
+      variation: rowData.variation || 0,
+      percentChange: rowData.percentChange || 0,
+      keyCategory: rowData.keyCategory || 'Index'
+    };
+
+    // Send the selected data to the component communication service
+    this.componentCommunicationService.setSelectedIndex(selectedIndexData);
+
+    // Navigate to the overall dashboard component
+    this.router.navigate(['/dashboard/overall']);
   }
 
   /**

@@ -113,6 +113,9 @@ import {
 // Import base dashboard component
 import { BaseDashboardComponent } from '@dashboards/public-api';
 
+// Import component communication service
+import { ComponentCommunicationService } from '../../../services/component-communication.service';
+
 // Define the specific data structure for this dashboard
 export interface DashboardDataRow {
   id: string;
@@ -149,7 +152,8 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
   constructor(
     cdr: ChangeDetectorRef,
     excelExportService: ExcelExportService,
-    filterService: FilterService
+    filterService: FilterService,
+    private componentCommunicationService: ComponentCommunicationService
   ) {
     super(cdr, excelExportService, filterService);
   }
@@ -162,10 +166,40 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
     }).catch((error) => {
       // Handle world map loading error silently
     });
+
+    // Subscribe to selected index data changes
+    this.componentCommunicationService.getSelectedIndex().subscribe(selectedIndex => {
+      if (selectedIndex) {
+        console.log('[DEBUG_LOG] Received selected index data:', selectedIndex);
+        this.updateDashboardWithSelectedIndex(selectedIndex);
+      }
+    });
   }
 
   protected onChildDestroy(): void {
     // Child-specific cleanup if needed
+  }
+
+  /**
+   * Update dashboard data with selected index information
+   * @param selectedIndex The selected index data from indices component
+   */
+  private updateDashboardWithSelectedIndex(selectedIndex: any): void {
+    // Transform the selected index data to dashboard data format
+    const dashboardDataRow = this.componentCommunicationService.transformToDashboardData(selectedIndex);
+    
+    // Add the new data to the existing dashboard data
+    // First, remove any existing data for the same symbol to avoid duplicates
+    this.dashboardData = this.dashboardData.filter(row => row.id !== dashboardDataRow.id);
+    
+    // Add the new data row
+    this.dashboardData = [dashboardDataRow, ...this.dashboardData];
+    
+    console.log('[DEBUG_LOG] Updated dashboard data:', this.dashboardData);
+    
+    // Trigger change detection and update widgets
+    this.populateWidgetsWithInitialData();
+    this.cdr.detectChanges();
   }
 
   /**
