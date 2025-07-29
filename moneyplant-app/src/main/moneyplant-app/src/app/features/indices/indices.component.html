@@ -87,7 +87,10 @@
                       </ng-template>
                       
                       <ng-template pTemplate="body" let-rowNode let-rowData="rowData">
-                        <tr [ngClass]="{'category-row': rowData.isCategory}">
+                        <tr [ngClass]="{'category-row': rowData.isCategory}" 
+                            (click)="onRowClick(rowData)" 
+                            [style.cursor]="!rowData.isCategory ? 'pointer' : 'default'"
+                            [class.clickable-row]="!rowData.isCategory">
                           <td>
                             <p-treeTableToggler [rowNode]="rowNode" *ngIf="rowData.isCategory"></p-treeTableToggler>
                             <span [ngClass]="{'font-bold': rowData.isCategory}">
