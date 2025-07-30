@@ -2,6 +2,8 @@ package com.moneyplant.core.repositories;
 
 import com.moneyplant.core.entities.NseStockTick;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -21,11 +23,17 @@ public interface NseStockTickRepository extends JpaRepository<NseStockTick, Stri
     List<NseStockTick> findAllByOrderByPriorityAsc();
 
     /**
-     * Find all stock ticks by identifier (index name) ordered by symbol ascending.
+     * Find all stock ticks by identifier (index name) using Trino query with joins, ordered by symbol ascending.
      *
-     * @param identifier the identifier (index name) to search for
+     * @param selectedIndexName the identifier (index name) to search for
      * @return a list of stock ticks matching the given identifier, ordered by symbol ascending
      */
-    List<NseStockTick> findAllByIdentifierOrderBySymbolAsc(String identifier);
+    @Query(value = "SELECT t.* FROM nse_stock_tick t " +
+            "LEFT JOIN nse_equity_master si ON t.symbol = si.symbol " +
+            "LEFT JOIN nse_equity_master qe ON t.symbol = qe.symbol " +
+            "WHERE si.pd_sector_ind = :selectedIndexName " +
+            "ORDER BY t.symbol ASC", 
+            nativeQuery = true)
+    List<NseStockTick> findAllByIdentifierOrderBySymbolAsc(@Param("selectedIndexName") String selectedIndexName);
 
 }
