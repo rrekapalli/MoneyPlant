@@ -140,6 +140,43 @@ public class StockTicksService {
     }
 
     /**
+     * Fetches stock ticks data for a specific index using the identifier field.
+     * This method uses the new findAllByIdentifierOrderBySymbolAsc repository method.
+     * Results are ordered by symbol in ascending order.
+     * 
+     * @param identifier The identifier (index name) to search for
+     * @return StockTicksDto containing the stock data for the specific identifier, ordered by symbol ascending
+     * @throws ServiceException if there is an error fetching the data
+     */
+    @CircuitBreaker(name = STOCK_TICKS_SERVICE, fallbackMethod = "getStockTicksByIdentifierFallback")
+    public StockTicksDto getStockTicksByIdentifier(String identifier) {
+        try {
+            log.info("Fetching stock ticks for identifier: {} from database", identifier);
+            
+            // Use the new repository method to fetch stock ticks by identifier ordered by symbol ascending
+            List<NseStockTick> stockTicks = nseStockTickRepository.findAllByIdentifierOrderBySymbolAsc(identifier);
+            
+            if (stockTicks.isEmpty()) {
+                log.warn("No stock ticks found in database for identifier: {}", identifier);
+                return stockTicksMapper.toStockTicksDto(stockTicks, identifier);
+            }
+            
+            // Convert entities to DTO using mapper
+            StockTicksDto result = stockTicksMapper.toStockTicksDto(stockTicks, identifier);
+            
+            log.info("Successfully fetched {} stock ticks for identifier: {} from database", 
+                    stockTicks.size(), identifier);
+            
+            return result;
+            
+        } catch (Exception e) {
+            log.error("Error fetching stock ticks for identifier {} from database: {}", 
+                    identifier, e.getMessage(), e);
+            throw new ServiceException("Error fetching stock ticks for identifier: " + identifier, e);
+        }
+    }
+
+    /**
      * Fallback method for circuit breaker when stock ticks service is unavailable.
      * 
      * @param indexName The index name
@@ -151,6 +188,20 @@ public class StockTicksService {
         
         // Return a basic response indicating service unavailability
         return stockTicksMapper.toStockTicksDto(List.of(), indexName);
+    }
+
+    /**
+     * Fallback method for circuit breaker when stock ticks by identifier service is unavailable.
+     * 
+     * @param identifier The identifier
+     * @param ex The exception that triggered the fallback
+     * @return Empty StockTicksDto or cached data
+     */
+    public StockTicksDto getStockTicksByIdentifierFallback(String identifier, Exception ex) {
+        log.warn("Stock ticks by identifier service fallback triggered for identifier {}: {}", identifier, ex.getMessage());
+        
+        // Return a basic response indicating service unavailability
+        return stockTicksMapper.toStockTicksDto(List.of(), identifier);
     }
 
 }
