@@ -3,7 +3,7 @@ package com.moneyplant.stock.services;
 import com.moneyplant.stock.dtos.StockTicksDto;
 import com.moneyplant.core.exceptions.ServiceException;
 import com.moneyplant.core.entities.NseStockTick;
-import com.moneyplant.core.repositories.NseStockTickRepository;
+import com.moneyplant.stock.repositories.NseStockTickRepository;
 import com.moneyplant.stock.mappers.StockTicksMapper;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.RequiredArgsConstructor;

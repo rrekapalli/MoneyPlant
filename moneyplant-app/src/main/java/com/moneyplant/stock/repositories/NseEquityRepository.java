@@ -1,4 +1,4 @@
-package com.moneyplant.core.repositories;
+package com.moneyplant.stock.repositories;
 
 import com.moneyplant.core.entities.NseEquity;
 import org.springframework.data.jpa.repository.JpaRepository;
