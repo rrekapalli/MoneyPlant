@@ -105,16 +105,16 @@ import {
 // Import only essential widget creation functions and data
 import {
   createFilterWidget,
-  createMetricTiles,
   // Dashboard data
   INITIAL_DASHBOARD_DATA
 } from './widgets';
+import { createMetricTiles as createMetricTilesFunction } from './widgets/metric-tiles';
 
 // Import base dashboard component
 import { BaseDashboardComponent } from '@dashboards/public-api';
 
 // Import component communication service
-import { ComponentCommunicationService } from '../../../services/component-communication.service';
+import { ComponentCommunicationService, SelectedIndexData } from '../../../services/component-communication.service';
 
 // Import stock ticks service and entities
 import { StockTicksService } from '../../../services/apis/stock-ticks.api';
@@ -155,6 +155,9 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
   
   // Stock ticks data storage
   protected stockTicksData: StockTicksDto | null = null;
+  
+  // Dashboard title - dynamic based on selected index
+  public dashboardTitle: string = 'Financial Dashboard';
 
   constructor(
     cdr: ChangeDetectorRef,
@@ -179,7 +182,7 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
     this.componentCommunicationService.getSelectedIndex().subscribe(selectedIndex => {
       if (selectedIndex) {
         console.log('[DEBUG_LOG] Received selected index data:', selectedIndex);
-        this.updateDashboardWithSelectedIndex(selectedIndex.symbol);
+        this.updateDashboardWithSelectedIndex(selectedIndex);
       }
     });
   }
@@ -190,11 +193,15 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
 
   /**
    * Update dashboard data with selected index information
-   * @param selectedIndex The selected index symbol string from indices component
+   * @param selectedIndex The selected index data object from indices component
    */
-  private updateDashboardWithSelectedIndex(selectedIndex: any): void {
+  private updateDashboardWithSelectedIndex(selectedIndex: SelectedIndexData): void {
 
     console.log('[DEBUG_LOG] updateDashboardWithSelectedIndex: Selected Index:', selectedIndex);
+
+    // Update dashboard title with selected index name or symbol
+    this.dashboardTitle = selectedIndex.name || selectedIndex.symbol || 'Financial Dashboard';
+    console.log('[DEBUG_LOG] Updated dashboard title to:', this.dashboardTitle);
 
     // Transform the selected index data to dashboard data format
     const dashboardDataRow = this.componentCommunicationService.transformToDashboardData(selectedIndex);
@@ -209,11 +216,12 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
     // console.log('[DEBUG_LOG] Updated dashboard data:', this.dashboardData);
     
     // Fetch stock ticks data for the selected index
-    // selectedIndex is a string containing the index name/symbol
-    if (selectedIndex && typeof selectedIndex === 'string' && selectedIndex.trim()) {
-      console.log('[DEBUG_LOG] Fetching stock ticks data for index:', selectedIndex);
+    // Extract symbol from selectedIndex object
+    const indexSymbol = selectedIndex.symbol;
+    if (indexSymbol && indexSymbol.trim()) {
+      console.log('[DEBUG_LOG] Fetching stock ticks data for index:', indexSymbol);
       
-      this.stockTicksService.getStockTicks(selectedIndex).subscribe({
+      this.stockTicksService.getStockTicks(indexSymbol).subscribe({
         next: (stockTicksData: StockTicksDto) => {
           // Store the stock ticks data
           this.stockTicksData = stockTicksData;
@@ -221,6 +229,9 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
           console.log('[DEBUG_LOG] Index metadata:', stockTicksData.metadata);
           console.log('[DEBUG_LOG] Number of stocks:', stockTicksData.data?.length || 0);
           console.log('[DEBUG_LOG] Market status:', stockTicksData.marketStatus?.marketStatus);
+          
+          // Update metric tiles with the new stock data
+          this.updateMetricTilesWithFilters([]);
           
           // Trigger change detection after receiving stock data
           this.cdr.detectChanges();
@@ -233,7 +244,7 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
         }
       });
     } else {
-      console.log('[DEBUG_LOG] No valid index name provided, skipping stock ticks fetch. Received:', selectedIndex);
+      console.log('[DEBUG_LOG] No valid index symbol provided, skipping stock ticks fetch. Received:', indexSymbol);
     }
     
     // Trigger change detection and update widgets
@@ -242,10 +253,11 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
   }
 
   /**
-   * Create metric tiles with filtered data
+   * Create metric tiles using stock ticks data
+   * @param data - Dashboard data (not used, we use stockTicksData instead)
    */
   protected createMetricTiles(data: DashboardDataRow[]): IWidget[] {
-    return createMetricTiles(data);
+    return createMetricTilesFunction(this.stockTicksData);
   }
 
   /**
@@ -391,7 +403,7 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
       .build();
 
     const filterWidget = createFilterWidget();
-    const metricTiles = createMetricTiles(INITIAL_DASHBOARD_DATA);
+    const metricTiles = this.createMetricTiles(this.dashboardData);
 
     // Position metric tiles at row 0 (top of dashboard)
     // Metric tiles are already positioned at y: 0 in the createMetricTiles function
