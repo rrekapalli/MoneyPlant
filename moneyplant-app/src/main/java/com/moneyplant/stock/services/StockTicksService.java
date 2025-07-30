@@ -2,23 +2,24 @@ package com.moneyplant.stock.services;
 
 import com.moneyplant.stock.dtos.StockTicksDto;
 import com.moneyplant.core.exceptions.ServiceException;
+import com.moneyplant.core.entities.NseStockTick;
+import com.moneyplant.core.repositories.NseStockTickRepository;
+import com.moneyplant.stock.mappers.StockTicksMapper;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
-import reactor.core.publisher.Mono;
 
-import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Service for fetching and broadcasting stock ticks data from NSE India API.
+ * Service for fetching and broadcasting stock ticks data from the database.
  * Provides real-time stock data updates via WebSocket connections.
+ * Data is sourced from the nse_stock_tick table instead of external APIs.
  */
 @Service
 @RequiredArgsConstructor
@@ -26,17 +27,16 @@ import java.util.concurrent.ConcurrentHashMap;
 public class StockTicksService {
 
     private static final String STOCK_TICKS_SERVICE = "stockTicksService";
-    private static final String NSE_BASE_URL = "https://www.nseindia.com";
-    private static final String STOCK_INDICES_ENDPOINT = "/api/equity-stockIndices";
     
-    private final WebClient webClient;
+    private final NseStockTickRepository nseStockTickRepository;
+    private final StockTicksMapper stockTicksMapper;
     private final SimpMessagingTemplate messagingTemplate;
     
     // Store active subscriptions by index name
     private final Map<String, Boolean> activeSubscriptions = new ConcurrentHashMap<>();
 
     /**
-     * Fetches stock ticks data for a specific index from NSE India API.
+     * Fetches stock ticks data for a specific index from the database.
      * 
      * @param indexName The name of the index (e.g., "NIFTY 50")
      * @return StockTicksDto containing the stock data
@@ -45,47 +45,31 @@ public class StockTicksService {
     @CircuitBreaker(name = STOCK_TICKS_SERVICE, fallbackMethod = "getStockTicksFallback")
     public StockTicksDto getStockTicks(String indexName) {
         try {
-            log.info("Fetching stock ticks for index: {}", indexName);
+            log.info("Fetching stock ticks for index: {} from database", indexName);
             
-            StockTicksDto stockTicks = webClient
-                    .get()
-                    .uri(uriBuilder -> uriBuilder
-                            .scheme("https")
-                            .host("www.nseindia.com")
-                            .path(STOCK_INDICES_ENDPOINT)
-                            .queryParam("index", indexName)
-                            .build())
-                    .headers(headers -> {
-                        // Add required headers to mimic browser request
-                        headers.add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
-                        headers.add("Accept", "application/json, text/plain, */*");
-                        headers.add("Accept-Language", "en-US,en;q=0.9");
-                        headers.add("Accept-Encoding", "gzip, deflate, br");
-                        headers.add("Connection", "keep-alive");
-                        headers.add("Upgrade-Insecure-Requests", "1");
-                    })
-                    .retrieve()
-                    .bodyToMono(StockTicksDto.class)
-                    .timeout(Duration.ofSeconds(30))
-                    .block();
-
-            if (stockTicks != null) {
-                log.info("Successfully fetched stock ticks for index: {} with {} data points", 
-                        indexName, stockTicks.getData() != null ? stockTicks.getData().size() : 0);
+            // Fetch all stock ticks from database ordered by priority
+            List<NseStockTick> stockTicks = nseStockTickRepository.findAllByOrderByPriorityAsc();
+            
+            if (stockTicks.isEmpty()) {
+                log.warn("No stock ticks found in database for index: {}", indexName);
+                return stockTicksMapper.toStockTicksDto(stockTicks, indexName);
             }
             
-            return stockTicks;
+            // Convert entities to DTO using mapper
+            StockTicksDto result = stockTicksMapper.toStockTicksDto(stockTicks, indexName);
             
-        } catch (WebClientResponseException e) {
-            log.error("HTTP error fetching stock ticks for index {}: {} - {}", 
-                    indexName, e.getStatusCode(), e.getResponseBodyAsString());
-            throw new ServiceException("Failed to fetch stock ticks for index: " + indexName + 
-                    ". HTTP Status: " + e.getStatusCode(), e);
+            log.info("Successfully fetched {} stock ticks for index: {} from database", 
+                    stockTicks.size(), indexName);
+            
+            return result;
+            
         } catch (Exception e) {
-            log.error("Error fetching stock ticks for index {}: {}", indexName, e.getMessage(), e);
+            log.error("Error fetching stock ticks for index {} from database: {}", 
+                    indexName, e.getMessage(), e);
             throw new ServiceException("Error fetching stock ticks for index: " + indexName, e);
         }
     }
+
 
     /**
      * Subscribes to real-time stock ticks updates for a specific index.
@@ -156,7 +140,7 @@ public class StockTicksService {
     }
 
     /**
-     * Fallback method for circuit breaker when stock ticks API is unavailable.
+     * Fallback method for circuit breaker when stock ticks service is unavailable.
      * 
      * @param indexName The index name
      * @param ex The exception that triggered the fallback
@@ -166,10 +150,7 @@ public class StockTicksService {
         log.warn("Stock ticks service fallback triggered for index {}: {}", indexName, ex.getMessage());
         
         // Return a basic response indicating service unavailability
-        StockTicksDto fallbackResponse = new StockTicksDto();
-        fallbackResponse.setName(indexName);
-        fallbackResponse.setTimestamp(java.time.LocalDateTime.now().toString());
-        
-        return fallbackResponse;
+        return stockTicksMapper.toStockTicksDto(List.of(), indexName);
     }
+
 }

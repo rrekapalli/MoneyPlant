@@ -116,6 +116,10 @@ import { BaseDashboardComponent } from '@dashboards/public-api';
 // Import component communication service
 import { ComponentCommunicationService } from '../../../services/component-communication.service';
 
+// Import stock ticks service and entities
+import { StockTicksService } from '../../../services/apis/stock-ticks.api';
+import { StockTicksDto } from '../../../services/entities/stock-ticks';
+
 // Define the specific data structure for this dashboard
 export interface DashboardDataRow {
   id: string;
@@ -148,12 +152,16 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
   // Shared dashboard data - Flat structure (implements abstract property)
   protected dashboardData: DashboardDataRow[] = [...INITIAL_DASHBOARD_DATA];
   protected readonly initialDashboardData: DashboardDataRow[] = INITIAL_DASHBOARD_DATA;
+  
+  // Stock ticks data storage
+  protected stockTicksData: StockTicksDto | null = null;
 
   constructor(
     cdr: ChangeDetectorRef,
     excelExportService: ExcelExportService,
     filterService: FilterService,
-    private componentCommunicationService: ComponentCommunicationService
+    private componentCommunicationService: ComponentCommunicationService,
+    private stockTicksService: StockTicksService
   ) {
     super(cdr, excelExportService, filterService);
   }
@@ -171,7 +179,7 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
     this.componentCommunicationService.getSelectedIndex().subscribe(selectedIndex => {
       if (selectedIndex) {
         console.log('[DEBUG_LOG] Received selected index data:', selectedIndex);
-        this.updateDashboardWithSelectedIndex(selectedIndex);
+        this.updateDashboardWithSelectedIndex(selectedIndex.symbol);
       }
     });
   }
@@ -182,9 +190,12 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
 
   /**
    * Update dashboard data with selected index information
-   * @param selectedIndex The selected index data from indices component
+   * @param selectedIndex The selected index symbol string from indices component
    */
   private updateDashboardWithSelectedIndex(selectedIndex: any): void {
+
+    console.log('[DEBUG_LOG] updateDashboardWithSelectedIndex: Selected Index:', selectedIndex);
+
     // Transform the selected index data to dashboard data format
     const dashboardDataRow = this.componentCommunicationService.transformToDashboardData(selectedIndex);
     
@@ -195,7 +206,35 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
     // Add the new data row
     this.dashboardData = [dashboardDataRow, ...this.dashboardData];
     
-    console.log('[DEBUG_LOG] Updated dashboard data:', this.dashboardData);
+    // console.log('[DEBUG_LOG] Updated dashboard data:', this.dashboardData);
+    
+    // Fetch stock ticks data for the selected index
+    // selectedIndex is a string containing the index name/symbol
+    if (selectedIndex && typeof selectedIndex === 'string' && selectedIndex.trim()) {
+      console.log('[DEBUG_LOG] Fetching stock ticks data for index:', selectedIndex);
+      
+      this.stockTicksService.getStockTicks(selectedIndex).subscribe({
+        next: (stockTicksData: StockTicksDto) => {
+          // Store the stock ticks data
+          this.stockTicksData = stockTicksData;
+          console.log('[DEBUG_LOG] Stock ticks data received:', stockTicksData);
+          console.log('[DEBUG_LOG] Index metadata:', stockTicksData.metadata);
+          console.log('[DEBUG_LOG] Number of stocks:', stockTicksData.data?.length || 0);
+          console.log('[DEBUG_LOG] Market status:', stockTicksData.marketStatus?.marketStatus);
+          
+          // Trigger change detection after receiving stock data
+          this.cdr.detectChanges();
+        },
+        error: (error) => {
+          console.error('[DEBUG_LOG] Error fetching stock ticks data:', error);
+          // Reset stock ticks data on error
+          this.stockTicksData = null;
+          this.cdr.detectChanges();
+        }
+      });
+    } else {
+      console.log('[DEBUG_LOG] No valid index name provided, skipping stock ticks fetch. Received:', selectedIndex);
+    }
     
     // Trigger change detection and update widgets
     this.populateWidgetsWithInitialData();
