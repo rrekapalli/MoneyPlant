@@ -16,11 +16,17 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class StockDto {
-    @NotBlank(message = "Stock name is required")
-    @Size(min = 1, max = 100, message = "Stock name must be between 1 and 100 characters")
-    private String name;
-
     @NotBlank(message = "Stock symbol is required")
     @Size(min = 1, max = 10, message = "Stock symbol must be between 1 and 10 characters")
     private String symbol;
+
+    @NotBlank(message = "Company name is required")
+    @Size(min = 1, max = 255, message = "Company name must be between 1 and 255 characters")
+    private String companyName;
+
+    @Size(max = 255, message = "Industry must not exceed 255 characters")
+    private String industry;
+
+    @Size(max = 255, message = "Sector indicator must not exceed 255 characters")
+    private String pdSectorInd;
 }

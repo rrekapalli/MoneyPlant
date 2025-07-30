@@ -47,8 +47,8 @@ public class StockTicksService {
         try {
             log.info("Fetching stock ticks for index: {} from database", indexName);
             
-            // Fetch all stock ticks from database ordered by priority
-            List<NseStockTick> stockTicks = nseStockTickRepository.findAllByOrderByPriorityAsc();
+            // Fetch all stock ticks from a database ordered by symbol
+            List<NseStockTick> stockTicks = nseStockTickRepository.findAllByIdentifierOrderBySymbolAsc(indexName);
             
             if (stockTicks.isEmpty()) {
                 log.warn("No stock ticks found in database for index: {}", indexName);

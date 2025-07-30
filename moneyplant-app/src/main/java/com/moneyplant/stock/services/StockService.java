@@ -2,10 +2,10 @@ package com.moneyplant.stock.services;
 
 import com.moneyplant.stock.dtos.StockDto;
 import com.moneyplant.stock.dtos.StockResponseDto;
-import com.moneyplant.core.entities.NseEquity;
+import com.moneyplant.core.entities.NseEquityMaster;
 import com.moneyplant.core.exceptions.ResourceNotFoundException;
 import com.moneyplant.core.exceptions.ServiceException;
-import com.moneyplant.core.repositories.NseEquityRepository;
+import com.moneyplant.stock.repositories.StockRepository;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,7 +18,7 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class StockService {
-    private final NseEquityRepository nseEquityRepository;
+    private final StockRepository stockRepository;
 
     private static final String STOCK_SERVICE = "stockService";
 
@@ -32,20 +32,22 @@ public class StockService {
     @CircuitBreaker(name = STOCK_SERVICE, fallbackMethod = "createStockFallback")
     public StockResponseDto createStock(StockDto stockDto) {
         try {
-            NseEquity newStock = new NseEquity();
+            NseEquityMaster newStock = new NseEquityMaster();
 
-            newStock.setNameOfCompany(stockDto.getName());
             newStock.setSymbol(stockDto.getSymbol());
+            newStock.setCompanyName(stockDto.getCompanyName());
+            newStock.setIndustry(stockDto.getIndustry());
+            newStock.setPdSectorInd(stockDto.getPdSectorInd());
 
-            nseEquityRepository.save(newStock);
+            stockRepository.save(newStock);
 
             log.info("Stock created successfully!");
 
-            // TODO:  Need mapper
             return new StockResponseDto(
                     newStock.getSymbol(),
-                    newStock.getNameOfCompany(),
-                    newStock.getSymbol()
+                    newStock.getCompanyName(),
+                    newStock.getIndustry(),
+                    newStock.getPdSectorInd()
             );
         } catch (Exception e) {
             log.error("Error creating stock: {}", e.getMessage());
@@ -74,12 +76,13 @@ public class StockService {
     @CircuitBreaker(name = STOCK_SERVICE, fallbackMethod = "getAllStocksFallback")
     public List<StockResponseDto> getAllStocks() {
         try {
-            return nseEquityRepository.findAll()
+            return stockRepository.findAll()
                     .stream()
                     .map(stock -> new StockResponseDto(
                             stock.getSymbol(),
-                            stock.getNameOfCompany(),
-                            stock.getSymbol()
+                            stock.getCompanyName(),
+                            stock.getIndustry(),
+                            stock.getPdSectorInd()
                     ))
                     .toList();
         } catch (Exception e) {
@@ -99,13 +102,14 @@ public class StockService {
     @CircuitBreaker(name = STOCK_SERVICE, fallbackMethod = "getStockByIdFallback")
     public StockResponseDto getStockById(String id) {
         try {
-            NseEquity stock = nseEquityRepository.findById(id)
+            NseEquityMaster stock = stockRepository.findById(id)
                     .orElseThrow(() -> new ResourceNotFoundException("Stock not found with symbol: " + id));
 
             return new StockResponseDto(
                     stock.getSymbol(),
-                    stock.getNameOfCompany(),
-                    stock.getSymbol()
+                    stock.getCompanyName(),
+                    stock.getIndustry(),
+                    stock.getPdSectorInd()
             );
         } catch (ResourceNotFoundException e) {
             throw e;
@@ -149,13 +153,14 @@ public class StockService {
     @CircuitBreaker(name = STOCK_SERVICE, fallbackMethod = "getStockBySymbolFallback")
     public StockResponseDto getStockBySymbol(String symbol) {
         try {
-            NseEquity stock = nseEquityRepository.findBySymbolIgnoreCase(symbol)
+            NseEquityMaster stock = stockRepository.findBySymbolIgnoreCase(symbol)
                     .orElseThrow(() -> new ResourceNotFoundException("Stock not found with symbol: " + symbol));
 
             return new StockResponseDto(
                     stock.getSymbol(),
-                    stock.getNameOfCompany(),
-                    stock.getSymbol()
+                    stock.getCompanyName(),
+                    stock.getIndustry(),
+                    stock.getPdSectorInd()
             );
         } catch (ResourceNotFoundException e) {
             throw e;
@@ -174,6 +179,80 @@ public class StockService {
      */
     public StockResponseDto getStockBySymbolFallback(String symbol, Exception e) {
         log.error("Circuit breaker triggered for getStockBySymbol with symbol {}: {}", symbol, e.getMessage());
+        throw new ServiceException("Service unavailable", e);
+    }
+
+    /**
+     * Gets stocks by industry.
+     * 
+     * @param industry The industry to filter by
+     * @return List of stock responses
+     * @throws ServiceException if there is an error retrieving stocks
+     */
+    @CircuitBreaker(name = STOCK_SERVICE, fallbackMethod = "getStocksByIndustryFallback")
+    public List<StockResponseDto> getStocksByIndustry(String industry) {
+        try {
+            return stockRepository.findByIndustryIgnoreCase(industry)
+                    .stream()
+                    .map(stock -> new StockResponseDto(
+                            stock.getSymbol(),
+                            stock.getCompanyName(),
+                            stock.getIndustry(),
+                            stock.getPdSectorInd()
+                    ))
+                    .toList();
+        } catch (Exception e) {
+            log.error("Error retrieving stocks by industry {}: {}", industry, e.getMessage());
+            throw new ServiceException("Error retrieving stocks by industry: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Gets stocks by sector indicator.
+     * 
+     * @param sectorInd The sector indicator to filter by
+     * @return List of stock responses
+     * @throws ServiceException if there is an error retrieving stocks
+     */
+    @CircuitBreaker(name = STOCK_SERVICE, fallbackMethod = "getStocksBySectorFallback")
+    public List<StockResponseDto> getStocksBySector(String sectorInd) {
+        try {
+            return stockRepository.findByPdSectorIndIgnoreCase(sectorInd)
+                    .stream()
+                    .map(stock -> new StockResponseDto(
+                            stock.getSymbol(),
+                            stock.getCompanyName(),
+                            stock.getIndustry(),
+                            stock.getPdSectorInd()
+                    ))
+                    .toList();
+        } catch (Exception e) {
+            log.error("Error retrieving stocks by sector {}: {}", sectorInd, e.getMessage());
+            throw new ServiceException("Error retrieving stocks by sector: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Fallback method for getStocksByIndustry when the circuit is open.
+     * 
+     * @param industry The industry that was being searched
+     * @param e The exception that triggered the fallback
+     * @return empty list
+     */
+    public List<StockResponseDto> getStocksByIndustryFallback(String industry, Exception e) {
+        log.error("Circuit breaker triggered for getStocksByIndustry with industry {}: {}", industry, e.getMessage());
+        throw new ServiceException("Service unavailable", e);
+    }
+
+    /**
+     * Fallback method for getStocksBySector when the circuit is open.
+     * 
+     * @param sectorInd The sector indicator that was being searched
+     * @param e The exception that triggered the fallback
+     * @return empty list
+     */
+    public List<StockResponseDto> getStocksBySectorFallback(String sectorInd, Exception e) {
+        log.error("Circuit breaker triggered for getStocksBySector with sector {}: {}", sectorInd, e.getMessage());
         throw new ServiceException("Service unavailable", e);
     }
 }
