@@ -118,7 +118,7 @@ import { ComponentCommunicationService, SelectedIndexData } from '../../../servi
 
 // Import stock ticks service and entities
 import { StockTicksService } from '../../../services/apis/stock-ticks.api';
-import { StockTicksDto } from '../../../services/entities/stock-ticks';
+import {StockDataDto, StockTicksDto} from '../../../services/entities/stock-ticks';
 
 // Define the specific data structure for this dashboard
 export interface DashboardDataRow {
@@ -154,7 +154,7 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
   protected readonly initialDashboardData: DashboardDataRow[] = INITIAL_DASHBOARD_DATA;
   
   // Stock ticks data storage
-  protected stockTicksData: StockTicksDto | null = null;
+  protected stockTicksData: StockDataDto[] | null = [];
   
   // Dashboard title - dynamic based on selected index
   public dashboardTitle: string = 'Financial Dashboard';
@@ -167,6 +167,15 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
     private stockTicksService: StockTicksService
   ) {
     super(cdr, excelExportService, filterService);
+  }
+
+  override ngOnInit(): void {
+    // Call parent ngOnInit if it exists
+    super.ngOnInit?.();
+    
+    // Load initial stock ticks data - you can modify this to use a default index symbol
+    // For now, we'll let the component communication service handle the initial load
+    // this.loadStockTicksData('NIFTY50'); // Uncomment and set default symbol if needed
   }
 
   // Implement abstract methods from BaseDashboardComponent
@@ -189,6 +198,38 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
 
   protected onChildDestroy(): void {
     // Child-specific cleanup if needed
+  }
+
+  /**
+   * Load stock ticks data for the given index symbol
+   * @param indexSymbol The symbol of the index to fetch stock ticks data for
+   */
+  private loadStockTicksData(indexSymbol: string): void {
+    if (indexSymbol && indexSymbol.trim()) {
+      console.log('[DEBUG_LOG] Fetching stock ticks data for index:', indexSymbol);
+      
+      this.stockTicksService.getStockTicksByIndex(indexSymbol).subscribe({
+        next: (stockTicksData: StockDataDto[]) => {
+          // Store the stock ticks data
+          this.stockTicksData = stockTicksData;
+          console.log('[DEBUG_LOG] Stock ticks data received:', stockTicksData);
+
+          // Update metric tiles with the new stock data
+          this.updateMetricTilesWithFilters([]);
+          
+          // Trigger change detection after receiving stock data
+          this.cdr.detectChanges();
+        },
+        error: (error) => {
+          console.error('[DEBUG_LOG] Error fetching stock ticks data:', error);
+          // Reset stock ticks data on error
+          this.stockTicksData = null;
+          this.cdr.detectChanges();
+        }
+      });
+    } else {
+      console.log('[DEBUG_LOG] No valid index symbol provided, skipping stock ticks fetch. Received:', indexSymbol);
+    }
   }
 
   /**
@@ -218,34 +259,7 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
     // Fetch stock ticks data for the selected index
     // Extract symbol from selectedIndex object
     const indexSymbol = selectedIndex.symbol;
-    if (indexSymbol && indexSymbol.trim()) {
-      console.log('[DEBUG_LOG] Fetching stock ticks data for index:', indexSymbol);
-      
-      this.stockTicksService.getStockTicksByIndex(indexSymbol).subscribe({
-        next: (stockTicksData: StockTicksDto) => {
-          // Store the stock ticks data
-          this.stockTicksData = stockTicksData;
-          console.log('[DEBUG_LOG] Stock ticks data received:', stockTicksData);
-          console.log('[DEBUG_LOG] Index metadata:', stockTicksData.metadata);
-          console.log('[DEBUG_LOG] Number of stocks:', stockTicksData.data?.length || 0);
-          console.log('[DEBUG_LOG] Market status:', stockTicksData.marketStatus?.marketStatus);
-          
-          // Update metric tiles with the new stock data
-          this.updateMetricTilesWithFilters([]);
-          
-          // Trigger change detection after receiving stock data
-          this.cdr.detectChanges();
-        },
-        error: (error) => {
-          console.error('[DEBUG_LOG] Error fetching stock ticks data:', error);
-          // Reset stock ticks data on error
-          this.stockTicksData = null;
-          this.cdr.detectChanges();
-        }
-      });
-    } else {
-      console.log('[DEBUG_LOG] No valid index symbol provided, skipping stock ticks fetch. Received:', indexSymbol);
-    }
+    this.loadStockTicksData(indexSymbol);
     
     // Trigger change detection and update widgets
     this.populateWidgetsWithInitialData();
@@ -266,7 +280,6 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
   protected initializeDashboardConfig(): void {
     // Create widgets using enhanced chart builders
 
-
      // Investment Distribution Map (using density map builder)
      const densityMapInvestment = DensityMapBuilder.create()
      .setData([]) // Data will be populated later
@@ -274,14 +287,14 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
      .setCurrencyFormatter('USD', 'en-US')
      .build();
     
-    // Asset Allocation Pie Chart with financial display
-    const pieAssetAllocation = PieChartBuilder.create()
+    // Stock Sector Allocation Pie Chart with financial display
+    const pieStockSector = PieChartBuilder.create()
       .setData([]) // Data will be populated later
-      .setHeader('Asset Allocation')
+      .setHeader('Sector Allocation')
       .setDonutStyle('40%', '70%')
       .setFinancialDisplay('USD', 'en-US')
       .setPredefinedPalette('finance')
-      .setFilterColumn('assetCategory')
+      .setFilterColumn('sector')
       .build();
 
     // Performance Metrics Polar Chart
@@ -330,16 +343,12 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
       .setCurrencyFormatter('USD', 'en-US')
       .build();
 
-   
-
     // Revenue Trend Area Chart
     const areaChart = AreaChartBuilder.create()
       .setData([]) // Data will be populated later
       .setHeader('Revenue Trend')
       .setFinancialTrend('USD', 'en-US')
       .build();
-
-
 
     // Financial Overview Stacked Area
     const stackedAreaChart = AreaChartBuilder.create()
@@ -412,10 +421,10 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
     filterWidget.position = { x: 0, y: 1, cols: 12, rows: 1 };
 
     // Position other widgets starting from row 2 (below filter)
-    densityMapInvestment.position = { x: 0, y: 4, cols: 8, rows: 8 };
-    pieAssetAllocation.position = { x: 8, y: 2, cols: 4, rows: 6 };
-    polarChart.position = { x: 8, y: 8, cols: 4, rows: 6 };
-    barMonthlyIncomeVsExpenses.position = { x: 0, y: 2, cols: 8, rows: 8 };
+    // densityMapInvestment.position = { x: 0, y: 4, cols: 8, rows: 8 };
+
+    barMonthlyIncomeVsExpenses.position = { x: 0, y: 3, cols: 8, rows: 8 };
+    pieStockSector.position = { x: 8, y: 3, cols: 4, rows: 8 };
 
     // Use the Fluent API to build the dashboard config with filter highlighting enabled
     this.dashboardConfig = StandardDashboardBuilder.createStandard()
@@ -433,8 +442,8 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
         // Filter widget below tiles (row 1)
         filterWidget,
         // Core financial widgets
-        pieAssetAllocation,
         barMonthlyIncomeVsExpenses,
+        pieStockSector,
         //linePortfolioPerformance,
         //scatterRiskVsReturn,
         //gaugeSavingsGoal,
@@ -628,6 +637,31 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
           nameField: 'assetCategory',
           sortBy: 'value'
         });
+        
+      case 'Sector Allocation':
+        // Use stock ticks data grouped by sector with totalTradedValue
+        if (!this.stockTicksData) {
+          console.warn('No stock ticks data available for sector allocation');
+          return [];
+        }
+        
+        // Group by sector and sum totalTradedValue
+        const sectorData = this.stockTicksData.reduce((acc, stock) => {
+          const sector = stock.sector || 'Unknown';
+          const tradedValue = stock.totalTradedValue || 0;
+          
+          if (!acc[sector]) {
+            acc[sector] = 0;
+          }
+          acc[sector] += tradedValue;
+          return acc;
+        }, {} as Record<string, number>);
+        
+        // Transform to pie chart format
+        return Object.entries(sectorData).map(([sector, value]) => ({
+          name: sector,
+          value: value
+        })).sort((a, b) => b.value - a.value);
         
       case 'Monthly Income vs Expenses':
         // Group by month and sum totalValue (for all asset categories)

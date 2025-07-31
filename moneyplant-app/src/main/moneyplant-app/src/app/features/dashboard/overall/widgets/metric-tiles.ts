@@ -1,30 +1,31 @@
 import { TileBuilder } from '@dashboards/public-api';
 import { DashboardDataRow } from './dashboard-data';
-import { StockTicksDto } from '../../../../services/entities/stock-ticks';
+import {StockDataDto, StockTicksDto} from '../../../../services/entities/stock-ticks';
 
 /**
  * Create metric tiles that display key statistics from stock ticks data
  */
-export function createMetricTiles(stockTicksData: StockTicksDto | null) {
+export function createMetricTiles(stockTicksData: StockDataDto[] | null) {
   // Handle null or undefined stockTicksData
   if (!stockTicksData) {
     return createEmptyMetricTiles();
   }
 
+  debugger;
   // Calculate metrics from stockTicksData
-  const stocksCount = stockTicksData.data?.length || 0;
-  const declines = parseInt(stockTicksData.advance?.declines || '0', 10);
-  const advances = parseInt(stockTicksData.advance?.advances || '0', 10);
-  const unchanged = parseInt(stockTicksData.advance?.unchanged || '0', 10);
+  const stocksCount = stockTicksData.length || 0;
+  const declines = stockTicksData.filter(stock => (stock.percentChange || 0.0 ) < 0.0).length;
+  const advances = stockTicksData.filter(stock => (stock.percentChange || 0.0) > 0.0).length;
+  const unchanged = stockTicksData.filter(stock => (stock.percentChange || 0.0) === 0.0).length;
   
   // Calculate total traded value (sum of all totalTradedValue)
-  const totalTradedValue = stockTicksData.data?.reduce((sum: number, stock: any) => {
+  const totalTradedValue = stockTicksData.reduce((sum: number, stock: any) => {
     const value = stock.totalTradedValue || 0;
     return isNaN(value) || !isFinite(value) ? sum : sum + value;
   }, 0) || 0;
   
   // Calculate total traded volume (sum of all totalTradedVolume)
-  const totalTradedVolume = stockTicksData.data?.reduce((sum: number, stock: any) => {
+  const totalTradedVolume = stockTicksData.reduce((sum: number, stock: any) => {
     const volume = stock.totalTradedVolume || 0;
     return isNaN(volume) || !isFinite(volume) ? sum : sum + volume;
   }, 0) || 0;

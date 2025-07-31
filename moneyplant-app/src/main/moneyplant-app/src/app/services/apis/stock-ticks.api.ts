@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from './api.base';
-import { StockTicksDto, StockTicksResponseDto } from '../entities/stock-ticks';
+import {StockDataDto, StockTicksDto, StockTicksResponseDto} from '../entities/stock-ticks';
 
 @Injectable({
   providedIn: 'root'
@@ -27,10 +27,10 @@ export class StockTicksService {
    * @param indexName The name of the stock index (e.g., "NIFTY 50")
    * @returns An Observable of the stock ticks response
    */
-  getStockTicksByIndex(indexName: string): Observable<StockTicksDto> {
+  getStockTicksByIndex(indexName: string): Observable<StockDataDto[]> {
     // Convert index name to URL-friendly format (spaces to hyphens)
     const urlFriendlyIndexName = indexName.replace(/\s+/g, '-');
-    return this.apiService.get<StockTicksDto>(`${this.endpoint}/by-index/${urlFriendlyIndexName}`);
+    return this.apiService.get<StockDataDto[]>(`${this.endpoint}/by-index/${urlFriendlyIndexName}`);
   }
 
   /**
