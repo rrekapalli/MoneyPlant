@@ -23,6 +23,17 @@ export class StockTicksService {
   }
 
   /**
+   * Gets current stock ticks data for a specific index
+   * @param indexName The name of the stock index (e.g., "NIFTY 50")
+   * @returns An Observable of the stock ticks response
+   */
+  getStockTicksByIndex(indexName: string): Observable<StockTicksDto> {
+    // Convert index name to URL-friendly format (spaces to hyphens)
+    const urlFriendlyIndexName = indexName.replace(/\s+/g, '-');
+    return this.apiService.get<StockTicksDto>(`${this.endpoint}/by-index/${urlFriendlyIndexName}`);
+  }
+
+  /**
    * Gets list of available stock indices for real-time data
    * @returns An Observable of available indices array
    */
