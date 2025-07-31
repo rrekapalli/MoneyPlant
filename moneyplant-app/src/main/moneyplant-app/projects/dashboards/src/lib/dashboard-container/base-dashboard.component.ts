@@ -530,8 +530,12 @@ export abstract class BaseDashboardComponent<T = any> implements OnInit, OnDestr
         series.data = filteredData;
         
         // Update xAxis categories for bar/line charts if needed
-        if (newOptions.xAxis && newOptions.xAxis[0] && newOptions.xAxis[0].data) {
-          newOptions.xAxis[0].data = filteredData.map((item: any) => item.name);
+        if (newOptions.xAxis) {
+          if (Array.isArray(newOptions.xAxis) && newOptions.xAxis[0] && newOptions.xAxis[0].data !== undefined) {
+            newOptions.xAxis[0].data = filteredData.map((item: any) => item.name);
+          } else if (!Array.isArray(newOptions.xAxis) && newOptions.xAxis.data !== undefined) {
+            newOptions.xAxis.data = filteredData.map((item: any) => item.name);
+          }
         }
       }
     }
