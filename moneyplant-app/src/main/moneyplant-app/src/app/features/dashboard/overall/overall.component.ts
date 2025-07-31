@@ -397,15 +397,25 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
      const densityMapInvestment = DensityMapBuilder.create()
      .setData([]) // Data will be populated later
      .setHeader('Investment Distribution by Region')
-     .setCurrencyFormatter('USD', 'en-US')
+     .setCurrencyFormatter('INR', 'en-US')
      .build();
+
+    // Stock Industry Bar Chart
+    const barStockIndustry = BarChartBuilder.create()
+        .setData(this.stockTicksData) // Data will be populated later
+        .setHeader('Industry')
+        .setCurrencyFormatter('INR', 'en-US')
+        .setPredefinedPalette('business')
+        .setTooltip('axis', '{b}: {c}')
+        .setFilterColumn('industry')
+        .build();
     
     // Stock Sector Allocation Pie Chart with financial display
     const pieStockSector = PieChartBuilder.create()
       .setData(this.stockTicksData) // Data will be populated later
       .setHeader('Sector Allocation')
       .setDonutStyle('40%', '70%')
-      .setFinancialDisplay('USD', 'en-US')
+      .setFinancialDisplay('INR', 'en-US')
       .setPredefinedPalette('finance')
       .setFilterColumn('sector')
       .build();
@@ -417,20 +427,11 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
     .setPercentageFormatter(1)
     .build();
 
-    // Monthly Income vs Expenses Bar Chart
-    const barMonthlyIncomeVsExpenses = BarChartBuilder.create()
-      .setData([]) // Data will be populated later
-      .setHeader('Monthly Income vs Expenses')
-      .setCurrencyFormatter('USD', 'en-US')
-      .setPredefinedPalette('business')
-      .setTooltip('axis', '{b}: {c}')
-      .build();
-
     // Portfolio Performance Area Chart
     const linePortfolioPerformance = AreaChartBuilder.create()
       .setData([]) // Data will be populated later
       .setHeader('Portfolio Performance')
-      .setFinancialTrend('USD', 'en-US')
+      .setFinancialTrend('INR', 'en-US')
       .setPredefinedPalette('finance')
       .build();
 
@@ -536,7 +537,7 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
     // Position other widgets starting from row 2 (below filter)
     // densityMapInvestment.position = { x: 0, y: 4, cols: 8, rows: 8 };
 
-    barMonthlyIncomeVsExpenses.position = { x: 0, y: 3, cols: 8, rows: 8 };
+    barStockIndustry.position = { x: 0, y: 3, cols: 8, rows: 8 };
     pieStockSector.position = { x: 8, y: 3, cols: 4, rows: 8 };
 
     // Use the Fluent API to build the dashboard config with filter highlighting enabled
@@ -555,7 +556,7 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
         // Filter widget below tiles (row 1)
         filterWidget,
         // Core financial widgets
-        barMonthlyIncomeVsExpenses,
+        barStockIndustry,
         pieStockSector,
         //linePortfolioPerformance,
         //scatterRiskVsReturn,
@@ -766,10 +767,30 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
           value: value
         })).sort((a, b) => b.value - a.value);
         
-      case 'Monthly Income vs Expenses':
-        // Group by month and sum totalValue (for all asset categories)
-        const monthlyData = this.groupByAndSum(sourceData, 'month', 'totalValue');
-        return monthlyData;
+      case 'Industry':
+        // Use stock ticks data grouped by basicIndustry with totalTradedValue
+        if (!this.stockTicksData) {
+          console.warn('No stock ticks data available for industry chart');
+          return [];
+        }
+        
+        // Group by basicIndustry and sum totalTradedValue
+        const industryData = this.stockTicksData.reduce((acc, stock) => {
+          const industry = stock.basicIndustry || 'Unknown';
+          const tradedValue = stock.totalTradedValue || 0;
+          
+          if (!acc[industry]) {
+            acc[industry] = 0;
+          }
+          acc[industry] += tradedValue;
+          return acc;
+        }, {} as Record<string, number>);
+        
+        // Transform to bar chart format
+        return Object.entries(industryData).map(([industry, value]) => ({
+          name: industry,
+          value: value
+        })).sort((a, b) => b.value - a.value);
         
       case 'Portfolio Performance':
         // Use AreaChartBuilder's transformation method
