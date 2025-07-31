@@ -1,6 +1,7 @@
 package com.moneyplant.stock.controllers;
 
 import com.moneyplant.stock.dtos.StockTicksDto;
+import com.moneyplant.stock.dtos.EnrichedStockTickDto;
 import com.moneyplant.stock.services.StockTicksService;
 import com.moneyplant.core.exceptions.ResourceNotFoundException;
 import com.moneyplant.core.exceptions.ServiceException;
@@ -21,6 +22,8 @@ import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.annotation.SubscribeMapping;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * WebSocket controller for real-time stock ticks data streaming.
@@ -139,6 +142,60 @@ public class StockTicksController {
         } catch (Exception e) {
             log.error("Unexpected error retrieving stock ticks for index {}: {}", 
                     indexName, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * REST endpoint to get enriched stock ticks data for a specific index.
+     * Returns comprehensive stock data including additional fields from nse_equity_master table.
+     * 
+     * @param selectedIndex The sector index to search for
+     * @return List of enriched stock ticks data
+     */
+    @Operation(summary = "Get enriched stock ticks data by index", 
+               description = "Retrieves enriched stock ticks data for the specified sector index with additional fields from nse_equity_master")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved enriched stock ticks data"),
+        @ApiResponse(responseCode = "400", description = "Invalid index parameter"),
+        @ApiResponse(responseCode = "404", description = "No data found for the specified index"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @GetMapping("/api/v1/stock-ticks/by-index/{selectedIndex}")
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseEntity<List<EnrichedStockTickDto>> getStockTicksByIndex(
+            @Parameter(description = "Sector index to search for (e.g., NIFTY 50)", required = true)
+            @PathVariable String selectedIndex) {
+        try {
+            log.info("REST request for enriched stock ticks by index: {}", selectedIndex);
+            
+            if (selectedIndex == null || selectedIndex.trim().isEmpty()) {
+                throw new IllegalArgumentException("Selected index cannot be null or empty");
+            }
+            
+            // Convert URL-friendly index name back to original format if needed
+            String originalIndexName = selectedIndex.replace("-", " ").toUpperCase();
+            
+            List<EnrichedStockTickDto> enrichedStockTicks = stockTicksService.getEnrichedStockTicksByIndex(originalIndexName);
+            
+            if (enrichedStockTicks.isEmpty()) {
+                throw new ResourceNotFoundException("No data found for index: " + originalIndexName);
+            }
+            
+            return ResponseEntity.ok(enrichedStockTicks);
+            
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid request parameter for enriched stock ticks: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (ResourceNotFoundException e) {
+            log.error("Enriched stock ticks not found for index {}: {}", selectedIndex, e.getMessage());
+            return ResponseEntity.notFound().build();
+        } catch (ServiceException e) {
+            log.error("Service error retrieving enriched stock ticks for index {}: {}", selectedIndex, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        } catch (Exception e) {
+            log.error("Unexpected error retrieving enriched stock ticks for index {}: {}", 
+                    selectedIndex, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
