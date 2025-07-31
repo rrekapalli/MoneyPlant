@@ -268,8 +268,8 @@ public class StockTicksService {
         dto.setEquityTime((String) row[40]);
         dto.setPreOpenTime((String) row[41]);
         dto.setQuotePreOpenFlag((Boolean) row[42]);
-        dto.setCreatedAt((java.time.Instant) row[43]);
-        dto.setUpdatedAt((java.time.Instant) row[44]);
+        dto.setCreatedAt(row[43] != null ? ((java.sql.Timestamp) row[43]).toInstant() : null);
+        dto.setUpdatedAt(row[44] != null ? ((java.sql.Timestamp) row[44]).toInstant() : null);
         
         // Map additional fields from nse_equity_master table (indices 45-48)
         dto.setBasicIndustry((String) row[45]);
