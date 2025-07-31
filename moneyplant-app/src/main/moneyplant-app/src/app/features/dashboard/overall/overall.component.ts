@@ -968,6 +968,17 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
   }
 
   /**
+   * Handle filter values change from dashboard container (required by BaseDashboardComponent)
+   */
+  override onFilterValuesChanged(filters: any[]): void {
+    // Call the parent method to handle the base filtering logic
+    super.onFilterValuesChanged(filters);
+    
+    // Apply enhanced filtering specific to this component
+    this.applyEnhancedFilters(filters);
+  }
+
+  /**
    * Enhanced filtering method that applies filters and updates all widgets
    */
   protected applyEnhancedFilters(filters: any[]): void {
