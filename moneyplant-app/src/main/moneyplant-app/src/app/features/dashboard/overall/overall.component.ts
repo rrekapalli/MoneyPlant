@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { MessageModule } from 'primeng/message';
 import { ScrollPanelModule } from 'primeng/scrollpanel';
+import { Subscription } from 'rxjs';
 
 // Import echarts core module and components
 import * as echarts from 'echarts/core';
@@ -158,6 +159,9 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
   
   // Dashboard title - dynamic based on selected index
   public dashboardTitle: string = 'Financial Dashboard';
+  
+  // Subscription management
+  private selectedIndexSubscription: Subscription | null = null;
 
   constructor(
     cdr: ChangeDetectorRef,
@@ -187,17 +191,75 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
       // Handle world map loading error silently
     });
 
-    // Subscribe to selected index data changes
-    this.componentCommunicationService.getSelectedIndex().subscribe(selectedIndex => {
+    // Clear any existing subscription to prevent memory leaks
+    if (this.selectedIndexSubscription) {
+      this.selectedIndexSubscription.unsubscribe();
+      this.selectedIndexSubscription = null;
+    }
+
+    // Clear existing stock ticks data to prevent showing stale data
+    this.stockTicksData = null;
+    
+    // Reset dashboard title
+    this.dashboardTitle = 'Financial Dashboard';
+    
+    // Clear any existing selected index data to prevent stale data issues
+    this.componentCommunicationService.clearSelectedIndex();
+
+    // Clear pie chart and other widgets data to prevent stale data
+    this.clearAllWidgetsData();
+
+    // Subscribe to selected index data changes and store the subscription
+    this.selectedIndexSubscription = this.componentCommunicationService.getSelectedIndex().subscribe(selectedIndex => {
       if (selectedIndex) {
-        console.log('[DEBUG_LOG] Received selected index data:', selectedIndex);
         this.updateDashboardWithSelectedIndex(selectedIndex);
+      } else {
+        // If no selected index, load NIFTY 50 by default
+        this.loadDefaultNifty50Data();
       }
     });
+
+    // Load NIFTY 50 data by default on initial load
+    setTimeout(() => {
+      const currentSelectedIndex = this.componentCommunicationService.getSelectedIndex();
+      // Check if there's no current selected index, then load default
+      if (!currentSelectedIndex) {
+        this.loadDefaultNifty50Data();
+      }
+    }, 100);
   }
 
   protected onChildDestroy(): void {
-    // Child-specific cleanup if needed
+    // Unsubscribe from selected index subscription to prevent memory leaks
+    if (this.selectedIndexSubscription) {
+      this.selectedIndexSubscription.unsubscribe();
+      this.selectedIndexSubscription = null;
+    }
+    
+    // Clear stock ticks data
+    this.stockTicksData = null;
+  }
+
+  /**
+   * Load default NIFTY 50 data when no index is selected
+   */
+  private loadDefaultNifty50Data(): void {
+    // Set dashboard title for NIFTY 50
+    this.dashboardTitle = 'NIFTY 50 - Financial Dashboard';
+    
+    // Create default NIFTY 50 selected index data
+    const defaultNifty50Data: SelectedIndexData = {
+      id: 'NIFTY50',
+      symbol: 'NIFTY 50',
+      name: 'NIFTY-50',
+      lastPrice: 0,
+      variation: 0,
+      percentChange: 0,
+      keyCategory: 'Index'
+    };
+    
+    // Update dashboard with NIFTY 50 data
+    this.updateDashboardWithSelectedIndex(defaultNifty50Data);
   }
 
   /**
@@ -206,30 +268,87 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
    */
   private loadStockTicksData(indexSymbol: string): void {
     if (indexSymbol && indexSymbol.trim()) {
-      console.log('[DEBUG_LOG] Fetching stock ticks data for index:', indexSymbol);
-      
       this.stockTicksService.getStockTicksByIndex(indexSymbol).subscribe({
         next: (stockTicksData: StockDataDto[]) => {
           // Store the stock ticks data
           this.stockTicksData = stockTicksData;
-          console.log('[DEBUG_LOG] Stock ticks data received:', stockTicksData);
 
           // Update metric tiles with the new stock data
           this.updateMetricTilesWithFilters([]);
+          
+          // Update all widgets with the new stock data, especially the pie chart
+          this.updateAllWidgetsWithStockData();
           
           // Trigger change detection after receiving stock data
           this.cdr.detectChanges();
         },
         error: (error) => {
-          console.error('[DEBUG_LOG] Error fetching stock ticks data:', error);
+          console.error('Error fetching stock ticks data:', error);
           // Reset stock ticks data on error
           this.stockTicksData = null;
           this.cdr.detectChanges();
         }
       });
-    } else {
-      console.log('[DEBUG_LOG] No valid index symbol provided, skipping stock ticks fetch. Received:', indexSymbol);
     }
+  }
+
+  /**
+   * Clear all widgets data to prevent stale data display
+   */
+  private clearAllWidgetsData(): void {
+    if (!this.dashboardConfig?.widgets) {
+      return;
+    }
+
+    // Find all echart widgets and clear their data
+    const echartWidgets = this.dashboardConfig.widgets.filter(widget => 
+      widget.config?.component === 'echart'
+    );
+
+    echartWidgets.forEach(widget => {
+      // Clear widget data by setting empty data
+      this.updateEchartWidget(widget, []);
+    });
+  }
+
+  /**
+   * Update all widgets with fresh stock data, especially the pie chart
+   */
+  private updateAllWidgetsWithStockData(): void {
+    if (!this.dashboardConfig?.widgets || !this.stockTicksData) {
+      return;
+    }
+
+    // Find and update the pie chart widget specifically
+    const pieChartWidget = this.dashboardConfig.widgets.find(widget => 
+      widget.config?.header?.title === 'Sector Allocation'
+    );
+
+    if (pieChartWidget) {
+      const sectorData = this.getFilteredDataForWidget('Sector Allocation');
+      if (sectorData && sectorData.length > 0) {
+        this.updateEchartWidget(pieChartWidget, sectorData);
+      } else {
+        console.warn('No sector data available for pie chart update');
+      }
+    } else {
+      console.warn('Pie chart widget not found');
+    }
+
+    // Update all other echart widgets
+    const echartWidgets = this.dashboardConfig.widgets.filter(widget => 
+      widget.config?.component === 'echart' && widget.config?.header?.title !== 'Sector Allocation'
+    );
+
+    echartWidgets.forEach(widget => {
+      const widgetTitle = widget.config?.header?.title;
+      if (widgetTitle) {
+        const widgetData = this.getFilteredDataForWidget(widgetTitle);
+        if (widgetData) {
+          this.updateEchartWidget(widget, widgetData);
+        }
+      }
+    });
   }
 
   /**
@@ -237,12 +356,8 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
    * @param selectedIndex The selected index data object from indices component
    */
   private updateDashboardWithSelectedIndex(selectedIndex: SelectedIndexData): void {
-
-    console.log('[DEBUG_LOG] updateDashboardWithSelectedIndex: Selected Index:', selectedIndex);
-
     // Update dashboard title with selected index name or symbol
     this.dashboardTitle = selectedIndex.name || selectedIndex.symbol || 'Financial Dashboard';
-    console.log('[DEBUG_LOG] Updated dashboard title to:', this.dashboardTitle);
 
     // Transform the selected index data to dashboard data format
     const dashboardDataRow = this.componentCommunicationService.transformToDashboardData(selectedIndex);
@@ -253,8 +368,6 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
     
     // Add the new data row
     this.dashboardData = [dashboardDataRow, ...this.dashboardData];
-    
-    // console.log('[DEBUG_LOG] Updated dashboard data:', this.dashboardData);
     
     // Fetch stock ticks data for the selected index
     // Extract symbol from selectedIndex object
@@ -289,7 +402,7 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
     
     // Stock Sector Allocation Pie Chart with financial display
     const pieStockSector = PieChartBuilder.create()
-      .setData([]) // Data will be populated later
+      .setData(this.stockTicksData) // Data will be populated later
       .setHeader('Sector Allocation')
       .setDonutStyle('40%', '70%')
       .setFinancialDisplay('USD', 'en-US')
@@ -412,7 +525,7 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
       .build();
 
     const filterWidget = createFilterWidget();
-    const metricTiles = this.createMetricTiles(this.dashboardData);
+    const metricTiles = this.createMetricTiles([]);
 
     // Position metric tiles at row 0 (top of dashboard)
     // Metric tiles are already positioned at y: 0 in the createMetricTiles function
@@ -528,27 +641,22 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
     switch (seriesType) {
       case 'map':
         // This is a density/choropleth map - provide investment distribution data
-        console.log(`Detected density map widget (map: ${mapType}), providing investment distribution data`);
         return this.groupByAndSum(this.dashboardData, 'market', 'totalValue');
         
       case 'pie':
         // This is a pie chart - provide asset allocation data
-        console.log('Detected pie chart widget, providing asset allocation data');
         return this.groupByAndSum(this.dashboardData, 'assetCategory', 'totalValue');
         
       case 'bar':
         // This is a bar chart - provide monthly data
-        console.log('Detected bar chart widget, providing monthly data');
         return this.groupByAndSum(this.dashboardData, 'month', 'totalValue');
         
       case 'line':
         // This is a line chart - provide portfolio performance data
-        console.log('Detected line chart widget, providing portfolio performance data');
         return this.groupByAndSum(this.dashboardData, 'month', 'totalValue');
         
       case 'scatter':
         // This is a scatter chart - provide risk vs return data
-        console.log('Detected scatter chart widget, providing risk vs return data');
         const riskReturnData = this.dashboardData.filter(row => row.riskValue !== undefined && row.returnValue !== undefined);
         const groupedRiskReturn = riskReturnData.reduce((acc, row) => {
           if (!acc[row.assetCategory]) {
@@ -563,28 +671,23 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
         
       case 'heatmap':
         // This is a heatmap - provide heatmap data
-        console.log('Detected heatmap widget, providing heatmap data');
         return this.createHeatmapData(this.dashboardData);
         
       case 'gauge':
         // This is a gauge chart - provide simple numeric data
-        console.log('Detected gauge widget, providing gauge data');
         const totalValue = this.dashboardData.reduce((sum, row) => sum + row.totalValue, 0);
         return [{ name: 'Progress', value: Math.min(totalValue / 10, 100) }]; // Scale to percentage
         
       case 'treemap':
         // This is a treemap - provide treemap data
-        console.log('Detected treemap widget, providing treemap data');
         return this.createTreemapData(this.dashboardData);
         
       case 'sunburst':
         // This is a sunburst chart - provide sunburst data
-        console.log('Detected sunburst widget, providing sunburst data');
         return this.createSunburstData(this.dashboardData);
         
       case 'sankey':
         // This is a sankey diagram - provide default sankey data
-        console.log('Detected sankey widget, providing default sankey data');
         return {
           nodes: [
             { name: 'Income' }, { name: 'Expenses' }, { name: 'Savings' }

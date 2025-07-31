@@ -78,21 +78,14 @@ export class IndicesComponent implements OnInit {
     private indicesService: IndicesService,
     private componentCommunicationService: ComponentCommunicationService
   ) {
-    console.log('[DEBUG_LOG] IndicesComponent constructor called');
-    console.log('[DEBUG_LOG] ActivatedRoute:', this.route);
-    console.log('[DEBUG_LOG] Router:', this.router);
-    console.log('[DEBUG_LOG] IndicesService:', this.indicesService);
   }
 
   ngOnInit(): void {
-    console.log('[DEBUG_LOG] ngOnInit called');
     try {
       // Load indices directly from the indices API
-      console.log('[DEBUG_LOG] About to call loadIndicesLists');
       this.loadIndicesLists();
-      console.log('[DEBUG_LOG] loadIndicesLists called successfully');
     } catch (error) {
-      console.error('[DEBUG_LOG] Error in ngOnInit:', error);
+      console.error('Error in ngOnInit:', error);
     }
   }
 
@@ -134,7 +127,6 @@ export class IndicesComponent implements OnInit {
     const currentIndicesListIndex = this.getCurrentIndicesListIndex();
     if (currentIndicesListIndex === 0) {
       // Can't add to the main indices list
-      console.log('Cannot add indices to the main indices list');
       return;
     }
 
@@ -144,7 +136,6 @@ export class IndicesComponent implements OnInit {
 
     const indexExists = currentIndicesList.items.some((item: { symbol: any; }) => item.symbol === index.symbol);
     if (indexExists) {
-      console.log(`Index ${index.symbol} is already in the list`);
       return;
     }
 
@@ -212,8 +203,6 @@ export class IndicesComponent implements OnInit {
       return;
     }
 
-    console.log('[DEBUG_LOG] Row clicked:', rowData);
-
     // Transform the row data to SelectedIndexData format
     const selectedIndexData: SelectedIndexData = {
       id: rowData.symbol || 'unknown',
@@ -237,7 +226,6 @@ export class IndicesComponent implements OnInit {
    * Gets all indices from the API and fills the list with indices data
    */
   private loadIndicesLists(): void {
-    console.log('[DEBUG_LOG] loadIndicesLists method called');
     this.isLoadingIndices = true;
     // Get all indices from the API
     this.indicesService.getAllIndices().subscribe({
