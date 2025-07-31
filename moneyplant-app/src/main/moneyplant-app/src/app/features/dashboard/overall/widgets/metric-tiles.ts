@@ -11,7 +11,6 @@ export function createMetricTiles(stockTicksData: StockDataDto[] | null) {
     return createEmptyMetricTiles();
   }
 
-  debugger;
   // Calculate metrics from stockTicksData
   const stocksCount = stockTicksData.length || 0;
   const declines = stockTicksData.filter(stock => (stock.percentChange || 0.0 ) < 0.0).length;
