@@ -221,7 +221,7 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
     if (indexSymbol && indexSymbol.trim()) {
       console.log('[DEBUG_LOG] Fetching stock ticks data for index:', indexSymbol);
       
-      this.stockTicksService.getStockTicks(indexSymbol).subscribe({
+      this.stockTicksService.getStockTicksByIndex(indexSymbol).subscribe({
         next: (stockTicksData: StockTicksDto) => {
           // Store the stock ticks data
           this.stockTicksData = stockTicksData;
