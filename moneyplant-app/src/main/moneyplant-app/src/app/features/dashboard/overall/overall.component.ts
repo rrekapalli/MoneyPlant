@@ -416,7 +416,7 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
         .setHeader('Industry')
         .setCurrencyFormatter('INR', 'en-US')
         .setPredefinedPalette('business')
-        .setTooltip('axis', '{b}: {c}')
+        .setTooltip('item', '{b}: {c}')
         .setFilterColumn('industry')
         .setEvents((widget, chart) => {
           if (chart) {
@@ -813,11 +813,22 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
           return acc;
         }, {} as Record<string, number>);
         
-        // Transform to bar chart format
-        return Object.entries(industryData).map(([industry, value]) => ({
-          name: industry,
-          value: value
-        })).sort((a, b) => b.value - a.value);
+        // Business color palette for individual bars
+        const businessColors = ['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de', '#3ba272', '#fc8452', '#9a60b4', '#ea7ccc'];
+        
+        // Transform to bar chart format with individual colors and descending sort
+        return Object.entries(industryData)
+          .map(([industry, value]) => ({
+            name: industry,
+            value: value
+          }))
+          .sort((a, b) => a.value - b.value)
+          .map((item, index) => ({
+            ...item,
+            itemStyle: {
+              color: businessColors[index % businessColors.length]
+            }
+          }));
         
       case 'Portfolio Performance':
         // Use AreaChartBuilder's transformation method
@@ -1480,7 +1491,22 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
         return acc;
       }, {} as Record<string, number>);
 
-      const barData = Object.entries(industryData).map(([name, value]) => ({ name, value }));
+      // Business color palette for individual bars
+      const businessColors = ['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de', '#3ba272', '#fc8452', '#9a60b4', '#ea7ccc'];
+      
+      // Transform to bar chart format with individual colors and descending sort
+      const barData = Object.entries(industryData)
+        .map(([industry, value]) => ({
+          name: industry,
+          value: value
+        }))
+        .sort((a, b) => b.value - a.value)
+        .map((item, index) => ({
+          ...item,
+          itemStyle: {
+            color: businessColors[index % businessColors.length]
+          }
+        }));
       
       // Update the widget with new data
       this.updateEchartWidget(barWidget, barData);

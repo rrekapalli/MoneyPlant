@@ -7,10 +7,23 @@ export interface HorizontalBarChartData {
   value: number;
 }
 
+export interface DatasetSource {
+  source: (string | number)[][];
+}
+
+export interface EncodeMapping {
+  x?: string | number;
+  y?: string | number;
+  tooltip?: string | number;
+  itemName?: string | number;
+  seriesName?: string | number;
+}
+
 export interface HorizontalBarChartSeriesOptions {
   name?: string;
   type?: string;
   data?: number[] | HorizontalBarChartData[];
+  encode?: EncodeMapping;
   barWidth?: string;
   itemStyle?: {
     color?: string | string[];
@@ -29,6 +42,18 @@ export interface HorizontalBarChartOptions extends EChartsOption {
   xAxis?: any;
   yAxis?: any;
   series?: HorizontalBarChartSeriesOptions[];
+  dataset?: DatasetSource;
+  visualMap?: {
+    orient?: 'horizontal' | 'vertical';
+    left?: string | number;
+    min?: number;
+    max?: number;
+    text?: string[];
+    dimension?: number;
+    inRange?: {
+      color?: string[];
+    };
+  };
 }
 
 /**
@@ -99,7 +124,7 @@ export class HorizontalBarChartBuilder extends ApacheEchartBuilder<HorizontalBar
         bottom: '15%',
       },
       tooltip: {
-        trigger: 'axis',
+        trigger: 'item',
         axisPointer: {
           type: 'shadow',
         },
@@ -115,6 +140,24 @@ export class HorizontalBarChartBuilder extends ApacheEchartBuilder<HorizontalBar
       yAxis: {
         type: 'category',
         data: [],
+        axisLabel: {
+          show: true,
+          interval: 0,
+          rotate: 0,
+          margin: 8,
+          fontSize: 12,
+          color: '#666'
+        },
+        axisTick: {
+          show: true,
+          alignWithLabel: true
+        },
+        axisLine: {
+          show: true,
+          lineStyle: {
+            color: '#ccc'
+          }
+        }
       },
     };
   }
@@ -211,7 +254,43 @@ export class HorizontalBarChartBuilder extends ApacheEchartBuilder<HorizontalBar
    */
   override setData(data: any): this {
     super.setData(data);
+    
+    // Auto-extract categories from data if not already set and data is available
+    if (data && Array.isArray(data) && data.length > 0 && this.categories.length === 0) {
+      this.autoExtractCategories(data);
+    }
+    
     return this;
+  }
+
+  /**
+   * Auto-extract categories from data for Y-axis labels
+   */
+  private autoExtractCategories(data: any[]): void {
+    try {
+      // Try to extract categories based on filterColumn first
+      if (this.filterColumn && data[0] && data[0][this.filterColumn]) {
+        const uniqueCategories = [...new Set(data.map(item => item[this.filterColumn]))];
+        this.setCategories(uniqueCategories);
+        return;
+      }
+      
+      // Fallback to common field names
+      const possibleNameFields = ['name', 'category', 'industry', 'sector', 'product', 'label'];
+      for (const field of possibleNameFields) {
+        if (data[0] && data[0][field]) {
+          const uniqueCategories = [...new Set(data.map(item => item[field]))];
+          this.setCategories(uniqueCategories);
+          return;
+        }
+      }
+      
+      // If no suitable field found, use indices
+      this.setCategories(data.map((_, index) => `Item ${index + 1}`));
+      
+    } catch (error) {
+      console.error('Error auto-extracting categories for horizontal bar chart:', error);
+    }
   }
 
   /**
@@ -222,6 +301,48 @@ export class HorizontalBarChartBuilder extends ApacheEchartBuilder<HorizontalBar
     if (this.chartOptions.yAxis) {
       this.chartOptions.yAxis.data = categories;
     }
+    return this;
+  }
+
+  /**
+   * Set dataset source for the horizontal bar chart (dataset-encode pattern)
+   */
+  setDatasetSource(source: (string | number)[][]): this {
+    this.chartOptions.dataset = { source };
+    return this;
+  }
+
+  /**
+   * Set encode mapping for the series (dataset-encode pattern)
+   */
+  setEncode(encode: EncodeMapping): this {
+    this.seriesOptions.encode = encode;
+    return this;
+  }
+
+  /**
+   * Set visual map for dynamic coloring based on data dimensions
+   */
+  setVisualMap(config: {
+    orient?: 'horizontal' | 'vertical';
+    left?: string | number;
+    min?: number;
+    max?: number;
+    text?: string[];
+    dimension?: number;
+    colors?: string[];
+  }): this {
+    this.chartOptions.visualMap = {
+      orient: config.orient || 'horizontal',
+      left: config.left || 'center',
+      min: config.min || 0,
+      max: config.max || 100,
+      text: config.text || ['High', 'Low'],
+      dimension: config.dimension || 0,
+      inRange: {
+        color: config.colors || ['#65B581', '#FFCE34', '#FD665F']
+      }
+    };
     return this;
   }
 
@@ -379,6 +500,46 @@ export class HorizontalBarChartBuilder extends ApacheEchartBuilder<HorizontalBar
       .setYAxisName('Categories')
       .setCustomNumberFormatter(0, 'en-US')
       .setPredefinedPalette('modern');
+    return this;
+  }
+
+  /**
+   * Set dataset-encode configuration preset (matches ECharts dataset-encode0 example)
+   */
+  setDatasetEncodeConfiguration(): this {
+    // Set up encode mapping for horizontal bar chart
+    this.setEncode({
+      x: 'amount',  // Map amount column to X axis
+      y: 'product'  // Map product column to Y axis
+    });
+
+    // Set up visual map for score-based coloring
+    this.setVisualMap({
+      orient: 'horizontal',
+      left: 'center',
+      min: 10,
+      max: 100,
+      text: ['High Score', 'Low Score'],
+      dimension: 0, // Map the score column (first data column) to color
+      colors: ['#65B581', '#FFCE34', '#FD665F']
+    });
+
+    // Configure axes for dataset mode
+    this.setXAxisName('amount');
+    
+    // Fix Y-axis for dataset-encode mode - remove explicit data array
+    if (this.chartOptions.yAxis) {
+      delete this.chartOptions.yAxis.data;
+    }
+    
+    // Fix tooltip for dataset-encode mode
+    this.chartOptions.tooltip = {
+      trigger: 'item',
+      formatter: function(params: any) {
+        return `${params.name}: ${params.value[1]}`;
+      }
+    };
+    
     return this;
   }
 

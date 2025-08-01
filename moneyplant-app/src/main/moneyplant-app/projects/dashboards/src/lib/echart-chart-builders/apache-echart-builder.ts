@@ -179,6 +179,7 @@ export abstract class ApacheEchartBuilder<T extends EChartsOption = EChartsOptio
    */
   setTooltip(trigger: string, formatter?: string | Function): this {
     (this.chartOptions as any).tooltip = {
+      ...(this.chartOptions as any).tooltip,
       trigger,
       formatter: formatter || '{b}: {c}',
     };
