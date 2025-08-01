@@ -169,6 +169,17 @@ export class PieChartBuilder extends ApacheEchartBuilder<PieChartOptions, PieCha
   }
 
   /**
+   * Override setShowLegend method to control legend visibility for pie charts
+   */
+  override setShowLegend(show: boolean): this {
+    if (!(this.chartOptions as any).legend) {
+      (this.chartOptions as any).legend = {};
+    }
+    (this.chartOptions as any).legend.show = show;
+    return this;
+  }
+
+  /**
    * Override build method to merge series options
    */
   override build(): IWidget {

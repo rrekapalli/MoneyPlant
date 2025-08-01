@@ -223,6 +223,17 @@ export abstract class ApacheEchartBuilder<T extends EChartsOption = EChartsOptio
   }
 
   /**
+   * Set legend visibility
+   */
+  setShowLegend(show: boolean): this {
+    if (!(this.chartOptions as any).legend) {
+      (this.chartOptions as any).legend = {};
+    }
+    (this.chartOptions as any).legend.show = show;
+    return this;
+  }
+
+  /**
    * Set grid configuration
    */
   setGrid(grid: {
