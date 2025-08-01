@@ -502,7 +502,7 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
 
     // Stock List Widget
     const stockListWidget = StockListChartBuilder.create()
-      .setData(this.filteredStockData || []) // Use filtered data for consistent filtering, handle null case
+      .setData(this.filteredStockData || this.stockTicksData) // Use filtered data for consistent filtering, handle null case
       .setStockPerformanceConfiguration()
       .setHeader('Stock List')
       .setCurrencyFormatter('₹', 'en-IN')
