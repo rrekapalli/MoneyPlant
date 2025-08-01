@@ -1,6 +1,6 @@
 import { IWidget, WidgetBuilder } from '../../../public-api';
 import { EChartsOption } from 'echarts';
-import { ApacheEchartBuilder } from '../apache-echart-builder';
+import { ApacheEchartBuilder, DataFilter } from '../apache-echart-builder';
 
 export interface PieChartData {
   value: number;
@@ -70,6 +70,7 @@ export interface PieChartOptions extends EChartsOption {
  */
 export class PieChartBuilder extends ApacheEchartBuilder<PieChartOptions, PieChartSeriesOptions> {
   protected override seriesOptions: PieChartSeriesOptions;
+  protected filterColumn?: string;
 
   private constructor() {
     super();
@@ -240,6 +241,31 @@ export class PieChartBuilder extends ApacheEchartBuilder<PieChartOptions, PieCha
       [filterColumn]: clickData.name,
       value: clickData.name,
       percentage: clickData.value?.toString() || '0'
+    };
+  }
+
+  /**
+   * Set filter column for data filtering
+   */
+  override setFilterColumn(column: string): this {
+    this.filterColumn = column;
+    return this;
+  }
+
+  /**
+   * Create filter from chart data
+   */
+  createFilterFromChartData(): DataFilter | null {
+    if (!this.filterColumn || !this.data) {
+      return null;
+    }
+
+    const filterColumn = this.filterColumn; // Store in local variable to satisfy TypeScript
+    const uniqueValues = [...new Set(this.data.map(item => item[filterColumn]))];
+    return {
+      column: this.filterColumn,
+      operator: 'in' as const,
+      value: uniqueValues
     };
   }
 

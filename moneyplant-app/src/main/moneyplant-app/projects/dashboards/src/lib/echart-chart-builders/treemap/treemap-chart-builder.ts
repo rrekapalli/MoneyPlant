@@ -1,6 +1,6 @@
 import { IWidget, WidgetBuilder } from '../../../public-api';
 import { EChartsOption } from 'echarts';
-import { ApacheEchartBuilder } from '../apache-echart-builder';
+import { ApacheEchartBuilder, DataFilter } from '../apache-echart-builder';
 
 export interface TreemapData {
   name: string;
@@ -128,6 +128,7 @@ export interface TreemapChartOptions extends EChartsOption {
  */
 export class TreemapChartBuilder extends ApacheEchartBuilder<TreemapChartOptions, TreemapSeriesOptions> {
   protected override seriesOptions: TreemapSeriesOptions;
+  protected filterColumn?: string;
 
   private constructor() {
     super();
@@ -632,6 +633,31 @@ export class TreemapChartBuilder extends ApacheEchartBuilder<TreemapChartOptions
       ])
       .setEmphasis(10, 0, 'rgba(0, 0, 0, 0.5)')
       .setZoomBehavior(true, 'zoomToNode', true);
+  }
+
+  /**
+   * Set filter column for data filtering
+   */
+  override setFilterColumn(column: string): this {
+    this.filterColumn = column;
+    return this;
+  }
+
+  /**
+   * Create filter from chart data
+   */
+  createFilterFromChartData(): DataFilter | null {
+    if (!this.filterColumn || !this.data) {
+      return null;
+    }
+
+    const filterColumn = this.filterColumn; // Store in local variable to satisfy TypeScript
+    const uniqueValues = [...new Set(this.data.map(item => item[filterColumn]))];
+    return {
+      column: this.filterColumn,
+      operator: 'in' as const,
+      value: uniqueValues
+    };
   }
 
   /**
