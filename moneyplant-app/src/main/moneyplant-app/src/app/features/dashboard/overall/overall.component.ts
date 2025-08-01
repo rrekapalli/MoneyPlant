@@ -416,7 +416,13 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
         .setHeader('Industry')
         .setCurrencyFormatter('INR', 'en-US')
         .setPredefinedPalette('business')
-        .setTooltip('item', '{b}: {c}')
+        .setTooltip('item', (params: any) => {
+          const formatter = new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'INR'
+          });
+          return `${params.name}: ${formatter.format(params.value)}`;
+        })
         .setFilterColumn('industry')
         .setEvents((widget, chart) => {
           if (chart) {
@@ -563,8 +569,8 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
     // Position other widgets starting from row 2 (below filter)
     // densityMapInvestment.position = { x: 0, y: 4, cols: 8, rows: 8 };
 
-    barStockIndustry.position = { x: 0, y: 3, cols: 8, rows: 8 };
-    pieStockSector.position = { x: 8, y: 3, cols: 4, rows: 8 };
+    barStockIndustry.position = { x: 0, y: 3, cols: 6, rows: 8 };
+    pieStockSector.position = { x: 6, y: 3, cols: 6, rows: 8 };
     treemapChart.position = { x: 0, y: 11, cols: 12, rows: 8 };
 
     // Use the Fluent API to build the dashboard config with filter highlighting enabled
