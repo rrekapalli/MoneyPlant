@@ -36,6 +36,14 @@ export interface HorizontalBarChartSeriesOptions {
       shadowColor?: string;
     };
   };
+  label?: {
+    show?: boolean;
+    position?: string;
+    formatter?: (params: any) => string;
+    fontSize?: number;
+    fontWeight?: string;
+    color?: string;
+  };
 }
 
 export interface HorizontalBarChartOptions extends EChartsOption {
@@ -185,6 +193,20 @@ export class HorizontalBarChartBuilder extends ApacheEchartBuilder<HorizontalBar
           shadowOffsetX: 0,
           shadowColor: 'rgba(0, 0, 0, 0.5)',
         },
+      },
+      label: {
+        show: true,
+        position: 'insideRight',
+        formatter: (params: any) => {
+          // Default formatting for numbers
+          if (typeof params.value === 'number') {
+            return params.value.toLocaleString();
+          }
+          return params.value;
+        },
+        fontSize: 12,
+        fontWeight: 'normal',
+        color: '#fff'
       },
     };
   }
