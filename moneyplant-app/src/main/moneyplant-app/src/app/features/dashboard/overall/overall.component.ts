@@ -465,6 +465,7 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
     const pieStockSector = PieChartBuilder.create()
       .setData(this.stockTicksData) // Data will be populated later
       .setHeader('Sector Allocation')
+      .setShowLegend(false)
       .setDonutStyle('40%', '70%')
       .setFinancialDisplay('INR', 'en-US')
       .setPredefinedPalette('finance')
