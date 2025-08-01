@@ -77,6 +77,17 @@
   }
 }
 
+/* Selected row highlighting */
+.selected-row {
+  background-color: var(--primary-color-text) !important;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%) !important;
+  border-left: 3px solid var(--primary-color) !important;
+  
+  &:hover {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.08) 100%) !important;
+  }
+}
+
 /* Indices list and item styling */
 .indices-list {
   flex: 1;
