@@ -62,6 +62,9 @@ export class IndicesComponent implements OnInit {
   // Tab functionality
   activeTab: string = '0';
 
+  // Selected index tracking for highlighting
+  selectedIndexSymbol: string | null = null;
+
   // Helper method to get current indices list index from activeTab
   private getCurrentIndicesListIndex(): number {
     return parseInt(this.activeTab, 10);
@@ -202,6 +205,9 @@ export class IndicesComponent implements OnInit {
     if (rowData.isCategory) {
       return;
     }
+
+    // Set the selected index symbol for highlighting
+    this.selectedIndexSymbol = rowData.symbol;
 
     // Transform the row data to SelectedIndexData format
     const selectedIndexData: SelectedIndexData = {

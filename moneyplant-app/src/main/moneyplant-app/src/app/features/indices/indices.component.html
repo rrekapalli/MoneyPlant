@@ -87,7 +87,7 @@
                       </ng-template>
                       
                       <ng-template pTemplate="body" let-rowNode let-rowData="rowData">
-                        <tr [ngClass]="{'category-row': rowData.isCategory}" 
+                        <tr [ngClass]="{'category-row': rowData.isCategory, 'selected-row': !rowData.isCategory && selectedIndexSymbol === rowData.symbol}" 
                             (click)="onRowClick(rowData)" 
                             [style.cursor]="!rowData.isCategory ? 'pointer' : 'default'"
                             [class.clickable-row]="!rowData.isCategory">
