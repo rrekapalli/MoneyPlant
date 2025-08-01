@@ -107,13 +107,17 @@ import {
 // Import only essential widget creation functions and data
 import {
   createFilterWidget,
+  updateFilterData,
+  addFilter as addFilterToWidget,
+  removeFilter as removeFilterFromWidget,
+  clearAllFilters as clearAllFiltersFromWidget,
   // Dashboard data
   INITIAL_DASHBOARD_DATA
 } from './widgets';
 import { createMetricTiles as createMetricTilesFunction } from './widgets/metric-tiles';
 
 // Import base dashboard component
-import { BaseDashboardComponent } from '@dashboards/public-api';
+import { BaseDashboardComponent, IFilterValues } from '@dashboards/public-api';
 
 // Import component communication service
 import { ComponentCommunicationService, SelectedIndexData } from '../../../services/component-communication.service';
@@ -121,6 +125,18 @@ import { ComponentCommunicationService, SelectedIndexData } from '../../../servi
 // Import stock ticks service and entities
 import { StockTicksService } from '../../../services/apis/stock-ticks.api';
 import {StockDataDto, StockTicksDto} from '../../../services/entities/stock-ticks';
+
+/**
+ * Filter criteria interface for centralized filtering system
+ * This interface defines the structure for filters that can be applied across all widgets
+ */
+interface FilterCriteria {
+  type: 'industry' | 'sector' | 'symbol' | 'custom' | 'macro';
+  field: string; // The field name in StockDataDto to filter on
+  value: string | number; // The value to filter by
+  operator?: 'equals' | 'contains' | 'greaterThan' | 'lessThan'; // Comparison operator
+  source?: string; // Which widget/chart applied this filter (for tracking)
+}
 
 // Define the specific data structure for this dashboard
 export interface DashboardDataRow {
@@ -150,6 +166,37 @@ export interface DashboardDataRow {
   styleUrls: ['./overall.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
+/**
+ * OverallComponent - Financial Dashboard with Centralized Filtering System
+ * 
+ * This component implements a centralized filtering system that provides consistent
+ * filtering behavior across all widgets and charts. The system works as follows:
+ * 
+ * ARCHITECTURE:
+ * - stockTicksData: Original unfiltered data source
+ * - filteredStockData: Single filtered data source used by all widgets
+ * - appliedFilters: Array tracking all active filters from different widgets
+ * 
+ * FILTERING FLOW:
+ * 1. User clicks on chart elements (pie slices, bar segments, etc.)
+ * 2. Click handlers call addFilter() with appropriate FilterCriteria
+ * 3. addFilter() manages the appliedFilters array and calls applyFilters()
+ * 4. applyFilters() processes all filters sequentially on original data
+ * 5. filteredStockData is updated with the result
+ * 6. All widgets are refreshed using the same filtered data source
+ * 
+ * BENEFITS:
+ * - Consistent filtering across all widgets
+ * - Cumulative filtering (multiple filters can be applied simultaneously)
+ * - Single source of truth for filtered data
+ * - Easy filter management (add, remove, clear all)
+ * - Prevents filter conflicts and data inconsistencies
+ * 
+ * USAGE:
+ * - Chart click handlers use filterChartsByIndustry(), filterChartsBySector()
+ * - Filters can be cleared using clearAllChartFilters()
+ * - All widgets automatically update when filters change
+ */
 export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
   // Shared dashboard data - Flat structure (implements abstract property)
   protected dashboardData: DashboardDataRow[] = [...INITIAL_DASHBOARD_DATA];
@@ -160,6 +207,13 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
   
   // Filtered stock data for cross-chart filtering
   protected filteredStockData: StockDataDto[] | null = [];
+  
+  /**
+   * Central applied filters array to track all active filters
+   * This array maintains all filters currently applied across different widgets
+   * Each filter is applied sequentially to create cumulative filtering effect
+   */
+  protected appliedFilters: FilterCriteria[] = [];
   
   // Dashboard title - dynamic based on selected index
   public dashboardTitle: string = 'Financial Dashboard';
@@ -205,6 +259,9 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
     this.stockTicksData = null;
     this.filteredStockData = null;
     
+    // Reset centralized filters
+    this.appliedFilters = [];
+    
     // Reset dashboard title
     this.dashboardTitle = 'Financial Dashboard';
     
@@ -241,9 +298,10 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
       this.selectedIndexSubscription = null;
     }
     
-    // Clear stock ticks data
+    // Clear stock ticks data and reset filters
     this.stockTicksData = null;
     this.filteredStockData = null;
+    this.appliedFilters = [];
   }
 
   /**
@@ -279,23 +337,27 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
           // Store the stock ticks data
           this.stockTicksData = stockTicksData;
           
-          // Initialize filtered data with original data
+          // Reset all filters when new data is loaded
+          this.appliedFilters = [];
+          
+          // Initialize filtered data with original data (no filters applied)
           this.filteredStockData = stockTicksData;
 
           // Update metric tiles with the new stock data
           this.updateMetricTilesWithFilters([]);
           
-          // Update all widgets with the new stock data, especially the pie chart
-          this.updateAllWidgetsWithStockData();
+          // Update all widgets with the new stock data using centralized system
+          this.updateAllChartsWithFilteredData();
           
           // Trigger change detection after receiving stock data
           this.cdr.detectChanges();
         },
         error: (error) => {
           console.error('Error fetching stock ticks data:', error);
-          // Reset stock ticks data on error
+          // Reset stock ticks data and filters on error
           this.stockTicksData = null;
           this.filteredStockData = null;
+          this.appliedFilters = [];
           this.cdr.detectChanges();
         }
       });
@@ -412,7 +474,7 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
 
     // Stock Industry Horizontal Bar Chart
     const barStockIndustry = HorizontalBarChartBuilder.create()
-        .setData(this.stockTicksData) // Data will be populated later
+        .setData([]) // Start with empty data, will be populated when stock data loads
         .setHeader('Industry')
         .setCurrencyFormatter('INR', 'en-US')
         .setPredefinedPalette('business')
@@ -506,10 +568,19 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
 
     // Portfolio Distribution Treemap
     const treemapChart = TreemapChartBuilder.create()
-      .setData(this.stockTicksData) // Data will be populated later
+      .setData([]) // Start with empty data, will be populated when stock data loads
       .setHeader('Portfolio Distribution')
       .setPortfolioConfiguration()
       .setFinancialDisplay('INR', 'en-US')
+      .setFilterColumn('macro')
+      .setEvents((widget, chart) => {
+        if (chart) {
+          chart.on('click', (params: any) => {
+            // Filter by macro category when treemap is clicked
+            this.filterChartsByMacro(params.name);
+          });
+        }
+      })
       .build();
 
     // Monthly Expenses Treemap
@@ -801,15 +872,15 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
         })).sort((a, b) => b.value - a.value);
         
       case 'Industry':
-        // Use stock ticks data grouped by basicIndustry with totalTradedValue
+        // Use stock ticks data grouped by industry with totalTradedValue
         if (!this.stockTicksData) {
           console.warn('No stock ticks data available for industry chart');
           return [];
         }
         
-        // Group by basicIndustry and sum totalTradedValue
+        // Group by industry and sum totalTradedValue
         const industryData = this.stockTicksData.reduce((acc, stock) => {
-          const industry = stock.basicIndustry || 'Unknown';
+          const industry = stock.industry || 'Unknown';
           const tradedValue = stock.totalTradedValue || 0;
           
           if (!acc[industry]) {
@@ -1402,19 +1473,194 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
   }
 
   /**
+   * Central method to apply all filters to stock data
+   * This is the core method of the centralized filtering system that:
+   * 1. Takes the original stockTicksData as input
+   * 2. Applies each filter in appliedFilters array sequentially
+   * 3. Updates filteredStockData with the result
+   * 4. Triggers updates to all dependent widgets/charts
+   * 
+   * This ensures all widgets use the same filtered data source for consistency
+   */
+  private applyFilters(): void {
+    if (!this.stockTicksData) {
+      this.filteredStockData = null;
+      return;
+    }
+
+    // Start with original data
+    let filtered = [...this.stockTicksData];
+
+    // Apply each filter in the appliedFilters array
+    for (const filter of this.appliedFilters) {
+      filtered = this.applyIndividualFilter(filtered, filter);
+    }
+
+    // Update filtered data
+    this.filteredStockData = filtered;
+
+    // Update all widgets that depend on filtered data
+    this.updateAllChartsWithFilteredData();
+  }
+
+  /**
+   * Apply a single filter to the data
+   */
+  private applyIndividualFilter(data: StockDataDto[], filter: FilterCriteria): StockDataDto[] {
+    const operator = filter.operator || 'equals';
+    
+    return data.filter(stock => {
+      const fieldValue = (stock as any)[filter.field];
+      
+      switch (operator) {
+        case 'equals':
+          return fieldValue === filter.value;
+        case 'contains':
+          return fieldValue && fieldValue.toString().toLowerCase().includes(filter.value.toString().toLowerCase());
+        case 'greaterThan':
+          return fieldValue > filter.value;
+        case 'lessThan':
+          return fieldValue < filter.value;
+        default:
+          return fieldValue === filter.value;
+      }
+    });
+  }
+
+  /**
+   * Convert FilterCriteria to IFilterValues format for filter widget display
+   */
+  private convertFilterCriteriaToIFilterValues(filter: FilterCriteria): IFilterValues {
+    const stringValue = typeof filter.value === 'number' ? filter.value.toString() : filter.value;
+    return {
+      accessor: filter.field,
+      filterColumn: filter.field,
+      [filter.field]: stringValue,
+      value: stringValue,
+      displayValue: `${filter.field}: ${filter.value}`,
+      source: filter.source || 'Unknown'
+    };
+  }
+
+  /**
+   * Get the filter widget from dashboard configuration
+   */
+  private getFilterWidget() {
+    return this.dashboardConfig?.widgets?.find(widget => 
+      widget.id === 'filter-widget' || widget.config?.component === 'filter'
+    );
+  }
+
+  /**
+   * Update filter widget with current applied filters
+   */
+  private updateFilterWidget(): void {
+    const filterWidget = this.getFilterWidget();
+    if (filterWidget) {
+      const filterValues = this.appliedFilters.map(filter => 
+        this.convertFilterCriteriaToIFilterValues(filter)
+      );
+      updateFilterData(filterWidget, filterValues);
+      this.cdr.detectChanges();
+    }
+  }
+
+  /**
+   * Add a filter to the applied filters array
+   * This method manages filter addition with the following logic:
+   * 1. Removes any existing filter of the same type and field to prevent duplicates
+   * 2. Adds the new filter to the appliedFilters array
+   * 3. Automatically applies all filters to update filteredStockData
+   * 
+   * @param filter The filter criteria to add
+   */
+  private addFilter(filter: FilterCriteria): void {
+    // Remove any existing filter of the same type and field to avoid duplicates
+    this.appliedFilters = this.appliedFilters.filter(f => 
+      !(f.type === filter.type && f.field === filter.field)
+    );
+    
+    // Add the new filter
+    this.appliedFilters.push(filter);
+    
+    // Apply all filters
+    this.applyFilters();
+    
+    // Update filter widget to display the applied filters
+    this.updateFilterWidget();
+  }
+
+  /**
+   * Remove a specific filter from the applied filters array
+   * This method removes a filter based on its type and field, then reapplies
+   * all remaining filters to update the filteredStockData
+   * 
+   * @param filterType The type of filter to remove (e.g., 'industry', 'sector')
+   * @param field The field name of the filter to remove
+   */
+  private removeFilter(filterType: string, field: string): void {
+    this.appliedFilters = this.appliedFilters.filter(f => 
+      !(f.type === filterType && f.field === field)
+    );
+    
+    // Apply remaining filters
+    this.applyFilters();
+    
+    // Update filter widget to reflect the removed filter
+    this.updateFilterWidget();
+  }
+
+  /**
+   * Clear all filters and restore original data
+   * This method resets the filtering system by:
+   * 1. Clearing the appliedFilters array
+   * 2. Reapplying filters (which results in showing all original data)
+   * 3. Updating all dependent widgets with the unfiltered data
+   * 4. Calls parent clearAllFilters to maintain consistency with base class
+   */
+  public override clearAllFilters(): void {
+    // Clear our custom applied filters
+    this.appliedFilters = [];
+    this.applyFilters();
+    
+    // Clear the filter widget display
+    const filterWidget = this.getFilterWidget();
+    if (filterWidget) {
+      clearAllFiltersFromWidget(filterWidget);
+      this.cdr.detectChanges();
+    }
+    
+    // Call parent method to maintain consistency with base class behavior
+    super.clearAllFilters();
+  }
+
+  /**
+   * Update all charts with filtered data
+   */
+  private updateAllChartsWithFilteredData(): void {
+    this.updatePieChartWithFilteredData();
+    this.updateBarChartWithFilteredData();
+    this.updateTreemapWithFilteredData();
+    // Add other chart updates as needed
+    
+    // Trigger change detection
+    this.cdr.detectChanges();
+  }
+
+  /**
    * Filter charts by industry (called when bar chart is clicked)
    */
   private filterChartsByIndustry(industry: string): void {
     if (!this.stockTicksData) return;
 
-    // Filter stock data by industry
-    this.filteredStockData = this.stockTicksData.filter(stock => stock.industry === industry);
-    
-    // Update the pie chart with filtered data
-    this.updatePieChartWithFilteredData();
-    
-    // Trigger change detection
-    this.cdr.detectChanges();
+    // Use centralized filter system
+    this.addFilter({
+      type: 'industry',
+      field: 'industry',
+      value: industry,
+      operator: 'equals',
+      source: 'Industry Chart'
+    });
   }
 
   /**
@@ -1423,29 +1669,38 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
   private filterChartsBySector(sector: string): void {
     if (!this.stockTicksData) return;
 
-    // Filter stock data by sector
-    this.filteredStockData = this.stockTicksData.filter(stock => stock.sector === sector);
-    
-    // Update the bar chart with filtered data
-    this.updateBarChartWithFilteredData();
-    
-    // Trigger change detection
-    this.cdr.detectChanges();
+    // Use centralized filter system
+    this.addFilter({
+      type: 'sector',
+      field: 'sector',
+      value: sector,
+      operator: 'equals',
+      source: 'Sector Chart'
+    });
+  }
+
+  /**
+   * Filter charts by macro category (called when treemap is clicked)
+   */
+  private filterChartsByMacro(macro: string): void {
+    if (!this.stockTicksData) return;
+
+    // Use centralized filter system
+    this.addFilter({
+      type: 'macro',
+      field: 'macro',
+      value: macro,
+      operator: 'equals',
+      source: 'Treemap Chart'
+    });
   }
 
   /**
    * Clear all filters and restore original data
    */
   private clearAllChartFilters(): void {
-    // Restore original data
-    this.filteredStockData = this.stockTicksData;
-    
-    // Update both charts with original data
-    this.updateBarChartWithFilteredData();
-    this.updatePieChartWithFilteredData();
-    
-    // Trigger change detection
-    this.cdr.detectChanges();
+    // Use centralized filter system
+    this.clearAllFilters();
   }
 
   /**
@@ -1516,6 +1771,25 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
       
       // Update the widget with new data
       this.updateEchartWidget(barWidget, barData);
+    }
+  }
+
+  /**
+   * Update treemap chart with filtered data
+   */
+  private updateTreemapWithFilteredData(): void {
+    if (!this.dashboardConfig?.widgets || !this.filteredStockData) return;
+
+    const treemapWidget = this.dashboardConfig.widgets.find(widget => 
+      widget.config?.header?.title === 'Portfolio Distribution'
+    );
+
+    if (treemapWidget) {
+      // Create hierarchical treemap data from filtered stock data
+      const treemapData = this.createStockTicksTreemapData(this.filteredStockData);
+      
+      // Update the widget with new data
+      this.updateEchartWidget(treemapWidget, treemapData);
     }
   }
 }
