@@ -95,6 +95,7 @@ import {
   SankeyChartBuilder,
   // Other builders and utilities
   BarChartBuilder,
+  HorizontalBarChartBuilder,
   ScatterChartBuilder,
   GaugeChartBuilder,
   HeatmapChartBuilder,
@@ -409,8 +410,8 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
      .setCurrencyFormatter('INR', 'en-US')
      .build();
 
-    // Stock Industry Bar Chart
-    const barStockIndustry = BarChartBuilder.create()
+    // Stock Industry Horizontal Bar Chart
+    const barStockIndustry = HorizontalBarChartBuilder.create()
         .setData(this.stockTicksData) // Data will be populated later
         .setHeader('Industry')
         .setCurrencyFormatter('INR', 'en-US')
