@@ -526,15 +526,29 @@ export abstract class BaseDashboardComponent<T = any> implements OnInit, OnDestr
       const series = newOptions.series[0];
       
       if(filteredData && filteredData.length > 0) {
-        // Bar/Pie/Line charts - update data
-        series.data = filteredData;
-        
-        // Update xAxis categories for bar/line charts if needed
-        if (newOptions.xAxis) {
-          if (Array.isArray(newOptions.xAxis) && newOptions.xAxis[0] && newOptions.xAxis[0].data !== undefined) {
-            newOptions.xAxis[0].data = filteredData.map((item: any) => item.name);
-          } else if (!Array.isArray(newOptions.xAxis) && newOptions.xAxis.data !== undefined) {
-            newOptions.xAxis.data = filteredData.map((item: any) => item.name);
+        // Special handling for treemap charts to preserve drill-down functionality
+        if (series.type === 'treemap') {
+          // For treemap, preserve the hierarchical structure and drill-down state
+          // Only update if the data structure is compatible
+          if (this.isHierarchicalData(filteredData)) {
+            series.data = filteredData;
+          } else {
+            // Skip update for treemap if data is not hierarchical
+            // This prevents destroying the drill-down functionality
+            console.warn(`Skipping treemap update for widget "${widgetTitle}" - data is not hierarchical`);
+            return;
+          }
+        } else {
+          // Bar/Pie/Line charts - update data normally
+          series.data = filteredData;
+          
+          // Update xAxis categories for bar/line charts if needed
+          if (newOptions.xAxis) {
+            if (Array.isArray(newOptions.xAxis) && newOptions.xAxis[0] && newOptions.xAxis[0].data !== undefined) {
+              newOptions.xAxis[0].data = filteredData.map((item: any) => item.name);
+            } else if (!Array.isArray(newOptions.xAxis) && newOptions.xAxis.data !== undefined) {
+              newOptions.xAxis.data = filteredData.map((item: any) => item.name);
+            }
           }
         }
       }
@@ -545,6 +559,24 @@ export abstract class BaseDashboardComponent<T = any> implements OnInit, OnDestr
 
     // Schedule widget update with retry mechanism
     this.scheduleWidgetUpdate(widget);
+  }
+
+  /**
+   * Check if data has hierarchical structure suitable for treemap
+   */
+  protected isHierarchicalData(data: any): boolean {
+    if (!Array.isArray(data) || data.length === 0) {
+      return false;
+    }
+    
+    // Check if at least one item has children property with nested structure
+    return data.some(item => 
+      item && 
+      typeof item === 'object' && 
+      item.children && 
+      Array.isArray(item.children) && 
+      item.children.length > 0
+    );
   }
 
   /**

@@ -479,30 +479,30 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
     const heatmapSpending = HeatmapChartBuilder.create()
       .setData([]) // Data will be populated later
       .setHeader('Weekly Spending Heatmap')
-      .setCurrencyFormatter('USD', 'en-US')
+      .setCurrencyFormatter('INR', 'en-US')
       .build();
 
     // Revenue Trend Area Chart
     const areaChart = AreaChartBuilder.create()
       .setData([]) // Data will be populated later
       .setHeader('Revenue Trend')
-      .setFinancialTrend('USD', 'en-US')
+      .setFinancialTrend('INR', 'en-US')
       .build();
 
     // Financial Overview Stacked Area
     const stackedAreaChart = AreaChartBuilder.create()
       .setData([]) // Data will be populated later
       .setHeader('Financial Overview')
-      .setFinancialTrend('USD', 'en-US')
+      .setFinancialTrend('INR', 'en-US')
       .setStack('total')
       .build();
 
     // Portfolio Distribution Treemap
     const treemapChart = TreemapChartBuilder.create()
-      .setData([]) // Data will be populated later
+      .setData(this.stockTicksData) // Data will be populated later
       .setHeader('Portfolio Distribution')
       .setPortfolioConfiguration()
-      .setFinancialDisplay('USD', 'en-US')
+      .setFinancialDisplay('INR', 'en-US')
       .build();
 
     // Monthly Expenses Treemap
@@ -510,7 +510,7 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
       .setData([]) // Data will be populated later
       .setHeader('Monthly Expenses')
       .setExpenseConfiguration()
-      .setFinancialDisplay('USD', 'en-US')
+      .setFinancialDisplay('INR', 'en-US')
       .build();
 
     // Organizational Structure Sunburst
@@ -524,7 +524,7 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
       .setData({ nodes: [], links: [] }) // Data will be populated later
       .setHeader('Financial Flow')
       .setFinancialFlow()
-      .setCurrencyDisplay('USD', 'en-US')
+      .setCurrencyDisplay('INR', 'en-US')
       .build();
 
     // Investment Flow Sankey
@@ -532,7 +532,7 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
       .setData({ nodes: [], links: [] }) // Data will be populated later
       .setHeader('Investment Flow')
       .setInvestmentFlow()
-      .setCurrencyDisplay('USD', 'en-US')
+      .setCurrencyDisplay('INR', 'en-US')
       .build();
 
     // Budget Allocation Sankey
@@ -540,14 +540,14 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
       .setData({ nodes: [], links: [] }) // Data will be populated later
       .setHeader('Budget Allocation')
       .setBudgetAllocation()
-      .setCurrencyDisplay('USD', 'en-US')
+      .setCurrencyDisplay('INR', 'en-US')
       .build();
 
     // Stock Price Candlestick
     const candlestickChart = CandlestickChartBuilder.create()
       .setData([]) // Data will be populated later
       .setHeader('Stock Price Analysis')
-      .setCurrencyFormatter('USD', 'en-US')
+      .setCurrencyFormatter('INR', 'en-US')
       .build();
 
     const filterWidget = createFilterWidget();
@@ -564,6 +564,7 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
 
     barStockIndustry.position = { x: 0, y: 3, cols: 8, rows: 8 };
     pieStockSector.position = { x: 8, y: 3, cols: 4, rows: 8 };
+    treemapChart.position = { x: 0, y: 11, cols: 12, rows: 8 };
 
     // Use the Fluent API to build the dashboard config with filter highlighting enabled
     this.dashboardConfig = StandardDashboardBuilder.createStandard()
@@ -583,6 +584,7 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
         // Core financial widgets
         barStockIndustry,
         pieStockSector,
+        treemapChart,
         //linePortfolioPerformance,
         //scatterRiskVsReturn,
         //gaugeSavingsGoal,
@@ -591,7 +593,6 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
         //areaChart,
         //polarChart,
         //stackedAreaChart,
-        //treemapChart,
         //expenseTreemap,
         //sunburstChart,
         //sankeyChart,
@@ -705,8 +706,8 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
         return [{ name: 'Progress', value: Math.min(totalValue / 10, 100) }]; // Scale to percentage
         
       case 'treemap':
-        // This is a treemap - provide treemap data
-        return this.createTreemapData(this.dashboardData);
+        // This is a treemap - provide hierarchical treemap data from stockTicksData
+        return this.createStockTicksTreemapData(this.stockTicksData);
         
       case 'sunburst':
         // This is a sunburst chart - provide sunburst data
@@ -896,12 +897,57 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
         return marketData;
         
       case 'Portfolio Distribution':
-        // Use TreemapChartBuilder's transformation method
-        return TreemapChartBuilder.transformToTreemapData(sourceData, {
-          valueField: 'totalValue',
-          nameField: 'market',
-          childrenField: 'assetCategory'
-        });
+        // Use stock ticks data with macro, industry, and sector hierarchy
+        if (!this.stockTicksData) {
+          console.warn('No stock ticks data available for Portfolio Distribution treemap');
+          return [];
+        }
+        
+        // Create hierarchical treemap data: macro -> industry -> sector with sum(totalTradedValue)
+        const macroGroups = this.stockTicksData.reduce((acc, stock) => {
+          const macro = stock.macro || 'Unknown Macro';
+          const industry = stock.industry || 'Unknown Industry';
+          const sector = stock.sector || 'Unknown Sector';
+          const tradedValue = stock.totalTradedValue || 0;
+          
+          if (!acc[macro]) {
+            acc[macro] = {};
+          }
+          if (!acc[macro][industry]) {
+            acc[macro][industry] = {};
+          }
+          if (!acc[macro][industry][sector]) {
+            acc[macro][industry][sector] = 0;
+          }
+          acc[macro][industry][sector] += tradedValue;
+          return acc;
+        }, {} as Record<string, Record<string, Record<string, number>>>);
+        
+        // Transform to treemap format
+        return Object.entries(macroGroups).map(([macro, industries]) => {
+          const industryChildren = Object.entries(industries).map(([industry, sectors]) => {
+            const sectorChildren = Object.entries(sectors).map(([sector, value]) => ({
+              name: sector,
+              value: value
+            }));
+            
+            const industryValue = sectorChildren.reduce((sum, child) => sum + child.value, 0);
+            
+            return {
+              name: industry,
+              value: industryValue,
+              children: sectorChildren
+            };
+          });
+          
+          const macroValue = industryChildren.reduce((sum, child) => sum + child.value, 0);
+          
+          return {
+            name: macro,
+            value: macroValue,
+            children: industryChildren
+          };
+        }).sort((a, b) => b.value - a.value);
         
       case 'Monthly Expenses':
         // Use TreemapChartBuilder's transformation method for expenses
@@ -1114,7 +1160,81 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
   }
 
   /**
-   * Helper method to create treemap data
+   * Helper method to create treemap data from stockTicksData with proper hierarchy
+   */
+  protected createStockTicksTreemapData(data: StockDataDto[] | null): Array<{
+    name: string;
+    value: number;
+    children?: Array<{ name: string; value: number; children?: Array<{ name: string; value: number }> }>
+  }> {
+    if (!data || data.length === 0) {
+      return [];
+    }
+
+    // Group by macro -> industry -> sector hierarchy
+    const macroGroups = new Map<string, StockDataDto[]>();
+    
+    data.forEach(stock => {
+      const macro = stock.macro || 'Other';
+      if (!macroGroups.has(macro)) {
+        macroGroups.set(macro, []);
+      }
+      macroGroups.get(macro)!.push(stock);
+    });
+
+    return Array.from(macroGroups.entries()).map(([macro, macroStocks]) => {
+      // Group by industry within macro
+      const industryGroups = new Map<string, StockDataDto[]>();
+      
+      macroStocks.forEach(stock => {
+        const industry = stock.industry || 'Other';
+        if (!industryGroups.has(industry)) {
+          industryGroups.set(industry, []);
+        }
+        industryGroups.get(industry)!.push(stock);
+      });
+
+      const industryChildren = Array.from(industryGroups.entries()).map(([industry, industryStocks]) => {
+        // Group by sector within industry
+        const sectorGroups = new Map<string, StockDataDto[]>();
+        
+        industryStocks.forEach(stock => {
+          const sector = stock.sector || 'Other';
+          if (!sectorGroups.has(sector)) {
+            sectorGroups.set(sector, []);
+          }
+          sectorGroups.get(sector)!.push(stock);
+        });
+
+        const sectorChildren = Array.from(sectorGroups.entries()).map(([sector, sectorStocks]) => {
+          const sectorValue = sectorStocks.reduce((sum, stock) => sum + (stock.lastPrice || 0), 0);
+          return {
+            name: sector,
+            value: sectorValue
+          };
+        });
+
+        const industryValue = sectorChildren.reduce((sum, child) => sum + child.value, 0);
+        
+        return {
+          name: industry,
+          value: industryValue,
+          children: sectorChildren
+        };
+      });
+
+      const macroValue = industryChildren.reduce((sum, child) => sum + child.value, 0);
+      
+      return {
+        name: macro,
+        value: macroValue,
+        children: industryChildren
+      };
+    });
+  }
+
+  /**
+   * Helper method to create treemap data from dashboardData (legacy method)
    */
   protected createTreemapData(data: DashboardDataRow[]): Array<{ name: string; value: number; children?: Array<{ name: string; value: number }> }> {
     // Group by market and asset category

@@ -18,6 +18,23 @@ export interface TreemapSeriesOptions {
     left?: string | number;
     right?: string | number;
     bottom?: string | number;
+    height?: number;
+    emptyItemWidth?: number;
+    itemStyle?: {
+      color?: string;
+      borderColor?: string;
+      borderWidth?: number;
+      shadowBlur?: number;
+      shadowColor?: string;
+      textStyle?: {
+        color?: string;
+      };
+    };
+    emphasis?: {
+      itemStyle?: {
+        color?: string;
+      };
+    };
   };
   itemStyle?: {
     borderColor?: string;
@@ -35,10 +52,16 @@ export interface TreemapSeriesOptions {
       borderColor?: string;
       borderWidth?: number;
       gapWidth?: number;
+      borderColorSaturation?: number;
     };
     label?: {
       show?: boolean;
       formatter?: string;
+      fontSize?: number;
+      fontWeight?: string;
+    };
+    upperLabel?: {
+      show?: boolean;
     };
   }>;
   emphasis?: {
@@ -52,6 +75,11 @@ export interface TreemapSeriesOptions {
   nodeClick?: string;
   width?: string | number;
   height?: string | number;
+  animation?: boolean;
+  animationDuration?: number;
+  animationDurationUpdate?: number;
+  animationEasing?: string;
+  animationEasingUpdate?: string;
 }
 
 export interface TreemapChartOptions extends EChartsOption {
@@ -212,7 +240,7 @@ export class TreemapChartBuilder extends ApacheEchartBuilder<TreemapChartOptions
   }
 
   /**
-   * Set breadcrumb configuration
+   * Set breadcrumb configuration with enhanced styling
    */
   setBreadcrumb(show: boolean, top?: string | number, left?: string | number, right?: string | number, bottom?: string | number): this {
     this.seriesOptions.breadcrumb = {
@@ -221,6 +249,23 @@ export class TreemapChartBuilder extends ApacheEchartBuilder<TreemapChartOptions
       left,
       right,
       bottom,
+      height: 22,
+      emptyItemWidth: 25,
+      itemStyle: {
+        color: 'rgba(0,0,0,0.7)',
+        borderColor: 'rgba(0,0,0,0.7)',
+        borderWidth: 1,
+        shadowBlur: 6,
+        shadowColor: 'rgba(0, 0, 0, 0.2)',
+        textStyle: {
+          color: '#fff'
+        }
+      },
+      emphasis: {
+        itemStyle: {
+          color: 'rgba(0,0,0,0.9)'
+        }
+      }
     };
     return this;
   }
@@ -254,10 +299,16 @@ export class TreemapChartBuilder extends ApacheEchartBuilder<TreemapChartOptions
       borderColor?: string;
       borderWidth?: number;
       gapWidth?: number;
+      borderColorSaturation?: number;
     };
     label?: {
       show?: boolean;
       formatter?: string;
+      fontSize?: number;
+      fontWeight?: string;
+    };
+    upperLabel?: {
+      show?: boolean;
     };
   }>): this {
     this.seriesOptions.levels = levels;
@@ -372,8 +423,18 @@ export class TreemapChartBuilder extends ApacheEchartBuilder<TreemapChartOptions
     const itemMap = new Map<any, TreemapData>();
     const rootItems: TreemapData[] = [];
 
+    // Validate input data
+    if (!data || !Array.isArray(data) || data.length === 0) {
+      return rootItems;
+    }
+
     // First pass: create all items
     data.forEach(item => {
+      // Validate item and required fields
+      if (!item || item[idField] == null) {
+        return; // Skip invalid items
+      }
+
       const treeItem: TreemapData = {
         name: String(item[nameField]) || 'Unknown',
         value: Number(item[valueField]) || 0,
@@ -384,11 +445,16 @@ export class TreemapChartBuilder extends ApacheEchartBuilder<TreemapChartOptions
 
     // Second pass: build hierarchy
     data.forEach(item => {
+      // Validate item and required fields
+      if (!item || item[idField] == null) {
+        return; // Skip invalid items
+      }
+
       const treeItem = itemMap.get(item[idField]);
       if (!treeItem) return;
 
       const parentId = item[parentField];
-      if (parentId && itemMap.has(parentId)) {
+      if (parentId != null && itemMap.has(parentId)) {
         const parent = itemMap.get(parentId);
         if (parent && parent.children) {
           parent.children.push(treeItem);
@@ -450,28 +516,97 @@ export class TreemapChartBuilder extends ApacheEchartBuilder<TreemapChartOptions
   }
 
   /**
-   * Create portfolio distribution configuration
+   * Set enhanced drill-down animations and transitions
+   */
+  setDrillDownAnimations(): this {
+    // Add animation configuration to chart options
+    this.chartOptions.animationDuration = 1000;
+    this.chartOptions.animationDurationUpdate = 1000;
+    this.chartOptions.animationEasing = 'cubicInOut';
+    this.chartOptions.animationEasingUpdate = 'quinticInOut';
+    
+    // Enable animation for treemap series
+    this.seriesOptions.animation = true;
+    this.seriesOptions.animationDuration = 1000;
+    this.seriesOptions.animationDurationUpdate = 1000;
+    this.seriesOptions.animationEasing = 'cubicInOut';
+    this.seriesOptions.animationEasingUpdate = 'quinticInOut';
+    
+    return this;
+  }
+
+  /**
+   * Set custom drill-down event handlers
+   */
+  setDrillDownEventHandlers(onDrillDown?: (params: any) => void, onBreadcrumbClick?: (params: any) => void): this {
+    // Store event handlers in chart options for later use
+    if (!this.chartOptions['customEventHandlers']) {
+      this.chartOptions['customEventHandlers'] = {};
+    }
+    
+    if (onDrillDown) {
+      this.chartOptions['customEventHandlers'].onDrillDown = onDrillDown;
+    }
+    
+    if (onBreadcrumbClick) {
+      this.chartOptions['customEventHandlers'].onBreadcrumbClick = onBreadcrumbClick;
+    }
+    
+    return this;
+  }
+
+  /**
+   * Create portfolio distribution configuration with enhanced drill-down features
    */
   setPortfolioConfiguration(): this {
     return this
-      .setBreadcrumb(true, '10%', '10%', '10%', '10%')
+      .setBreadcrumb(true, 'bottom', '10%', '10%', '10%')
       .setItemStyle('#fff', 1, 1)
       .setLevels([
         {
-          itemStyle: { borderColor: '#777', borderWidth: 0, gapWidth: 1 },
+          // Root level - macro categories
+          itemStyle: { 
+            borderColor: '#777', 
+            borderWidth: 0, 
+            gapWidth: 5,
+            borderColorSaturation: 0.6
+          },
+          upperLabel: { show: false },
           label: { show: false }
         },
         {
-          itemStyle: { borderColor: '#555', borderWidth: 5, gapWidth: 1 },
-          label: { show: true, formatter: '{b}\n{c}%' }
+          // First level - industries
+          itemStyle: { 
+            borderColor: '#555', 
+            borderWidth: 5, 
+            gapWidth: 1,
+            borderColorSaturation: 0.7
+          },
+          label: { 
+            show: true, 
+            formatter: '{b}\n₹{c}',
+            fontSize: 12,
+            fontWeight: 'bold'
+          }
         },
         {
-          itemStyle: { borderColor: '#555', borderWidth: 5, gapWidth: 1 },
-          label: { show: true, formatter: '{b}\n{c}%' }
+          // Second level - sectors
+          itemStyle: { 
+            borderColor: '#333', 
+            borderWidth: 5, 
+            gapWidth: 1,
+            borderColorSaturation: 0.8
+          },
+          label: { 
+            show: true, 
+            formatter: '{b}\n₹{c}',
+            fontSize: 10
+          }
         }
       ])
       .setEmphasis(10, 0, 'rgba(0, 0, 0, 0.5)')
-      .setZoomBehavior(true, 'zoomToNode', true);
+      .setZoomBehavior(true, 'zoomToNode', true)
+      .setDrillDownAnimations();
   }
 
   /**
