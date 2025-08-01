@@ -542,12 +542,27 @@ export abstract class BaseDashboardComponent<T = any> implements OnInit, OnDestr
           // Bar/Pie/Line charts - update data normally
           series.data = filteredData;
           
-          // Update xAxis categories for bar/line charts if needed
-          if (newOptions.xAxis) {
-            if (Array.isArray(newOptions.xAxis) && newOptions.xAxis[0] && newOptions.xAxis[0].data !== undefined) {
-              newOptions.xAxis[0].data = filteredData.map((item: any) => item.name);
-            } else if (!Array.isArray(newOptions.xAxis) && newOptions.xAxis.data !== undefined) {
-              newOptions.xAxis.data = filteredData.map((item: any) => item.name);
+          // Check if this is a horizontal bar chart (X-axis is value type, Y-axis is category type)
+          const isHorizontalBar = newOptions.xAxis && newOptions.xAxis.type === 'value' && 
+                                  newOptions.yAxis && newOptions.yAxis.type === 'category';
+          
+          if (isHorizontalBar) {
+            // For horizontal bar charts, update yAxis categories
+            if (newOptions.yAxis) {
+              if (Array.isArray(newOptions.yAxis) && newOptions.yAxis[0] && newOptions.yAxis[0].data !== undefined) {
+                newOptions.yAxis[0].data = filteredData.map((item: any) => item.name);
+              } else if (!Array.isArray(newOptions.yAxis) && newOptions.yAxis.data !== undefined) {
+                newOptions.yAxis.data = filteredData.map((item: any) => item.name);
+              }
+            }
+          } else {
+            // For regular bar/line charts, update xAxis categories
+            if (newOptions.xAxis) {
+              if (Array.isArray(newOptions.xAxis) && newOptions.xAxis[0] && newOptions.xAxis[0].data !== undefined) {
+                newOptions.xAxis[0].data = filteredData.map((item: any) => item.name);
+              } else if (!Array.isArray(newOptions.xAxis) && newOptions.xAxis.data !== undefined) {
+                newOptions.xAxis.data = filteredData.map((item: any) => item.name);
+              }
             }
           }
         }
