@@ -204,11 +204,11 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
   // Shared dashboard data - Flat structure (implements abstract property)
   protected dashboardData: DashboardDataRow[] = [...INITIAL_DASHBOARD_DATA];
   protected readonly initialDashboardData: DashboardDataRow[] = INITIAL_DASHBOARD_DATA;
-  
+
   // Stock ticks data storage
   protected stockTicksData: StockDataDto[] | null = [];
-  
-  
+
+
   // Filtered stock data for cross-chart filtering
   protected filteredStockData: StockDataDto[] | null = [];
   
@@ -388,47 +388,6 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
     });
   }
 
-
-  /**
-   * Update all widgets with fresh stock data, especially the pie chart
-   */
-  private updateAllWidgetsWithStockData(): void {
-    if (!this.dashboardConfig?.widgets || !this.stockTicksData) {
-      return;
-    }
-
-    // Find and update the pie chart widget specifically
-    const pieChartWidget = this.dashboardConfig.widgets.find(widget => 
-      widget.config?.header?.title === 'Sector Allocation'
-    );
-
-    if (pieChartWidget) {
-      const sectorData = this.getFilteredDataForWidget('Sector Allocation');
-      if (sectorData && sectorData.length > 0) {
-        this.updateEchartWidget(pieChartWidget, sectorData);
-      } else {
-        console.warn('No sector data available for pie chart update');
-      }
-    } else {
-      console.warn('Pie chart widget not found');
-    }
-
-    // Update all other echart widgets
-    const echartWidgets = this.dashboardConfig.widgets.filter(widget => 
-      widget.config?.component === 'echart' && widget.config?.header?.title !== 'Sector Allocation'
-    );
-
-    echartWidgets.forEach(widget => {
-      const widgetTitle = widget.config?.header?.title;
-      if (widgetTitle) {
-        const widgetData = this.getFilteredDataForWidget(widgetTitle);
-        if (widgetData) {
-          this.updateEchartWidget(widget, widgetData);
-        }
-      }
-    });
-  }
-
   /**
    * Update dashboard data with selected index information
    * @param selectedIndex The selected index data object from indices component
@@ -520,58 +479,6 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
       })
       .build();
 
-    // Performance Metrics Polar Chart
-    const polarChart = PolarChartBuilder.create()
-    .setData([]) // Data will be populated later
-    .setHeader('Performance Metrics')
-    .setPercentageFormatter(1)
-    .build();
-
-    // Portfolio Performance Area Chart
-    const linePortfolioPerformance = AreaChartBuilder.create()
-      .setData([]) // Data will be populated later
-      .setHeader('Portfolio Performance')
-      .setFinancialTrend('INR', 'en-US')
-      .setPredefinedPalette('finance')
-      .build();
-
-    // Risk vs Return Scatter Chart
-    const scatterRiskVsReturn = ScatterChartBuilder.create()
-      .setData([]) // Data will be populated later
-      .setHeader('Risk vs Return Analysis')
-      .setTooltip('item', '{b}: Risk {c[0]}%, Return {c[1]}%')
-      .setPredefinedPalette('modern')
-      .build();
-
-    // Savings Goal Gauge
-    const gaugeSavingsGoal = GaugeChartBuilder.create()
-      .setData([]) // Data will be populated later
-      .setHeader('Savings Goal Progress')
-      .setPercentageFormatter(0)
-      .build();
-
-    // Spending Heatmap
-    const heatmapSpending = HeatmapChartBuilder.create()
-      .setData([]) // Data will be populated later
-      .setHeader('Weekly Spending Heatmap')
-      .setCurrencyFormatter('INR', 'en-US')
-      .build();
-
-    // Revenue Trend Area Chart
-    const areaChart = AreaChartBuilder.create()
-      .setData([]) // Data will be populated later
-      .setHeader('Revenue Trend')
-      .setFinancialTrend('INR', 'en-US')
-      .build();
-
-    // Financial Overview Stacked Area
-    const stackedAreaChart = AreaChartBuilder.create()
-      .setData([]) // Data will be populated later
-      .setHeader('Financial Overview')
-      .setFinancialTrend('INR', 'en-US')
-      .setStack('total')
-      .build();
-
     // Portfolio Distribution Treemap
     const treemapChart = TreemapChartBuilder.create()
       .setData([]) // Start with empty data, will be populated when stock data loads
@@ -589,51 +496,6 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
       })
       .build();
 
-    // Monthly Expenses Treemap
-    const expenseTreemap = TreemapChartBuilder.create()
-      .setData([]) // Data will be populated later
-      .setHeader('Monthly Expenses')
-      .setExpenseConfiguration()
-      .setFinancialDisplay('INR', 'en-US')
-      .build();
-
-    // Organizational Structure Sunburst
-    const sunburstChart = SunburstChartBuilder.create()
-      .setData([]) // Data will be populated later
-      .setHeader('Organizational Structure')
-      .build();
-
-    // Financial Flow Sankey
-    const sankeyChart = SankeyChartBuilder.create()
-      .setData({ nodes: [], links: [] }) // Data will be populated later
-      .setHeader('Financial Flow')
-      .setFinancialFlow()
-      .setCurrencyDisplay('INR', 'en-US')
-      .build();
-
-    // Investment Flow Sankey
-    const investmentFlowSankey = SankeyChartBuilder.create()
-      .setData({ nodes: [], links: [] }) // Data will be populated later
-      .setHeader('Investment Flow')
-      .setInvestmentFlow()
-      .setCurrencyDisplay('INR', 'en-US')
-      .build();
-
-    // Budget Allocation Sankey
-    const budgetAllocationSankey = SankeyChartBuilder.create()
-      .setData({ nodes: [], links: [] }) // Data will be populated later
-      .setHeader('Budget Allocation')
-      .setBudgetAllocation()
-      .setCurrencyDisplay('INR', 'en-US')
-      .build();
-
-    // Stock Price Candlestick
-    const candlestickChart = CandlestickChartBuilder.create()
-      .setData([]) // Data will be populated later
-      .setHeader('Stock Price Analysis')
-      .setCurrencyFormatter('INR', 'en-US')
-      .build();
-
     // Stock List Widget
     const stockListWidget = StockListChartBuilder.create()
       .setData(this.stockTicksData || []) // Use the original stock ticks data, handle null case
@@ -646,14 +508,8 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
     const filterWidget = createFilterWidget();
     const metricTiles = this.createMetricTiles([]);
 
-    // Position metric tiles at row 0 (top of dashboard)
-    // Metric tiles are already positioned at y: 0 in the createMetricTiles function
-
     // Position filter widget at row 1 (below metric tiles)
     filterWidget.position = { x: 0, y: 1, cols: 12, rows: 1 };
-
-    // Position other widgets starting from row 2 (below filter)
-    // densityMapInvestment.position = { x: 0, y: 4, cols: 8, rows: 8 };
 
     barStockIndustry.position = { x: 0, y: 3, cols: 6, rows: 8 };
     pieStockSector.position = { x: 6, y: 3, cols: 6, rows: 8 };
@@ -671,30 +527,12 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
         filteredColor: '#e0e0e0'
       })
       .setWidgets([
-        // Metric tiles at the top (row 0)
         ...metricTiles,
-        // Filter widget below tiles (row 1)
         filterWidget,
-        // Core financial widgets
         barStockIndustry,
         pieStockSector,
         treemapChart,
-        // Stock list widget
         stockListWidget,
-        //linePortfolioPerformance,
-        //scatterRiskVsReturn,
-        //gaugeSavingsGoal,
-        //heatmapSpending,
-        //densityMapInvestment,
-        //areaChart,
-        //polarChart,
-        //stackedAreaChart,
-        //expenseTreemap,
-        //sunburstChart,
-        //sankeyChart,
-        //investmentFlowSankey,
-        //budgetAllocationSankey,
-        //candlestickChart
       ])
       .setEditMode(false)
       .build();
@@ -795,53 +633,6 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
       case 'heatmap':
         // This is a heatmap - provide heatmap data
         return this.createHeatmapData(this.dashboardData);
-        
-      case 'gauge':
-        // This is a gauge chart - provide simple numeric data
-        const totalValue = this.dashboardData.reduce((sum, row) => sum + row.totalValue, 0);
-        return [{ name: 'Progress', value: Math.min(totalValue / 10, 100) }]; // Scale to percentage
-        
-      case 'treemap':
-        // This is a treemap - provide hierarchical treemap data from stockTicksData
-        return this.createStockTicksTreemapData(this.stockTicksData);
-        
-      case 'sunburst':
-        // This is a sunburst chart - provide sunburst data
-        return this.createSunburstData(this.dashboardData);
-        
-      case 'sankey':
-        // This is a sankey diagram - provide default sankey data
-        return {
-          nodes: [
-            { name: 'Income' }, { name: 'Expenses' }, { name: 'Savings' }
-          ],
-          links: [
-            { source: 'Income', target: 'Expenses', value: 70 },
-            { source: 'Income', target: 'Savings', value: 30 }
-          ]
-        };
-        
-      // case 'candlestick':
-      //   // This is a candlestick chart - provide sample OHLC data
-      //   console.log('Detected candlestick widget, providing sample OHLC data');
-      //   // Sample OHLC data based on totalValue from dashboard data
-      //   const stockData = [];
-      //   const dateLabels = [];
-      //   const sortedData = this.dashboardData.sort((a, b) => a.month.localeCompare(b.month));
-      //   
-      //   for (let i = 0; i < Math.min(sortedData.length, 15); i++) {
-      //     const baseValue = sortedData[i].totalValue;
-      //     // Generate realistic OHLC data: [open, close, low, high]
-      //     const open = baseValue + (Math.random() - 0.5) * 10;
-      //     const close = open + (Math.random() - 0.5) * 15;
-      //     const low = Math.min(open, close) - Math.random() * 5;
-      //     const high = Math.max(open, close) + Math.random() * 5;
-      //     
-      //     stockData.push([open, close, low, high]);
-      //     dateLabels.push(`2024-01-${String(i + 1).padStart(2, '0')}`);
-      //   }
-      //   
-      //   return { data: stockData, xAxisData: dateLabels };
         
       default:
         console.warn(`Unknown chart type: ${seriesType}`);
@@ -1368,33 +1159,6 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
   }
 
   /**
-   * Helper method to create expense treemap data
-   */
-  private createExpenseTreemapData(data: DashboardDataRow[]): Array<{ name: string; value: number; children?: Array<{ name: string; value: number }> }> {
-    // Create expense categories from asset categories
-    const categories = [...new Set(data.map(row => row.assetCategory))];
-    
-    return categories.map(category => {
-      const categoryData = data.filter(row => row.assetCategory === category);
-      const markets = [...new Set(categoryData.map(row => row.market))];
-      
-      const children = markets.map(market => {
-        const marketData = categoryData.filter(row => row.market === market);
-        const value = marketData.reduce((sum, row) => sum + row.totalValue, 0);
-        return { name: market, value };
-      });
-      
-      const totalValue = children.reduce((sum, child) => sum + child.value, 0);
-      
-      return {
-        name: category,
-        value: totalValue,
-        children
-      };
-    });
-  }
-
-  /**
    * Helper method to create large treemap data
    */
   private createLargeTreemapData(data: DashboardDataRow[]): Array<{ name: string; value: number; children?: Array<{ name: string; value: number; children?: Array<{ name: string; value: number }> }> }> {
@@ -1711,14 +1475,6 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
       operator: 'equals',
       source: 'Treemap Chart'
     });
-  }
-
-  /**
-   * Clear all filters and restore original data
-   */
-  private clearAllChartFilters(): void {
-    // Use centralized filter system
-    this.clearAllFilters();
   }
 
   /**
