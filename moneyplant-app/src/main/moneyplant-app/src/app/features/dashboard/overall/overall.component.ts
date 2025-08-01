@@ -101,7 +101,10 @@ import {
   HeatmapChartBuilder,
   PolarChartBuilder,
   CandlestickChartBuilder,
-  SunburstChartBuilder
+  SunburstChartBuilder,
+  // Stock List Chart Builder
+  StockListChartBuilder,
+  StockListData
 } from '@dashboards/public-api';
 
 // Import only essential widget creation functions and data
@@ -204,6 +207,7 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
   
   // Stock ticks data storage
   protected stockTicksData: StockDataDto[] | null = [];
+  
   
   // Filtered stock data for cross-chart filtering
   protected filteredStockData: StockDataDto[] | null = [];
@@ -337,6 +341,7 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
           // Store the stock ticks data
           this.stockTicksData = stockTicksData;
           
+          
           // Reset all filters when new data is loaded
           this.appliedFilters = [];
           
@@ -382,6 +387,7 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
       this.updateEchartWidget(widget, []);
     });
   }
+
 
   /**
    * Update all widgets with fresh stock data, especially the pie chart
@@ -628,6 +634,15 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
       .setCurrencyFormatter('INR', 'en-US')
       .build();
 
+    // Stock List Widget
+    const stockListWidget = StockListChartBuilder.create()
+      .setData(this.stockTicksData || []) // Use the original stock ticks data, handle null case
+      .setStockPerformanceConfiguration()
+      .setHeader('Stock List')
+      .setCurrencyFormatter('₹', 'en-IN')
+      .setPredefinedPalette('finance')
+      .build();
+
     const filterWidget = createFilterWidget();
     const metricTiles = this.createMetricTiles([]);
 
@@ -643,6 +658,7 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
     barStockIndustry.position = { x: 0, y: 3, cols: 6, rows: 8 };
     pieStockSector.position = { x: 6, y: 3, cols: 6, rows: 8 };
     treemapChart.position = { x: 0, y: 11, cols: 12, rows: 8 };
+    stockListWidget.position = { x: 0, y: 19, cols: 12, rows: 10 };
 
     // Use the Fluent API to build the dashboard config with filter highlighting enabled
     this.dashboardConfig = StandardDashboardBuilder.createStandard()
@@ -663,6 +679,8 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
         barStockIndustry,
         pieStockSector,
         treemapChart,
+        // Stock list widget
+        stockListWidget,
         //linePortfolioPerformance,
         //scatterRiskVsReturn,
         //gaugeSavingsGoal,
