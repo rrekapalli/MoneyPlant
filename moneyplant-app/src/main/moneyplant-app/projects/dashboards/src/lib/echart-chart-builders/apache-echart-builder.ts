@@ -603,6 +603,38 @@ export abstract class ApacheEchartBuilder<T extends EChartsOption = EChartsOptio
     };
   }
 
+  /**
+   * Set accessor property for global filtering logic
+   * This enables central filtering by setting the accessor that will be used
+   * to generate global filter criteria like <accessor> = <clicked-chart-element>
+   */
+  setAccessor(accessor: string): this {
+    const widget = this.widgetBuilder.build();
+    if (widget.config) {
+      widget.config.accessor = accessor;
+    }
+    return this;
+  }
+
+  /**
+   * Create global filter from chart interaction data using accessor
+   * This method generates filter criteria in the format: <accessor> = <clicked-chart-element>
+   */
+  static createGlobalFilterFromChartData(chartData: any, accessor: string): any | null {
+    if (!chartData || !accessor) return null;
+
+    const filterValue = chartData.name || chartData.value;
+    if (!filterValue) return null;
+
+    return {
+      accessor: accessor,
+      operator: 'equals',
+      value: filterValue,
+      displayValue: String(filterValue),
+      [accessor]: filterValue
+    };
+  }
+
   // --- Color and Styling Enhancements ---
 
   /**

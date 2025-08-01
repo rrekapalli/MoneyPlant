@@ -450,6 +450,7 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
           });
           return `${params.name}: ${formatter.format(params.value)}`;
         })
+        .setAccessor('industry')
         .setFilterColumn('industry')
         .setEvents((widget, chart) => {
           if (chart) {
@@ -463,12 +464,13 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
     
     // Stock Sector Allocation Pie Chart with financial display
     const pieStockSector = PieChartBuilder.create()
-      .setData(this.stockTicksData) // Data will be populated later
+      .setData(this.filteredStockData) // Use filtered data for consistent filtering
       .setHeader('Sector Allocation')
       .setShowLegend(false)
       .setDonutStyle('40%', '70%')
       .setFinancialDisplay('INR', 'en-US')
       .setPredefinedPalette('finance')
+      .setAccessor('sector')
       .setFilterColumn('sector')
       .setEvents((widget, chart) => {
         if (chart) {
@@ -486,6 +488,7 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
       .setHeader('Portfolio Distribution')
       .setPortfolioConfiguration()
       .setFinancialDisplay('INR', 'en-US')
+      .setAccessor('macro')
       .setFilterColumn('macro')
       .setEvents((widget, chart) => {
         if (chart) {
@@ -499,11 +502,12 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
 
     // Stock List Widget
     const stockListWidget = StockListChartBuilder.create()
-      .setData(this.stockTicksData || []) // Use the original stock ticks data, handle null case
+      .setData(this.filteredStockData || []) // Use filtered data for consistent filtering, handle null case
       .setStockPerformanceConfiguration()
       .setHeader('Stock List')
       .setCurrencyFormatter('₹', 'en-IN')
       .setPredefinedPalette('finance')
+      .setAccessor('symbol')
       .build();
 
     const filterWidget = createFilterWidget();
@@ -1261,13 +1265,21 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
    * 1. Takes the original stockTicksData as input
    * 2. Applies each filter in appliedFilters array sequentially
    * 3. Updates filteredStockData with the result
-   * 4. Triggers updates to all dependent widgets/charts
+   * 4. If no filters are applied, reassigns stockTicksData to filteredStockData
+   * 5. Triggers updates to all dependent widgets/charts
    * 
    * This ensures all widgets use the same filtered data source for consistency
    */
   private applyFilters(): void {
     if (!this.stockTicksData) {
       this.filteredStockData = null;
+      return;
+    }
+
+    // If no filters are applied, reassign original data to filtered data
+    if (this.appliedFilters.length === 0) {
+      this.filteredStockData = [...this.stockTicksData];
+      this.updateAllChartsWithFilteredData();
       return;
     }
 
