@@ -7,6 +7,7 @@ import { TableComponent } from '../table/table.component';
 import { TileComponent } from '../tile/tile.component';
 import { MarkdownCellComponent } from '../markdown-cell/markdown-cell.component';
 import { CodeCellComponent } from '../code-cell/code-cell.component';
+import { StockListTableComponent } from '../../echart-chart-builders/stock-list/stock-list-table.component';
 
 describe('WidgetComponent', () => {
   let component: WidgetComponent;
@@ -54,6 +55,11 @@ describe('WidgetComponent', () => {
     it('should return CodeCellComponent for codeCell widget type', () => {
       component.widget = { config: { component: 'codeCell' } } as IWidget;
       expect(component.currentWidget.component).toBe(CodeCellComponent);
+    });
+
+    it('should return StockListTableComponent for stock-list-table widget type', () => {
+      component.widget = { config: { component: 'stock-list-table' } } as IWidget;
+      expect(component.currentWidget.component).toBe(StockListTableComponent);
     });
 
     it('should return EchartComponent for unknown widget type', () => {

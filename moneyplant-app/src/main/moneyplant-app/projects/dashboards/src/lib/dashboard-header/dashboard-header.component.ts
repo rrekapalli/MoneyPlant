@@ -78,7 +78,6 @@ export class DashboardHeaderComponent implements OnInit, OnChanges {
     items.push({
       label: '🧪 Simple Test',
       command: () => {
-        console.log('SIMPLE TEST CLICKED!');
         alert('Simple test works!');
       }
     });
@@ -104,7 +103,6 @@ export class DashboardHeaderComponent implements OnInit, OnChanges {
     items.push({
       label: this.isHighlightingEnabled ? 'Disable Highlighting' : 'Enable Highlighting',
       command: () => {
-        console.log('HIGHLIGHTING TOGGLE CLICKED!');
         this.toggleHighlighting();
       }
     });
@@ -133,19 +131,14 @@ export class DashboardHeaderComponent implements OnInit, OnChanges {
         ]
       });
     }
-
-    console.log('Menu items updated - highlighting enabled:', this.isHighlightingEnabled);
-    console.log('Menu structure:', items);
     this.menuItems = items;
   }
 
   exportToExcel() {
-    console.log('Dashboard header: Export to Excel clicked');
     this.onExportToExcel.emit();
   }
 
   toggleHighlighting() {
-    console.log('Dashboard header: Toggle highlighting clicked');
     this.onToggleHighlighting.emit();
     // Force menu rebuild after highlighting state changes
     setTimeout(() => {
@@ -154,13 +147,11 @@ export class DashboardHeaderComponent implements OnInit, OnChanges {
   }
 
   setHighlightingPreset(preset: 'subtle' | 'medium' | 'strong') {
-    console.log('Dashboard header: setHighlightingPreset called with preset:', preset);
     this.onSetHighlightingPreset.emit(preset);
   }
 
   // Template event handlers
   onMenuButtonClick(event: any, menu: any) {
-    console.log('Menu button clicked');
     menu.toggle(event);
   }
 

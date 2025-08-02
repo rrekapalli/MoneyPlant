@@ -14,7 +14,8 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class StockResponseDto {
-    private String id;
-    private String name;
     private String symbol;
+    private String companyName;
+    private String industry;
+    private String pdSectorInd;
 }

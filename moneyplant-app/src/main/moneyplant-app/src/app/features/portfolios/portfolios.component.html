@@ -5,57 +5,65 @@
   </div>
 
   <div class="content">
-    <p-card *ngIf="loading" styleClass="loading-card">
-      <div class="loading-message">
-        <i class="pi pi-spin pi-spinner" style="font-size: 2rem"></i>
-        <p>Loading portfolios...</p>
-      </div>
-    </p-card>
-
-    <div *ngIf="!loading" class="portfolios-grid">
-      <p-card *ngFor="let portfolio of portfolios" styleClass="portfolio-card">
-        <ng-template pTemplate="header">
-          <div class="portfolio-header">
-            <h2>{{ portfolio.name }}</h2>
-          </div>
-        </ng-template>
-        
-        <div class="portfolio-details">
-          <p>{{ portfolio.description }}</p>
-          <div class="portfolio-stats">
-            <div class="stat">
-              <span class="label">Value</span>
-              <span class="value">{{ portfolio.value | currency }}</span>
-            </div>
-            <div class="stat">
-              <span class="label">Return</span>
-              <span class="value" [ngClass]="{'positive': portfolio.returnRate > 0, 'negative': portfolio.returnRate < 0}">
-                {{ portfolio.returnRate }}%
-              </span>
-            </div>
-            <div class="stat">
-              <span class="label">Last Updated</span>
-              <span class="value">{{ portfolio.lastUpdated | date:'short' }}</span>
-            </div>
-          </div>
+    @if (loading) {
+      <p-card styleClass="loading-card">
+        <div class="loading-message">
+          <i class="pi pi-spin pi-spinner" style="font-size: 2rem"></i>
+          <p>Loading portfolios...</p>
         </div>
-
-        <ng-template pTemplate="footer">
-          <div class="portfolio-actions">
-            <button pButton label="View" icon="pi pi-eye" class="p-button-outlined" (click)="selectPortfolio(portfolio)"></button>
-            <button pButton label="Edit" icon="pi pi-pencil" class="p-button-outlined p-button-secondary" (click)="editPortfolio(portfolio)"></button>
-            <button pButton label="Delete" icon="pi pi-trash" class="p-button-outlined p-button-danger" (click)="deletePortfolio(portfolio)"></button>
-          </div>
-        </ng-template>
       </p-card>
-    </div>
+    }
 
-    <p-card *ngIf="!loading && portfolios.length === 0" styleClass="empty-card">
-      <div class="empty-message">
-        <i class="pi pi-info-circle" style="font-size: 2rem"></i>
-        <p>No portfolios found. Create your first portfolio to get started.</p>
-        <button pButton label="Create Portfolio" icon="pi pi-plus" (click)="createPortfolio()"></button>
+    @if (!loading) {
+      <div class="portfolios-grid">
+        @for (portfolio of portfolios; track portfolio.id) {
+          <p-card styleClass="portfolio-card">
+            <ng-template pTemplate="header">
+              <div class="portfolio-header">
+                <h2>{{ portfolio.name }}</h2>
+              </div>
+            </ng-template>
+            
+            <div class="portfolio-details">
+              <p>{{ portfolio.description }}</p>
+              <div class="portfolio-stats">
+                <div class="stat">
+                  <span class="label">Value</span>
+                  <span class="value">{{ portfolio.value | currency }}</span>
+                </div>
+                <div class="stat">
+                  <span class="label">Return</span>
+                  <span class="value" [ngClass]="{'positive': portfolio.returnRate > 0, 'negative': portfolio.returnRate < 0}">
+                    {{ portfolio.returnRate }}%
+                  </span>
+                </div>
+                <div class="stat">
+                  <span class="label">Last Updated</span>
+                  <span class="value">{{ portfolio.lastUpdated | date:'short' }}</span>
+                </div>
+              </div>
+            </div>
+
+            <ng-template pTemplate="footer">
+              <div class="portfolio-actions">
+                <button pButton label="View" icon="pi pi-eye" class="p-button-outlined" (click)="selectPortfolio(portfolio)"></button>
+                <button pButton label="Edit" icon="pi pi-pencil" class="p-button-outlined p-button-secondary" (click)="editPortfolio(portfolio)"></button>
+                <button pButton label="Delete" icon="pi pi-trash" class="p-button-outlined p-button-danger" (click)="deletePortfolio(portfolio)"></button>
+              </div>
+            </ng-template>
+          </p-card>
+        }
       </div>
-    </p-card>
+    }
+
+    @if (!loading && portfolios.length === 0) {
+      <p-card styleClass="empty-card">
+        <div class="empty-message">
+          <i class="pi pi-info-circle" style="font-size: 2rem"></i>
+          <p>No portfolios found. Create your first portfolio to get started.</p>
+          <button pButton label="Create Portfolio" icon="pi pi-plus" (click)="createPortfolio()"></button>
+        </div>
+      </p-card>
+    }
   </div>
 </div>

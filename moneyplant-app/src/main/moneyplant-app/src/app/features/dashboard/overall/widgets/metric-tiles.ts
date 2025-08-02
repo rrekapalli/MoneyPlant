@@ -1,142 +1,122 @@
 import { TileBuilder } from '@dashboards/public-api';
 import { DashboardDataRow } from './dashboard-data';
+import {StockDataDto, StockTicksDto} from '../../../../services/entities/stock-ticks';
 
 /**
- * Create metric tiles that display key statistics from dashboard data
+ * Create metric tiles that display key statistics from stock ticks data
  */
-export function createMetricTiles(data: DashboardDataRow[]) {
-  // Calculate metrics with safe handling
-  const totalRows = data.length;
-  const distinctAssetCategories = new Set(data.map(row => row.assetCategory)).size;
-  const distinctMarkets = new Set(data.map(row => row.market)).size;
-  const distinctMonths = new Set(data.map(row => row.month)).size;
-  
-  // Safe total value calculation
-  const totalValue = data.reduce((sum, row) => {
-    const value = row.totalValue || 0;
-    return isNaN(value) || !isFinite(value) ? sum : sum + value;
-  }, 0);
-  
-  // Safe average value calculation
-  const safeTotalValue = isNaN(totalValue) || !isFinite(totalValue) ? 0 : totalValue;
-  const averageValue = totalRows > 0 ? safeTotalValue / totalRows : 0;
-  const safeAverageValue = isNaN(averageValue) || !isFinite(averageValue) ? 0 : averageValue;
+export function createMetricTiles(stockTicksData: StockDataDto[] | null) {
+  // Handle null or undefined stockTicksData
+  if (!stockTicksData) {
+    return createEmptyMetricTiles();
+  }
 
-  // Calculate growth rate (comparing first and last month)
-  const firstMonthData = data.filter(row => row.month === 'Jan');
-  const lastMonthData = data.filter(row => row.month === 'Jun');
+  // Calculate metrics from stockTicksData
+  const stocksCount = stockTicksData.length || 0;
+  const declines = stockTicksData.filter(stock => (stock.percentChange || 0.0 ) < 0.0).length;
+  const advances = stockTicksData.filter(stock => (stock.percentChange || 0.0) > 0.0).length;
+  const unchanged = stockTicksData.filter(stock => (stock.percentChange || 0.0) === 0.0).length;
   
-  const firstMonthTotal = firstMonthData.reduce((sum, row) => {
-    const value = row.totalValue || 0;
+  // Calculate total traded value (sum of all totalTradedValue)
+  const totalTradedValue = stockTicksData.reduce((sum: number, stock: any) => {
+    const value = stock.totalTradedValue || 0;
     return isNaN(value) || !isFinite(value) ? sum : sum + value;
-  }, 0);
+  }, 0) || 0;
   
-  const lastMonthTotal = lastMonthData.reduce((sum, row) => {
-    const value = row.totalValue || 0;
-    return isNaN(value) || !isFinite(value) ? sum : sum + value;
-  }, 0);
-  
-  // Calculate growth rate with proper error handling
-  let growthRate = 0;
-  const safeFirstMonthTotal = isNaN(firstMonthTotal) || !isFinite(firstMonthTotal) ? 0 : firstMonthTotal;
-  const safeLastMonthTotal = isNaN(lastMonthTotal) || !isFinite(lastMonthTotal) ? 0 : lastMonthTotal;
-  
-  if (safeFirstMonthTotal > 0) {
-    growthRate = ((safeLastMonthTotal - safeFirstMonthTotal) / safeFirstMonthTotal) * 100;
-  } else if (safeLastMonthTotal > 0) {
-    growthRate = 100; // If starting from 0, any positive value is 100% growth
-  }
-  
-  // Ensure growth rate is a valid number
-  if (isNaN(growthRate) || !isFinite(growthRate)) {
-    growthRate = 0;
-  }
+  // Calculate total traded volume (sum of all totalTradedVolume)
+  const totalTradedVolume = stockTicksData.reduce((sum: number, stock: any) => {
+    const volume = stock.totalTradedVolume || 0;
+    return isNaN(volume) || !isFinite(volume) ? sum : sum + volume;
+  }, 0) || 0;
+
+  // Safe value handling
+  const safeTotalTradedValue = isNaN(totalTradedValue) || !isFinite(totalTradedValue) ? 0 : totalTradedValue;
+  const safeTotalTradedVolume = isNaN(totalTradedVolume) || !isFinite(totalTradedVolume) ? 0 : totalTradedVolume;
 
   // Create tiles
   const tiles = [
-    // Total Records - Static tile (won't update with filters)
+    // Stocks - Total number of stocks
     TileBuilder.createInfoTile(
-      'Total Records',
-      totalRows.toString(),
-      'Data Points',
-      'fas fa-database',
+      'Stocks',
+      stocksCount.toString(),
+      'Total Stocks',
+      'fas fa-chart-line',
       '#1e40af'
     )
       .setBackgroundColor('#bfdbfe')
       .setBorder('#7dd3fc', 1, 8)
-      .setUpdateOnDataChange(false) // Static tile
+      .setUpdateOnDataChange(true)
       .setPosition({ x: 0, y: 0, cols: 2, rows: 2 })
       .build(),
 
-    // Asset Categories - Dynamic tile (will update with filters)
+    // Declines - Number of declining stocks
     TileBuilder.createInfoTile(
-      'Asset Categories',
-      distinctAssetCategories.toString(),
-      'Distinct Types',
-      'fas fa-chart-pie',
-      '#047857'
+      'Declines',
+      declines.toString(),
+      'Declining Stocks',
+      'fas fa-arrow-down',
+      '#dc2626'
     )
-      .setBackgroundColor('#a7f3d0')
-      .setBorder('#5eead4', 1, 8)
-      .setUpdateOnDataChange(true) // Dynamic tile
+      .setBackgroundColor('#fecaca')
+      .setBorder('#f87171', 1, 8)
+      .setUpdateOnDataChange(true)
       .setPosition({ x: 2, y: 0, cols: 2, rows: 2 })
       .build(),
 
-    // Markets - Dynamic tile (will update with filters)
+    // Advances - Number of advancing stocks
     TileBuilder.createInfoTile(
-      'Markets',
-      distinctMarkets.toString(),
-      'Countries',
-      'fas fa-globe',
-      '#d97706'
+      'Advances',
+      advances.toString(),
+      'Advancing Stocks',
+      'fas fa-arrow-up',
+      '#16a34a'
     )
-      .setBackgroundColor('#fbbf24')
-      .setBorder('#f59e0b', 1, 8)
-      .setUpdateOnDataChange(true) // Dynamic tile
+      .setBackgroundColor('#bbf7d0')
+      .setBorder('#4ade80', 1, 8)
+      .setUpdateOnDataChange(true)
       .setPosition({ x: 4, y: 0, cols: 2, rows: 2 })
       .build(),
 
-    // Total Value - Dynamic tile (will update with filters)
+    // Unchanged - Number of unchanged stocks
+    TileBuilder.createInfoTile(
+      'Unchanged',
+      unchanged.toString(),
+      'Unchanged Stocks',
+      'fas fa-minus',
+      '#6b7280'
+    )
+      .setBackgroundColor('#e5e7eb')
+      .setBorder('#9ca3af', 1, 8)
+      .setUpdateOnDataChange(true)
+      .setPosition({ x: 6, y: 0, cols: 2, rows: 2 })
+      .build(),
+
+    // Traded Value - Total traded value
     TileBuilder.createFinancialTile(
-      safeTotalValue,
-      growthRate,
-      'Portfolio Value',
-      '$',
-      'fas fa-dollar-sign'
+      safeTotalTradedValue,
+      0, // No growth rate for traded value
+      'Traded Value',
+      '₹',
+      'fas fa-rupee-sign'
     )
       .setColor('#047857')
       .setBackgroundColor('#a7f3d0')
       .setBorder('#5eead4', 1, 8)
-      .setUpdateOnDataChange(true) // Dynamic tile
-      .setPosition({ x: 6, y: 0, cols: 2, rows: 2 })
-      .build(),
-
-    // Average Value - Dynamic tile (will update with filters)
-    TileBuilder.createFinancialTile(
-      safeAverageValue,
-      0, // No change for average
-      'Average Value',
-      '$',
-      'fas fa-calculator'
-    )
-      .setColor('#6b7280')
-      .setBackgroundColor('#cbd5e1')
-      .setBorder('#94a3b8', 1, 8)
-      .setUpdateOnDataChange(true) // Dynamic tile
+      .setUpdateOnDataChange(true)
       .setPosition({ x: 8, y: 0, cols: 2, rows: 2 })
       .build(),
 
-    // Time Period - Static tile (won't update with filters)
+    // Traded Volume - Total traded volume
     TileBuilder.createInfoTile(
-      'Time Period',
-      `${distinctMonths} months`,
-      'Jan - Jun',
-      'fas fa-calendar',
+      'Traded Volume',
+      safeTotalTradedVolume.toLocaleString(),
+      'Total Volume',
+      'fas fa-chart-bar',
       '#7c3aed'
     )
-      .setBackgroundColor('#c4b5fd')
+      .setBackgroundColor('#ddd6fe')
       .setBorder('#a78bfa', 1, 8)
-      .setUpdateOnDataChange(false) // Static tile
+      .setUpdateOnDataChange(true)
       .setPosition({ x: 10, y: 0, cols: 2, rows: 2 })
       .build()
   ];
@@ -145,112 +125,95 @@ export function createMetricTiles(data: DashboardDataRow[]) {
 }
 
 /**
- * Create alternative metric tiles with different styling
+ * Create empty metric tiles when stockTicksData is null or unavailable
  */
-export function createAlternativeMetricTiles(data: DashboardDataRow[]) {
-  // Calculate additional metrics with safe handling
-  const totalRows = data.length;
-  const distinctAssetCategories = new Set(data.map(row => row.assetCategory)).size;
-  const distinctMarkets = new Set(data.map(row => row.market)).size;
-  
-  // Safe total value calculation
-  const totalValue = data.reduce((sum, row) => {
-    const value = row.totalValue || 0;
-    return isNaN(value) || !isFinite(value) ? sum : sum + value;
-  }, 0);
-  const safeTotalValue = isNaN(totalValue) || !isFinite(totalValue) ? 0 : totalValue;
-  
-  // Calculate risk metrics with safe handling
-  const riskData = data.filter(row => row.riskValue !== undefined && row.riskValue !== null);
-  const averageRisk = riskData.length > 0 
-    ? riskData.reduce((sum, row) => {
-        const value = row.riskValue || 0;
-        return isNaN(value) || !isFinite(value) ? sum : sum + value;
-      }, 0) / riskData.length 
-    : 0;
-  
-  // Calculate return metrics with safe handling
-  const returnData = data.filter(row => row.returnValue !== undefined && row.returnValue !== null);
-  const averageReturn = returnData.length > 0 
-    ? returnData.reduce((sum, row) => {
-        const value = row.returnValue || 0;
-        return isNaN(value) || !isFinite(value) ? sum : sum + value;
-      }, 0) / returnData.length 
-    : 0;
-
-  // Ensure averages are valid numbers
-  const safeAverageRisk = isNaN(averageRisk) || !isFinite(averageRisk) ? 0 : averageRisk;
-  const safeAverageReturn = isNaN(averageReturn) || !isFinite(averageReturn) ? 0 : averageReturn;
-
-  return [
-    // Data Coverage
-    TileBuilder.createStatusTile(
-      'Data Coverage',
-      `${totalRows} records`,
-      true,
-      'fas fa-check-circle',
-      '#047857'
+function createEmptyMetricTiles() {
+  const tiles = [
+    // Stocks - Empty state
+    TileBuilder.createInfoTile(
+      'Stocks',
+      '0',
+      'Total Stocks',
+      'fas fa-chart-line',
+      '#6b7280'
     )
-      .setBackgroundColor('#a7f3d0')
+      .setBackgroundColor('#f3f4f6')
+      .setBorder('#d1d5db', 1, 8)
+      .setUpdateOnDataChange(true)
       .setPosition({ x: 0, y: 0, cols: 2, rows: 2 })
       .build(),
 
-    // Asset Diversity
-    TileBuilder.createPercentageTile(
-      totalRows > 0 ? (distinctAssetCategories / totalRows) * 100 : 0,
-      'Asset Diversity',
-      'fas fa-layer-group',
-      '#1e40af'
+    // Declines - Empty state
+    TileBuilder.createInfoTile(
+      'Declines',
+      '0',
+      'Declining Stocks',
+      'fas fa-arrow-down',
+      '#6b7280'
     )
-      .setBackgroundColor('#bfdbfe')
+      .setBackgroundColor('#f3f4f6')
+      .setBorder('#d1d5db', 1, 8)
+      .setUpdateOnDataChange(true)
       .setPosition({ x: 2, y: 0, cols: 2, rows: 2 })
       .build(),
 
-    // Global Reach
-    TileBuilder.createMetricTile(
-      distinctMarkets.toString(),
-      '+100%',
-      'Global Markets',
-      'fas fa-map-marked-alt',
-      '#d97706'
+    // Advances - Empty state
+    TileBuilder.createInfoTile(
+      'Advances',
+      '0',
+      'Advancing Stocks',
+      'fas fa-arrow-up',
+      '#6b7280'
     )
-      .setBackgroundColor('#fbbf24')
+      .setBackgroundColor('#f3f4f6')
+      .setBorder('#d1d5db', 1, 8)
+      .setUpdateOnDataChange(true)
       .setPosition({ x: 4, y: 0, cols: 2, rows: 2 })
       .build(),
 
-    // Portfolio Value
-    TileBuilder.createFinancialTile(
-      safeTotalValue,
-      12.5, // Mock growth rate
-      'Portfolio Value',
-      '$',
-      'fas fa-chart-line'
+    // Unchanged - Empty state
+    TileBuilder.createInfoTile(
+      'Unchanged',
+      '0',
+      'Unchanged Stocks',
+      'fas fa-minus',
+      '#6b7280'
     )
-      .setColor('#047857')
-      .setBackgroundColor('#a7f3d0')
+      .setBackgroundColor('#f3f4f6')
+      .setBorder('#d1d5db', 1, 8)
+      .setUpdateOnDataChange(true)
       .setPosition({ x: 6, y: 0, cols: 2, rows: 2 })
       .build(),
 
-    // Average Risk
-    TileBuilder.createPercentageTile(
-      safeAverageRisk * 100,
-      'Average Risk',
-      'fas fa-shield-alt',
-      '#dc2626'
+    // Traded Value - Empty state
+    TileBuilder.createFinancialTile(
+      0,
+      0,
+      'Traded Value',
+      '₹',
+      'fas fa-rupee-sign'
     )
-      .setBackgroundColor('#fca5a5')
+      .setColor('#6b7280')
+      .setBackgroundColor('#f3f4f6')
+      .setBorder('#d1d5db', 1, 8)
+      .setUpdateOnDataChange(true)
       .setPosition({ x: 8, y: 0, cols: 2, rows: 2 })
       .build(),
 
-    // Average Return
-    TileBuilder.createPercentageTile(
-      safeAverageReturn * 100,
-      'Average Return',
-      'fas fa-trending-up',
-      '#047857'
+    // Traded Volume - Empty state
+    TileBuilder.createInfoTile(
+      'Traded Volume',
+      '0',
+      'Total Volume',
+      'fas fa-chart-bar',
+      '#6b7280'
     )
-      .setBackgroundColor('#a7f3d0')
+      .setBackgroundColor('#f3f4f6')
+      .setBorder('#d1d5db', 1, 8)
+      .setUpdateOnDataChange(true)
       .setPosition({ x: 10, y: 0, cols: 2, rows: 2 })
       .build()
   ];
-} 
+
+  return tiles;
+}

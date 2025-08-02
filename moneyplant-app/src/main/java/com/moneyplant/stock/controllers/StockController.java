@@ -87,4 +87,66 @@ public class StockController {
         return stockService.getStockById(id);
     }
 
+    /**
+     * Gets a stock by symbol
+     * 
+     * @param symbol The symbol of the stock to retrieve
+     * @return The stock response
+     * @throws ResourceNotFoundException if the stock is not found
+     */
+    @Operation(summary = "Get a stock by symbol", description = "Retrieves a stock by its symbol")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved stock"),
+        @ApiResponse(responseCode = "404", description = "Stock not found"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @GetMapping("/symbol/{symbol}")
+    @ResponseStatus(HttpStatus.OK)
+    public StockResponseDto getStockBySymbol(
+            @Parameter(description = "Symbol of the stock to retrieve", required = true)
+            @PathVariable String symbol){
+        return stockService.getStockBySymbol(symbol);
+    }
+
+    /**
+     * Gets stocks by industry
+     * 
+     * @param industry The industry to filter by
+     * @return List of stock responses
+     */
+    @Operation(summary = "Get stocks by industry", description = "Retrieves stocks filtered by industry")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved stocks"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @GetMapping("/industry/{industry}")
+    @ResponseStatus(HttpStatus.OK)
+    public List<StockResponseDto> getStocksByIndustry(
+            @Parameter(description = "Industry to filter stocks by", required = true)
+            @PathVariable String industry){
+        return stockService.getStocksByIndustry(industry);
+    }
+
+    /**
+     * Gets stocks by sector
+     * 
+     * @param sector The sector indicator to filter by
+     * @return List of stock responses
+     */
+    @Operation(summary = "Get stocks by sector", description = "Retrieves stocks filtered by sector indicator")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved stocks"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @GetMapping("/sector/{sector}")
+    @ResponseStatus(HttpStatus.OK)
+    public List<StockResponseDto> getStocksBySector(
+            @Parameter(description = "Sector indicator to filter stocks by", required = true)
+            @PathVariable String sector){
+        return stockService.getStocksBySector(sector);
+    }
+
 }

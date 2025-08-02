@@ -1,6 +1,6 @@
 <!-- Dashboard Header -->
 <vis-dashboard-header 
-  title="Financial Dashboard"
+  [title]="dashboardTitle"
   [isHighlightingEnabled]="isHighlightingEnabled"
   [isExportingExcel]="isExportingExcel"
   (onExportToExcel)="exportDashboardToExcel()"
