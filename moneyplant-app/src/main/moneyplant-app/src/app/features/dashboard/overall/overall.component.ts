@@ -568,13 +568,13 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
       .setPortfolioConfiguration()
       .setItemStyle('#fff', 1, 1)
       .setFinancialDisplay('INR', 'en-US')
-      .setAccessor('macro')
-      .setFilterColumn('macro')
+      .setAccessor('industry')
+      .setFilterColumn('industry')
       .setEvents((widget, chart) => {
         if (chart) {
           chart.on('click', (params: any) => {
-            // Filter by macro category when treemap is clicked
-            this.filterChartsByMacro(params.name);
+            // Filter by industry category when treemap is clicked
+            this.filterChartsByIndustry(params.name);
           });
         }
       })
@@ -747,11 +747,7 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
           return acc;
         }, {} as Record<string, any>);
         return Object.values(groupedRiskReturn);
-        
-      case 'heatmap':
-        // This is a heatmap - provide heatmap data
-        return this.createHeatmapData(this.dashboardData);
-        
+
       default:
         return null;
     }
@@ -764,14 +760,6 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
     const sourceData = data || this.dashboardData;
 
     switch (widgetTitle) {
-      case 'Asset Allocation':
-        // Use enhanced data transformation for pie chart
-        return PieChartBuilder.transformData(sourceData, {
-          valueField: 'totalValue',
-          nameField: 'assetCategory',
-          sortBy: 'value'
-        });
-        
       case 'Sector Allocation':
         // Use stock ticks data grouped by sector with totalTradedValue
         if (!this.stockTicksData) {
@@ -831,84 +819,6 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
             }
           }));
         
-      case 'Portfolio Performance':
-        // Use AreaChartBuilder's transformation method
-        const { data: portfolioData, xAxisData } = AreaChartBuilder.transformToAreaData(sourceData, {
-          valueField: 'totalValue',
-          nameField: 'month',
-          xAxisField: 'month'
-        });
-        return portfolioData;
-        
-      case 'Risk vs Return Analysis':
-        // Filter rows that have both risk and return values, group by assetCategory
-        const riskReturnData = sourceData.filter(row => row.riskValue !== undefined && row.returnValue !== undefined);
-        // Group by assetCategory and take the first occurrence for each category
-        const groupedRiskReturn = riskReturnData.reduce((acc, row) => {
-          if (!acc[row.assetCategory]) {
-            acc[row.assetCategory] = {
-              name: row.assetCategory,
-              value: [row.riskValue!, row.returnValue!]
-            };
-          }
-          return acc;
-        }, {} as Record<string, any>);
-        return Object.values(groupedRiskReturn);
-        
-      case 'Investment Distribution by Region':
-        // Group by market (country) and sum totalValue for map visualization
-        const investmentData = this.groupByAndSum(sourceData, 'market', 'totalValue');
-        return investmentData;
-        
-      case 'Weekly Spending Heatmap':
-        // Create heatmap data from the dashboard data
-        // Group by month and assetCategory to create a heatmap
-        const heatmapData = this.createHeatmapData(sourceData);
-        return heatmapData;
-        
-      case 'Revenue Trend':
-        // Group by month and sum totalValue for area chart
-        const revenueData = this.groupByAndSum(sourceData, 'month', 'totalValue');
-        return revenueData;
-        
-      case 'Financial Overview':
-        // Create multi-series data for stacked area chart
-        const financialData = this.createMultiSeriesData(sourceData);
-        return financialData;
-        
-      case 'Performance Monitoring':
-        // Use all data points for large-scale area chart
-        const performanceData = sourceData.map(row => ({
-          name: `${row.month}-${row.assetCategory}`,
-          value: row.totalValue
-        }));
-        return performanceData;
-        
-      case 'Performance Metrics':
-        // Create polar chart data from asset categories
-        const polarData = this.createPolarData(sourceData);
-        return polarData;
-        
-      case 'Financial Performance':
-        // Create multi-series polar data
-        const multiPolarData = this.createMultiSeriesPolarData(sourceData);
-        return multiPolarData;
-        
-      case 'Business Metrics':
-        // Create radar-style polar data
-        const radarData = this.createRadarData(sourceData);
-        return radarData;
-        
-      case 'Portfolio Allocation':
-        // Create multi-series data for stacked area chart
-        const portfolioAllocationData = this.createMultiSeriesData(sourceData);
-        return portfolioAllocationData;
-        
-      case 'Market Conditions':
-        // Create multi-series data for market trends
-        const marketData = this.createMarketTrendData(sourceData);
-        return marketData;
-        
       case 'Portfolio Distribution':
         // Use stock ticks data with macro, industry, and sector hierarchy
         if (!this.stockTicksData) {
@@ -960,92 +870,9 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
             children: industryChildren
           };
         }).sort((a, b) => b.value - a.value);
-        
-      case 'Monthly Expenses':
-        // Use TreemapChartBuilder's transformation method for expenses
-        return TreemapChartBuilder.transformToTreemapData(sourceData, {
-          valueField: 'totalValue',
-          nameField: 'assetCategory',
-          childrenField: 'month'
-        });
-        
-      case 'Financial Overview Treemap':
-        // Create large-scale treemap data
-        const largeTreemapData = this.createLargeTreemapData(sourceData);
-        return largeTreemapData;
-        
-      case 'Organizational Structure':
-        // Create sunburst data from asset categories
-        const sunburstData = this.createSunburstData(sourceData);
-        return sunburstData;
-        
-      case 'Financial Overview Sunburst':
-        // Create large-scale sunburst data
-        const largeSunburstData = this.createLargeSunburstData(sourceData);
-        return largeSunburstData;
-        
-      case 'Financial Flow':
-      case 'Investment Flow':
-      case 'Budget Allocation':
-        // Use SankeyChartBuilder's transformation method
-        return SankeyChartBuilder.transformToSankeyData(sourceData, {
-          sourceField: 'assetCategory',
-          targetField: 'market',
-          valueField: 'totalValue',
-          aggregateBy: 'sum'
-        });
-        
-      case 'Test Filter Widget':
-        // Group by assetCategory and sum totalValue (same as Asset Allocation)
-        const testData = this.groupByAndSum(sourceData, 'assetCategory', 'totalValue');
-        return testData;
-        
+
       default:
         return null;
-    }
-  }
-
-  /**
-   * Enhanced data update method using chart builder transformation methods
-   */
-  protected updateWidgetWithEnhancedData(widget: IWidget, sourceData: DashboardDataRow[]): void {
-    const widgetTitle = widget.config?.header?.title;
-    if (!widgetTitle) return;
-
-    // Get transformed data using the new approach
-    const transformedData = this.getFilteredDataForWidget(widgetTitle, sourceData);
-    if (!transformedData) return;
-
-    // Use enhanced update methods with retry mechanism
-    // Check if this is an ECharts widget
-    if (widget.config?.component !== 'echart') {
-      this.updateEchartWidget(widget, transformedData);
-      return;
-    }
-
-    const chartOptions = widget.config.options as any;
-    const chartType = chartOptions?.series?.[0]?.type;
-    
-    switch (chartType) {
-      case 'pie':
-        PieChartBuilder.updateData(widget, transformedData, { maxAttempts: 5, baseDelay: 200 });
-        break;
-      case 'line':
-        if (chartOptions?.series?.[0]?.areaStyle) {
-          // This is an area chart
-          AreaChartBuilder.updateData(widget, transformedData, { maxAttempts: 5, baseDelay: 200 });
-        }
-        break;
-      case 'treemap':
-        TreemapChartBuilder.updateData(widget, transformedData, { maxAttempts: 5, baseDelay: 200 });
-        break;
-      case 'sankey':
-        SankeyChartBuilder.updateData(widget, transformedData, { maxAttempts: 5, baseDelay: 200 });
-        break;
-      default:
-        // Fall back to the base update method
-        this.updateEchartWidget(widget, transformedData);
-        break;
     }
   }
 
@@ -1085,89 +912,17 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
       widget.config?.component === 'echart'
     );
 
-    chartWidgets.forEach(widget => {
-      this.updateWidgetWithEnhancedData(widget, filteredData);
-    });
+    this.updateAllChartsWithFilteredData();
+
+    // chartWidgets.forEach(widget => {
+    //   this.updateAllChartsWithFilteredData();
+    // });
 
     // Update metric tiles
     this.updateMetricTilesWithFilters(filters);
 
     // Trigger change detection
     setTimeout(() => this.cdr.detectChanges(), 100);
-  }
-
-  // Helper methods specific to this component's data transformations
-
-  /**
-   * Helper method to create polar chart data
-   */
-  private createPolarData(data: DashboardDataRow[]): number[] {
-    // Group by asset category and sum totalValue
-    const groupedData = data.reduce((acc, row) => {
-      if (!acc[row.assetCategory]) {
-        acc[row.assetCategory] = 0;
-      }
-      acc[row.assetCategory] += row.totalValue;
-      return acc;
-    }, {} as Record<string, number>);
-    
-    return Object.values(groupedData);
-  }
-
-  /**
-   * Helper method to create multi-series polar data
-   */
-  private createMultiSeriesPolarData(data: DashboardDataRow[]): Array<{ name: string; data: number[] }> {
-    // Create multiple series based on markets
-    const markets = [...new Set(data.map(row => row.market))];
-    const categories = [...new Set(data.map(row => row.assetCategory))];
-    
-    return markets.map(market => {
-      const marketData = data.filter(row => row.market === market);
-      const dataByCategory = categories.map(category => {
-        const categoryData = marketData.find(row => row.assetCategory === category);
-        return categoryData ? categoryData.totalValue : 0;
-      });
-      
-      return {
-        name: market,
-        data: dataByCategory
-      };
-    });
-  }
-
-  /**
-   * Helper method to create radar data
-   */
-  private createRadarData(data: DashboardDataRow[]): number[] {
-    // Create radar data from asset categories
-    const categories = [...new Set(data.map(row => row.assetCategory))];
-    return categories.map(category => {
-      const categoryData = data.filter(row => row.assetCategory === category);
-      return categoryData.reduce((sum, row) => sum + row.totalValue, 0);
-    });
-  }
-
-  /**
-   * Helper method to create market trend data
-   */
-  private createMarketTrendData(data: DashboardDataRow[]): Array<{ name: string; data: number[] }> {
-    // Create market trend series
-    const months = [...new Set(data.map(row => row.month))];
-    const markets = [...new Set(data.map(row => row.market))];
-    
-    return markets.map(market => {
-      const marketData = data.filter(row => row.market === market);
-      const dataByMonth = months.map(month => {
-        const monthData = marketData.find(row => row.month === month);
-        return monthData ? monthData.totalValue : 0;
-      });
-      
-      return {
-        name: market,
-        data: dataByMonth
-      };
-    });
   }
 
   /**
@@ -1240,129 +995,6 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
         name: macro,
         value: macroValue,
         children: industryChildren
-      };
-    });
-  }
-
-  /**
-   * Helper method to create treemap data from dashboardData (legacy method)
-   */
-  protected createTreemapData(data: DashboardDataRow[]): Array<{ name: string; value: number; children?: Array<{ name: string; value: number }> }> {
-    // Group by market and asset category
-    const markets = [...new Set(data.map(row => row.market))];
-    
-    return markets.map(market => {
-      const marketData = data.filter(row => row.market === market);
-      const categories = [...new Set(marketData.map(row => row.assetCategory))];
-      
-      const children = categories.map(category => {
-        const categoryData = marketData.filter(row => row.assetCategory === category);
-        const value = categoryData.reduce((sum, row) => sum + row.totalValue, 0);
-        return { name: category, value };
-      });
-      
-      const totalValue = children.reduce((sum, child) => sum + child.value, 0);
-      
-      return {
-        name: market,
-        value: totalValue,
-        children
-      };
-    });
-  }
-
-  /**
-   * Helper method to create large treemap data
-   */
-  private createLargeTreemapData(data: DashboardDataRow[]): Array<{ name: string; value: number; children?: Array<{ name: string; value: number; children?: Array<{ name: string; value: number }> }> }> {
-    // Create hierarchical data structure
-    const markets = [...new Set(data.map(row => row.market))];
-    
-    return markets.map(market => {
-      const marketData = data.filter(row => row.market === market);
-      const categories = [...new Set(marketData.map(row => row.assetCategory))];
-      
-      const categoryChildren = categories.map(category => {
-        const categoryData = marketData.filter(row => row.assetCategory === category);
-        const months = [...new Set(categoryData.map(row => row.month))];
-        
-        const monthChildren = months.map(month => {
-          const monthData = categoryData.find(row => row.month === month);
-          return { name: month, value: monthData ? monthData.totalValue : 0 };
-        });
-        
-        const categoryValue = monthChildren.reduce((sum, child) => sum + child.value, 0);
-        
-        return {
-          name: category,
-          value: categoryValue,
-          children: monthChildren
-        };
-      });
-      
-      const marketValue = categoryChildren.reduce((sum, child) => sum + child.value, 0);
-      
-      return {
-        name: market,
-        value: marketValue,
-        children: categoryChildren
-      };
-    });
-  }
-
-  /**
-   * Helper method to create sunburst data
-   */
-  protected createSunburstData(data: DashboardDataRow[]): Array<{ name: string; value?: number; children?: Array<{ name: string; value: number }> }> {
-    // Create hierarchical sunburst data
-    const markets = [...new Set(data.map(row => row.market))];
-    
-    return markets.map(market => {
-      const marketData = data.filter(row => row.market === market);
-      const categories = [...new Set(marketData.map(row => row.assetCategory))];
-      
-      const children = categories.map(category => {
-        const categoryData = marketData.filter(row => row.assetCategory === category);
-        const value = categoryData.reduce((sum, row) => sum + row.totalValue, 0);
-        return { name: category, value };
-      });
-      
-      return {
-        name: market,
-        children
-      };
-    });
-  }
-
-  /**
-   * Helper method to create large sunburst data
-   */
-  private createLargeSunburstData(data: DashboardDataRow[]): Array<{ name: string; value?: number; children?: Array<{ name: string; value?: number; children?: Array<{ name: string; value: number }> }> }> {
-    // Create more detailed hierarchical sunburst data
-    const markets = [...new Set(data.map(row => row.market))];
-    
-    return markets.map(market => {
-      const marketData = data.filter(row => row.market === market);
-      const categories = [...new Set(marketData.map(row => row.assetCategory))];
-      
-      const categoryChildren = categories.map(category => {
-        const categoryData = marketData.filter(row => row.assetCategory === category);
-        const months = [...new Set(categoryData.map(row => row.month))];
-        
-        const monthChildren = months.map(month => {
-          const monthData = categoryData.find(row => row.month === month);
-          return { name: month, value: monthData ? monthData.totalValue : 0 };
-        });
-        
-        return {
-          name: category,
-          children: monthChildren
-        };
-      });
-      
-      return {
-        name: market,
-        children: categoryChildren
       };
     });
   }
@@ -1542,7 +1174,7 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
    */
   private updateAllChartsWithFilteredData(): void {
     this.updatePieChartWithFilteredData();
-    this.updateBarChartWithFilteredData();
+    //this.updateBarChartWithFilteredData();
     this.updateTreemapWithFilteredData();
     this.updateStockListWithFilteredData();
     // Add other chart updates as needed

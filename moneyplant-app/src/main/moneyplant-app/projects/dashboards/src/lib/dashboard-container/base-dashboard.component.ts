@@ -394,24 +394,6 @@ export abstract class BaseDashboardComponent<T = any> implements OnInit, OnDestr
   }
 
   /**
-   * Generic helper method to create heatmap data from data array
-   * Child classes should override this method for specific data structures
-   */
-  protected createHeatmapData(data: T[], xField: string = 'x', yField: string = 'y', valueField: string = 'value'): Array<{ value: [number, number, number]; name: string }> {
-    // Generic implementation - child classes should override for specific logic
-    return [];
-  }
-
-  /**
-   * Generic helper method to create multi-series data for stacked area charts
-   * Child classes should override this method for specific data structures
-   */
-  protected createMultiSeriesData(data: T[], groupField: string = 'category', xField: string = 'x', yField: string = 'y'): Array<{ name: string; data: number[] }> {
-    // Generic implementation - child classes should override for specific logic
-    return [];
-  }
-
-  /**
    * Update a specific widget with filtered data
    */
   protected updateWidgetWithFilters(widget: IWidget, filters: IFilterValues[]): void {
@@ -645,21 +627,6 @@ export abstract class BaseDashboardComponent<T = any> implements OnInit, OnDestr
    * Get data for widget based on chart type detection
    */
   protected abstract getDataByChartType(widget: IWidget): any;
-
-  // Abstract helper methods that should be implemented by child classes
-  protected abstract createTreemapData(data: T[]): any;
-  protected abstract createSunburstData(data: T[]): any;
-  
-  // Chart-specific data generation methods (can be overridden by child classes)
-  protected getScatterChartData(data: T[]): any {
-    // Generic implementation - child classes should override
-    return [];
-  }
-  
-  protected getGaugeChartData(data: T[]): any {
-    // Generic implementation - child classes should override
-    return [{ name: 'Progress', value: 50 }];
-  }
 
   /**
    * Export dashboard data to Excel
