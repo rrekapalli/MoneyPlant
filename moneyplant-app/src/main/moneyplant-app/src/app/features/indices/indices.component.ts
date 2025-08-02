@@ -153,12 +153,21 @@ export class IndicesComponent implements OnInit {
   /**
    * Transform flat indices data to hierarchical TreeNode structure
    * Groups indices by keyCategory for TreeTable display
+   * Only shows categories that have indices with actual data
    */
   private transformToTreeData(indices: IndexResponseDto[]): TreeNode[] {
     const groupedData: { [key: string]: IndexResponseDto[] } = {};
     
-    // Group indices by keyCategory
-    indices.forEach(index => {
+    // Filter indices to only include those with meaningful data
+    const validIndices = indices.filter(index => 
+      index.indexSymbol && 
+      (index.lastPrice !== null && index.lastPrice !== undefined) &&
+      (index.variation !== null && index.variation !== undefined || 
+       index.percentChange !== null && index.percentChange !== undefined)
+    );
+    
+    // Group valid indices by keyCategory
+    validIndices.forEach(index => {
       const category = index.keyCategory || 'Uncategorized';
       if (!groupedData[category]) {
         groupedData[category] = [];
@@ -166,31 +175,36 @@ export class IndicesComponent implements OnInit {
       groupedData[category].push(index);
     });
 
-    // Transform to TreeNode structure
+    // Transform to TreeNode structure - only include categories with valid indices
     const treeData: TreeNode[] = [];
     Object.keys(groupedData).forEach(category => {
-      const categoryNode: TreeNode = {
-        data: {
-          keyCategory: category,
-          symbol: '',
-          lastPrice: null,
-          variation: null,
-          percentChange: null,
-          isCategory: true
-        },
-        children: groupedData[category].map(index => ({
+      const categoryIndices = groupedData[category];
+      
+      // Only create category node if it has at least one valid index
+      if (categoryIndices.length > 0) {
+        const categoryNode: TreeNode = {
           data: {
             keyCategory: category,
-            symbol: index.indexSymbol,
-            lastPrice: index.lastPrice,
-            variation: index.variation,
-            percentChange: index.percentChange,
-            isCategory: false
-          }
-        })),
-        expanded: true // All rows expanded by default
-      };
-      treeData.push(categoryNode);
+            symbol: '',
+            lastPrice: null,
+            variation: null,
+            percentChange: null,
+            isCategory: true
+          },
+          children: categoryIndices.map(index => ({
+            data: {
+              keyCategory: category,
+              symbol: index.indexSymbol,
+              lastPrice: index.lastPrice,
+              variation: index.variation,
+              percentChange: index.percentChange,
+              isCategory: false
+            }
+          })),
+          expanded: true // All rows expanded by default
+        };
+        treeData.push(categoryNode);
+      }
     });
 
     return treeData;

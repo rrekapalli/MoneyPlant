@@ -4,7 +4,7 @@
             [value]="stocks"
             [globalFilterFields]="['symbol', 'companyName', 'industry', 'sector']"
             [scrollable]="true"
-            scrollHeight="600px"
+            scrollHeight="90vh"
             styleClass="p-datatable-sm"
             selectionMode="single">
 
@@ -32,14 +32,13 @@
         <ng-template pTemplate="body" let-stock>
             <tr class="stock-row cursor-pointer" (click)="onRowClick(stock)">
                 <td>
-                    <span [ngClass]="{'font-semibold': true}">{{ stock.symbol }}</span>
+                    <span>{{ stock.symbol }}</span>
                 </td>
                 <td class="text-right">
-                    <span [ngClass]="{'font-semibold': true}">₹{{ stock.lastPrice | number:'1.2-2' }}</span>
+                    <span>₹{{ stock.lastPrice | number:'1.2-2' }}</span>
                 </td>
                 <td class="text-right">
                     <span [ngClass]="{
-                      'font-semibold': true,
                       'text-green-500': stock.priceChange >= 0,
                       'text-red-500': stock.priceChange < 0
                     }">
@@ -48,7 +47,6 @@
                 </td>
                 <td class="text-right">
                     <span [ngClass]="{
-                      'font-semibold': true,
                       'text-green-500': stock.percentChange >= 0,
                       'text-red-500': stock.percentChange < 0
                     }">
