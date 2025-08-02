@@ -1,6 +1,6 @@
-import { IWidget } from '../../../public-api';
+import { IWidget } from 'dashboards';
 import { EChartsOption } from 'echarts';
-import { ApacheEchartBuilder, ChartDataTransformOptions, DataFilter, ColorPalette } from '../../echart-chart-builders/apache-echart-builder';
+import { ApacheEchartBuilder, ChartDataTransformOptions, DataFilter, ColorPalette } from '../apache-echart-builder';
 
 /**
  * Interface for individual stock data item

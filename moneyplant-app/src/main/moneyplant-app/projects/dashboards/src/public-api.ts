@@ -38,7 +38,7 @@ export * from './lib/entities/IWidget';
 
 // Chart Builders
 export * from './lib/echart-chart-builders';
-export { StockListChartBuilder, StockListData, StockListTableComponent, SelectedStockData } from './lib/echart-builders/stock-list';
+export { StockListChartBuilder, StockListData, StockListTableComponent, SelectedStockData } from '@dashboards/echart-chart-builders/stock-list';
 
 
 // Widgets
