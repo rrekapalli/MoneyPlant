@@ -508,6 +508,7 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
       .setCurrencyFormatter('₹', 'en-IN')
       .setPredefinedPalette('finance')
       .setAccessor('symbol')
+      .setFilterColumn('symbol')
       .build();
 
     const filterWidget = createFilterWidget();
@@ -516,10 +517,11 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
     // Position filter widget at row 1 (below metric tiles)
     filterWidget.position = { x: 0, y: 1, cols: 12, rows: 1 };
 
-    barStockIndustry.position = { x: 0, y: 3, cols: 6, rows: 8 };
-    pieStockSector.position = { x: 6, y: 3, cols: 6, rows: 8 };
-    treemapChart.position = { x: 0, y: 11, cols: 12, rows: 8 };
-    stockListWidget.position = { x: 0, y: 19, cols: 12, rows: 10 };
+    barStockIndustry.position = { x: 0, y: 3, cols: 4, rows: 8 };
+    pieStockSector.position = { x: 4, y: 3, cols: 4, rows: 8 };
+    stockListWidget.position = { x: 8, y: 3, cols: 4, rows: 16 };
+
+    treemapChart.position = { x: 0, y: 11, cols: 8, rows: 8 };
 
     // Use the Fluent API to build the dashboard config with filter highlighting enabled
     this.dashboardConfig = StandardDashboardBuilder.createStandard()
@@ -578,6 +580,24 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
         this.updateEchartWidget(widget, initialData);
       } else {
         console.warn(`No data found for widget: ${widget.id} (title: ${widgetTitle})`);
+      }
+    });
+
+    // Find and populate stock list widgets
+    const stockListWidgets = this.dashboardConfig.widgets.filter(widget => 
+      widget.config?.component === 'stock-list-table'
+    );
+
+    stockListWidgets.forEach(widget => {
+      const stockData = this.filteredStockData || this.stockTicksData;
+      if (stockData && stockData.length > 0) {
+        // Update the widget's data directly
+        if (widget.data) {
+          widget.data.stocks = stockData;
+          widget.data.isLoadingStocks = false;
+        }
+      } else {
+        console.warn(`No stock data available for stock list widget: ${widget.id}`);
       }
     });
 
