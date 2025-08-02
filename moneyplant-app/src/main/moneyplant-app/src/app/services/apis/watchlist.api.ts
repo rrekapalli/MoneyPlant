@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from './api.base';
-import { WatchlistItem } from '../entities/watchlist-item';
 import { Watchlist } from '../entities/watchlist';
+import { WatchlistItem } from '../entities/watchlist-item';
 import { MockApiService } from './mock-api.service';
 
 @Injectable({
@@ -59,22 +59,43 @@ export class WatchlistService {
   }
 
   /**
-   * Add a symbol to a watchlist
+   * Get all items in a watchlist
    * @param watchlistId The watchlist ID
-   * @param symbol The symbol to add
-   * @returns An Observable of the updated Watchlist
+   * @returns An Observable of WatchlistItem array
    */
-  addSymbol(watchlistId: string, symbol: string): Observable<Watchlist> {
-    return this.apiService.post<Watchlist>(`${this.endpoint}/${watchlistId}/symbols`, { symbol });
+  getWatchlistItems(watchlistId: string): Observable<WatchlistItem[]> {
+    return this.apiService.get<WatchlistItem[]>(`${this.endpoint}/${watchlistId}/items`);
   }
 
   /**
-   * Remove a symbol from a watchlist
+   * Add an item to a watchlist
    * @param watchlistId The watchlist ID
-   * @param symbol The symbol to remove
-   * @returns An Observable of the updated Watchlist
+   * @param item The item to add
+   * @returns An Observable of the added WatchlistItem
    */
-  removeSymbol(watchlistId: string, symbol: string): Observable<Watchlist> {
-    return this.apiService.delete<Watchlist>(`${this.endpoint}/${watchlistId}/symbols/${symbol}`);
+  addWatchlistItem(watchlistId: string, item: Omit<WatchlistItem, 'id' | 'watchlistId'>): Observable<WatchlistItem> {
+    const newItem = { ...item, watchlistId } as Omit<WatchlistItem, 'id'>;
+    return this.apiService.post<WatchlistItem>(`${this.endpoint}/${watchlistId}/items`, newItem);
+  }
+
+  /**
+   * Update a watchlist item
+   * @param watchlistId The watchlist ID
+   * @param itemId The item ID
+   * @param item The updated item data
+   * @returns An Observable of the updated WatchlistItem
+   */
+  updateWatchlistItem(watchlistId: string, itemId: string, item: Partial<WatchlistItem>): Observable<WatchlistItem> {
+    return this.apiService.put<WatchlistItem>(`${this.endpoint}/${watchlistId}/items/${itemId}`, item);
+  }
+
+  /**
+   * Remove an item from a watchlist
+   * @param watchlistId The watchlist ID
+   * @param itemId The item ID
+   * @returns An Observable of the operation result
+   */
+  removeWatchlistItem(watchlistId: string, itemId: string): Observable<void> {
+    return this.apiService.delete<void>(`${this.endpoint}/${watchlistId}/items/${itemId}`);
   }
 }

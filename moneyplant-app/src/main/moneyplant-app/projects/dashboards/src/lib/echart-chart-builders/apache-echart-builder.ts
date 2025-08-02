@@ -179,6 +179,7 @@ export abstract class ApacheEchartBuilder<T extends EChartsOption = EChartsOptio
    */
   setTooltip(trigger: string, formatter?: string | Function): this {
     (this.chartOptions as any).tooltip = {
+      ...(this.chartOptions as any).tooltip,
       trigger,
       formatter: formatter || '{b}: {c}',
     };
@@ -218,6 +219,17 @@ export abstract class ApacheEchartBuilder<T extends EChartsOption = EChartsOptio
       ...(this.chartOptions as any).legend,
       ...legendOptions,
     };
+    return this;
+  }
+
+  /**
+   * Set legend visibility
+   */
+  setShowLegend(show: boolean): this {
+    if (!(this.chartOptions as any).legend) {
+      (this.chartOptions as any).legend = {};
+    }
+    (this.chartOptions as any).legend.show = show;
     return this;
   }
 
@@ -588,6 +600,38 @@ export abstract class ApacheEchartBuilder<T extends EChartsOption = EChartsOptio
       operator: 'equals',
       value: chartData.name || chartData.value,
       displayValue: chartData.name || String(chartData.value)
+    };
+  }
+
+  /**
+   * Set accessor property for global filtering logic
+   * This enables central filtering by setting the accessor that will be used
+   * to generate global filter criteria like <accessor> = <clicked-chart-element>
+   */
+  setAccessor(accessor: string): this {
+    const widget = this.widgetBuilder.build();
+    if (widget.config) {
+      widget.config.accessor = accessor;
+    }
+    return this;
+  }
+
+  /**
+   * Create global filter from chart interaction data using accessor
+   * This method generates filter criteria in the format: <accessor> = <clicked-chart-element>
+   */
+  static createGlobalFilterFromChartData(chartData: any, accessor: string): any | null {
+    if (!chartData || !accessor) return null;
+
+    const filterValue = chartData.name || chartData.value;
+    if (!filterValue) return null;
+
+    return {
+      accessor: accessor,
+      operator: 'equals',
+      value: filterValue,
+      displayValue: String(filterValue),
+      [accessor]: filterValue
     };
   }
 

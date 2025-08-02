@@ -1,0 +1,174 @@
+<div class="container mx-auto p-3">
+  <!-- Indices View -->
+  <div class="indices-view-container">
+
+    <!-- Tabs for Indices Lists -->
+    <p-tabs [(value)]="activeTab">
+      <p-tablist>
+        <div class="flex">
+          @for(indicesList of indicesLists; track indicesList.id; let i = $index) {
+            <p-tab [value]="i.toString()">
+              <span>{{ i === 0 ? 'Indices' : (i + 1) }}</span>
+            </p-tab>
+          }
+          @if(indicesLists.length === 0) {
+            <p-tab value="0">
+              <span>Indices</span>
+            </p-tab>
+          }
+        </div>
+      </p-tablist>
+
+      @for(indicesList of indicesLists; track indicesList.id; let i = $index) {
+        <p-tabpanel [value]="i.toString()">
+          <div class="indices-container mt-2">
+<!--            <p-scrollPanel [style]="{width: '100%', height: '85vh'}">-->
+              <div class="flex justify-between items-center mb-2">
+                <!-- Loading indicator for indices -->
+                @if (i === 0 && isLoadingIndices) {
+                  <div class="p-2 text-center w-full">
+                    <p>Loading market indices...</p>
+                  </div>
+                }
+
+                <!-- Indices TreeTable for main indices (first tab) -->
+                @if (i === 0 && indicesTreeData.length > 0 && !isLoadingIndices) {
+                  <div class="treetable-container">
+                    <!-- TreeTable Header with Search -->
+                    <div class="flex justify-content-between align-items-center mb-2">
+                      <h3 class="m-0">Market Indices</h3>
+                      <div class="flex align-items-center">
+                        <span class="p-input-icon-left">
+                          <input
+                            type="text" 
+                            pInputText 
+                            [(ngModel)]="globalFilterValue" 
+                            placeholder="Search indices..." 
+                            class="p-inputtext-sm"
+                            style="width: 250px;"
+                            (input)="tt.filterGlobal($any($event.target).value, 'contains')">
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <p-treeTable 
+                      [value]="indicesTreeData" 
+                      [scrollable]="true" 
+                      scrollHeight="85vh"
+                      [sortMode]="'multiple'"
+                      [globalFilterFields]="['keyCategory', 'symbol']"
+                      [filterMode]="'lenient'"
+                      #tt
+                      styleClass="p-treetable-sm">
+                      
+                      <ng-template pTemplate="header">
+                        <tr>
+                          <th pSortableColumn="keyCategory" style="width:25%">
+                            Category
+                            <p-sortIcon field="keyCategory"></p-sortIcon>
+                          </th>
+                          <th pSortableColumn="symbol" style="width:20%">
+                            Symbol
+                            <p-sortIcon field="symbol"></p-sortIcon>
+                          </th>
+                          <th pSortableColumn="lastPrice" style="width:15%">
+                            Last Price
+                            <p-sortIcon field="lastPrice"></p-sortIcon>
+                          </th>
+                          <th pSortableColumn="variation" style="width:15%">
+                            Variation
+                            <p-sortIcon field="variation"></p-sortIcon>
+                          </th>
+                          <th pSortableColumn="percentChange" style="width:15%">
+                            Change (%)
+                            <p-sortIcon field="percentChange"></p-sortIcon>
+                          </th>
+                        </tr>
+                      </ng-template>
+                      
+                      <ng-template pTemplate="body" let-rowNode let-rowData="rowData">
+                        <tr [ngClass]="{'category-row': rowData.isCategory, 'selected-row': !rowData.isCategory && selectedIndexSymbol === rowData.symbol}" 
+                            (click)="onRowClick(rowData)" 
+                            [style.cursor]="!rowData.isCategory ? 'pointer' : 'default'"
+                            [class.clickable-row]="!rowData.isCategory">
+                          <td [attr.colspan]="rowData.isCategory ? 5 : 2">
+                            <p-treeTableToggler [rowNode]="rowNode" *ngIf="rowData.isCategory"></p-treeTableToggler>
+                            <span [ngClass]="{'font-bold': rowData.isCategory}">
+                              {{ rowData.isCategory ? rowData.keyCategory : rowData.symbol }}
+                            </span>
+                          </td>
+                          <td *ngIf="!rowData.isCategory">
+                            <span [ngClass]="{'font-bold': rowData.isCategory}">
+                              {{ rowData.lastPrice ? (rowData.lastPrice | currency) : '' }}
+                            </span>
+                          </td>
+                          <td *ngIf="!rowData.isCategory">
+                            <span [ngClass]="{
+                              'font-bold': rowData.isCategory,
+                              'text-green-500': !rowData.isCategory && rowData.variation >= 0,
+                              'text-red-500': !rowData.isCategory && rowData.variation < 0
+                            }">
+                              {{ rowData.variation ? (rowData.variation | number:'1.2-2') : '' }}
+                            </span>
+                          </td>
+                          <td *ngIf="!rowData.isCategory">
+                            <span [ngClass]="{
+                              'font-bold': rowData.isCategory,
+                              'text-green-500': !rowData.isCategory && rowData.percentChange >= 0,
+                              'text-red-500': !rowData.isCategory && rowData.percentChange < 0
+                            }">
+                              {{ rowData.percentChange ? (rowData.percentChange + '%') : '' }}
+                            </span>
+                          </td>
+                        </tr>
+                      </ng-template>
+
+                    </p-treeTable>
+                  </div>
+                }
+                
+                <!-- Indices List Items for other tabs -->
+                @if (i !== 0 && indicesList.items.length > 0 && !(i === 0 && isLoadingIndices)) {
+                  <div class="indices-list">
+                    @for(item of indicesList.items; track $index) {
+                      <div class="index-item p-2 mb-2 border-round surface-card" [pTooltip]="item.name" tooltipPosition="top">
+                        <div class="grid">
+                          <div class="col-12 md:col-6">
+                            <div class="flex align-items-center">
+                              <div class="index-symbol mr-2">{{ item.symbol }}</div>
+                            </div>
+                          </div>
+                          <div class="col-12 md:col-4">
+                            <div class="flex align-items-center justify-content-end">
+                              <div class="index-price mr-2">{{ item.price | currency }}</div>
+                              <div class="index-change" [ngClass]="item.change >= 0 ? 'text-green-500' : 'text-red-500'">
+                                {{ item.change | percent }}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                }
+                @if (indicesList.items.length === 0 && !(i === 0 && isLoadingIndices)) {
+                  <div class="p-2 text-center">
+                    <p>No indices in this list yet. Use the search box above to add indices.</p>
+                  </div>
+                }
+              </div>
+<!--            </p-scrollPanel>-->
+          </div>
+        </p-tabpanel>
+      }
+
+      @if(indicesLists.length === 0) {
+        <p-tabpanel value="0">
+          <div class="p-4 text-center">
+            <p>No indices list found. Create your first indices list to get started.</p>
+          </div>
+        </p-tabpanel>
+      }
+    </p-tabs>
+  </div>
+</div>

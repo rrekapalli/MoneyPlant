@@ -18,58 +18,62 @@
             (click)="notificationsPanel.toggle($event)"
             [ngClass]="{'notification-badge': unreadCount() > 0}"
           >
-            <span *ngIf="unreadCount() > 0" class="p-badge p-badge-sm">{{ unreadCount() }}</span>
+            @if (unreadCount() > 0) {
+              <span class="p-badge p-badge-sm">{{ unreadCount() }}</span>
+            }
           </button>
           <p-popover #notificationsPanel [style]="{width: '350px'}" [showTransitionOptions]="'0.12s'" [hideTransitionOptions]="'0.1s'">
             <ng-template pTemplate="content">
               <div class="notifications-panel">
                 <div class="notifications-header">
                   <h3>Notifications</h3>
-                  <button 
-                    *ngIf="unreadCount() > 0"
-                    pButton 
-                    label="Mark all as read" 
-                    class="p-button-text p-button-sm" 
-                    (click)="markAllAsRead()"
-                  ></button>
+                  @if (unreadCount() > 0) {
+                    <button 
+                      pButton 
+                      label="Mark all as read" 
+                      class="p-button-text p-button-sm" 
+                      (click)="markAllAsRead()"
+                    ></button>
+                  }
                 </div>
                 <div class="notifications-list">
-                  <ng-container *ngIf="notifications().length > 0; else noNotifications">
-                    <div 
-                      *ngFor="let notification of notifications(); trackBy: trackByNotificationId" 
-                      class="notification-item"
-                      [ngClass]="{'unread': !notification.isRead}"
-                      (click)="navigateToNotification(notification, notificationsPanel)"
-                    >
-                      <div class="notification-content">
-                        <div class="notification-header">
-                          <span class="notification-title">{{ notification.title }}</span>
-                          <span class="notification-time">{{ notification.timestamp | date:'shortTime' }}</span>
+                  @if (notifications().length > 0) {
+                    @for (notification of notifications(); track trackByNotificationId($index, notification)) {
+                      <div 
+                        class="notification-item"
+                        [ngClass]="{'unread': !notification.isRead}"
+                        (click)="navigateToNotification(notification, notificationsPanel)"
+                      >
+                        <div class="notification-content">
+                          <div class="notification-header">
+                            <span class="notification-title">{{ notification.title }}</span>
+                            <span class="notification-time">{{ notification.timestamp | date:'shortTime' }}</span>
+                          </div>
+                          <p class="notification-message">{{ notification.message }}</p>
                         </div>
-                        <p class="notification-message">{{ notification.message }}</p>
+                        <div class="notification-actions">
+                          @if (!notification.isRead) {
+                            <button 
+                              pButton 
+                              icon="pi pi-check" 
+                              class="p-button-text p-button-sm" 
+                              (click)="markAsRead(notification.id, $event)"
+                            ></button>
+                          }
+                          <button 
+                            pButton 
+                            icon="pi pi-trash" 
+                            class="p-button-text p-button-sm p-button-danger" 
+                            (click)="deleteNotification(notification.id, $event, notificationsPanel)"
+                          ></button>
+                        </div>
                       </div>
-                      <div class="notification-actions">
-                        <button 
-                          pButton 
-                          icon="pi pi-check" 
-                          class="p-button-text p-button-sm" 
-                          (click)="markAsRead(notification.id, $event)"
-                          *ngIf="!notification.isRead"
-                        ></button>
-                        <button 
-                          pButton 
-                          icon="pi pi-trash" 
-                          class="p-button-text p-button-sm p-button-danger" 
-                          (click)="deleteNotification(notification.id, $event, notificationsPanel)"
-                        ></button>
-                      </div>
-                    </div>
-                  </ng-container>
-                  <ng-template #noNotifications>
+                    }
+                  } @else {
                     <div class="no-notifications">
                       <p>No notifications</p>
                     </div>
-                  </ng-template>
+                  }
                 </div>
               </div>
             </ng-template>

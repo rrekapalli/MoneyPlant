@@ -10,15 +10,61 @@ import { MockApiService } from './mock-api.service';
 })
 export class HoldingsService {
   private readonly endpoint = '/holdings';
+  private readonly groupsEndpoint = '/holding-groups';
 
   constructor(private apiService: MockApiService) {}
+
+  /**
+   * Get all holdings
+   * @returns An Observable of Holding array
+   */
+  getHoldings(): Observable<Holding[]> {
+    return this.apiService.get<Holding[]>(this.endpoint);
+  }
+
+  /**
+   * Get a specific holding by ID
+   * @param id The holding ID
+   * @returns An Observable of Holding
+   */
+  getHoldingById(id: string): Observable<Holding> {
+    return this.apiService.get<Holding>(`${this.endpoint}/${id}`);
+  }
+
+  /**
+   * Create a new holding
+   * @param holding The holding to create
+   * @returns An Observable of the created Holding
+   */
+  createHolding(holding: Omit<Holding, 'id'>): Observable<Holding> {
+    return this.apiService.post<Holding>(this.endpoint, holding);
+  }
+
+  /**
+   * Update an existing holding
+   * @param id The holding ID
+   * @param holding The updated holding data
+   * @returns An Observable of the updated Holding
+   */
+  updateHolding(id: string, holding: Partial<Holding>): Observable<Holding> {
+    return this.apiService.put<Holding>(`${this.endpoint}/${id}`, holding);
+  }
+
+  /**
+   * Delete a holding
+   * @param id The holding ID
+   * @returns An Observable of the operation result
+   */
+  deleteHolding(id: string): Observable<void> {
+    return this.apiService.delete<void>(`${this.endpoint}/${id}`);
+  }
 
   /**
    * Get all holding groups
    * @returns An Observable of HoldingGroup array
    */
   getHoldingGroups(): Observable<HoldingGroup[]> {
-    return this.apiService.get<HoldingGroup[]>(this.endpoint);
+    return this.apiService.get<HoldingGroup[]>(this.groupsEndpoint);
   }
 
   /**
@@ -27,26 +73,26 @@ export class HoldingsService {
    * @returns An Observable of HoldingGroup
    */
   getHoldingGroupById(id: string): Observable<HoldingGroup> {
-    return this.apiService.get<HoldingGroup>(`${this.endpoint}/${id}`);
+    return this.apiService.get<HoldingGroup>(`${this.groupsEndpoint}/${id}`);
   }
 
   /**
    * Create a new holding group
-   * @param holdingGroup The holding group to create
+   * @param group The holding group to create
    * @returns An Observable of the created HoldingGroup
    */
-  createHoldingGroup(holdingGroup: Omit<HoldingGroup, 'id' | 'totalValue' | 'dailyChange'>): Observable<HoldingGroup> {
-    return this.apiService.post<HoldingGroup>(this.endpoint, holdingGroup);
+  createHoldingGroup(group: Omit<HoldingGroup, 'id'>): Observable<HoldingGroup> {
+    return this.apiService.post<HoldingGroup>(this.groupsEndpoint, group);
   }
 
   /**
    * Update an existing holding group
    * @param id The holding group ID
-   * @param holdingGroup The updated holding group data
+   * @param group The updated holding group data
    * @returns An Observable of the updated HoldingGroup
    */
-  updateHoldingGroup(id: string, holdingGroup: Partial<HoldingGroup>): Observable<HoldingGroup> {
-    return this.apiService.put<HoldingGroup>(`${this.endpoint}/${id}`, holdingGroup);
+  updateHoldingGroup(id: string, group: Partial<HoldingGroup>): Observable<HoldingGroup> {
+    return this.apiService.put<HoldingGroup>(`${this.groupsEndpoint}/${id}`, group);
   }
 
   /**
@@ -55,37 +101,35 @@ export class HoldingsService {
    * @returns An Observable of the operation result
    */
   deleteHoldingGroup(id: string): Observable<void> {
-    return this.apiService.delete<void>(`${this.endpoint}/${id}`);
+    return this.apiService.delete<void>(`${this.groupsEndpoint}/${id}`);
   }
 
   /**
-   * Add a holding to a holding group
+   * Get all holdings in a group
    * @param groupId The holding group ID
-   * @param holding The holding to add
-   * @returns An Observable of the updated HoldingGroup
+   * @returns An Observable of Holding array
    */
-  addHolding(groupId: string, holding: Omit<Holding, 'value' | 'change'>): Observable<HoldingGroup> {
-    return this.apiService.post<HoldingGroup>(`${this.endpoint}/${groupId}/holdings`, holding);
+  getHoldingsByGroup(groupId: string): Observable<Holding[]> {
+    return this.apiService.get<Holding[]>(`${this.groupsEndpoint}/${groupId}/holdings`);
   }
 
   /**
-   * Update a holding in a holding group
+   * Add a holding to a group
    * @param groupId The holding group ID
-   * @param symbol The symbol of the holding to update
-   * @param holding The updated holding data
-   * @returns An Observable of the updated HoldingGroup
+   * @param holdingId The holding ID
+   * @returns An Observable of the operation result
    */
-  updateHolding(groupId: string, symbol: string, holding: Partial<Holding>): Observable<HoldingGroup> {
-    return this.apiService.put<HoldingGroup>(`${this.endpoint}/${groupId}/holdings/${symbol}`, holding);
+  addHoldingToGroup(groupId: string, holdingId: string): Observable<void> {
+    return this.apiService.post<void>(`${this.groupsEndpoint}/${groupId}/holdings/${holdingId}`, {});
   }
 
   /**
-   * Remove a holding from a holding group
+   * Remove a holding from a group
    * @param groupId The holding group ID
-   * @param symbol The symbol of the holding to remove
-   * @returns An Observable of the updated HoldingGroup
+   * @param holdingId The holding ID
+   * @returns An Observable of the operation result
    */
-  removeHolding(groupId: string, symbol: string): Observable<HoldingGroup> {
-    return this.apiService.delete<HoldingGroup>(`${this.endpoint}/${groupId}/holdings/${symbol}`);
+  removeHoldingFromGroup(groupId: string, holdingId: string): Observable<void> {
+    return this.apiService.delete<void>(`${this.groupsEndpoint}/${groupId}/holdings/${holdingId}`);
   }
 }
