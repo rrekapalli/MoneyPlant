@@ -602,11 +602,6 @@ export class TodayComponent extends BaseDashboardComponent<DashboardDataRow> {
         const revenueData = this.groupByAndSum(sourceData, 'month', 'totalValue');
         return revenueData;
         
-      case 'Financial Overview':
-        // Create multi-series data for stacked area chart
-        const financialData = this.createMultiSeriesData(sourceData);
-        return financialData;
-        
       case 'Performance Monitoring':
         // Use all data points for large-scale area chart
         const performanceData = sourceData.map(row => ({
@@ -629,11 +624,6 @@ export class TodayComponent extends BaseDashboardComponent<DashboardDataRow> {
         // Create radar-style polar data
         const radarData = this.createRadarData(sourceData);
         return radarData;
-        
-      case 'Portfolio Allocation':
-        // Create multi-series data for stacked area chart
-        const portfolioAllocationData = this.createMultiSeriesData(sourceData);
-        return portfolioAllocationData;
         
       case 'Market Conditions':
         // Create multi-series data for market trends
@@ -1002,7 +992,7 @@ export class TodayComponent extends BaseDashboardComponent<DashboardDataRow> {
   /**
    * Create heatmap data from dashboard data
    */
-  protected override createHeatmapData(
+  protected  createHeatmapData(
     data: DashboardDataRow[], 
     xField: string = 'assetCategory', 
     yField: string = 'month', 
