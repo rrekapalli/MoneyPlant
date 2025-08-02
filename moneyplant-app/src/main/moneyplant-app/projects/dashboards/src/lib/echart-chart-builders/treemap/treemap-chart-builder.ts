@@ -178,7 +178,7 @@ export class TreemapChartBuilder extends ApacheEchartBuilder<TreemapChartOptions
       },
       itemStyle: {
         borderColor: '#fff',
-        borderWidth: 1,
+        borderWidth: 0,
         gapWidth: 1,
       },
       label: {
@@ -201,7 +201,7 @@ export class TreemapChartBuilder extends ApacheEchartBuilder<TreemapChartOptions
         {
           itemStyle: {
             borderColor: '#555',
-            borderWidth: 5,
+            borderWidth: 1,
             gapWidth: 1,
           },
           label: {
@@ -211,7 +211,7 @@ export class TreemapChartBuilder extends ApacheEchartBuilder<TreemapChartOptions
         {
           itemStyle: {
             borderColor: '#555',
-            borderWidth: 5,
+            borderWidth: 1,
             gapWidth: 1,
           },
           label: {
@@ -221,7 +221,7 @@ export class TreemapChartBuilder extends ApacheEchartBuilder<TreemapChartOptions
       ],
       emphasis: {
         itemStyle: {
-          shadowBlur: 10,
+          shadowBlur: 3,
           shadowOffsetX: 0,
           shadowColor: 'rgba(0, 0, 0, 0.5)',
         },
