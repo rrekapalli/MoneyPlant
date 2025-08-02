@@ -30,7 +30,13 @@
         </ng-template>
 
         <ng-template pTemplate="body" let-stock>
-            <tr class="stock-row cursor-pointer" (click)="onRowClick(stock)">
+            <tr class="stock-row cursor-pointer" 
+                (click)="onRowClick(stock)"
+                (mouseenter)="setHoveredStock(stock)"
+                (mouseleave)="clearHoveredStock()"
+                [pTooltip]="stockTooltipTemplate"
+                tooltipPosition="top"
+                tooltipStyleClass="stock-tooltip">
                 <td>
                     <span>{{ stock.symbol }}</span>
                 </td>
@@ -74,3 +80,53 @@
         </ng-template>
     </p-table>
 </p-card>
+
+<!-- Tooltip Template -->
+<ng-template #stockTooltipTemplate>
+    <div class="stock-tooltip-content">
+        <div class="tooltip-header" *ngIf="hoveredStock?.companyName">
+            {{hoveredStock?.companyName}}
+        </div>
+        
+        <div class="tooltip-industry-sector" *ngIf="hoveredStock?.industry || hoveredStock?.sector">
+            <span class="industry" *ngIf="hoveredStock?.industry">Industry: <strong>{{hoveredStock?.industry}}</strong></span>
+            <span class="sector" *ngIf="hoveredStock?.sector">Sector: <strong>{{hoveredStock?.sector}}</strong></span>
+        </div>
+        
+        <div class="tooltip-separator" *ngIf="(hoveredStock?.industry || hoveredStock?.sector) && hasNumericalData(hoveredStock)"></div>
+        
+        <div class="tooltip-data-section" *ngIf="hasNumericalData(hoveredStock)">
+            <!-- Row 1: Open and Previous Close -->
+            <div class="tooltip-data-row" *ngIf="hoveredStock?.openPrice || hoveredStock?.previousClose">
+                <div class="data-item" *ngIf="hoveredStock?.openPrice">
+                    <span class="label">Open:</span>
+                    <span class="value">₹{{hoveredStock?.openPrice | number:'1.2-2'}}</span>
+                </div>
+                <div class="data-item" *ngIf="hoveredStock?.previousClose">
+                    <span class="label">Prev Close:</span>
+                    <span class="value">₹{{hoveredStock?.previousClose | number:'1.2-2'}}</span>
+                </div>
+            </div>
+            
+            <!-- Row 2: Day High and Day Low -->
+            <div class="tooltip-data-row" *ngIf="hoveredStock?.dayHigh || hoveredStock?.dayLow">
+                <div class="data-item" *ngIf="hoveredStock?.dayHigh">
+                    <span class="label">Day High:</span>
+                    <span class="value">₹{{hoveredStock?.dayHigh | number:'1.2-2'}}</span>
+                </div>
+                <div class="data-item" *ngIf="hoveredStock?.dayLow">
+                    <span class="label">Day Low:</span>
+                    <span class="value">₹{{hoveredStock?.dayLow | number:'1.2-2'}}</span>
+                </div>
+            </div>
+            
+            <!-- Row 3: Volume -->
+            <div class="tooltip-data-row single-item" *ngIf="hoveredStock?.volume">
+                <div class="data-item">
+                    <span class="label">Volume:</span>
+                    <span class="value">{{hoveredStock?.volume | number}}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</ng-template>

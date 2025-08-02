@@ -1,4 +1,4 @@
-import { Component, OnInit, OnChanges, DoCheck, Input, Output, EventEmitter, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnChanges, DoCheck, Input, Output, EventEmitter, ChangeDetectionStrategy, ChangeDetectorRef, ViewChild, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CardModule } from 'primeng/card';
@@ -58,6 +58,8 @@ export class StockListTableComponent implements OnInit, OnChanges, DoCheck {
   @Output() stockSelected = new EventEmitter<SelectedStockData>();
   @Output() refreshRequested = new EventEmitter<void>();
 
+  @ViewChild('stockTooltipTemplate') stockTooltipTemplate!: TemplateRef<any>;
+
   // Search functionality
   searchQuery: string = '';
   isSearching: boolean = false;
@@ -65,6 +67,9 @@ export class StockListTableComponent implements OnInit, OnChanges, DoCheck {
 
   // Global filter for TreeTable
   globalFilterValue: string = '';
+
+  // Tooltip functionality
+  hoveredStock: StockListData | null = null;
 
   // Keep track of previous widget data for change detection
   private previousStocksLength: number = 0;
@@ -187,6 +192,32 @@ export class StockListTableComponent implements OnInit, OnChanges, DoCheck {
    */
   refreshStocks(): void {
     this.refreshRequested.emit();
+  }
+
+  /**
+   * Set the currently hovered stock for tooltip display
+   */
+  setHoveredStock(stock: StockListData): void {
+    this.hoveredStock = stock;
+  }
+
+  /**
+   * Clear the hovered stock when mouse leaves
+   */
+  clearHoveredStock(): void {
+    this.hoveredStock = null;
+  }
+
+  /**
+   * Check if the stock has numerical data to display in tooltip
+   */
+  hasNumericalData(stock: StockListData | null): boolean {
+    if (!stock) return false;
+    return (stock.volume !== undefined && stock.volume !== null) ||
+           (stock.dayHigh !== undefined && stock.dayHigh !== null) ||
+           (stock.dayLow !== undefined && stock.dayLow !== null) ||
+           (stock.openPrice !== undefined && stock.openPrice !== null) ||
+           (stock.previousClose !== undefined && stock.previousClose !== null);
   }
 
   /**
