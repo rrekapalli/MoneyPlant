@@ -1,4 +1,4 @@
-import { Component, OnInit, OnChanges, Input, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, OnChanges, DoCheck, Input, Output, EventEmitter, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CardModule } from 'primeng/card';
@@ -51,13 +51,12 @@ export interface SelectedStockData {
   templateUrl: './stock-list-table.component.html',
   styleUrls: ['./stock-list-table.component.scss']
 })
-export class StockListTableComponent implements OnInit, OnChanges {
+export class StockListTableComponent implements OnInit, OnChanges, DoCheck {
   @Input() widget!: IWidget;
   @Input() stocks: StockListData[] = [];
   @Input() isLoadingStocks: boolean = false;
   @Output() stockSelected = new EventEmitter<SelectedStockData>();
   @Output() refreshRequested = new EventEmitter<void>();
-
 
   // Search functionality
   searchQuery: string = '';
@@ -67,7 +66,11 @@ export class StockListTableComponent implements OnInit, OnChanges {
   // Global filter for TreeTable
   globalFilterValue: string = '';
 
-  constructor() {}
+  // Keep track of previous widget data for change detection
+  private previousStocksLength: number = 0;
+  private previousIsLoading: boolean = false;
+
+  constructor(private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.updateStocksFromWidget();
@@ -77,13 +80,31 @@ export class StockListTableComponent implements OnInit, OnChanges {
     this.updateStocksFromWidget();
   }
 
+  ngDoCheck(): void {
+    // Manually check for changes in widget.data.stocks
+    const currentStocksLength = this.widget?.data?.stocks?.length || 0;
+    const currentIsLoading = this.widget?.data?.isLoadingStocks || false;
+
+    if (currentStocksLength !== this.previousStocksLength || 
+        currentIsLoading !== this.previousIsLoading) {
+      this.previousStocksLength = currentStocksLength;
+      this.previousIsLoading = currentIsLoading;
+      
+      this.updateStocksFromWidget();
+      this.cdr.detectChanges();
+    }
+  }
+
   /**
    * Update stocks data from widget.data
    */
   private updateStocksFromWidget(): void {
-    if (this.widget?.data?.stocks) {
+    if (this.widget?.data?.stocks && this.widget.data.stocks.length > 0) {
       this.stocks = this.widget.data.stocks;
       this.isLoadingStocks = this.widget.data.isLoadingStocks || false;
+    } else if (!this.stocks || this.stocks.length === 0) {
+      // Ensure stocks is initialized as empty array if no data
+      this.stocks = [];
     }
   }
 
