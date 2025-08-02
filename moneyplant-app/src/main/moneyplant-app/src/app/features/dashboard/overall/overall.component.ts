@@ -516,16 +516,9 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
   protected initializeDashboardConfig(): void {
     // Create widgets using enhanced chart builders
 
-     // Investment Distribution Map (using density map builder)
-     const densityMapInvestment = DensityMapBuilder.create()
-     .setData([]) // Data will be populated later
-     .setHeader('Investment Distribution by Region')
-     .setCurrencyFormatter('INR', 'en-US')
-     .build();
-
     // Stock Industry Horizontal Bar Chart
     const barStockIndustry = HorizontalBarChartBuilder.create()
-        .setData([]) // Start with empty data, will be populated when stock data loads
+        .setData(this.filteredStockData) // Start with empty data, will be populated when stock data loads
         .setHeader('Industry')
         .setCurrencyFormatter('INR', 'en-US')
         .setPredefinedPalette('business')
@@ -570,9 +563,10 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
 
     // Portfolio Distribution Treemap
     const treemapChart = TreemapChartBuilder.create()
-      .setData([]) // Start with empty data, will be populated when stock data loads
+      .setData(this.filteredStockData) // Start with empty data, will be populated when stock data loads
       .setHeader('Portfolio Distribution')
       .setPortfolioConfiguration()
+      .setItemStyle('#fff', 1, 1)
       .setFinancialDisplay('INR', 'en-US')
       .setAccessor('macro')
       .setFilterColumn('macro')
@@ -588,7 +582,7 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
 
     // Stock List Widget - Initialize with empty data, will be populated later
     const stockListWidget = StockListChartBuilder.create()
-      .setData([]) // Start with empty data, will be populated when stock data loads
+      .setData(this.filteredStockData) // Start with empty data, will be populated when stock data loads
       .setStockPerformanceConfiguration()
       .setHeader('Stock List')
       .setCurrencyFormatter('₹', 'en-IN')
@@ -603,12 +597,12 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
     // Position filter widget at row 1 (below metric tiles)
     filterWidget.position = { x: 0, y: 1, cols: 12, rows: 1 };
 
-    barStockIndustry.position = { x: 0, y: 3, cols: 4, rows: 8 };
+    //barStockIndustry.position = { x: 0, y: 3, cols: 4, rows: 8 };
+    
     pieStockSector.position = { x: 4, y: 3, cols: 4, rows: 8 };
+    treemapChart.position = { x: 0, y: 3, cols: 4, rows: 8 };
     stockListWidget.position = { x: 8, y: 3, cols: 4, rows: 16 };
-
-    treemapChart.position = { x: 0, y: 11, cols: 8, rows: 8 };
-
+    
     // Use the Fluent API to build the dashboard config with filter highlighting enabled
     this.dashboardConfig = StandardDashboardBuilder.createStandard()
       .setDashboardId('overall-dashboard')
@@ -622,7 +616,7 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
       .setWidgets([
         ...metricTiles,
         filterWidget,
-        barStockIndustry,
+        //barStockIndustry,
         pieStockSector,
         treemapChart,
         stockListWidget,
