@@ -7,6 +7,7 @@ import {IMarkdownCellOptions} from './IMarkdownCellOptions';
 import {ICodeCellOptions} from './ICodeCellOptions';
 import {ITableOptions} from './ITableOptions';
 import {IFilterValues} from './IFilterValues';
+import {FilterBy} from '../echart-chart-builders/apache-echart-builder';
 
 /**
  * Interface representing a widget in the dashboard
@@ -48,6 +49,9 @@ export interface IWidget extends GridsterItem {
     
     /** Filter column/property to use when applying filters (falls back to accessor if not specified) */
     filterColumn?: string;
+    
+    /** How to filter when this widget is clicked: by value or by category */
+    filterBy?: FilterBy;
     
     /** Event handlers */
     events?: {

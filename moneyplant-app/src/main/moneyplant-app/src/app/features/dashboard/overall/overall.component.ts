@@ -104,7 +104,9 @@ import {
   SunburstChartBuilder,
   // Stock List Chart Builder
   StockListChartBuilder,
-  StockListData
+  StockListData,
+  // Filter enum
+  FilterBy
 } from '@dashboards/public-api';
 
 // Import only essential widget creation functions and data
@@ -131,7 +133,6 @@ import {StockDataDto, StockTicksDto} from '../../../services/entities/stock-tick
 
 /**
  * Filter criteria interface for centralized filtering system
- * This interface defines the structure for filters that can be applied across all widgets
  */
 interface FilterCriteria {
   type: 'industry' | 'sector' | 'symbol' | 'custom' | 'macro';
@@ -170,53 +171,23 @@ export interface DashboardDataRow {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 /**
- * OverallComponent - Financial Dashboard with Centralized Filtering System
- * 
- * This component implements a centralized filtering system that provides consistent
- * filtering behavior across all widgets and charts. The system works as follows:
- * 
- * ARCHITECTURE:
- * - stockTicksData: Original unfiltered data source
- * - filteredStockData: Single filtered data source used by all widgets
- * - appliedFilters: Array tracking all active filters from different widgets
- * 
- * FILTERING FLOW:
- * 1. User clicks on chart elements (pie slices, bar segments, etc.)
- * 2. Click handlers call addFilter() with appropriate FilterCriteria
- * 3. addFilter() manages the appliedFilters array and calls applyFilters()
- * 4. applyFilters() processes all filters sequentially on original data
- * 5. filteredStockData is updated with the result
- * 6. All widgets are refreshed using the same filtered data source
- * 
- * BENEFITS:
- * - Consistent filtering across all widgets
- * - Cumulative filtering (multiple filters can be applied simultaneously)
- * - Single source of truth for filtered data
- * - Easy filter management (add, remove, clear all)
- * - Prevents filter conflicts and data inconsistencies
- * 
- * USAGE:
- * - Chart click handlers use filterChartsByIndustry(), filterChartsBySector()
- * - Filters can be cleared using clearAllChartFilters()
- * - All widgets automatically update when filters change
+ * Financial Dashboard with centralized filtering system for consistent
+ * filtering behavior across all widgets and charts.
  */
-export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
+export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
   // Shared dashboard data - Flat structure (implements abstract property)
-  protected dashboardData: DashboardDataRow[] = [...INITIAL_DASHBOARD_DATA];
-  protected readonly initialDashboardData: DashboardDataRow[] = INITIAL_DASHBOARD_DATA;
+  protected dashboardData: StockDataDto[] = [];
+  protected readonly initialDashboardData: StockDataDto[] = [];
 
-  // Stock ticks data storage
-  protected stockTicksData: StockDataDto[] | null = [];
+
+
+
 
 
   // Filtered stock data for cross-chart filtering
-  protected filteredStockData: StockDataDto[] | null = [];
-  
-  /**
-   * Central applied filters array to track all active filters
-   * This array maintains all filters currently applied across different widgets
-   * Each filter is applied sequentially to create cumulative filtering effect
-   */
+  protected filteredDashboardData: StockDataDto[] | null = this.dashboardData || [];
+
+  // Central applied filters array for cumulative filtering
   protected appliedFilters: FilterCriteria[] = [];
   
   // Dashboard title - dynamic based on selected index
@@ -236,59 +207,40 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
   }
 
   override ngOnInit(): void {
-    // Call parent ngOnInit if it exists
     super.ngOnInit?.();
-    
-    // Load initial stock ticks data - you can modify this to use a default index symbol
-    // For now, we'll let the component communication service handle the initial load
-    // this.loadStockTicksData('NIFTY50'); // Uncomment and set default symbol if needed
   }
 
-  // Implement abstract methods from BaseDashboardComponent
   protected onChildInit(): void {
     // Register world map for density map charts
     import('echarts-map-collection/custom/world.json').then((worldMapData) => {
       DensityMapBuilder.registerMap('world', worldMapData.default || worldMapData);
-    }).catch((error) => {
+    }).catch(() => {
       // Handle world map loading error silently
     });
 
-    // Clear any existing subscription to prevent memory leaks
+    // Clear any existing subscription
     if (this.selectedIndexSubscription) {
       this.selectedIndexSubscription.unsubscribe();
       this.selectedIndexSubscription = null;
     }
 
-    // Clear existing stock ticks data to prevent showing stale data
-    this.stockTicksData = null;
-    this.filteredStockData = null;
-    
-    // Reset centralized filters
+    // Reset filters and title
     this.appliedFilters = [];
-    
-    // Reset dashboard title
     this.dashboardTitle = 'Financial Dashboard';
-    
-    // Clear any existing selected index data to prevent stale data issues
     this.componentCommunicationService.clearSelectedIndex();
 
-    // Clear pie chart and other widgets data to prevent stale data
-    this.clearAllWidgetsData();
-
-    // Subscribe to selected index data changes and store the subscription
+    // Subscribe to selected index changes
     this.selectedIndexSubscription = this.componentCommunicationService.getSelectedIndex().subscribe(selectedIndex => {
       if (selectedIndex) {
         this.updateDashboardWithSelectedIndex(selectedIndex);
       } else {
-        // If no selected index, load NIFTY 50 by default
         this.loadDefaultNifty50Data();
       }
     });
 
-    // Load NIFTY 50 data by default on initial load
+    // Load default data if no index selected
     setTimeout(() => {
       const currentSelectedIndex = this.componentCommunicationService.getSelectedIndex();
-      // Check if there's no current selected index, then load default
       if (!currentSelectedIndex) {
         this.loadDefaultNifty50Data();
       }
@@ -303,156 +255,51 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
     }
     
     // Clear stock ticks data and reset filters
-    this.stockTicksData = null;
-    this.filteredStockData = null;
+    this.dashboardData = [];
+    this.filteredDashboardData = null;
     this.appliedFilters = [];
   }
 
-  /**
-   * Load default NIFTY 50 data when no index is selected
-   */
   private loadDefaultNifty50Data(): void {
-    // Set dashboard title for NIFTY 50
-    this.dashboardTitle = 'NIFTY 50 - Financial Dashboard';
+    this.dashboardTitle = 'NIFTY METAL - Financial Dashboard';
     
-    // Create default NIFTY 50 selected index data
-    const defaultNifty50Data: SelectedIndexData = {
-      id: 'NIFTY50',
-      symbol: 'NIFTY 50',
-      name: 'NIFTY-50',
+    const defaultNiftyMetalData: SelectedIndexData = {
+      id: 'NIFTYMETAL',
+      symbol: 'NIFTY METAL',
+      name: 'NIFTY-METAL',
       lastPrice: 0,
       variation: 0,
       percentChange: 0,
       keyCategory: 'Index'
     };
     
-    // Update dashboard with NIFTY 50 data
-    this.updateDashboardWithSelectedIndex(defaultNifty50Data);
+    this.updateDashboardWithSelectedIndex(defaultNiftyMetalData);
   }
 
-  /**
-   * Load stock ticks data for the given index symbol
-   * @param indexSymbol The symbol of the index to fetch stock ticks data for
-   */
   private loadStockTicksData(indexSymbol: string): void {
     if (indexSymbol && indexSymbol.trim()) {
       this.stockTicksService.getStockTicksByIndex(indexSymbol).subscribe({
         next: (stockTicksData: StockDataDto[]) => {
-          // Check if we received empty or null data
-          if (!stockTicksData || stockTicksData.length === 0) {
-            stockTicksData = this.getFallbackSampleData();
-          }
-          
-          // Store the stock ticks data
-          this.stockTicksData = stockTicksData;
-          
-          // Reset all filters when new data is loaded
+          this.dashboardData = stockTicksData || [];
           this.appliedFilters = [];
-          
-          // Initialize filtered data with original data (no filters applied)
-          this.filteredStockData = stockTicksData;
+          this.filteredDashboardData = this.dashboardData;
 
-          // Update metric tiles with the new stock data
           this.updateMetricTilesWithFilters([]);
-          
-          // Update all widgets with the new stock data using centralized system
+          this.populateWidgetsWithInitialData();
           this.updateAllChartsWithFilteredData();
-          
-          // Trigger change detection after receiving stock data
           this.cdr.detectChanges();
         },
-        error: (error) => {
-          // Use fallback sample data when service fails
-          const fallbackData = this.getFallbackSampleData();
-          this.stockTicksData = fallbackData;
-          this.filteredStockData = fallbackData;
+        error: () => {
+          this.dashboardData = [];
+          this.filteredDashboardData = [];
           this.appliedFilters = [];
           
-          // Update widgets with fallback data
           this.updateMetricTilesWithFilters([]);
           this.updateAllChartsWithFilteredData();
           this.cdr.detectChanges();
         }
       });
     }
-  }
-
-  /**
-   * Get fallback sample data when service fails or returns empty data
-   */
-  private getFallbackSampleData(): StockDataDto[] {
-    return [
-      {
-        symbol: 'RELIANCE',
-        companyName: 'Reliance Industries Limited',
-        lastPrice: 2456.75,
-        priceChange: 23.50,
-        percentChange: 0.97,
-        totalTradedVolume: 1234567,
-        dayHigh: 2478.90,
-        dayLow: 2445.20,
-        openPrice: 2450.00,
-        previousClose: 2433.25,
-        basicIndustry: 'Oil & Gas',
-        sector: 'Energy'
-      },
-      {
-        symbol: 'TCS',
-        companyName: 'Tata Consultancy Services Limited',
-        lastPrice: 3567.80,
-        priceChange: -15.25,
-        percentChange: -0.43,
-        totalTradedVolume: 987654,
-        dayHigh: 3590.00,
-        dayLow: 3555.50,
-        openPrice: 3580.00,
-        previousClose: 3583.05,
-        basicIndustry: 'Information Technology',
-        sector: 'IT'
-      },
-      {
-        symbol: 'INFY',
-        companyName: 'Infosys Limited',
-        lastPrice: 1456.30,
-        priceChange: 8.75,
-        percentChange: 0.60,
-        totalTradedVolume: 2345678,
-        dayHigh: 1465.00,
-        dayLow: 1445.80,
-        openPrice: 1450.00,
-        previousClose: 1447.55,
-        basicIndustry: 'Information Technology',
-        sector: 'IT'
-      },
-      {
-        symbol: 'HDFC',
-        companyName: 'HDFC Bank Limited',
-        lastPrice: 1678.90,
-        priceChange: 12.40,
-        percentChange: 0.74,
-        totalTradedVolume: 1876543,
-        dayHigh: 1685.50,
-        dayLow: 1665.20,
-        openPrice: 1670.00,
-        previousClose: 1666.50,
-        basicIndustry: 'Banking',
-        sector: 'Financial Services'
-      },
-      {
-        symbol: 'ICICI',
-        companyName: 'ICICI Bank Limited',
-        lastPrice: 987.65,
-        priceChange: -5.30,
-        percentChange: -0.53,
-        totalTradedVolume: 3456789,
-        dayHigh: 995.00,
-        dayLow: 982.50,
-        openPrice: 990.00,
-        previousClose: 992.95,
-        basicIndustry: 'Banking',
-        sector: 'Financial Services'
-      }
-    ] as StockDataDto[];
   }
 
   /**
@@ -487,7 +334,7 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
     
     // Add the new data to the existing dashboard data
     // First, remove any existing data for the same symbol to avoid duplicates
-    this.dashboardData = this.dashboardData.filter(row => row.id !== dashboardDataRow.id);
+    this.dashboardData = this.dashboardData.filter(row => row.symbol !== dashboardDataRow.symbol);
     
     // Add the new data row
     this.dashboardData = [dashboardDataRow, ...this.dashboardData];
@@ -506,19 +353,45 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
    * Create metric tiles using stock ticks data
    * @param data - Dashboard data (not used, we use stockTicksData instead)
    */
-  protected createMetricTiles(data: DashboardDataRow[]): IWidget[] {
-    return createMetricTilesFunction(this.stockTicksData);
+  protected createMetricTiles(data: StockDataDto[]): IWidget[] {
+    return createMetricTilesFunction(this.filteredDashboardData || this.dashboardData);
   }
 
   /**
-   * Initialize dashboard config using the Enhanced Chart Builders
+   * Override updateMetricTilesWithFilters to use filtered data
    */
-  protected initializeDashboardConfig(): void {
-    // Create widgets using enhanced chart builders
+  protected override updateMetricTilesWithFilters(filters: any[]): void {
+    // Find all tile widgets
+    const tileWidgets = this.dashboardConfig.widgets.filter(widget => 
+      widget.config?.component === 'tile'
+    );
 
+    // Create new metric tiles with filtered data - use filteredDashboardData
+    const updatedMetricTiles = this.createMetricTiles(this.filteredDashboardData || this.dashboardData);
+
+    // Update each tile widget with new data
+    tileWidgets.forEach((widget, index) => {
+      if (index < updatedMetricTiles.length) {
+        const updatedTile = updatedMetricTiles[index];
+        
+        // Check if this tile should update on data change
+        const tileOptions = widget.config?.options as any;
+        const shouldUpdate = tileOptions?.updateOnDataChange !== false;
+        
+        if (shouldUpdate) {
+          // Update the widget's options with new tile data
+          if (widget.config?.options) {
+            Object.assign(widget.config.options, updatedTile.config?.options);
+          }
+        }
+      }
+    });
+  }
+
+  protected initializeDashboardConfig(): void {
     // Stock Industry Horizontal Bar Chart
     const barStockIndustry = HorizontalBarChartBuilder.create()
-        .setData(this.filteredStockData) // Start with empty data, will be populated when stock data loads
+        .setData(this.filteredDashboardData || []) // Start with current filtered data or empty array
         .setHeader('Industry')
         .setCurrencyFormatter('INR', 'en-US')
         .setPredefinedPalette('business')
@@ -530,65 +403,63 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
           return `${params.name}: ${formatter.format(params.value)}`;
         })
         .setAccessor('industry')
-        .setFilterColumn('industry')
+        .setFilterColumn('industry', FilterBy.Value)
         .setEvents((widget, chart) => {
           if (chart) {
+            chart.off('click');
             chart.on('click', (params: any) => {
-              // Filter by industry when bar is clicked
-              this.filterChartsByIndustry(params.name);
+              params.event?.stop?.();
+              const industryName = params.name || (params.data && params.data.name);
+              if (industryName && typeof industryName === 'string' && isNaN(Number(industryName))) {
+                this.filterChartsByIndustry(industryName);
+              }
+              return false;
             });
           }
         })
+        .setId('industry-bar-chart')
+        .setSkipDefaultFiltering(true)
         .build();
     
     // Stock Sector Allocation Pie Chart with financial display
     const pieStockSector = PieChartBuilder.create()
-      .setData(this.filteredStockData) // Use filtered data for consistent filtering
+      .setData(this.filteredDashboardData) // Use filtered data for consistent filtering
       .setHeader('Sector Allocation')
       .setShowLegend(false)
       .setDonutStyle('40%', '70%')
       .setFinancialDisplay('INR', 'en-US')
       .setPredefinedPalette('finance')
       .setAccessor('sector')
-      .setFilterColumn('sector')
+      .setFilterColumn('sector', FilterBy.Value)
       .setEvents((widget, chart) => {
-        if (chart) {
-          chart.on('click', (params: any) => {
-            // Filter by sector when pie slice is clicked
-            this.filterChartsBySector(params.name);
-          });
+          if (chart) {
+            chart.off('click');
+            chart.on('click', (params: any) => {
+              params.event?.stop?.();
+              const sectorName = params.name || (params.data && params.data.name);
+              if (sectorName && typeof sectorName === 'string' && isNaN(Number(sectorName))) {
+                this.filterChartsBySector(sectorName);
+              }
+              return false;
+            });
         }
       })
+      .setId('sector-pie-chart')
+      .setSkipDefaultFiltering(true)
       .build();
 
-    // Portfolio Distribution Treemap
-    const treemapChart = TreemapChartBuilder.create()
-      .setData(this.filteredStockData) // Start with empty data, will be populated when stock data loads
-      .setHeader('Portfolio Distribution')
-      .setPortfolioConfiguration()
-      .setItemStyle('#fff', 1, 1)
-      .setFinancialDisplay('INR', 'en-US')
-      .setAccessor('macro')
-      .setFilterColumn('macro')
-      .setEvents((widget, chart) => {
-        if (chart) {
-          chart.on('click', (params: any) => {
-            // Filter by macro category when treemap is clicked
-            this.filterChartsByMacro(params.name);
-          });
-        }
-      })
-      .build();
+
 
     // Stock List Widget - Initialize with empty data, will be populated later
     const stockListWidget = StockListChartBuilder.create()
-      .setData(this.filteredStockData) // Start with empty data, will be populated when stock data loads
+      .setData(this.filteredDashboardData)
       .setStockPerformanceConfiguration()
       .setHeader('Stock List')
       .setCurrencyFormatter('₹', 'en-IN')
       .setPredefinedPalette('finance')
       .setAccessor('symbol')
-      .setFilterColumn('symbol')
+      .setFilterColumn('symbol', FilterBy.Value)
+      .setId('stock-list-widget')
       .build();
 
     const filterWidget = createFilterWidget();
@@ -597,11 +468,10 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
     // Position filter widget at row 1 (below metric tiles)
     filterWidget.position = { x: 0, y: 1, cols: 12, rows: 1 };
 
-    //barStockIndustry.position = { x: 0, y: 3, cols: 4, rows: 8 };
-    
-    pieStockSector.position = { x: 4, y: 3, cols: 4, rows: 8 };
-    treemapChart.position = { x: 0, y: 3, cols: 4, rows: 8 };
-    stockListWidget.position = { x: 8, y: 3, cols: 4, rows: 16 };
+    // Position charts with proper spacing
+    barStockIndustry.position = { x: 0, y: 2, cols: 4, rows: 8 };
+    pieStockSector.position = { x: 4, y: 2, cols: 4, rows: 8 };
+    stockListWidget.position = { x: 8, y: 2, cols: 4, rows: 12 };
     
     // Use the Fluent API to build the dashboard config with filter highlighting enabled
     this.dashboardConfig = StandardDashboardBuilder.createStandard()
@@ -616,9 +486,8 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
       .setWidgets([
         ...metricTiles,
         filterWidget,
-        //barStockIndustry,
+        barStockIndustry,
         pieStockSector,
-        treemapChart,
         stockListWidget,
       ])
       .setEditMode(false)
@@ -652,7 +521,7 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
       
       // If no data found by title, try to detect chart type and provide appropriate data
       if (!initialData) {
-        initialData = this.getDataByChartType(widget);
+        initialData = this.getSummarizedDataByWidget(widgetTitle);
       }
       
       if (initialData) {
@@ -666,7 +535,7 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
     );
 
     stockListWidgets.forEach(widget => {
-      const stockData = this.filteredStockData || this.stockTicksData;
+      const stockData = this.filteredDashboardData || this.dashboardData;
       
       if (stockData && stockData.length > 0) {
         // Update the widget's data directly
@@ -706,52 +575,33 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
   /**
    * Get data for widget based on chart type detection
    */
-  protected override getDataByChartType(widget: IWidget): any {
+  protected override getSummarizedDataByWidget(widgetTitle: string | undefined): any {
+    const widget = this.dashboardConfig.widgets.find(widget =>
+        widget.config?.header?.title === widgetTitle
+    );
+
+    if(!widget)
+    {
+      return null;
+    }
+
     const chartOptions = widget.config?.options as any;
-    
+
     if (!chartOptions?.series?.[0]) {
       return null;
     }
-    
-    const seriesType = chartOptions.series[0].type;
-    const mapType = chartOptions.series[0].map;
-    
+
     // Detect chart type and provide appropriate data
-    switch (seriesType) {
-      case 'map':
-        // This is a density/choropleth map - provide investment distribution data
-        return this.groupByAndSum(this.dashboardData, 'market', 'totalValue');
-        
-      case 'pie':
+    switch (widgetTitle) {
+      case 'Sector Allocation':
         // This is a pie chart - provide asset allocation data
-        return this.groupByAndSum(this.dashboardData, 'assetCategory', 'totalValue');
-        
-      case 'bar':
-        // This is a bar chart - provide monthly data
-        return this.groupByAndSum(this.dashboardData, 'month', 'totalValue');
-        
-      case 'line':
-        // This is a line chart - provide portfolio performance data
-        return this.groupByAndSum(this.dashboardData, 'month', 'totalValue');
-        
-      case 'scatter':
-        // This is a scatter chart - provide risk vs return data
-        const riskReturnData = this.dashboardData.filter(row => row.riskValue !== undefined && row.returnValue !== undefined);
-        const groupedRiskReturn = riskReturnData.reduce((acc, row) => {
-          if (!acc[row.assetCategory]) {
-            acc[row.assetCategory] = {
-              name: row.assetCategory,
-              value: [row.riskValue!, row.returnValue!]
-            };
-          }
-          return acc;
-        }, {} as Record<string, any>);
-        return Object.values(groupedRiskReturn);
-        
-      case 'heatmap':
-        // This is a heatmap - provide heatmap data
-        return this.createHeatmapData(this.dashboardData);
-        
+        return this.groupByAndSum(this.filteredDashboardData || this.dashboardData, 'sector', 'totalTradedValue');
+      case 'Industry':
+        // This is a pie chart - provide asset allocation data
+        return this.groupByAndSum(this.filteredDashboardData || this.dashboardData, 'industry', 'totalTradedValue');
+      case 'Portfolio Distribution':
+        // This is a pie chart - provide asset allocation data
+        return this.groupByAndSum(this.filteredDashboardData || this.dashboardData, 'industry', 'totalTradedValue');
       default:
         return null;
     }
@@ -760,26 +610,18 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
   /**
    * Get filtered data for a specific widget using enhanced chart builder transformation methods
    */
-  protected getFilteredDataForWidget(widgetTitle: string, data?: DashboardDataRow[]): any {
-    const sourceData = data || this.dashboardData;
+  protected getFilteredDataForWidget(widgetTitle: string, data?: StockDataDto[]): any {
+    const sourceData = data || this.filteredDashboardData || this.dashboardData;
 
     switch (widgetTitle) {
-      case 'Asset Allocation':
-        // Use enhanced data transformation for pie chart
-        return PieChartBuilder.transformData(sourceData, {
-          valueField: 'totalValue',
-          nameField: 'assetCategory',
-          sortBy: 'value'
-        });
-        
       case 'Sector Allocation':
         // Use stock ticks data grouped by sector with totalTradedValue
-        if (!this.stockTicksData) {
+        if (!sourceData) {
           return [];
         }
         
         // Group by sector and sum totalTradedValue
-        const sectorData = this.stockTicksData.reduce((acc, stock) => {
+        const sectorData = sourceData.reduce((acc, stock) => {
           const sector = stock.sector || 'Unknown';
           const tradedValue = stock.totalTradedValue || 0;
           
@@ -798,12 +640,12 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
         
       case 'Industry':
         // Use stock ticks data grouped by industry with totalTradedValue
-        if (!this.stockTicksData) {
+        if (!sourceData) {
           return [];
         }
         
         // Group by industry and sum totalTradedValue
-        const industryData = this.stockTicksData.reduce((acc, stock) => {
+        const industryData = sourceData.reduce((acc, stock) => {
           const industry = stock.industry || 'Unknown';
           const tradedValue = stock.totalTradedValue || 0;
           
@@ -823,7 +665,7 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
             name: industry,
             value: value
           }))
-          .sort((a, b) => a.value - b.value)
+          .sort((a, b) => b.value - a.value)
           .map((item, index) => ({
             ...item,
             itemStyle: {
@@ -831,92 +673,14 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
             }
           }));
         
-      case 'Portfolio Performance':
-        // Use AreaChartBuilder's transformation method
-        const { data: portfolioData, xAxisData } = AreaChartBuilder.transformToAreaData(sourceData, {
-          valueField: 'totalValue',
-          nameField: 'month',
-          xAxisField: 'month'
-        });
-        return portfolioData;
-        
-      case 'Risk vs Return Analysis':
-        // Filter rows that have both risk and return values, group by assetCategory
-        const riskReturnData = sourceData.filter(row => row.riskValue !== undefined && row.returnValue !== undefined);
-        // Group by assetCategory and take the first occurrence for each category
-        const groupedRiskReturn = riskReturnData.reduce((acc, row) => {
-          if (!acc[row.assetCategory]) {
-            acc[row.assetCategory] = {
-              name: row.assetCategory,
-              value: [row.riskValue!, row.returnValue!]
-            };
-          }
-          return acc;
-        }, {} as Record<string, any>);
-        return Object.values(groupedRiskReturn);
-        
-      case 'Investment Distribution by Region':
-        // Group by market (country) and sum totalValue for map visualization
-        const investmentData = this.groupByAndSum(sourceData, 'market', 'totalValue');
-        return investmentData;
-        
-      case 'Weekly Spending Heatmap':
-        // Create heatmap data from the dashboard data
-        // Group by month and assetCategory to create a heatmap
-        const heatmapData = this.createHeatmapData(sourceData);
-        return heatmapData;
-        
-      case 'Revenue Trend':
-        // Group by month and sum totalValue for area chart
-        const revenueData = this.groupByAndSum(sourceData, 'month', 'totalValue');
-        return revenueData;
-        
-      case 'Financial Overview':
-        // Create multi-series data for stacked area chart
-        const financialData = this.createMultiSeriesData(sourceData);
-        return financialData;
-        
-      case 'Performance Monitoring':
-        // Use all data points for large-scale area chart
-        const performanceData = sourceData.map(row => ({
-          name: `${row.month}-${row.assetCategory}`,
-          value: row.totalValue
-        }));
-        return performanceData;
-        
-      case 'Performance Metrics':
-        // Create polar chart data from asset categories
-        const polarData = this.createPolarData(sourceData);
-        return polarData;
-        
-      case 'Financial Performance':
-        // Create multi-series polar data
-        const multiPolarData = this.createMultiSeriesPolarData(sourceData);
-        return multiPolarData;
-        
-      case 'Business Metrics':
-        // Create radar-style polar data
-        const radarData = this.createRadarData(sourceData);
-        return radarData;
-        
-      case 'Portfolio Allocation':
-        // Create multi-series data for stacked area chart
-        const portfolioAllocationData = this.createMultiSeriesData(sourceData);
-        return portfolioAllocationData;
-        
-      case 'Market Conditions':
-        // Create multi-series data for market trends
-        const marketData = this.createMarketTrendData(sourceData);
-        return marketData;
-        
       case 'Portfolio Distribution':
         // Use stock ticks data with macro, industry, and sector hierarchy
-        if (!this.stockTicksData) {
+        if (!sourceData) {
           return [];
         }
         
         // Create hierarchical treemap data: macro -> industry -> sector with sum(totalTradedValue)
-        const macroGroups = this.stockTicksData.reduce((acc, stock) => {
+        const macroGroups = sourceData.reduce((acc, stock) => {
           const macro = stock.macro || 'Unknown Macro';
           const industry = stock.industry || 'Unknown Industry';
           const sector = stock.sector || 'Unknown Sector';
@@ -960,105 +724,13 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
             children: industryChildren
           };
         }).sort((a, b) => b.value - a.value);
-        
-      case 'Monthly Expenses':
-        // Use TreemapChartBuilder's transformation method for expenses
-        return TreemapChartBuilder.transformToTreemapData(sourceData, {
-          valueField: 'totalValue',
-          nameField: 'assetCategory',
-          childrenField: 'month'
-        });
-        
-      case 'Financial Overview Treemap':
-        // Create large-scale treemap data
-        const largeTreemapData = this.createLargeTreemapData(sourceData);
-        return largeTreemapData;
-        
-      case 'Organizational Structure':
-        // Create sunburst data from asset categories
-        const sunburstData = this.createSunburstData(sourceData);
-        return sunburstData;
-        
-      case 'Financial Overview Sunburst':
-        // Create large-scale sunburst data
-        const largeSunburstData = this.createLargeSunburstData(sourceData);
-        return largeSunburstData;
-        
-      case 'Financial Flow':
-      case 'Investment Flow':
-      case 'Budget Allocation':
-        // Use SankeyChartBuilder's transformation method
-        return SankeyChartBuilder.transformToSankeyData(sourceData, {
-          sourceField: 'assetCategory',
-          targetField: 'market',
-          valueField: 'totalValue',
-          aggregateBy: 'sum'
-        });
-        
-      case 'Test Filter Widget':
-        // Group by assetCategory and sum totalValue (same as Asset Allocation)
-        const testData = this.groupByAndSum(sourceData, 'assetCategory', 'totalValue');
-        return testData;
-        
+
       default:
         return null;
     }
   }
 
-  /**
-   * Enhanced data update method using chart builder transformation methods
-   */
-  protected updateWidgetWithEnhancedData(widget: IWidget, sourceData: DashboardDataRow[]): void {
-    const widgetTitle = widget.config?.header?.title;
-    if (!widgetTitle) return;
 
-    // Get transformed data using the new approach
-    const transformedData = this.getFilteredDataForWidget(widgetTitle, sourceData);
-    if (!transformedData) return;
-
-    // Use enhanced update methods with retry mechanism
-    // Check if this is an ECharts widget
-    if (widget.config?.component !== 'echart') {
-      this.updateEchartWidget(widget, transformedData);
-      return;
-    }
-
-    const chartOptions = widget.config.options as any;
-    const chartType = chartOptions?.series?.[0]?.type;
-    
-    switch (chartType) {
-      case 'pie':
-        PieChartBuilder.updateData(widget, transformedData, { maxAttempts: 5, baseDelay: 200 });
-        break;
-      case 'line':
-        if (chartOptions?.series?.[0]?.areaStyle) {
-          // This is an area chart
-          AreaChartBuilder.updateData(widget, transformedData, { maxAttempts: 5, baseDelay: 200 });
-        }
-        break;
-      case 'treemap':
-        TreemapChartBuilder.updateData(widget, transformedData, { maxAttempts: 5, baseDelay: 200 });
-        break;
-      case 'sankey':
-        SankeyChartBuilder.updateData(widget, transformedData, { maxAttempts: 5, baseDelay: 200 });
-        break;
-      default:
-        // Fall back to the base update method
-        this.updateEchartWidget(widget, transformedData);
-        break;
-    }
-  }
-
-  /**
-   * Handle filter values change from dashboard container (required by BaseDashboardComponent)
-   */
-  override onFilterValuesChanged(filters: any[]): void {
-    // Call the parent method to handle the base filtering logic
-    super.onFilterValuesChanged(filters);
-    
-    // Apply enhanced filtering specific to this component
-    this.applyEnhancedFilters(filters);
-  }
 
   /**
    * Enhanced filtering method that applies filters and updates all widgets
@@ -1072,102 +744,22 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
     if (filters && filters.length > 0) {
       // Use the enhanced filtering from the base chart builder
       const dataFilters = filters.map(filter => ({
-        property: filter.filterColumn || 'assetCategory',
+        property: filter.filterColumn || 'industry',
         operator: 'equals' as const,
         value: filter.value
       }));
       
-      filteredData = ApacheEchartBuilder.applyFilters(this.dashboardData, dataFilters);
+      filteredData = ApacheEchartBuilder.applyFilters(filteredData, dataFilters);
     }
 
+    // Update the filteredDashboardData property
+    this.filteredDashboardData = filteredData;
+
     // Update all chart widgets with filtered data
-    const chartWidgets = this.dashboardConfig.widgets.filter(widget => 
-      widget.config?.component === 'echart'
-    );
-
-    chartWidgets.forEach(widget => {
-      this.updateWidgetWithEnhancedData(widget, filteredData);
-    });
-
-    // Update metric tiles
-    this.updateMetricTilesWithFilters(filters);
+    this.updateAllChartsWithFilteredData();
 
     // Trigger change detection
     setTimeout(() => this.cdr.detectChanges(), 100);
-  }
-
-  // Helper methods specific to this component's data transformations
-
-  /**
-   * Helper method to create polar chart data
-   */
-  private createPolarData(data: DashboardDataRow[]): number[] {
-    // Group by asset category and sum totalValue
-    const groupedData = data.reduce((acc, row) => {
-      if (!acc[row.assetCategory]) {
-        acc[row.assetCategory] = 0;
-      }
-      acc[row.assetCategory] += row.totalValue;
-      return acc;
-    }, {} as Record<string, number>);
-    
-    return Object.values(groupedData);
-  }
-
-  /**
-   * Helper method to create multi-series polar data
-   */
-  private createMultiSeriesPolarData(data: DashboardDataRow[]): Array<{ name: string; data: number[] }> {
-    // Create multiple series based on markets
-    const markets = [...new Set(data.map(row => row.market))];
-    const categories = [...new Set(data.map(row => row.assetCategory))];
-    
-    return markets.map(market => {
-      const marketData = data.filter(row => row.market === market);
-      const dataByCategory = categories.map(category => {
-        const categoryData = marketData.find(row => row.assetCategory === category);
-        return categoryData ? categoryData.totalValue : 0;
-      });
-      
-      return {
-        name: market,
-        data: dataByCategory
-      };
-    });
-  }
-
-  /**
-   * Helper method to create radar data
-   */
-  private createRadarData(data: DashboardDataRow[]): number[] {
-    // Create radar data from asset categories
-    const categories = [...new Set(data.map(row => row.assetCategory))];
-    return categories.map(category => {
-      const categoryData = data.filter(row => row.assetCategory === category);
-      return categoryData.reduce((sum, row) => sum + row.totalValue, 0);
-    });
-  }
-
-  /**
-   * Helper method to create market trend data
-   */
-  private createMarketTrendData(data: DashboardDataRow[]): Array<{ name: string; data: number[] }> {
-    // Create market trend series
-    const months = [...new Set(data.map(row => row.month))];
-    const markets = [...new Set(data.map(row => row.market))];
-    
-    return markets.map(market => {
-      const marketData = data.filter(row => row.market === market);
-      const dataByMonth = months.map(month => {
-        const monthData = marketData.find(row => row.month === month);
-        return monthData ? monthData.totalValue : 0;
-      });
-      
-      return {
-        name: market,
-        data: dataByMonth
-      };
-    });
   }
 
   /**
@@ -1244,171 +836,28 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
     });
   }
 
-  /**
-   * Helper method to create treemap data from dashboardData (legacy method)
-   */
-  protected createTreemapData(data: DashboardDataRow[]): Array<{ name: string; value: number; children?: Array<{ name: string; value: number }> }> {
-    // Group by market and asset category
-    const markets = [...new Set(data.map(row => row.market))];
-    
-    return markets.map(market => {
-      const marketData = data.filter(row => row.market === market);
-      const categories = [...new Set(marketData.map(row => row.assetCategory))];
-      
-      const children = categories.map(category => {
-        const categoryData = marketData.filter(row => row.assetCategory === category);
-        const value = categoryData.reduce((sum, row) => sum + row.totalValue, 0);
-        return { name: category, value };
-      });
-      
-      const totalValue = children.reduce((sum, child) => sum + child.value, 0);
-      
-      return {
-        name: market,
-        value: totalValue,
-        children
-      };
-    });
-  }
-
-  /**
-   * Helper method to create large treemap data
-   */
-  private createLargeTreemapData(data: DashboardDataRow[]): Array<{ name: string; value: number; children?: Array<{ name: string; value: number; children?: Array<{ name: string; value: number }> }> }> {
-    // Create hierarchical data structure
-    const markets = [...new Set(data.map(row => row.market))];
-    
-    return markets.map(market => {
-      const marketData = data.filter(row => row.market === market);
-      const categories = [...new Set(marketData.map(row => row.assetCategory))];
-      
-      const categoryChildren = categories.map(category => {
-        const categoryData = marketData.filter(row => row.assetCategory === category);
-        const months = [...new Set(categoryData.map(row => row.month))];
-        
-        const monthChildren = months.map(month => {
-          const monthData = categoryData.find(row => row.month === month);
-          return { name: month, value: monthData ? monthData.totalValue : 0 };
-        });
-        
-        const categoryValue = monthChildren.reduce((sum, child) => sum + child.value, 0);
-        
-        return {
-          name: category,
-          value: categoryValue,
-          children: monthChildren
-        };
-      });
-      
-      const marketValue = categoryChildren.reduce((sum, child) => sum + child.value, 0);
-      
-      return {
-        name: market,
-        value: marketValue,
-        children: categoryChildren
-      };
-    });
-  }
-
-  /**
-   * Helper method to create sunburst data
-   */
-  protected createSunburstData(data: DashboardDataRow[]): Array<{ name: string; value?: number; children?: Array<{ name: string; value: number }> }> {
-    // Create hierarchical sunburst data
-    const markets = [...new Set(data.map(row => row.market))];
-    
-    return markets.map(market => {
-      const marketData = data.filter(row => row.market === market);
-      const categories = [...new Set(marketData.map(row => row.assetCategory))];
-      
-      const children = categories.map(category => {
-        const categoryData = marketData.filter(row => row.assetCategory === category);
-        const value = categoryData.reduce((sum, row) => sum + row.totalValue, 0);
-        return { name: category, value };
-      });
-      
-      return {
-        name: market,
-        children
-      };
-    });
-  }
-
-  /**
-   * Helper method to create large sunburst data
-   */
-  private createLargeSunburstData(data: DashboardDataRow[]): Array<{ name: string; value?: number; children?: Array<{ name: string; value?: number; children?: Array<{ name: string; value: number }> }> }> {
-    // Create more detailed hierarchical sunburst data
-    const markets = [...new Set(data.map(row => row.market))];
-    
-    return markets.map(market => {
-      const marketData = data.filter(row => row.market === market);
-      const categories = [...new Set(marketData.map(row => row.assetCategory))];
-      
-      const categoryChildren = categories.map(category => {
-        const categoryData = marketData.filter(row => row.assetCategory === category);
-        const months = [...new Set(categoryData.map(row => row.month))];
-        
-        const monthChildren = months.map(month => {
-          const monthData = categoryData.find(row => row.month === month);
-          return { name: month, value: monthData ? monthData.totalValue : 0 };
-        });
-        
-        return {
-          name: category,
-          children: monthChildren
-        };
-      });
-      
-      return {
-        name: market,
-        children: categoryChildren
-      };
-    });
-  }
-
-  /**
-   * Central method to apply all filters to stock data
-   * This is the core method of the centralized filtering system that:
-   * 1. Takes the original stockTicksData as input
-   * 2. Applies each filter in appliedFilters array sequentially
-   * 3. Updates filteredStockData with the result
-   * 4. If no filters are applied, reassigns stockTicksData to filteredStockData
-   * 5. Triggers updates to all dependent widgets/charts
-   * 
-   * This ensures all widgets use the same filtered data source for consistency
-   */
   private applyFilters(): void {
-    if (!this.stockTicksData) {
-      this.filteredStockData = null;
-      return;
-    }
-
-    // If no filters are applied, reassign original data to filtered data
-    if (this.appliedFilters.length === 0) {
-      this.filteredStockData = [...this.stockTicksData];
+    if (!this.dashboardData || this.dashboardData.length === 0) {
+      this.filteredDashboardData = [];
       this.updateAllChartsWithFilteredData();
       return;
     }
 
-    // Start with original data
-    let filtered = [...this.stockTicksData];
+    if (this.appliedFilters.length === 0) {
+      this.filteredDashboardData = [...this.dashboardData];
+      this.updateAllChartsWithFilteredData();
+      return;
+    }
 
-    // Apply each filter in the appliedFilters array
+    let filtered = [...this.dashboardData];
     for (const filter of this.appliedFilters) {
       filtered = this.applyIndividualFilter(filtered, filter);
     }
 
-    // Update filtered data
-    this.filteredStockData = filtered;
-
-    // Update all widgets that depend on filtered data
+    this.filteredDashboardData = filtered;
     this.updateAllChartsWithFilteredData();
   }
 
-  /**
-   * Apply a single filter to the data
-   */
   private applyIndividualFilter(data: StockDataDto[], filter: FilterCriteria): StockDataDto[] {
     const operator = filter.operator || 'equals';
     
@@ -1435,14 +884,56 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
    */
   private convertFilterCriteriaToIFilterValues(filter: FilterCriteria): IFilterValues {
     const stringValue = typeof filter.value === 'number' ? filter.value.toString() : filter.value;
+    
+    // Create a user-friendly display format
+    const fieldDisplayName = this.getFieldDisplayName(filter.field);
+    const displayValue = `${fieldDisplayName}: '${filter.value}'`;
+    
+    // CRITICAL FIX: Filter widget displays 'value' property, so set it to the display name
+    // Calculate numeric value for internal use (percentage, etc.)
+    let numericValue = 0;
+    if (typeof filter.value === 'string') {
+      numericValue = this.getAggregatedValueForCategory(filter.field, filter.value as string);
+    }
+    
     return {
       accessor: filter.field,
       filterColumn: filter.field,
+      category: stringValue,     // Category name for reference
+      value: stringValue,        // FIXED: Display name (e.g., "Iron & Steel") - this is what's shown
+      numericValue: numericValue.toString(), // Numeric value for internal use
+      percentage: numericValue.toString(),   // For compatibility
       [filter.field]: stringValue,
-      value: stringValue,
-      displayValue: `${filter.field}: ${filter.value}`,
+      displayValue: displayValue,
       source: filter.source || 'Unknown'
     };
+  }
+
+  /**
+   * Get aggregated value for a category (industry/sector) for filter display
+   */
+  private getAggregatedValueForCategory(field: string, categoryName: string): number {
+    if (!this.dashboardData || this.dashboardData.length === 0) {
+      return 0;
+    }
+    
+    // Calculate aggregated totalTradedValue for the category
+    return this.dashboardData
+      .filter(stock => (stock as any)[field] === categoryName)
+      .reduce((sum, stock) => sum + (stock.totalTradedValue || 0), 0);
+  }
+
+  /**
+   * Get user-friendly display name for filter fields
+   */
+  private getFieldDisplayName(field: string): string {
+    switch (field) {
+      case 'industry': return 'Industry';
+      case 'sector': return 'Sector';
+      case 'macro': return 'Macro';
+      case 'symbol': return 'Symbol';
+      default: return field.charAt(0).toUpperCase() + field.slice(1);
+    }
   }
 
   /**
@@ -1468,28 +959,26 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
     }
   }
 
-  /**
-   * Add a filter to the applied filters array
-   * This method manages filter addition with the following logic:
-   * 1. Removes any existing filter of the same type and field to prevent duplicates
-   * 2. Adds the new filter to the appliedFilters array
-   * 3. Automatically applies all filters to update filteredStockData
-   * 
-   * @param filter The filter criteria to add
-   */
   private addFilter(filter: FilterCriteria): void {
-    // Remove any existing filter of the same type and field to avoid duplicates
-    this.appliedFilters = this.appliedFilters.filter(f => 
-      !(f.type === filter.type && f.field === filter.field)
+    // Check if this exact filter already exists
+    const exactFilterExists = this.appliedFilters.some(f => 
+      f.type === filter.type && f.field === filter.field && f.value === filter.value
     );
     
-    // Add the new filter
+    if (exactFilterExists) {
+      // Remove and re-add for refresh behavior
+      this.appliedFilters = this.appliedFilters.filter(f => 
+        !(f.type === filter.type && f.field === filter.field && f.value === filter.value)
+      );
+    } else {
+      // Remove any existing filter of the same type and field
+      this.appliedFilters = this.appliedFilters.filter(f => 
+        !(f.type === filter.type && f.field === filter.field)
+      );
+    }
+    
     this.appliedFilters.push(filter);
-    
-    // Apply all filters
     this.applyFilters();
-    
-    // Update filter widget to display the applied filters
     this.updateFilterWidget();
   }
 
@@ -1513,51 +1002,132 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
     this.updateFilterWidget();
   }
 
-  /**
-   * Clear all filters and restore original data
-   * This method resets the filtering system by:
-   * 1. Clearing the appliedFilters array
-   * 2. Reapplying filters (which results in showing all original data)
-   * 3. Updating all dependent widgets with the unfiltered data
-   * 4. Calls parent clearAllFilters to maintain consistency with base class
-   */
   public override clearAllFilters(): void {
-    // Clear our custom applied filters
     this.appliedFilters = [];
+    this.filteredDashboardData = [...(this.dashboardData || [])];
     this.applyFilters();
+    this.updateAllChartsWithFilteredData();
     
-    // Clear the filter widget display
     const filterWidget = this.getFilterWidget();
     if (filterWidget) {
       clearAllFiltersFromWidget(filterWidget);
-      this.cdr.detectChanges();
     }
     
-    // Call parent method to maintain consistency with base class behavior
+    this.cdr.detectChanges();
+    setTimeout(() => {
+      this.cdr.markForCheck();
+      this.cdr.detectChanges();
+    }, 50);
+    
     super.clearAllFilters();
   }
 
-  /**
-   * Update all charts with filtered data
-   */
-  private updateAllChartsWithFilteredData(): void {
-    this.updatePieChartWithFilteredData();
-    this.updateBarChartWithFilteredData();
-    this.updateTreemapWithFilteredData();
-    this.updateStockListWithFilteredData();
-    // Add other chart updates as needed
+  override onFilterValuesChanged(filters: any[]): void {
+    // Handle clear all operation
+    if (!filters || filters.length === 0) {
+      this.appliedFilters = [];
+      this.filteredDashboardData = [...(this.dashboardData || [])];
+      this.updateAllChartsWithFilteredData();
+      
+      const filterWidget = this.getFilterWidget();
+      if (filterWidget) {
+        clearAllFiltersFromWidget(filterWidget);
+      }
+      
+      this.cdr.detectChanges();
+      return;
+    }
     
-    // Trigger change detection
-    this.cdr.detectChanges();
+    // CRITICAL FIX: Default dashboard system sets value=numeric, category=name
+    // But filter widget displays 'value', so we need to swap them for display
+    const correctedFilters = filters.map(filter => {
+      // If this looks like a chart filter with numeric value and string category
+      if (filter.category && typeof filter.category === 'string' && 
+          typeof filter.value === 'number' && !isNaN(filter.value)) {
+        
+        // Swap value and category so filter widget displays the name
+        return {
+          ...filter,
+          value: filter.category,      // Set value to display name (what filter widget shows)
+          category: filter.category,   // Keep category as display name
+          numericValue: filter.value   // Store original numeric value
+        };
+      }
+      
+      return filter;
+    });
+    
+    // Update the filter widget with corrected values
+    const filterWidget = this.getFilterWidget();
+    if (filterWidget) {
+      updateFilterData(filterWidget, correctedFilters);
+    }
+    
+    // Handle individual filter removal or sync with filter widget
+    // Convert current filter widget state to appliedFilters format
+    const newAppliedFilters: FilterCriteria[] = [];
+    
+    correctedFilters.forEach(filter => {
+      const categoryName = filter.category || filter.value;
+      
+      if (filter.filterColumn === 'sector' && categoryName && 
+          typeof categoryName === 'string' && isNaN(Number(categoryName))) {
+        newAppliedFilters.push({
+          type: 'sector',
+          field: 'sector',
+          value: categoryName,
+          operator: 'equals',
+          source: 'Filter Widget'
+        });
+      } else if (filter.filterColumn === 'industry' && categoryName && 
+                 typeof categoryName === 'string' && isNaN(Number(categoryName))) {
+        newAppliedFilters.push({
+          type: 'industry',
+          field: 'industry',
+          value: categoryName,
+          operator: 'equals',
+          source: 'Filter Widget'
+        });
+      }
+    });
+    
+    // Update appliedFilters to match filter widget state
+    this.appliedFilters = newAppliedFilters;
+    
+    // Apply the updated filters
+    this.applyFilters();
   }
 
-  /**
-   * Filter charts by industry (called when bar chart is clicked)
-   */
-  private filterChartsByIndustry(industry: string): void {
-    if (!this.stockTicksData) return;
+  private updateAllChartsWithFilteredData(): void {
+    if (!this.filteredDashboardData) {
+      return;
+    }
+    
+    this.updateBarChartWithFilteredData();
+    this.updatePieChartWithFilteredData();
+    this.updateStockListWithFilteredData();
+    
+    // Update metric tiles with filtered data
+    this.updateMetricTilesWithFilters([]);
+    
+    this.cdr.detectChanges();
+    setTimeout(() => {
+      this.cdr.markForCheck();
+      this.cdr.detectChanges();
+    }, 100);
+  }
 
-    // Use centralized filter system
+  private filterChartsByIndustry(industry: string): void {
+    if (!this.dashboardData || this.dashboardData.length === 0 || 
+        typeof industry !== 'string' || !isNaN(Number(industry))) {
+      return;
+    }
+
+    const availableIndustries = [...new Set(this.dashboardData.map(s => s.industry))];
+    if (!availableIndustries.includes(industry)) {
+      return;
+    }
+
     this.addFilter({
       type: 'industry',
       field: 'industry',
@@ -1567,13 +1137,17 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
     });
   }
 
-  /**
-   * Filter charts by sector (called when pie chart is clicked)
-   */
   private filterChartsBySector(sector: string): void {
-    if (!this.stockTicksData) return;
+    if (!this.dashboardData || this.dashboardData.length === 0 || 
+        typeof sector !== 'string' || !isNaN(Number(sector))) {
+      return;
+    }
 
-    // Use centralized filter system
+    const availableSectors = [...new Set(this.dashboardData.map(s => s.sector))];
+    if (!availableSectors.includes(sector)) {
+      return;
+    }
+
     this.addFilter({
       type: 'sector',
       field: 'sector',
@@ -1587,7 +1161,9 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
    * Filter charts by macro category (called when treemap is clicked)
    */
   private filterChartsByMacro(macro: string): void {
-    if (!this.stockTicksData) return;
+    if (!this.dashboardData || this.dashboardData.length === 0) return;
+
+    console.log(`🎯 filterChartsByMacro: Filtering by macro: ${macro}`);
 
     // Use centralized filter system
     this.addFilter({
@@ -1599,19 +1175,17 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
     });
   }
 
-  /**
-   * Update pie chart with filtered data
-   */
   private updatePieChartWithFilteredData(): void {
-    if (!this.dashboardConfig?.widgets || !this.filteredStockData) return;
+    if (!this.dashboardConfig?.widgets || !this.filteredDashboardData) {
+      return;
+    }
 
     const pieWidget = this.dashboardConfig.widgets.find(widget => 
       widget.config?.header?.title === 'Sector Allocation'
     );
 
     if (pieWidget) {
-      // Transform filtered data for pie chart (group by sector)
-      const sectorData = this.filteredStockData.reduce((acc, stock) => {
+      const sectorData = this.filteredDashboardData.reduce((acc, stock) => {
         const sector = stock.sector || 'Unknown';
         if (!acc[sector]) {
           acc[sector] = 0;
@@ -1620,26 +1194,42 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
         return acc;
       }, {} as Record<string, number>);
 
-      const pieData = Object.entries(sectorData).map(([name, value]) => ({ name, value }));
+      const pieData = Object.entries(sectorData)
+        .map(([name, value]) => ({ name, value }))
+        .sort((a, b) => b.value - a.value);
       
-      // Update the widget with new data
-      this.updateEchartWidget(pieWidget, pieData);
+      try {
+        PieChartBuilder.updateData(pieWidget, pieData);
+        
+        if (pieWidget.chartInstance && typeof pieWidget.chartInstance.setOption === 'function') {
+          const newOptions = {
+            ...pieWidget.config?.options,
+            series: [{
+              ...((pieWidget.config?.options as any)?.series?.[0] || {}),
+              data: pieData
+            }]
+          };
+          pieWidget.chartInstance.setOption(newOptions, true);
+        }
+        
+        this.updateEchartWidget(pieWidget, pieData);
+      } catch (error) {
+        // Silent error handling
+      }
     }
   }
 
-  /**
-   * Update bar chart with filtered data
-   */
   private updateBarChartWithFilteredData(): void {
-    if (!this.dashboardConfig?.widgets || !this.filteredStockData) return;
+    if (!this.dashboardConfig?.widgets || !this.filteredDashboardData) {
+      return;
+    }
 
     const barWidget = this.dashboardConfig.widgets.find(widget => 
       widget.config?.header?.title === 'Industry'
     );
 
     if (barWidget) {
-      // Transform filtered data for bar chart (group by industry)
-      const industryData = this.filteredStockData.reduce((acc, stock) => {
+      const industryData = this.filteredDashboardData.reduce((acc, stock) => {
         const industry = stock.industry || 'Unknown';
         if (!acc[industry]) {
           acc[industry] = 0;
@@ -1648,10 +1238,8 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
         return acc;
       }, {} as Record<string, number>);
 
-      // Business color palette for individual bars
       const businessColors = ['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de', '#3ba272', '#fc8452', '#9a60b4', '#ea7ccc'];
       
-      // Transform to bar chart format with individual colors and descending sort
       const barData = Object.entries(industryData)
         .map(([industry, value]) => ({
           name: industry,
@@ -1665,8 +1253,28 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
           }
         }));
       
-      // Update the widget with new data
-      this.updateEchartWidget(barWidget, barData);
+      try {
+        HorizontalBarChartBuilder.updateData(barWidget, barData);
+        
+        if (barWidget.chartInstance && typeof barWidget.chartInstance.setOption === 'function') {
+          const newOptions = {
+            ...barWidget.config?.options,
+            series: [{
+              ...((barWidget.config?.options as any)?.series?.[0] || {}),
+              data: barData
+            }],
+            yAxis: {
+              ...((barWidget.config?.options as any)?.yAxis || {}),
+              data: barData.map(item => item.name)
+            }
+          };
+          barWidget.chartInstance.setOption(newOptions, true);
+        }
+        
+        this.updateEchartWidget(barWidget, barData);
+      } catch (error) {
+        // Silent error handling
+      }
     }
   }
 
@@ -1674,7 +1282,7 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
    * Update treemap chart with filtered data
    */
   private updateTreemapWithFilteredData(): void {
-    if (!this.dashboardConfig?.widgets || !this.filteredStockData) return;
+    if (!this.dashboardConfig?.widgets || !this.filteredDashboardData) return;
 
     const treemapWidget = this.dashboardConfig.widgets.find(widget => 
       widget.config?.header?.title === 'Portfolio Distribution'
@@ -1682,37 +1290,49 @@ export class OverallComponent extends BaseDashboardComponent<DashboardDataRow> {
 
     if (treemapWidget) {
       // Create hierarchical treemap data from filtered stock data
-      const treemapData = this.createStockTicksTreemapData(this.filteredStockData);
+      const treemapData = this.createStockTicksTreemapData(this.filteredDashboardData);
       
       // Update the widget with new data
       this.updateEchartWidget(treemapWidget, treemapData);
     }
   }
 
-  /**
-   * Update stock list widgets with filtered data
-   */
   private updateStockListWithFilteredData(): void {
-    if (!this.dashboardConfig?.widgets) return;
+    if (!this.dashboardConfig?.widgets) {
+      return;
+    }
 
     const stockListWidgets = this.dashboardConfig.widgets.filter(widget => 
       widget.config?.component === 'stock-list-table'
     );
 
     stockListWidgets.forEach(widget => {
-      const stockData = this.filteredStockData || this.stockTicksData || [];
+      const stockData = this.filteredDashboardData || [];
+      const newStockDataArray = [...stockData];
       
-      // Update the widget's data directly
       if (widget.data) {
-        widget.data.stocks = stockData;
+        widget.data.stocks = newStockDataArray;
         widget.data.isLoadingStocks = false;
       } else {
-        // Initialize widget data if it doesn't exist
         widget.data = {
-          stocks: stockData,
+          stocks: newStockDataArray,
           isLoadingStocks: false
         };
       }
     });
+    
+    this.cdr.detectChanges();
+    
+    stockListWidgets.forEach(widget => {
+      if (widget.data && typeof (widget.data as any).refresh === 'function') {
+        (widget.data as any).refresh();
+      }
+    });
+    
+    setTimeout(() => {
+      this.cdr.markForCheck();
+      this.cdr.detectChanges();
+    }, 10);
   }
+
 }
