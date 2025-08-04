@@ -427,7 +427,7 @@ export abstract class BaseDashboardComponent<T = any> implements OnInit, OnDestr
     
     // If no data found by title, try to detect chart type and provide appropriate data
     if (!baseData) {
-      baseData = this.getDataByChartType(widget);
+      baseData = this.getSummarizedDataByWidget(widgetTitle || '');
     }
     
     if (!baseData) {
@@ -626,7 +626,7 @@ export abstract class BaseDashboardComponent<T = any> implements OnInit, OnDestr
   /**
    * Get data for widget based on chart type detection
    */
-  protected abstract getDataByChartType(widget: IWidget): any;
+  protected abstract getSummarizedDataByWidget(widgetTitle: string | undefined): any;
 
   /**
    * Export dashboard data to Excel
@@ -821,7 +821,7 @@ export abstract class BaseDashboardComponent<T = any> implements OnInit, OnDestr
     );
 
     echartWidgets.forEach(widget => {
-      const widgetTitle = widget.config?.header?.title;
+      const widgetTitle: string = widget.config?.header?.title || '';
       
       // Try to get data by widget title first
       let initialData = null;
@@ -831,7 +831,7 @@ export abstract class BaseDashboardComponent<T = any> implements OnInit, OnDestr
       
       // If no data found by title, try to detect chart type and provide appropriate data
       if (!initialData) {
-        initialData = this.getDataByChartType(widget);
+        initialData = this.getSummarizedDataByWidget(widgetTitle);
       }
       
       if (initialData) {

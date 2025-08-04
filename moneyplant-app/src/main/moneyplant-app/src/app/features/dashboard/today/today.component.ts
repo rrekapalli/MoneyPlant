@@ -424,7 +424,7 @@ export class TodayComponent extends BaseDashboardComponent<DashboardDataRow> {
       
       // If no data found by title, try to detect chart type and provide appropriate data
       if (!initialData) {
-        initialData = this.getDataByChartType(widget);
+        initialData = this.getSummarizedDataByWidget(widgetTitle);
       }
       
       if (initialData) {
@@ -444,9 +444,18 @@ export class TodayComponent extends BaseDashboardComponent<DashboardDataRow> {
   /**
    * Get data for widget based on chart type detection
    */
-  protected override getDataByChartType(widget: IWidget): any {
+  protected override getSummarizedDataByWidget(widgetTitle: string | undefined): any {
+    const widget = this.dashboardConfig.widgets.find(widget =>
+        widget.config?.header?.title === widgetTitle
+    );
+
+    if(!widget)
+    {
+      return null;
+    }
+
     const chartOptions = widget.config?.options as any;
-    
+
     if (!chartOptions?.series?.[0]) {
       return null;
     }
