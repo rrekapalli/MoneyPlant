@@ -202,54 +202,54 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
     private stockTicksService: StockTicksService
   ) {
     super(cdr, excelExportService, filterService);
-    // Essential debug methods for production troubleshooting
-    if (typeof window !== 'undefined') {
-      (window as any).debugOverall = {
-        // Core functionality tests
-        testFilter: (industry?: string) => this.testManualFilter(industry),
-        clearFilters: () => this.clearAllFilters(),
-        checkState: () => ({
-          dataCount: this.dashboardData?.length || 0,
-          filteredCount: this.filteredDashboardData?.length || 0,
-          appliedFilters: this.appliedFilters?.length || 0,
-          appliedFiltersDetails: this.appliedFilters
-        }),
-        // Emergency fixes
-        forceUpdate: () => this.updateAllChartsWithFilteredData(),
-        fixClickHandlers: () => this.fixCustomClickHandlers(),
-        // Test individual filter removal
-        testRemoveFilter: (type: string, field: string) => {
-          console.log(`🧪 Testing removal of ${type} filter for field ${field}`);
-          this.removeFilter(type, field);
-          return `Filter removed: ${type}=${field}`;
-        },
-        // Test filter widget display format
-        testFilterDisplay: () => {
-          const filterWidget = this.getFilterWidget();
-          if (filterWidget && filterWidget.config?.options) {
-            const filterOptions = filterWidget.config.options as any;
-            console.log('🔍 Current filter widget values:', filterOptions.values);
-            console.log('🔍 Applied filters:', this.appliedFilters);
+    // // Essential debug methods for production troubleshooting
+    // if (typeof window !== 'undefined') {
+    //   (window as any).debugOverall = {
+    //     // Core functionality tests
+    //     testFilter: (industry?: string) => this.testManualFilter(industry),
+    //     clearFilters: () => this.clearAllFilters(),
+    //     checkState: () => ({
+    //       dataCount: this.dashboardData?.length || 0,
+    //       filteredCount: this.filteredDashboardData?.length || 0,
+    //       appliedFilters: this.appliedFilters?.length || 0,
+    //       appliedFiltersDetails: this.appliedFilters
+    //     }),
+    //     // Emergency fixes
+    //     forceUpdate: () => this.updateAllChartsWithFilteredData(),
+    //     fixClickHandlers: () => this.fixCustomClickHandlers(),
+    //     // Test individual filter removal
+    //     testRemoveFilter: (type: string, field: string) => {
+    //       console.log(`🧪 Testing removal of ${type} filter for field ${field}`);
+    //       this.removeFilter(type, field);
+    //       return `Filter removed: ${type}=${field}`;
+    //     },
+    //     // Test filter widget display format
+    //     testFilterDisplay: () => {
+    //       const filterWidget = this.getFilterWidget();
+    //       if (filterWidget && filterWidget.config?.options) {
+    //         const filterOptions = filterWidget.config.options as any;
+    //         console.log('🔍 Current filter widget values:', filterOptions.values);
+    //         console.log('🔍 Applied filters:', this.appliedFilters);
             
-            // Show conversion for each applied filter
-            this.appliedFilters.forEach((filter, index) => {
-              const converted = this.convertFilterCriteriaToIFilterValues(filter);
-              console.log(`🔍 Filter ${index + 1}:`, {
-                original: filter,
-                converted: converted,
-                displayedValue: converted['value'], // This is what the filter widget shows
-                category: converted['category'],
-                numericValue: converted['numericValue']
-              });
-              console.log(`✅ Filter widget will display: "${converted['value']}"`);
-            });
-          } else {
-            console.log('❌ No filter widget found or no filters applied');
-          }
-          return 'Filter display test complete - check console';
-        }
-      };
-    }
+    //         // Show conversion for each applied filter
+    //         this.appliedFilters.forEach((filter, index) => {
+    //           const converted = this.convertFilterCriteriaToIFilterValues(filter);
+    //           console.log(`🔍 Filter ${index + 1}:`, {
+    //             original: filter,
+    //             converted: converted,
+    //             displayedValue: converted['value'], // This is what the filter widget shows
+    //             category: converted['category'],
+    //             numericValue: converted['numericValue']
+    //           });
+    //           console.log(`✅ Filter widget will display: "${converted['value']}"`);
+    //         });
+    //       } else {
+    //         console.log('❌ No filter widget found or no filters applied');
+    //       }
+    //       return 'Filter display test complete - check console';
+    //     }
+    //   };
+    // }
   }
 
   override ngOnInit(): void {
@@ -400,7 +400,7 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
    * @param data - Dashboard data (not used, we use stockTicksData instead)
    */
   protected createMetricTiles(data: StockDataDto[]): IWidget[] {
-    return createMetricTilesFunction(this.dashboardData);
+    return createMetricTilesFunction(this.filteredDashboardData || this.dashboardData);
   }
 
   protected initializeDashboardConfig(): void {
@@ -432,12 +432,9 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
             });
           }
         })
+        .setId('industry-bar-chart')
+        .setSkipDefaultFiltering(true)
         .build();
-    
-    // Mark this widget as using custom filtering and assign ID
-    barStockIndustry.id = 'industry-bar-chart';
-    barStockIndustry.config = barStockIndustry.config || {};
-    (barStockIndustry.config as any).skipDefaultFiltering = true;
     
     // Stock Sector Allocation Pie Chart with financial display
     const pieStockSector = PieChartBuilder.create()
@@ -462,12 +459,9 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
             });
         }
       })
+      .setId('sector-pie-chart')
+      .setSkipDefaultFiltering(true)
       .build();
-
-    // Mark this widget as using custom filtering and assign ID
-    pieStockSector.id = 'sector-pie-chart';
-    pieStockSector.config = pieStockSector.config || {};
-    (pieStockSector.config as any).skipDefaultFiltering = true;
 
 
 
@@ -480,10 +474,8 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
       .setPredefinedPalette('finance')
       .setAccessor('symbol')
       .setFilterColumn('symbol')
+      .setId('stock-list-widget')
       .build();
-    
-    // Assign ID to stock list widget
-    stockListWidget.id = 'stock-list-widget';
 
     const filterWidget = createFilterWidget();
     const metricTiles = this.createMetricTiles([]);
