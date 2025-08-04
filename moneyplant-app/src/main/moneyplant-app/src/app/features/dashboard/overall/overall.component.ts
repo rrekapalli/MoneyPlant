@@ -211,11 +211,43 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
         checkState: () => ({
           dataCount: this.dashboardData?.length || 0,
           filteredCount: this.filteredDashboardData?.length || 0,
-          appliedFilters: this.appliedFilters?.length || 0
+          appliedFilters: this.appliedFilters?.length || 0,
+          appliedFiltersDetails: this.appliedFilters
         }),
         // Emergency fixes
         forceUpdate: () => this.updateAllChartsWithFilteredData(),
-        fixClickHandlers: () => this.fixCustomClickHandlers()
+        fixClickHandlers: () => this.fixCustomClickHandlers(),
+        // Test individual filter removal
+        testRemoveFilter: (type: string, field: string) => {
+          console.log(`🧪 Testing removal of ${type} filter for field ${field}`);
+          this.removeFilter(type, field);
+          return `Filter removed: ${type}=${field}`;
+        },
+        // Test filter widget display format
+        testFilterDisplay: () => {
+          const filterWidget = this.getFilterWidget();
+          if (filterWidget && filterWidget.config?.options) {
+            const filterOptions = filterWidget.config.options as any;
+            console.log('🔍 Current filter widget values:', filterOptions.values);
+            console.log('🔍 Applied filters:', this.appliedFilters);
+            
+            // Show conversion for each applied filter
+            this.appliedFilters.forEach((filter, index) => {
+              const converted = this.convertFilterCriteriaToIFilterValues(filter);
+              console.log(`🔍 Filter ${index + 1}:`, {
+                original: filter,
+                converted: converted,
+                displayedValue: converted['value'], // This is what the filter widget shows
+                category: converted['category'],
+                numericValue: converted['numericValue']
+              });
+              console.log(`✅ Filter widget will display: "${converted['value']}"`);
+            });
+          } else {
+            console.log('❌ No filter widget found or no filters applied');
+          }
+          return 'Filter display test complete - check console';
+        }
       };
     }
   }
@@ -582,9 +614,6 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
       return null;
     }
 
-    const seriesType = chartOptions.series[0].type;
-    const mapType = chartOptions.series[0].map;
-
     // Detect chart type and provide appropriate data
     switch (widgetTitle) {
       case 'Sector Allocation':
@@ -887,14 +916,38 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
     const fieldDisplayName = this.getFieldDisplayName(filter.field);
     const displayValue = `${fieldDisplayName}: '${filter.value}'`;
     
+    // CRITICAL FIX: Filter widget displays 'value' property, so set it to the display name
+    // Calculate numeric value for internal use (percentage, etc.)
+    let numericValue = 0;
+    if (typeof filter.value === 'string') {
+      numericValue = this.getAggregatedValueForCategory(filter.field, filter.value as string);
+    }
+    
     return {
       accessor: filter.field,
       filterColumn: filter.field,
+      category: stringValue,     // Category name for reference
+      value: stringValue,        // FIXED: Display name (e.g., "Iron & Steel") - this is what's shown
+      numericValue: numericValue.toString(), // Numeric value for internal use
+      percentage: numericValue.toString(),   // For compatibility
       [filter.field]: stringValue,
-      value: stringValue,
       displayValue: displayValue,
       source: filter.source || 'Unknown'
     };
+  }
+
+  /**
+   * Get aggregated value for a category (industry/sector) for filter display
+   */
+  private getAggregatedValueForCategory(field: string, categoryName: string): number {
+    if (!this.dashboardData || this.dashboardData.length === 0) {
+      return 0;
+    }
+    
+    // Calculate aggregated totalTradedValue for the category
+    return this.dashboardData
+      .filter(stock => (stock as any)[field] === categoryName)
+      .reduce((sum, stock) => sum + (stock.totalTradedValue || 0), 0);
   }
 
   /**
@@ -1012,18 +1065,64 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
       return;
     }
     
-    // Process fallback filters from default dashboard system
-    filters.forEach(filter => {
+    // CRITICAL FIX: Default dashboard system sets value=numeric, category=name
+    // But filter widget displays 'value', so we need to swap them for display
+    const correctedFilters = filters.map(filter => {
+      // If this looks like a chart filter with numeric value and string category
+      if (filter.category && typeof filter.category === 'string' && 
+          typeof filter.value === 'number' && !isNaN(filter.value)) {
+        
+        // Swap value and category so filter widget displays the name
+        return {
+          ...filter,
+          value: filter.category,      // Set value to display name (what filter widget shows)
+          category: filter.category,   // Keep category as display name
+          numericValue: filter.value   // Store original numeric value
+        };
+      }
+      
+      return filter;
+    });
+    
+    // Update the filter widget with corrected values
+    const filterWidget = this.getFilterWidget();
+    if (filterWidget) {
+      updateFilterData(filterWidget, correctedFilters);
+    }
+    
+    // Handle individual filter removal or sync with filter widget
+    // Convert current filter widget state to appliedFilters format
+    const newAppliedFilters: FilterCriteria[] = [];
+    
+    correctedFilters.forEach(filter => {
       const categoryName = filter.category || filter.value;
       
       if (filter.filterColumn === 'sector' && categoryName && 
           typeof categoryName === 'string' && isNaN(Number(categoryName))) {
-        this.filterChartsBySector(categoryName);
+        newAppliedFilters.push({
+          type: 'sector',
+          field: 'sector',
+          value: categoryName,
+          operator: 'equals',
+          source: 'Filter Widget'
+        });
       } else if (filter.filterColumn === 'industry' && categoryName && 
                  typeof categoryName === 'string' && isNaN(Number(categoryName))) {
-        this.filterChartsByIndustry(categoryName);
+        newAppliedFilters.push({
+          type: 'industry',
+          field: 'industry',
+          value: categoryName,
+          operator: 'equals',
+          source: 'Filter Widget'
+        });
       }
     });
+    
+    // Update appliedFilters to match filter widget state
+    this.appliedFilters = newAppliedFilters;
+    
+    // Apply the updated filters
+    this.applyFilters();
   }
 
   public testManualFilter(industry: string = 'Aluminium'): void {
