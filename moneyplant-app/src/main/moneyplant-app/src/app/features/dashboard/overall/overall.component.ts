@@ -204,54 +204,6 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
     private stockTicksService: StockTicksService
   ) {
     super(cdr, excelExportService, filterService);
-    // // Essential debug methods for production troubleshooting
-    // if (typeof window !== 'undefined') {
-    //   (window as any).debugOverall = {
-    //     // Core functionality tests
-    //     testFilter: (industry?: string) => this.testManualFilter(industry),
-    //     clearFilters: () => this.clearAllFilters(),
-    //     checkState: () => ({
-    //       dataCount: this.dashboardData?.length || 0,
-    //       filteredCount: this.filteredDashboardData?.length || 0,
-    //       appliedFilters: this.appliedFilters?.length || 0,
-    //       appliedFiltersDetails: this.appliedFilters
-    //     }),
-    //     // Emergency fixes
-    //     forceUpdate: () => this.updateAllChartsWithFilteredData(),
-    //     fixClickHandlers: () => this.fixCustomClickHandlers(),
-    //     // Test individual filter removal
-    //     testRemoveFilter: (type: string, field: string) => {
-    //       console.log(`🧪 Testing removal of ${type} filter for field ${field}`);
-    //       this.removeFilter(type, field);
-    //       return `Filter removed: ${type}=${field}`;
-    //     },
-    //     // Test filter widget display format
-    //     testFilterDisplay: () => {
-    //       const filterWidget = this.getFilterWidget();
-    //       if (filterWidget && filterWidget.config?.options) {
-    //         const filterOptions = filterWidget.config.options as any;
-    //         console.log('🔍 Current filter widget values:', filterOptions.values);
-    //         console.log('🔍 Applied filters:', this.appliedFilters);
-            
-    //         // Show conversion for each applied filter
-    //         this.appliedFilters.forEach((filter, index) => {
-    //           const converted = this.convertFilterCriteriaToIFilterValues(filter);
-    //           console.log(`🔍 Filter ${index + 1}:`, {
-    //             original: filter,
-    //             converted: converted,
-    //             displayedValue: converted['value'], // This is what the filter widget shows
-    //             category: converted['category'],
-    //             numericValue: converted['numericValue']
-    //           });
-    //           console.log(`✅ Filter widget will display: "${converted['value']}"`);
-    //         });
-    //       } else {
-    //         console.log('❌ No filter widget found or no filters applied');
-    //       }
-    //       return 'Filter display test complete - check console';
-    //     }
-    //   };
-    // }
   }
 
   override ngOnInit(): void {
@@ -405,6 +357,37 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
     return createMetricTilesFunction(this.filteredDashboardData || this.dashboardData);
   }
 
+  /**
+   * Override updateMetricTilesWithFilters to use filtered data
+   */
+  protected override updateMetricTilesWithFilters(filters: any[]): void {
+    // Find all tile widgets
+    const tileWidgets = this.dashboardConfig.widgets.filter(widget => 
+      widget.config?.component === 'tile'
+    );
+
+    // Create new metric tiles with filtered data - use filteredDashboardData
+    const updatedMetricTiles = this.createMetricTiles(this.filteredDashboardData || this.dashboardData);
+
+    // Update each tile widget with new data
+    tileWidgets.forEach((widget, index) => {
+      if (index < updatedMetricTiles.length) {
+        const updatedTile = updatedMetricTiles[index];
+        
+        // Check if this tile should update on data change
+        const tileOptions = widget.config?.options as any;
+        const shouldUpdate = tileOptions?.updateOnDataChange !== false;
+        
+        if (shouldUpdate) {
+          // Update the widget's options with new tile data
+          if (widget.config?.options) {
+            Object.assign(widget.config.options, updatedTile.config?.options);
+          }
+        }
+      }
+    });
+  }
+
   protected initializeDashboardConfig(): void {
     // Stock Industry Horizontal Bar Chart
     const barStockIndustry = HorizontalBarChartBuilder.create()
@@ -448,7 +431,7 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
       .setPredefinedPalette('finance')
       .setAccessor('sector')
       .setFilterColumn('sector', FilterBy.Value)
-              .setEvents((widget, chart) => {
+      .setEvents((widget, chart) => {
           if (chart) {
             chart.off('click');
             chart.on('click', (params: any) => {
@@ -469,7 +452,7 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
 
     // Stock List Widget - Initialize with empty data, will be populated later
     const stockListWidget = StockListChartBuilder.create()
-      .setData(this.filteredDashboardData) // Start with empty data, will be populated when stock data loads
+      .setData(this.filteredDashboardData)
       .setStockPerformanceConfiguration()
       .setHeader('Stock List')
       .setCurrencyFormatter('₹', 'en-IN')
@@ -756,7 +739,7 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
     if (!this.dashboardConfig?.widgets) return;
 
     // Apply filters to base data
-    let filteredData = this.filteredDashboardData || this.dashboardData;
+    let filteredData = this.dashboardData;
     
     if (filters && filters.length > 0) {
       // Use the enhanced filtering from the base chart builder
@@ -769,15 +752,11 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
       filteredData = ApacheEchartBuilder.applyFilters(filteredData, dataFilters);
     }
 
+    // Update the filteredDashboardData property
+    this.filteredDashboardData = filteredData;
+
     // Update all chart widgets with filtered data
-    const chartWidgets = this.dashboardConfig.widgets.filter(widget => 
-      widget.config?.component === 'echart'
-    );
-
     this.updateAllChartsWithFilteredData();
-
-    // Update metric tiles
-    this.updateMetricTilesWithFilters(filters);
 
     // Trigger change detection
     setTimeout(() => this.cdr.detectChanges(), 100);
@@ -1119,17 +1098,6 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
     this.applyFilters();
   }
 
-  public testManualFilter(industry: string = 'Aluminium'): void {
-    if (!this.dashboardData || this.dashboardData.length === 0) {
-      return;
-    }
-    
-    const availableIndustries = [...new Set(this.dashboardData.map(s => s.industry))];
-    if (availableIndustries.includes(industry)) {
-      this.filterChartsByIndustry(industry);
-    }
-  }
-
   private updateAllChartsWithFilteredData(): void {
     if (!this.filteredDashboardData) {
       return;
@@ -1138,6 +1106,9 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
     this.updateBarChartWithFilteredData();
     this.updatePieChartWithFilteredData();
     this.updateStockListWithFilteredData();
+    
+    // Update metric tiles with filtered data
+    this.updateMetricTilesWithFilters([]);
     
     this.cdr.detectChanges();
     setTimeout(() => {
@@ -1364,41 +1335,4 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
     }, 10);
   }
 
-  private fixCustomClickHandlers(): string {
-    if (!this.dashboardConfig?.widgets) {
-      return 'No widgets found';
-    }
-    
-    const echartWidgets = this.dashboardConfig.widgets.filter(widget => 
-      widget.config?.component === 'echart'
-    );
-    
-    echartWidgets.forEach(widget => {
-      const title = widget.config?.header?.title;
-      
-      if (widget.chartInstance && typeof widget.chartInstance.on === 'function') {
-        widget.chartInstance.off('click');
-        
-        if (title === 'Industry') {
-          widget.chartInstance.on('click', (params: any) => {
-            params.event?.stop?.();
-            const industryName = params.name || (params.data && params.data.name);
-            if (industryName && typeof industryName === 'string' && isNaN(Number(industryName))) {
-              this.filterChartsByIndustry(industryName);
-            }
-          });
-        } else if (title === 'Sector Allocation') {
-          widget.chartInstance.on('click', (params: any) => {
-            params.event?.stop?.();
-            const sectorName = params.name || (params.data && params.data.name);
-            if (sectorName && typeof sectorName === 'string' && isNaN(Number(sectorName))) {
-              this.filterChartsBySector(sectorName);
-            }
-          });
-        }
-      }
-    });
-    
-    return 'Click handlers fixed';
-  }
 }
