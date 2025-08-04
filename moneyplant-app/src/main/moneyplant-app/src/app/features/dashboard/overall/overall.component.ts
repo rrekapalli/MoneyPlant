@@ -131,7 +131,6 @@ import {StockDataDto, StockTicksDto} from '../../../services/entities/stock-tick
 
 /**
  * Filter criteria interface for centralized filtering system
- * This interface defines the structure for filters that can be applied across all widgets
  */
 interface FilterCriteria {
   type: 'industry' | 'sector' | 'symbol' | 'custom' | 'macro';
@@ -170,58 +169,23 @@ export interface DashboardDataRow {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 /**
- * OverallComponent - Financial Dashboard with Centralized Filtering System
- * 
- * This component implements a centralized filtering system that provides consistent
- * filtering behavior across all widgets and charts. The system works as follows:
- * 
- * ARCHITECTURE:
- * - stockTicksData: Original unfiltered data source
- * - filteredStockData: Single filtered data source used by all widgets
- * - appliedFilters: Array tracking all active filters from different widgets
- * 
- * FILTERING FLOW:
- * 1. User clicks on chart elements (pie slices, bar segments, etc.)
- * 2. Click handlers call addFilter() with appropriate FilterCriteria
- * 3. addFilter() manages the appliedFilters array and calls applyFilters()
- * 4. applyFilters() processes all filters sequentially on original data
- * 5. filteredStockData is updated with the result
- * 6. All widgets are refreshed using the same filtered data source
- * 
- * BENEFITS:
- * - Consistent filtering across all widgets
- * - Cumulative filtering (multiple filters can be applied simultaneously)
- * - Single source of truth for filtered data
- * - Easy filter management (add, remove, clear all)
- * - Prevents filter conflicts and data inconsistencies
- * 
- * USAGE:
- * - Chart click handlers use filterChartsByIndustry(), filterChartsBySector()
- * - Filters can be cleared using clearAllChartFilters()
- * - All widgets automatically update when filters change
+ * Financial Dashboard with centralized filtering system for consistent
+ * filtering behavior across all widgets and charts.
  */
 export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
   // Shared dashboard data - Flat structure (implements abstract property)
   protected dashboardData: StockDataDto[] = [];
   protected readonly initialDashboardData: StockDataDto[] = [];
 
-  // Add a static log when class is loaded
-  static {
-    console.log('🎯 OverallComponent class loaded!');
-  }
 
 
-  // // Stock ticks data storage
-  // protected stockTicksData: StockDataDto[] | null = [];
+
+
 
   // Filtered stock data for cross-chart filtering
   protected filteredDashboardData: StockDataDto[] | null = this.dashboardData || [];
 
-  /**
-   * Central applied filters array to track all active filters
-   * This array maintains all filters currently applied across different widgets
-   * Each filter is applied sequentially to create cumulative filtering effect
-   */
+  // Central applied filters array for cumulative filtering
   protected appliedFilters: FilterCriteria[] = [];
   
   // Dashboard title - dynamic based on selected index
@@ -238,339 +202,59 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
     private stockTicksService: StockTicksService
   ) {
     super(cdr, excelExportService, filterService);
-    
-    console.log('🚀 OverallComponent constructor initialized!');
-    
-    // Make test methods available globally for debugging
+    // Essential debug methods for production troubleshooting
     if (typeof window !== 'undefined') {
       (window as any).debugOverall = {
-        testManualFilter: (industry?: string) => this.testManualFilter(industry),
-        clearAllFilters: () => this.clearAllFilters(),
-        showCurrentData: () => {
-          console.log('📊 Original data:', this.dashboardData);
-          console.log('📊 Filtered data:', this.filteredDashboardData);
-          console.log('📊 Applied filters:', this.appliedFilters);
-        },
-        showAvailableValues: () => {
-          if (this.dashboardData && this.dashboardData.length > 0) {
-            console.log('📋 Available industries:', [...new Set(this.dashboardData.map(s => s.industry))]);
-            console.log('📋 Available sectors:', [...new Set(this.dashboardData.map(s => s.sector))]);
-            console.log('📋 Available macros:', [...new Set(this.dashboardData.map(s => s.macro))]);
-          } else {
-            console.log('❌ No data available yet');
-          }
-        },
-        simpleTest: () => {
-          console.log('✅ SIMPLE TEST: OverallComponent is working!');
-          console.log('✅ Dashboard data count:', this.dashboardData?.length || 0);
-          console.log('✅ Filtered data count:', this.filteredDashboardData?.length || 0);
-          console.log('✅ Applied filters count:', this.appliedFilters?.length || 0);
-          return 'Debug methods are working!';
-        },
-        testStockListUpdate: () => {
-          console.log('🧪 Testing stock list update manually...');
-          this.updateStockListWithFilteredData();
-          return 'Stock list update triggered!';
-        },
-        inspectStockListWidgets: () => {
-          const stockListWidgets = this.dashboardConfig?.widgets?.filter(widget => 
-            widget.config?.component === 'stock-list-table'
-          ) || [];
-          
-          console.log(`🔍 Found ${stockListWidgets.length} stock list widgets:`);
-          stockListWidgets.forEach((widget, index) => {
-            console.log(`Widget ${index + 1}:`, {
-              id: widget.id,
-              title: widget.config?.header?.title,
-              component: widget.config?.component,
-              hasData: !!widget.data,
-              stocksCount: widget.data?.stocks?.length || 0,
-              isLoading: widget.data?.isLoadingStocks
-            });
-          });
-          
-          return `Found ${stockListWidgets.length} stock list widgets`;
-        },
-        debugFilterFlow: () => {
-          console.log('🔍 FILTER FLOW DEBUG:');
-          console.log('📊 Original data count:', this.dashboardData?.length || 0);
-          console.log('📊 Filtered data count:', this.filteredDashboardData?.length || 0);
-          console.log('📊 Applied filters:', this.appliedFilters);
-          
-          const stockListWidgets = this.dashboardConfig?.widgets?.filter(widget => 
-            widget.config?.component === 'stock-list-table'
-          ) || [];
-          
-          stockListWidgets.forEach((widget, index) => {
-            console.log(`📋 Stock List Widget ${index + 1}:`, {
-              id: widget.id,
-              currentStocks: widget.data?.stocks?.length || 0,
-              expectedStocks: this.filteredDashboardData?.length || 0,
-              dataMatches: (widget.data?.stocks?.length || 0) === (this.filteredDashboardData?.length || 0)
-            });
-          });
-          
-          return 'Filter flow debug complete - check console logs';
-        },
-        recreateDashboard: () => {
-          console.log('🔧 MANUAL DASHBOARD RECREATION:');
-          console.log('📊 Current data count:', this.dashboardData?.length || 0);
-          
-          if (!this.dashboardData || this.dashboardData.length === 0) {
-            console.warn('❌ No data available for dashboard recreation');
-            return 'No data available';
-          }
-          
-          console.log('🔧 Recreating dashboard config...');
-          this.initializeDashboardConfig();
-          
-          console.log('🔧 Updating all charts...');
-          this.updateAllChartsWithFilteredData();
-          
-          console.log('🔧 Triggering change detection...');
-          this.cdr.detectChanges();
-          
-          return 'Dashboard recreated successfully';
-        },
-        testClickFiltering: (industry = 'Iron & Steel') => {
-          console.log(`🧪 MANUAL CLICK FILTERING TEST: Testing with industry "${industry}"`);
-          
-          if (!this.dashboardData || this.dashboardData.length === 0) {
-            console.warn('❌ No data available for filtering test');
-            return 'No data available';
-          }
-          
-          console.log('🧪 Simulating bar chart click...');
-          console.log('🧪 Current data before filter:', this.filteredDashboardData?.length || 0, 'records');
-          
-          // Directly call the filtering method
-          this.filterChartsByIndustry(industry);
-          
-          console.log('🧪 Data after filter:', this.filteredDashboardData?.length || 0, 'records');
-          
-          return `Filtering test completed for "${industry}"`;
-        },
-        checkDashboardState: () => {
-          console.log('🔍 DASHBOARD STATE CHECK:');
-          console.log('📊 Dashboard config exists:', !!this.dashboardConfig);
-          console.log('📊 Widget count:', this.dashboardConfig?.widgets?.length || 0);
-          console.log('📊 Dashboard data count:', this.dashboardData?.length || 0);
-          console.log('📊 Filtered data count:', this.filteredDashboardData?.length || 0);
-          console.log('📊 Applied filters count:', this.appliedFilters?.length || 0);
-          
-          if (this.dashboardConfig?.widgets) {
-            this.dashboardConfig.widgets.forEach((widget, index) => {
-              console.log(`📋 Widget ${index + 1}:`, {
-                id: widget.id,
-                title: widget.config?.header?.title,
-                component: widget.config?.component,
-                hasData: !!widget.data,
-                position: widget.position
-              });
-            });
-          }
-          
-          return 'Dashboard state check complete - see console logs';
-        },
-        inspectChartInstances: () => {
-          console.log('🔍 CHART INSTANCES INSPECTION:');
-          
-          if (!this.dashboardConfig?.widgets) {
-            console.warn('❌ No dashboard widgets found');
-            return 'No widgets found';
-          }
-          
-          const echartWidgets = this.dashboardConfig.widgets.filter(widget => 
-            widget.config?.component === 'echart'
-          );
-          
-          console.log(`📊 Found ${echartWidgets.length} echart widgets`);
-          
-          echartWidgets.forEach((widget, index) => {
-            console.log(`📊 Widget ${index + 1}:`, {
-              id: widget.id,
-              title: widget.config?.header?.title,
-              hasChartInstance: !!widget.chartInstance,
-              chartInstanceType: typeof widget.chartInstance,
-              hasOnMethod: widget.chartInstance && typeof widget.chartInstance.on === 'function'
-            });
-            
-            if (widget.chartInstance) {
-              console.log(`📊 Widget ${index + 1} chart instance:`, widget.chartInstance);
-            }
-          });
-          
-          return 'Chart instances inspection complete - see console logs';
-        },
-        testClearFilters: () => {
-          console.log('🧪 MANUAL CLEAR FILTERS TEST:');
-          console.log('🧪 Before clear - Applied filters:', this.appliedFilters?.length || 0);
-          console.log('🧪 Before clear - Filtered data count:', this.filteredDashboardData?.length || 0);
-          console.log('🧪 Before clear - Original data count:', this.dashboardData?.length || 0);
-          
-          this.clearAllFilters();
-          
-          console.log('🧪 After clear - Applied filters:', this.appliedFilters?.length || 0);
-          console.log('🧪 After clear - Filtered data count:', this.filteredDashboardData?.length || 0);
-          console.log('🧪 After clear - Original data count:', this.dashboardData?.length || 0);
-          
-          return 'Clear filters test completed - check console logs';
-        },
-        forceChartUpdate: () => {
-          console.log('🔧 MANUAL FORCE CHART UPDATE:');
-          console.log('🔧 Current filtered data count:', this.filteredDashboardData?.length || 0);
-          
-          if (!this.filteredDashboardData || this.filteredDashboardData.length === 0) {
-            console.warn('❌ No filtered data available for update');
-            return 'No data available';
-          }
-          
-          this.updateAllChartsWithFilteredData();
-          
-          return 'Force chart update completed - charts should refresh now';
-        },
-        fixCustomClickHandlers: () => {
-          console.log('🔧 MANUAL FIX CUSTOM CLICK HANDLERS:');
-          
-          if (!this.dashboardConfig?.widgets) {
-            console.warn('❌ No dashboard widgets found');
-            return 'No widgets found';
-          }
-          
-          const echartWidgets = this.dashboardConfig.widgets.filter(widget => 
-            widget.config?.component === 'echart'
-          );
-          
-          console.log(`📊 Found ${echartWidgets.length} echart widgets`);
-          
-          echartWidgets.forEach((widget, index) => {
-            const title = widget.config?.header?.title;
-            console.log(`📊 Widget ${index + 1}: ${title}`, {
-              hasChartInstance: !!widget.chartInstance,
-              chartInstanceType: typeof widget.chartInstance
-            });
-            
-            if (widget.chartInstance && typeof widget.chartInstance.on === 'function') {
-              console.log(`🔧 Manually attaching click handler to ${title}`);
-              
-              // Remove existing handlers
-              widget.chartInstance.off('click');
-              
-              // Add new handler based on chart type
-              if (title === 'Industry') {
-                widget.chartInstance.on('click', (params: any) => {
-                  console.log('🔥🔥🔥 MANUAL INDUSTRY CLICK HANDLER TRIGGERED! 🔥🔥🔥');
-                  console.log('📊 Click params:', params);
-                  
-                  const industryName = params.name || (params.data && params.data.name);
-                  if (industryName && typeof industryName === 'string' && isNaN(Number(industryName))) {
-                    console.log('✅ Valid industry name found:', industryName);
-                    this.filterChartsByIndustry(industryName);
-                  } else {
-                    console.error('❌ Invalid industry name:', industryName);
-                  }
-                });
-                console.log(`✅ Attached industry click handler to ${title}`);
-              } else if (title === 'Sector Allocation') {
-                widget.chartInstance.on('click', (params: any) => {
-                  console.log('🔥🔥🔥 MANUAL SECTOR CLICK HANDLER TRIGGERED! 🔥🔥🔥');
-                  console.log('📊 Click params:', params);
-                  
-                  const sectorName = params.name || (params.data && params.data.name);
-                  if (sectorName && typeof sectorName === 'string' && isNaN(Number(sectorName))) {
-                    console.log('✅ Valid sector name found:', sectorName);
-                    this.filterChartsBySector(sectorName);
-                  } else {
-                    console.error('❌ Invalid sector name:', sectorName);
-                  }
-                });
-                console.log(`✅ Attached sector click handler to ${title}`);
-              }
-            } else {
-              console.warn(`⚠️ Widget ${title} has no chart instance or on method`);
-            }
-          });
-          
-          return 'Custom click handlers fixed - try clicking charts now';
-        },
-        testDirectClicks: () => {
-          console.log('🧪 TESTING DIRECT CHART CLICKS:');
-          
-          // Test industry filtering
-          console.log('🧪 Testing industry filtering with "Iron & Steel"...');
-          this.filterChartsByIndustry('Iron & Steel');
-          
-          setTimeout(() => {
-            console.log('🧪 Testing clear filters...');
-            this.clearAllFilters();
-            
-            setTimeout(() => {
-              console.log('🧪 Testing sector filtering with "Metals & Mining"...');
-              this.filterChartsBySector('Metals & Mining');
-            }, 1000);
-          }, 2000);
-          
-          return 'Direct click test sequence started - watch console logs';
-        }
+        // Core functionality tests
+        testFilter: (industry?: string) => this.testManualFilter(industry),
+        clearFilters: () => this.clearAllFilters(),
+        checkState: () => ({
+          dataCount: this.dashboardData?.length || 0,
+          filteredCount: this.filteredDashboardData?.length || 0,
+          appliedFilters: this.appliedFilters?.length || 0
+        }),
+        // Emergency fixes
+        forceUpdate: () => this.updateAllChartsWithFilteredData(),
+        fixClickHandlers: () => this.fixCustomClickHandlers()
       };
-      console.log('🛠️ Debug methods attached to window.debugOverall');
     }
   }
 
   override ngOnInit(): void {
-    console.log('🚀 OverallComponent ngOnInit called');
-    
-    // Call parent ngOnInit if it exists
     super.ngOnInit?.();
-    
-    // Load initial stock ticks data - you can modify this to use a default index symbol
-    // For now, we'll let the component communication service handle the initial load
-    // this.loadStockTicksData('NIFTY50'); // Uncomment and set default symbol if needed
   }
 
-  // Implement abstract methods from BaseDashboardComponent
   protected onChildInit(): void {
     // Register world map for density map charts
     import('echarts-map-collection/custom/world.json').then((worldMapData) => {
       DensityMapBuilder.registerMap('world', worldMapData.default || worldMapData);
-    }).catch((error) => {
+    }).catch(() => {
       // Handle world map loading error silently
     });
 
-    // Clear any existing subscription to prevent memory leaks
+    // Clear any existing subscription
     if (this.selectedIndexSubscription) {
       this.selectedIndexSubscription.unsubscribe();
       this.selectedIndexSubscription = null;
     }
 
-    // Reset centralized filters but keep dashboard data intact 
-    // (dashboard was just created in parent ngOnInit)
+    // Reset filters and title
     this.appliedFilters = [];
-    
-    console.log('🔧 onChildInit: Preserving dashboard data for existing charts');
-    
-    // Reset dashboard title
     this.dashboardTitle = 'Financial Dashboard';
-    
-    // Clear any existing selected index data to prevent stale data issues
     this.componentCommunicationService.clearSelectedIndex();
 
-    console.log('🔧 onChildInit: Skipping clearAllWidgetsData() to preserve newly created dashboard');
-
-    // Subscribe to selected index data changes and store the subscription
+    // Subscribe to selected index changes
     this.selectedIndexSubscription = this.componentCommunicationService.getSelectedIndex().subscribe(selectedIndex => {
       if (selectedIndex) {
         this.updateDashboardWithSelectedIndex(selectedIndex);
       } else {
-        // If no selected index, load NIFTY 50 by default
         this.loadDefaultNifty50Data();
       }
     });
 
-    // Load NIFTY 50 data by default on initial load
+    // Load default data if no index selected
     setTimeout(() => {
       const currentSelectedIndex = this.componentCommunicationService.getSelectedIndex();
-      // Check if there's no current selected index, then load default
       if (!currentSelectedIndex) {
         this.loadDefaultNifty50Data();
       }
@@ -590,16 +274,9 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
     this.appliedFilters = [];
   }
 
-  /**
-   * Load default NIFTY METAL data when no index is selected
-   */
   private loadDefaultNifty50Data(): void {
-    console.log('🚀 loadDefaultNifty50Data: Starting to load default NIFTY METAL data');
-    
-    // Set dashboard title for NIFTY METAL
     this.dashboardTitle = 'NIFTY METAL - Financial Dashboard';
     
-    // Create default NIFTY METAL selected index data
     const defaultNiftyMetalData: SelectedIndexData = {
       id: 'NIFTYMETAL',
       symbol: 'NIFTY METAL',
@@ -610,64 +287,27 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
       keyCategory: 'Index'
     };
     
-    console.log('🚀 loadDefaultNifty50Data: Created default data:', defaultNiftyMetalData);
-    
-    // Update dashboard with NIFTY METAL data
     this.updateDashboardWithSelectedIndex(defaultNiftyMetalData);
   }
 
-  /**
-   * Load stock ticks data for the given index symbol
-   * @param indexSymbol The symbol of the index to fetch stock ticks data for
-   */
   private loadStockTicksData(indexSymbol: string): void {
     if (indexSymbol && indexSymbol.trim()) {
       this.stockTicksService.getStockTicksByIndex(indexSymbol).subscribe({
         next: (stockTicksData: StockDataDto[]) => {
-          // Check if we received empty or null data
-          if (!stockTicksData || stockTicksData.length === 0) {
-            stockTicksData = [];
-          }
-          
-          // Store the stock ticks data
-          this.dashboardData = stockTicksData;
-          
-          // DEBUG: Log sample data structure to understand field names and values
-          if (stockTicksData && stockTicksData.length > 0) {
-            console.log(`📈 loadStockTicksData: Loaded ${stockTicksData.length} records`);
-            console.log(`📈 loadStockTicksData: Sample record structure:`, stockTicksData[0]);
-            console.log(`📈 loadStockTicksData: Available industries:`, [...new Set(stockTicksData.map(s => s.industry))].slice(0, 10));
-            console.log(`📈 loadStockTicksData: Available sectors:`, [...new Set(stockTicksData.map(s => s.sector))].slice(0, 10));
-          } else {
-            console.log(`❌ loadStockTicksData: No data received`);
-          }
-          
-          // Reset all filters when new data is loaded
+          this.dashboardData = stockTicksData || [];
           this.appliedFilters = [];
-          
-          // Initialize filtered data with original data (no filters applied)
-          this.filteredDashboardData = stockTicksData;
+          this.filteredDashboardData = this.dashboardData;
 
-          // Update metric tiles with the new stock data
           this.updateMetricTilesWithFilters([]);
-          
-          // Dashboard config was created during initialization - now populate widgets with actual data
-          console.log('🔧 loadStockTicksData: Populating widgets with actual data');
           this.populateWidgetsWithInitialData();
-          
-          // Update all widgets with the new stock data using centralized system
           this.updateAllChartsWithFilteredData();
-          
-          // Trigger change detection after receiving stock data
           this.cdr.detectChanges();
         },
-        error: (error) => {
-          // Use fallback sample data when service fails
+        error: () => {
           this.dashboardData = [];
           this.filteredDashboardData = [];
           this.appliedFilters = [];
           
-          // Update widgets with fallback data
           this.updateMetricTilesWithFilters([]);
           this.updateAllChartsWithFilteredData();
           this.cdr.detectChanges();
@@ -731,18 +371,8 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
     return createMetricTilesFunction(this.dashboardData);
   }
 
-  /**
-   * Initialize dashboard config using the Enhanced Chart Builders
-   */
   protected initializeDashboardConfig(): void {
-    console.log('🔧 initializeDashboardConfig: Starting dashboard initialization');
-    console.log('🔧 initializeDashboardConfig: Current dashboardData:', this.dashboardData?.length || 0, 'records');
-    console.log('🔧 initializeDashboardConfig: Current filteredDashboardData:', this.filteredDashboardData?.length || 0, 'records');
-    
-    // Create widgets using enhanced chart builders - charts will be updated with data when it loads
-
     // Stock Industry Horizontal Bar Chart
-    console.log('🔧 initializeDashboardConfig: Creating Industry bar chart with data:', this.filteredDashboardData?.length || 0, 'records');
     const barStockIndustry = HorizontalBarChartBuilder.create()
         .setData(this.filteredDashboardData || []) // Start with current filtered data or empty array
         .setHeader('Industry')
@@ -759,50 +389,13 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
         .setFilterColumn('industry')
         .setEvents((widget, chart) => {
           if (chart) {
-            console.log('🔧 Setting up CUSTOM click handler for Industry bar chart');
-            console.log('🔧 Chart instance for Industry bar chart:', chart);
-            console.log('🔧 Chart instance type:', typeof chart);
-            console.log('🔧 Chart has on method:', typeof chart.on === 'function');
-            
-            // Remove any existing click handlers to prevent conflicts
             chart.off('click');
-            
             chart.on('click', (params: any) => {
-              console.log('🔥🔥🔥 INDUSTRY BAR CHART CLICKED! Event triggered! 🔥🔥🔥');
-              // Prevent the default dashboard click handler from running
               params.event?.stop?.();
-              
-              // Debug what we're getting from the click event
-              console.log('📊 Bar chart click - FULL params object:', params);
-              console.log('📊 Bar chart click params breakdown:', {
-                name: params.name,
-                value: params.value,
-                data: params.data,
-                dataIndex: params.dataIndex,
-                componentType: params.componentType,
-                seriesType: params.seriesType,
-                seriesIndex: params.seriesIndex,
-                dataType: params.dataType
-              });
-              
-              // Check if name is numeric (which would be wrong)
-              if (params.name && !isNaN(Number(params.name))) {
-                console.error('❌ ERROR: Bar chart click received NUMERIC name value:', params.name, 'This should be a string industry name!');
-                console.log('📊 Full params object for numeric name issue:', params);
-              }
-              
-              // Filter by industry when bar is clicked
-              // Ensure we're using the name (industry name) not the value
               const industryName = params.name || (params.data && params.data.name);
               if (industryName && typeof industryName === 'string' && isNaN(Number(industryName))) {
-                console.log('✅ Bar chart click - Valid industry name found:', industryName);
                 this.filterChartsByIndustry(industryName);
-              } else {
-                console.error('❌ ERROR: No valid industry name found in click params. Expected string, got:', industryName, typeof industryName);
-                console.log('📊 Full params for debugging:', params);
               }
-              
-              // Return false to prevent event bubbling
               return false;
             });
           }
@@ -826,38 +419,13 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
       .setFilterColumn('sector')
               .setEvents((widget, chart) => {
           if (chart) {
-            console.log('🔧 Setting up CUSTOM click handler for Sector pie chart');
-            console.log('🔧 Chart instance for Sector pie chart:', chart);
-            console.log('🔧 Chart instance type:', typeof chart);
-            console.log('🔧 Chart has on method:', typeof chart.on === 'function');
-            
-            // Remove any existing click handlers to prevent conflicts
             chart.off('click');
-            
             chart.on('click', (params: any) => {
-              console.log('🔥🔥🔥 SECTOR PIE CHART CLICKED! Event triggered! 🔥🔥🔥');
-              // Prevent the default dashboard click handler from running
               params.event?.stop?.();
-              
-              // Debug what we're getting from the click event
-              console.log('🥧 Pie chart click params:', {
-                name: params.name,
-                value: params.value,
-                data: params.data,
-                dataIndex: params.dataIndex
-              });
-              
-              // Filter by sector when pie slice is clicked
-              // Ensure we're using the name (sector name) not the value
               const sectorName = params.name || (params.data && params.data.name);
               if (sectorName && typeof sectorName === 'string' && isNaN(Number(sectorName))) {
-                console.log('✅ Pie chart click - Valid sector name found:', sectorName);
                 this.filterChartsBySector(sectorName);
-              } else {
-                console.warn('⚠️ No valid sector name found in click params:', params);
               }
-              
-              // Return false to prevent event bubbling
               return false;
             });
         }
@@ -869,24 +437,7 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
     pieStockSector.config = pieStockSector.config || {};
     (pieStockSector.config as any).skipDefaultFiltering = true;
 
-    // Portfolio Distribution Treemap
-    // const treemapChart = TreemapChartBuilder.create()
-    //   .setData(this.filteredDashboardData) // Start with empty data, will be populated when stock data loads
-    //   .setHeader('Portfolio Distribution')
-    //   .setPortfolioConfiguration()
-    //   .setItemStyle('#fff', 1, 1)
-    //   .setFinancialDisplay('INR', 'en-US')
-    //   .setAccessor('industry')
-    //   .setFilterColumn('industry')
-    //   .setEvents((widget, chart) => {
-    //     if (chart) {
-    //       chart.on('click', (params: any) => {
-    //         // Filter by industry category when treemap is clicked
-    //         this.filterChartsByIndustry(params.name);
-    //       });
-    //     }
-    //   })
-    //   .build();
+
 
     // Stock List Widget - Initialize with empty data, will be populated later
     const stockListWidget = StockListChartBuilder.create()
@@ -908,11 +459,9 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
     // Position filter widget at row 1 (below metric tiles)
     filterWidget.position = { x: 0, y: 1, cols: 12, rows: 1 };
 
-    // Position charts with proper spacing to avoid overlap
+    // Position charts with proper spacing
     barStockIndustry.position = { x: 0, y: 2, cols: 4, rows: 8 };
-    
     pieStockSector.position = { x: 4, y: 2, cols: 4, rows: 8 };
-    //treemapChart.position = { x: 0, y: 3, cols: 4, rows: 8 };
     stockListWidget.position = { x: 8, y: 2, cols: 4, rows: 12 };
     
     // Use the Fluent API to build the dashboard config with filter highlighting enabled
@@ -930,7 +479,6 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
         filterWidget,
         barStockIndustry,
         pieStockSector,
-        //treemapChart,
         stockListWidget,
       ])
       .setEditMode(false)
@@ -938,9 +486,6 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
 
     // Populate widgets with initial data
     this.populateWidgetsWithInitialData();
-    
-    console.log('🔧 initializeDashboardConfig: Dashboard initialization completed successfully');
-    console.log('🔧 initializeDashboardConfig: Created dashboard with', this.dashboardConfig?.widgets?.length || 0, 'widgets');
   }
 
   /**
@@ -1289,70 +834,32 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
     });
   }
 
-  /**
-   * Central method to apply all filters to stock data
-   * This is the core method of the centralized filtering system that:
-   * 1. Takes the original dashboardData as input
-   * 2. Applies each filter in appliedFilters array sequentially
-   * 3. Updates filteredDashboardData with the result
-   * 4. If no filters are applied, reassigns dashboardData to filteredDashboardData
-   * 5. Triggers updates to all dependent widgets/charts
-   * 
-   * This ensures all widgets use the same filtered data source for consistency
-   */
   private applyFilters(): void {
-    console.log(`🔍 DEBUG: applyFilters: Starting with ${this.appliedFilters.length} filter(s): ${JSON.stringify(this.appliedFilters)}`);
-    console.log(`🔍 DEBUG: applyFilters: Original data count: ${this.dashboardData?.length || 0}`);
-
-    // If no original data, return early
     if (!this.dashboardData || this.dashboardData.length === 0) {
-      console.log(`🔍 DEBUG: applyFilters: No original data, setting empty filtered data`);
       this.filteredDashboardData = [];
       this.updateAllChartsWithFilteredData();
       return;
     }
 
-    // If no filters are applied, reassign original data to filtered data
     if (this.appliedFilters.length === 0) {
-      console.log(`🔍 DEBUG: applyFilters: No filters, using original data (${this.dashboardData.length} records)`);
       this.filteredDashboardData = [...this.dashboardData];
       this.updateAllChartsWithFilteredData();
       return;
     }
 
-    // CRITICAL FIX: Start with original data, not already filtered data
     let filtered = [...this.dashboardData];
-    console.log(`🔍 DEBUG: applyFilters: Starting filtering with ${filtered.length} records`);
-
-    // Apply each filter in the appliedFilters array sequentially
     for (const filter of this.appliedFilters) {
-      const beforeCount = filtered.length;
       filtered = this.applyIndividualFilter(filtered, filter);
-      console.log(`🔍 DEBUG: applyFilters: Filter ${filter.field}='${filter.value}' reduced records from ${beforeCount} to ${filtered.length}`);
     }
 
-    // Update filtered data
     this.filteredDashboardData = filtered;
-    console.log(`🔍 DEBUG: applyFilters: Final filtered data count: ${this.filteredDashboardData.length}`);
-
-    // Update all widgets that depend on filtered data
     this.updateAllChartsWithFilteredData();
   }
 
-  /**
-   * Apply a single filter to the data
-   */
   private applyIndividualFilter(data: StockDataDto[], filter: FilterCriteria): StockDataDto[] {
     const operator = filter.operator || 'equals';
     
-    console.log(`🔍 DEBUG: applyIndividualFilter: Filtering ${data.length} records by ${filter.field}='${filter.value}' (operator: ${operator})`);
-    
-    // Sample a few records to see their field values
-    const sampleRecords = data.slice(0, 3);
-    console.log(`🔍 DEBUG: applyIndividualFilter: Sample field values for '${filter.field}':`, 
-      sampleRecords.map(stock => ({ symbol: stock.symbol, [filter.field]: (stock as any)[filter.field] })));
-    
-    const result = data.filter(stock => {
+    return data.filter(stock => {
       const fieldValue = (stock as any)[filter.field];
       
       switch (operator) {
@@ -1368,9 +875,6 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
           return fieldValue === filter.value;
       }
     });
-    
-    console.log(`🔍 DEBUG: applyIndividualFilter: Filter result: ${result.length} records match`);
-    return result;
   }
 
   /**
@@ -1429,54 +933,27 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
     }
   }
 
-  /**
-   * Add a filter to the applied filters array
-   * This method manages filter addition with the following logic:
-   * 1. Removes any existing filter of the same type and field to prevent duplicates
-   * 2. Adds the new filter to the appliedFilters array
-   * 3. Automatically applies all filters to update filteredStockData
-   * 
-   * @param filter The filter criteria to add
-   */
   private addFilter(filter: FilterCriteria): void {
-    console.log(`➕ addFilter: STARTING - Adding filter:`, filter);
-    console.log(`➕ addFilter: Current applied filters before:`, this.appliedFilters);
-    console.log(`➕ addFilter: Original data count:`, this.dashboardData?.length || 0);
-    
     // Check if this exact filter already exists
     const exactFilterExists = this.appliedFilters.some(f => 
       f.type === filter.type && f.field === filter.field && f.value === filter.value
     );
     
     if (exactFilterExists) {
-      console.log(`⚠️ addFilter: Exact same filter already exists, removing and re-adding to refresh`);
-      // Remove the exact filter and re-add it (this allows "refresh" behavior)
+      // Remove and re-add for refresh behavior
       this.appliedFilters = this.appliedFilters.filter(f => 
         !(f.type === filter.type && f.field === filter.field && f.value === filter.value)
       );
     } else {
-      // Remove any existing filter of the same type and field to avoid conflicts
-      const beforeFilterCount = this.appliedFilters.length;
+      // Remove any existing filter of the same type and field
       this.appliedFilters = this.appliedFilters.filter(f => 
         !(f.type === filter.type && f.field === filter.field)
       );
-      const removedCount = beforeFilterCount - this.appliedFilters.length;
-      console.log(`➕ addFilter: Removed ${removedCount} existing filters of same type`);
     }
     
-    // Add the new filter
     this.appliedFilters.push(filter);
-    
-    console.log(`➕ addFilter: Added filter for ${filter.field}=${filter.value}, total filters: ${this.appliedFilters.length}`);
-    console.log(`➕ addFilter: Current applied filters after:`, this.appliedFilters);
-    
-    // Apply all filters
     this.applyFilters();
-    
-    // Update filter widget to display the applied filters
     this.updateFilterWidget();
-    
-    console.log(`➕ addFilter: COMPLETED - Filter applied successfully`);
   }
 
   /**
@@ -1499,235 +976,94 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
     this.updateFilterWidget();
   }
 
-  /**
-   * Clear all filters and restore original data
-   * This method resets the filtering system by:
-   * 1. Clearing the appliedFilters array
-   * 2. Reapplying filters (which results in showing all original data)
-   * 3. Updating all dependent widgets with the unfiltered data
-   * 4. Calls parent clearAllFilters to maintain consistency with base class
-   */
   public override clearAllFilters(): void {
-    console.log(`🧹 clearAllFilters: STARTING - Clearing ${this.appliedFilters.length} filters`);
-    console.log(`🧹 clearAllFilters: Original data count: ${this.dashboardData?.length || 0}`);
-    console.log(`🧹 clearAllFilters: Current filtered data count: ${this.filteredDashboardData?.length || 0}`);
-    
-    // Clear our custom applied filters
     this.appliedFilters = [];
-    
-    // CRITICAL: Restore filteredDashboardData to original dashboardData
     this.filteredDashboardData = [...(this.dashboardData || [])];
-    console.log(`🧹 clearAllFilters: Restored filtered data to original: ${this.filteredDashboardData?.length || 0} records`);
-    
-    // Apply filters (with empty filter array, this restores original data)
     this.applyFilters();
-    
-    // Force update all charts with original data
-    console.log(`🧹 clearAllFilters: Forcing chart updates with original data`);
     this.updateAllChartsWithFilteredData();
     
-    // Clear the filter widget display
     const filterWidget = this.getFilterWidget();
     if (filterWidget) {
       clearAllFiltersFromWidget(filterWidget);
-      console.log(`🧹 clearAllFilters: Cleared filter widget display`);
     }
     
-    // Force change detection multiple times to ensure UI updates
     this.cdr.detectChanges();
     setTimeout(() => {
       this.cdr.markForCheck();
       this.cdr.detectChanges();
     }, 50);
     
-    // Call parent method FIRST to clear the filter service
     super.clearAllFilters();
-    
-    console.log(`🧹 clearAllFilters: COMPLETED - All filters cleared and data restored`);
   }
 
-  /**
-   * Override onFilterValuesChanged to also handle clear all from filter service
-   */
   override onFilterValuesChanged(filters: any[]): void {
-    console.log('🚫 onFilterValuesChanged: Intercepting filter processing');
-    console.log('🚫 Received filters:', filters);
-    
-    // Check if this is a "clear all" operation (empty filters array)
+    // Handle clear all operation
     if (!filters || filters.length === 0) {
-      console.log('🧹 onFilterValuesChanged: Detected clear all operation');
-      
-      // Clear our custom filters without calling super again (avoid infinite loop)
       this.appliedFilters = [];
       this.filteredDashboardData = [...(this.dashboardData || [])];
       this.updateAllChartsWithFilteredData();
       
-      // Update filter widget
       const filterWidget = this.getFilterWidget();
       if (filterWidget) {
         clearAllFiltersFromWidget(filterWidget);
       }
       
       this.cdr.detectChanges();
-      console.log('🧹 onFilterValuesChanged: Clear all completed');
       return;
     }
     
-    // ISSUE: These filters have accessor: 'category' which means they're coming from 
-    // the default dashboard system, NOT our custom click handlers
-    // Our custom handlers should trigger with 🔥 logs and call filterChartsByIndustry/Sector directly
-    
-    console.log('⚠️ WARNING: Default dashboard filters detected instead of custom click handlers!');
-    console.log('⚠️ Expected: 🔥 INDUSTRY BAR CHART CLICKED! or 🔥 SECTOR PIE CHART CLICKED!');
-    console.log('⚠️ This suggests custom click handlers are not working properly');
-    
-    // For now, let's process these default filters to get some filtering working
-    // while we debug the custom click handlers
-    console.log('🔧 Processing default filters as fallback');
-    
-    filters.forEach((filter, index) => {
-      console.log(`🔧 Filter ${index + 1}:`, {
-        accessor: filter.accessor,
-        filterColumn: filter.filterColumn,
-        value: filter.value,
-        category: filter.category
-      });
-      
-      // Try to map the filter to our custom filtering system
-      // CRITICAL FIX: Use filter.category (name) not filter.value (numeric value)
+    // Process fallback filters from default dashboard system
+    filters.forEach(filter => {
       const categoryName = filter.category || filter.value;
       
-      if (filter.filterColumn === 'sector' && categoryName) {
-        console.log(`🔧 Converting default sector filter: value=${filter.value}, category=${filter.category}`);
-        console.log(`🔧 Using category name for sector filter: ${categoryName}`);
-        if (typeof categoryName === 'string' && isNaN(Number(categoryName))) {
-          this.filterChartsBySector(categoryName);
-        } else {
-          console.warn(`⚠️ Invalid sector name: ${categoryName} (type: ${typeof categoryName})`);
-        }
-      } else if (filter.filterColumn === 'industry' && categoryName) {
-        console.log(`🔧 Converting default industry filter: value=${filter.value}, category=${filter.category}`);
-        console.log(`🔧 Using category name for industry filter: ${categoryName}`);
-        if (typeof categoryName === 'string' && isNaN(Number(categoryName))) {
-          this.filterChartsByIndustry(categoryName);
-        } else {
-          console.warn(`⚠️ Invalid industry name: ${categoryName} (type: ${typeof categoryName})`);
-        }
+      if (filter.filterColumn === 'sector' && categoryName && 
+          typeof categoryName === 'string' && isNaN(Number(categoryName))) {
+        this.filterChartsBySector(categoryName);
+      } else if (filter.filterColumn === 'industry' && categoryName && 
+                 typeof categoryName === 'string' && isNaN(Number(categoryName))) {
+        this.filterChartsByIndustry(categoryName);
       }
     });
-    
-    // Skip the default processing since we handled it above
-    return;
   }
 
-  /**
-   * TEST METHOD: Add a manual filter for debugging purposes
-   * This method can be called from browser console to test filtering manually
-   */
   public testManualFilter(industry: string = 'Aluminium'): void {
-    console.log(`🧪 testManualFilter: Testing manual filter for industry: ${industry}`);
-    console.log(`🧪 testManualFilter: Current data count: ${this.dashboardData?.length || 0}`);
-    
     if (!this.dashboardData || this.dashboardData.length === 0) {
-      console.warn(`❌ testManualFilter: No data available for testing`);
       return;
     }
     
-    // Check if the industry exists in the data
     const availableIndustries = [...new Set(this.dashboardData.map(s => s.industry))];
-    console.log(`🧪 testManualFilter: Available industries:`, availableIndustries);
-    
-    if (!availableIndustries.includes(industry)) {
-      console.warn(`⚠️ testManualFilter: Industry '${industry}' not found. Available: ${availableIndustries.join(', ')}`);
-      return;
+    if (availableIndustries.includes(industry)) {
+      this.filterChartsByIndustry(industry);
     }
-    
-    console.log(`✅ testManualFilter: Industry '${industry}' found! Applying filter...`);
-    
-    // Apply the filter manually
-    this.filterChartsByIndustry(industry);
   }
 
-  /**
-   * Update all charts with filtered data
-   */
   private updateAllChartsWithFilteredData(): void {
-    console.log(`📊 updateAllChartsWithFilteredData: STARTING update process`);
-    console.log(`📊 updateAllChartsWithFilteredData: Widgets available: ${this.dashboardConfig?.widgets?.length || 0}`);
-    console.log(`📊 updateAllChartsWithFilteredData: Filtered data records: ${this.filteredDashboardData?.length || 0}`);
-    console.log(`📊 updateAllChartsWithFilteredData: Original data records: ${this.dashboardData?.length || 0}`);
-    
     if (!this.filteredDashboardData) {
-      console.warn('⚠️ updateAllChartsWithFilteredData: No filtered data available, skipping update');
       return;
     }
     
-    try {
-      console.log('📊 Step 1: Updating bar chart...');
-      this.updateBarChartWithFilteredData();
-      
-      console.log('📊 Step 2: Updating pie chart...');
-      this.updatePieChartWithFilteredData();
-      
-      console.log('📊 Step 3: Updating stock list...');
-      this.updateStockListWithFilteredData();
-      
-      //this.updateTreemapWithFilteredData();
-      // Add other chart updates as needed
-      
-      console.log('📊 Step 4: Final change detection...');
-      // Trigger change detection with delay to ensure DOM updates
+    this.updateBarChartWithFilteredData();
+    this.updatePieChartWithFilteredData();
+    this.updateStockListWithFilteredData();
+    
+    this.cdr.detectChanges();
+    setTimeout(() => {
+      this.cdr.markForCheck();
       this.cdr.detectChanges();
-      
-      // Additional change detection after short delay
-      setTimeout(() => {
-        console.log('📊 Step 5: Delayed change detection...');
-        this.cdr.markForCheck();
-        this.cdr.detectChanges();
-      }, 100);
-      
-      console.log('✅ updateAllChartsWithFilteredData: All widgets updated successfully!');
-      
-    } catch (error) {
-      console.error('❌ updateAllChartsWithFilteredData: Error during update process:', error);
-    }
+    }, 100);
   }
 
-  /**
-   * Filter charts by industry (called when bar chart is clicked)
-   */
   private filterChartsByIndustry(industry: string): void {
-    console.log(`🎯 filterChartsByIndustry: CALLED with industry: "${industry}" (type: ${typeof industry})`);
-    
-    if (!this.dashboardData || this.dashboardData.length === 0) {
-      console.warn(`⚠️ filterChartsByIndustry: No dashboard data available`);
+    if (!this.dashboardData || this.dashboardData.length === 0 || 
+        typeof industry !== 'string' || !isNaN(Number(industry))) {
       return;
     }
 
-    // Validate that we received a string industry name, not a number
-    if (typeof industry !== 'string') {
-      console.error(`❌ filterChartsByIndustry: Invalid input - received non-string value:`, industry, typeof industry);
-      return;
-    }
-
-    // Check if industry is numeric (which would be wrong)
-    if (!isNaN(Number(industry))) {
-      console.error(`❌ filterChartsByIndustry: Invalid input - received numeric value that should be industry name:`, industry);
-      return;
-    }
-
-    // Validate that the industry exists in the data
     const availableIndustries = [...new Set(this.dashboardData.map(s => s.industry))];
     if (!availableIndustries.includes(industry)) {
-      console.error(`❌ filterChartsByIndustry: Industry "${industry}" not found in data. Available:`, availableIndustries);
       return;
     }
 
-    console.log(`✅ filterChartsByIndustry: Valid industry "${industry}" found. Applying filter...`);
-    console.log(`🎯 filterChartsByIndustry: Current data count: ${this.dashboardData.length}`);
-    console.log(`🎯 filterChartsByIndustry: Current filtered data count: ${this.filteredDashboardData?.length || 0}`);
-
-    // Use centralized filter system
     this.addFilter({
       type: 'industry',
       field: 'industry',
@@ -1735,45 +1071,19 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
       operator: 'equals',
       source: 'Industry Chart'
     });
-
-    console.log(`🎯 filterChartsByIndustry: COMPLETED - Filter system triggered`);
   }
 
-  /**
-   * Filter charts by sector (called when pie chart is clicked)
-   */
   private filterChartsBySector(sector: string): void {
-    console.log(`🎯 filterChartsBySector: CALLED with sector: "${sector}" (type: ${typeof sector})`);
-    
-    if (!this.dashboardData || this.dashboardData.length === 0) {
-      console.warn(`⚠️ filterChartsBySector: No dashboard data available`);
+    if (!this.dashboardData || this.dashboardData.length === 0 || 
+        typeof sector !== 'string' || !isNaN(Number(sector))) {
       return;
     }
 
-    // Validate that we received a string sector name, not a number
-    if (typeof sector !== 'string') {
-      console.error(`❌ filterChartsBySector: Invalid input - received non-string value:`, sector, typeof sector);
-      return;
-    }
-
-    // Check if sector is numeric (which would be wrong)
-    if (!isNaN(Number(sector))) {
-      console.error(`❌ filterChartsBySector: Invalid input - received numeric value that should be sector name:`, sector);
-      return;
-    }
-
-    // Validate that the sector exists in the data
     const availableSectors = [...new Set(this.dashboardData.map(s => s.sector))];
     if (!availableSectors.includes(sector)) {
-      console.error(`❌ filterChartsBySector: Sector "${sector}" not found in data. Available:`, availableSectors);
       return;
     }
 
-    console.log(`✅ filterChartsBySector: Valid sector "${sector}" found. Applying filter...`);
-    console.log(`🎯 filterChartsBySector: Current data count: ${this.dashboardData.length}`);
-    console.log(`🎯 filterChartsBySector: Current filtered data count: ${this.filteredDashboardData?.length || 0}`);
-
-    // Use centralized filter system
     this.addFilter({
       type: 'sector',
       field: 'sector',
@@ -1781,8 +1091,6 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
       operator: 'equals',
       source: 'Sector Chart'
     });
-
-    console.log(`🎯 filterChartsBySector: COMPLETED - Filter system triggered`);
   }
 
   /**
@@ -1803,23 +1111,16 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
     });
   }
 
-  /**
-   * Update pie chart with filtered data
-   */
   private updatePieChartWithFilteredData(): void {
     if (!this.dashboardConfig?.widgets || !this.filteredDashboardData) {
-      console.log(`🥧 updatePieChartWithFilteredData: No widgets or filtered data`);
       return;
     }
-
-    console.log(`🥧 updatePieChartWithFilteredData: Updating with ${this.filteredDashboardData.length} filtered records`);
 
     const pieWidget = this.dashboardConfig.widgets.find(widget => 
       widget.config?.header?.title === 'Sector Allocation'
     );
 
     if (pieWidget) {
-      // Transform filtered data for pie chart (group by sector)
       const sectorData = this.filteredDashboardData.reduce((acc, stock) => {
         const sector = stock.sector || 'Unknown';
         if (!acc[sector]) {
@@ -1833,16 +1134,9 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
         .map(([name, value]) => ({ name, value }))
         .sort((a, b) => b.value - a.value);
       
-      console.log(`🥧 updatePieChartWithFilteredData: Sector aggregation:`, sectorData);
-      console.log(`🥧 updatePieChartWithFilteredData: Final pie data structure:`, pieData);
-      
-      // Force chart instance update with multiple approaches
       try {
-        // Approach 1: Use specific builder update
         PieChartBuilder.updateData(pieWidget, pieData);
-        console.log(`✅ updatePieChartWithFilteredData: PieChartBuilder update completed`);
         
-        // Approach 2: Direct chart instance update (more reliable)
         if (pieWidget.chartInstance && typeof pieWidget.chartInstance.setOption === 'function') {
           const newOptions = {
             ...pieWidget.config?.options,
@@ -1851,41 +1145,26 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
               data: pieData
             }]
           };
-          
-          console.log(`🥧 updatePieChartWithFilteredData: Updating chart instance directly`);
           pieWidget.chartInstance.setOption(newOptions, true);
-          console.log(`✅ updatePieChartWithFilteredData: Direct chart instance update completed`);
         }
         
-        // Approach 3: Generic widget update as final fallback
         this.updateEchartWidget(pieWidget, pieData);
-        console.log(`✅ updatePieChartWithFilteredData: Generic widget update completed`);
-        
       } catch (error) {
-        console.error(`❌ updatePieChartWithFilteredData: All update methods failed:`, error);
+        // Silent error handling
       }
-    } else {
-      console.warn(`⚠️ updatePieChartWithFilteredData: Sector pie widget not found`);
     }
   }
 
-  /**
-   * Update bar chart with filtered data
-   */
   private updateBarChartWithFilteredData(): void {
     if (!this.dashboardConfig?.widgets || !this.filteredDashboardData) {
-      console.log(`📊 updateBarChartWithFilteredData: No widgets or filtered data`);
       return;
     }
-
-    console.log(`📊 updateBarChartWithFilteredData: Updating with ${this.filteredDashboardData.length} filtered records`);
 
     const barWidget = this.dashboardConfig.widgets.find(widget => 
       widget.config?.header?.title === 'Industry'
     );
 
     if (barWidget) {
-      // Transform filtered data for bar chart (group by industry)
       const industryData = this.filteredDashboardData.reduce((acc, stock) => {
         const industry = stock.industry || 'Unknown';
         if (!acc[industry]) {
@@ -1895,12 +1174,8 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
         return acc;
       }, {} as Record<string, number>);
 
-      console.log(`📊 updateBarChartWithFilteredData: Industry aggregation:`, industryData);
-
-      // Business color palette for individual bars
       const businessColors = ['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de', '#3ba272', '#fc8452', '#9a60b4', '#ea7ccc'];
       
-      // Transform to bar chart format with individual colors and descending sort
       const barData = Object.entries(industryData)
         .map(([industry, value]) => ({
           name: industry,
@@ -1914,15 +1189,9 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
           }
         }));
       
-      console.log(`📊 updateBarChartWithFilteredData: Final bar data structure:`, barData);
-      
-      // Force chart instance update with multiple approaches
       try {
-        // Approach 1: Use specific builder update
         HorizontalBarChartBuilder.updateData(barWidget, barData);
-        console.log(`✅ updateBarChartWithFilteredData: HorizontalBarChartBuilder update completed`);
         
-        // Approach 2: Direct chart instance update (more reliable)
         if (barWidget.chartInstance && typeof barWidget.chartInstance.setOption === 'function') {
           const newOptions = {
             ...barWidget.config?.options,
@@ -1935,21 +1204,13 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
               data: barData.map(item => item.name)
             }
           };
-          
-          console.log(`📊 updateBarChartWithFilteredData: Updating chart instance directly`);
           barWidget.chartInstance.setOption(newOptions, true);
-          console.log(`✅ updateBarChartWithFilteredData: Direct chart instance update completed`);
         }
         
-        // Approach 3: Generic widget update as final fallback
         this.updateEchartWidget(barWidget, barData);
-        console.log(`✅ updateBarChartWithFilteredData: Generic widget update completed`);
-        
       } catch (error) {
-        console.error(`❌ updateBarChartWithFilteredData: All update methods failed:`, error);
+        // Silent error handling
       }
-    } else {
-      console.warn(`⚠️ updateBarChartWithFilteredData: Industry bar widget not found`);
     }
   }
 
@@ -1972,76 +1233,79 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
     }
   }
 
-  /**
-   * Update stock list widgets with filtered data
-   */
   private updateStockListWithFilteredData(): void {
     if (!this.dashboardConfig?.widgets) {
-      console.log('📋 updateStockListWithFilteredData: No dashboard widgets found');
       return;
     }
-
-    console.log(`📋 updateStockListWithFilteredData: Searching for stock-list widgets among ${this.dashboardConfig.widgets.length} widgets`);
 
     const stockListWidgets = this.dashboardConfig.widgets.filter(widget => 
       widget.config?.component === 'stock-list-table'
     );
 
-    console.log(`📋 updateStockListWithFilteredData: Found ${stockListWidgets.length} stock-list widgets`);
-
-    stockListWidgets.forEach((widget, index) => {
+    stockListWidgets.forEach(widget => {
       const stockData = this.filteredDashboardData || [];
-      
-      console.log(`📋 updateStockListWithFilteredData: Widget ${index + 1}:`, {
-        widgetId: widget.id,
-        widgetTitle: widget.config?.header?.title,
-        currentDataCount: widget.data?.stocks?.length || 0,
-        newDataCount: stockData.length,
-        hasData: !!widget.data
-      });
-      
-      // CRITICAL FIX: Create new array reference for OnPush change detection
       const newStockDataArray = [...stockData];
       
-      // Update the widget's data directly
       if (widget.data) {
         widget.data.stocks = newStockDataArray;
         widget.data.isLoadingStocks = false;
-        console.log(`📋 updateStockListWithFilteredData: Updated existing data for widget ${widget.id} with NEW array reference`);
       } else {
-        // Initialize widget data if it doesn't exist
         widget.data = {
           stocks: newStockDataArray,
           isLoadingStocks: false
         };
-        console.log(`📋 updateStockListWithFilteredData: Initialized new data for widget ${widget.id} with NEW array reference`);
       }
-      
-      console.log(`📋 updateStockListWithFilteredData: Final data for widget ${widget.id}:`, {
-        stocksCount: widget.data.stocks?.length || 0,
-        isLoading: widget.data.isLoadingStocks,
-        firstStock: widget.data.stocks?.[0]?.symbol || 'None',
-        arrayReference: widget.data.stocks === stockData ? 'SAME (BAD)' : 'NEW (GOOD)'
-      });
     });
     
-    // Force change detection to ensure the UI updates
-    console.log('📋 updateStockListWithFilteredData: Triggering change detection');
     this.cdr.detectChanges();
     
-    // Additional step: Try to force component refresh by triggering ngOnChanges-like behavior
-    stockListWidgets.forEach((widget) => {
+    stockListWidgets.forEach(widget => {
       if (widget.data && typeof (widget.data as any).refresh === 'function') {
-        console.log(`📋 updateStockListWithFilteredData: Calling refresh method on widget ${widget.id}`);
         (widget.data as any).refresh();
       }
     });
     
-    // Mark widgets for check in case they use OnPush strategy
     setTimeout(() => {
-      console.log('📋 updateStockListWithFilteredData: Delayed change detection');
       this.cdr.markForCheck();
       this.cdr.detectChanges();
     }, 10);
+  }
+
+  private fixCustomClickHandlers(): string {
+    if (!this.dashboardConfig?.widgets) {
+      return 'No widgets found';
+    }
+    
+    const echartWidgets = this.dashboardConfig.widgets.filter(widget => 
+      widget.config?.component === 'echart'
+    );
+    
+    echartWidgets.forEach(widget => {
+      const title = widget.config?.header?.title;
+      
+      if (widget.chartInstance && typeof widget.chartInstance.on === 'function') {
+        widget.chartInstance.off('click');
+        
+        if (title === 'Industry') {
+          widget.chartInstance.on('click', (params: any) => {
+            params.event?.stop?.();
+            const industryName = params.name || (params.data && params.data.name);
+            if (industryName && typeof industryName === 'string' && isNaN(Number(industryName))) {
+              this.filterChartsByIndustry(industryName);
+            }
+          });
+        } else if (title === 'Sector Allocation') {
+          widget.chartInstance.on('click', (params: any) => {
+            params.event?.stop?.();
+            const sectorName = params.name || (params.data && params.data.name);
+            if (sectorName && typeof sectorName === 'string' && isNaN(Number(sectorName))) {
+              this.filterChartsBySector(sectorName);
+            }
+          });
+        }
+      }
+    });
+    
+    return 'Click handlers fixed';
   }
 }
