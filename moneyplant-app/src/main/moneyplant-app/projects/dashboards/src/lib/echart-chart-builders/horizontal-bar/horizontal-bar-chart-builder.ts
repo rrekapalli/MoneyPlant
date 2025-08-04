@@ -1,6 +1,6 @@
 import { IWidget } from '../../../public-api';
 import { EChartsOption } from 'echarts';
-import { ApacheEchartBuilder, ChartDataTransformOptions, DataFilter, ColorPalette } from '../apache-echart-builder';
+import { ApacheEchartBuilder, ChartDataTransformOptions, DataFilter, ColorPalette, FilterBy } from '../apache-echart-builder';
 
 export interface HorizontalBarChartData {
   name: string;
@@ -458,9 +458,9 @@ export class HorizontalBarChartBuilder extends ApacheEchartBuilder<HorizontalBar
   /**
    * Set filter column for data filtering
    */
-  override setFilterColumn(column: string): this {
+  override setFilterColumn(column: string, filterBy: FilterBy = FilterBy.Value): this {
     this.filterColumn = column;
-    return this;
+    return super.setFilterColumn(column, filterBy);
   }
 
   /**

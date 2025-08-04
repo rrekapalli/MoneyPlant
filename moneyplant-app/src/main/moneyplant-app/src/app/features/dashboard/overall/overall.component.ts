@@ -104,7 +104,9 @@ import {
   SunburstChartBuilder,
   // Stock List Chart Builder
   StockListChartBuilder,
-  StockListData
+  StockListData,
+  // Filter enum
+  FilterBy
 } from '@dashboards/public-api';
 
 // Import only essential widget creation functions and data
@@ -418,7 +420,7 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
           return `${params.name}: ${formatter.format(params.value)}`;
         })
         .setAccessor('industry')
-        .setFilterColumn('industry')
+        .setFilterColumn('industry', FilterBy.Value)
         .setEvents((widget, chart) => {
           if (chart) {
             chart.off('click');
@@ -445,7 +447,7 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
       .setFinancialDisplay('INR', 'en-US')
       .setPredefinedPalette('finance')
       .setAccessor('sector')
-      .setFilterColumn('sector')
+      .setFilterColumn('sector', FilterBy.Value)
               .setEvents((widget, chart) => {
           if (chart) {
             chart.off('click');
@@ -473,7 +475,7 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
       .setCurrencyFormatter('₹', 'en-IN')
       .setPredefinedPalette('finance')
       .setAccessor('symbol')
-      .setFilterColumn('symbol')
+      .setFilterColumn('symbol', FilterBy.Value)
       .setId('stock-list-widget')
       .build();
 
