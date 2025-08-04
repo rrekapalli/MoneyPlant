@@ -1,6 +1,6 @@
 import { IWidget } from 'dashboards';
 import { EChartsOption } from 'echarts';
-import { ApacheEchartBuilder, ChartDataTransformOptions, DataFilter, ColorPalette } from '../apache-echart-builder';
+import { ApacheEchartBuilder, ChartDataTransformOptions, DataFilter, ColorPalette, FilterBy } from '../apache-echart-builder';
 
 /**
  * Interface for individual stock data item
@@ -386,9 +386,9 @@ export class StockListChartBuilder extends ApacheEchartBuilder<StockListChartOpt
   /**
    * Set filter column for data filtering
    */
-  override setFilterColumn(column: string): this {
+  override setFilterColumn(column: string, filterBy: FilterBy = FilterBy.Value): this {
     this.filterColumn = column;
-    return this;
+    return super.setFilterColumn(column, filterBy);
   }
 
   /**

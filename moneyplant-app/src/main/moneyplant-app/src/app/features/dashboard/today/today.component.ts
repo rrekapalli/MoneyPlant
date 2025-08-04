@@ -424,7 +424,7 @@ export class TodayComponent extends BaseDashboardComponent<DashboardDataRow> {
       
       // If no data found by title, try to detect chart type and provide appropriate data
       if (!initialData) {
-        initialData = this.getDataByChartType(widget);
+        initialData = this.getSummarizedDataByWidget(widgetTitle);
       }
       
       if (initialData) {
@@ -444,9 +444,18 @@ export class TodayComponent extends BaseDashboardComponent<DashboardDataRow> {
   /**
    * Get data for widget based on chart type detection
    */
-  protected override getDataByChartType(widget: IWidget): any {
+  protected override getSummarizedDataByWidget(widgetTitle: string | undefined): any {
+    const widget = this.dashboardConfig.widgets.find(widget =>
+        widget.config?.header?.title === widgetTitle
+    );
+
+    if(!widget)
+    {
+      return null;
+    }
+
     const chartOptions = widget.config?.options as any;
-    
+
     if (!chartOptions?.series?.[0]) {
       return null;
     }
@@ -602,11 +611,6 @@ export class TodayComponent extends BaseDashboardComponent<DashboardDataRow> {
         const revenueData = this.groupByAndSum(sourceData, 'month', 'totalValue');
         return revenueData;
         
-      case 'Financial Overview':
-        // Create multi-series data for stacked area chart
-        const financialData = this.createMultiSeriesData(sourceData);
-        return financialData;
-        
       case 'Performance Monitoring':
         // Use all data points for large-scale area chart
         const performanceData = sourceData.map(row => ({
@@ -629,11 +633,6 @@ export class TodayComponent extends BaseDashboardComponent<DashboardDataRow> {
         // Create radar-style polar data
         const radarData = this.createRadarData(sourceData);
         return radarData;
-        
-      case 'Portfolio Allocation':
-        // Create multi-series data for stacked area chart
-        const portfolioAllocationData = this.createMultiSeriesData(sourceData);
-        return portfolioAllocationData;
         
       case 'Market Conditions':
         // Create multi-series data for market trends
@@ -1002,7 +1001,7 @@ export class TodayComponent extends BaseDashboardComponent<DashboardDataRow> {
   /**
    * Create heatmap data from dashboard data
    */
-  protected override createHeatmapData(
+  protected  createHeatmapData(
     data: DashboardDataRow[], 
     xField: string = 'assetCategory', 
     yField: string = 'month', 
