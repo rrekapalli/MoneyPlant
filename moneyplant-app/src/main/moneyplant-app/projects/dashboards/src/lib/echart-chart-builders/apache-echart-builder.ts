@@ -66,6 +66,38 @@ export abstract class ApacheEchartBuilder<T extends EChartsOption = EChartsOptio
     return this;
   }
 
+  // --- Widget Configuration Methods ---
+
+  /**
+   * Set the widget ID
+   */
+  setId(id: string): this {
+    this.widgetBuilder.setId(id);
+    return this;
+  }
+
+  /**
+   * Set widget configuration properties
+   * This method handles internal configuration setup
+   */
+  setConfig(config: any): this {
+    const widget = this.widgetBuilder.build();
+    widget.config = widget.config || {};
+    Object.assign(widget.config, config);
+    return this;
+  }
+
+  /**
+   * Set whether to skip default filtering for this chart
+   * When true, the chart will use custom filtering logic instead of default filtering
+   */
+  setSkipDefaultFiltering(skip: boolean): this {
+    const widget = this.widgetBuilder.build();
+    widget.config = widget.config || {};
+    (widget.config as any).skipDefaultFiltering = skip;
+    return this;
+  }
+
   // --- Generic Series Option Methods ---
 
   /**
