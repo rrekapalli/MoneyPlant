@@ -1,6 +1,6 @@
 import { IWidget, WidgetBuilder } from '../../../public-api';
 import { EChartsOption } from 'echarts';
-import { ApacheEchartBuilder, DataFilter } from '../apache-echart-builder';
+import { ApacheEchartBuilder, DataFilter, FilterBy } from '../apache-echart-builder';
 
 export interface PieChartData {
   value: number;
@@ -258,9 +258,9 @@ export class PieChartBuilder extends ApacheEchartBuilder<PieChartOptions, PieCha
   /**
    * Set filter column for data filtering
    */
-  override setFilterColumn(column: string): this {
+  override setFilterColumn(column: string, filterBy: FilterBy = FilterBy.Value): this {
     this.filterColumn = column;
-    return this;
+    return super.setFilterColumn(column, filterBy);
   }
 
   /**

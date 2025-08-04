@@ -612,11 +612,14 @@ export abstract class ApacheEchartBuilder<T extends EChartsOption = EChartsOptio
 
   /**
    * Configure widget for filtering support
+   * @param columnName The column name to filter on
+   * @param filterBy How to filter: by the clicked element's value or by category
    */
-  setFilterColumn(columnName: string): this {
+  setFilterColumn(columnName: string, filterBy: FilterBy = FilterBy.Value): this {
     const widget = this.widgetBuilder.build();
     if (widget.config) {
       widget.config.filterColumn = columnName;
+      (widget.config as any).filterBy = filterBy;
     }
     return this;
   }
@@ -624,14 +627,27 @@ export abstract class ApacheEchartBuilder<T extends EChartsOption = EChartsOptio
   /**
    * Create filter value from chart interaction data
    */
-  static createFilterFromChartData(chartData: any, filterColumn: string): DataFilter | null {
+  static createFilterFromChartData(chartData: any, filterColumn: string, filterBy: FilterBy = FilterBy.Value): DataFilter | null {
     if (!chartData || !filterColumn) return null;
+
+    let filterValue: any;
+    let displayValue: string;
+
+    if (filterBy === FilterBy.Category) {
+      // Filter by the category name (the column name itself)
+      filterValue = filterColumn;
+      displayValue = filterColumn;
+    } else {
+      // Filter by the specific value (default behavior)
+      filterValue = chartData.name || chartData.value;
+      displayValue = chartData.name || String(chartData.value);
+    }
 
     return {
       property: filterColumn,
       operator: 'equals',
-      value: chartData.name || chartData.value,
-      displayValue: chartData.name || String(chartData.value)
+      value: filterValue,
+      displayValue: displayValue
     };
   }
 
@@ -652,17 +668,28 @@ export abstract class ApacheEchartBuilder<T extends EChartsOption = EChartsOptio
    * Create global filter from chart interaction data using accessor
    * This method generates filter criteria in the format: <accessor> = <clicked-chart-element>
    */
-  static createGlobalFilterFromChartData(chartData: any, accessor: string): any | null {
+  static createGlobalFilterFromChartData(chartData: any, accessor: string, filterBy: FilterBy = FilterBy.Value): any | null {
     if (!chartData || !accessor) return null;
 
-    const filterValue = chartData.name || chartData.value;
-    if (!filterValue) return null;
+    let filterValue: any;
+    let displayValue: string;
+
+    if (filterBy === FilterBy.Category) {
+      // Filter by the category name (the accessor/column name itself)
+      filterValue = accessor;
+      displayValue = accessor;
+    } else {
+      // Filter by the specific value (default behavior)
+      filterValue = chartData.name || chartData.value;
+      displayValue = String(filterValue);
+      if (!filterValue) return null;
+    }
 
     return {
       accessor: accessor,
       operator: 'equals',
       value: filterValue,
-      displayValue: String(filterValue),
+      displayValue: displayValue,
       [accessor]: filterValue
     };
   }
@@ -866,3 +893,21 @@ export interface DataVariationOptions {
  * Predefined color palette types
  */
 export type ColorPalette = 'business' | 'finance' | 'modern' | 'pastel' | 'dark';
+
+/**
+ * Filter by type enumeration
+ * Determines how chart widgets should filter data when clicked
+ */
+export enum FilterBy {
+  /**
+   * Filter by the specific value of the clicked element
+   * Example: clicking "Iron & Steel" filters to show only "Iron & Steel" data
+   */
+  Value = 'value',
+  
+  /**
+   * Filter by the category name of the clicked element
+   * Example: clicking any industry value filters by the "industry" category
+   */
+  Category = 'category'
+}
