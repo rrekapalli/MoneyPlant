@@ -21,14 +21,19 @@ export class ApiService {
    * @returns HttpHeaders with Authorization header if token exists
    */
   private getHeaders(): HttpHeaders {
-    const token = this.authService.getToken();
-    const headers = new HttpHeaders();
-    
-    if (token) {
-      return headers.set('Authorization', `Bearer ${token}`);
+    try {
+      const token = this.authService?.getToken();
+      const headers = new HttpHeaders();
+      
+      if (token) {
+        return headers.set('Authorization', `Bearer ${token}`);
+      }
+      
+      return headers;
+    } catch (error) {
+      console.warn('Error getting auth token, proceeding without authentication:', error);
+      return new HttpHeaders();
     }
-    
-    return headers;
   }
 
   /**

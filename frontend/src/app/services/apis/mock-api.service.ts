@@ -23,8 +23,6 @@ export class MockApiService {
    * @returns An Observable that emits the mock response
    */
   get<T>(url: string, params?: HttpParams | { [param: string]: string | string[] }, headers?: HttpHeaders): Observable<T> {
-    console.log(`MockApiService: GET ${url}`, { params, headers });
-    
     // Return appropriate mock data based on the URL
     let mockData: any;
     
