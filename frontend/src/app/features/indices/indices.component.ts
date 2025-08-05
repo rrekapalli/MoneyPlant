@@ -13,6 +13,7 @@ import { ScrollerModule } from "primeng/scroller";
 import { ScrollPanelModule } from 'primeng/scrollpanel';
 import { TabsModule } from 'primeng/tabs';
 import { TooltipModule } from 'primeng/tooltip';
+
 import { TreeNode } from 'primeng/api';
 import { IndicesService } from '../../services/apis/indices.api';
 import { IndexResponseDto } from '../../services/entities/indices';
@@ -85,6 +86,16 @@ export class IndicesComponent implements OnInit {
 
   ngOnInit(): void {
     try {
+      // Check if services are properly injected
+      if (!this.indicesService) {
+        console.error('IndicesService is not available');
+        return;
+      }
+      if (!this.componentCommunicationService) {
+        console.error('ComponentCommunicationService is not available');
+        return;
+      }
+      
       // Load indices directly from the indices API
       this.loadIndicesLists();
     } catch (error) {
@@ -246,56 +257,75 @@ export class IndicesComponent implements OnInit {
    * Gets all indices from the API and fills the list with indices data
    */
   private loadIndicesLists(): void {
-    this.isLoadingIndices = true;
-    // Get all indices from the API
-    this.indicesService.getAllIndices().subscribe({
-      next: (indices: IndexResponseDto[]) => {
-        this.indices = indices;
-        this.isLoadingIndices = false;
+    try {
+      this.isLoadingIndices = true;
+      // Get all indices from the API
+      this.indicesService.getAllIndices().subscribe({
+        next: (indices: IndexResponseDto[]) => {
+          this.indices = indices;
+          this.isLoadingIndices = false;
 
-        // Transform to TreeTable data
-        this.indicesTreeData = this.transformToTreeData(indices);
+          // Transform to TreeTable data
+          this.indicesTreeData = this.transformToTreeData(indices);
 
-        // Create an indices list item for each index
-        const items = indices.map(index => ({
-          symbol: index.indexSymbol,
-          name: index.indexName,
-          price: index.lastPrice || 0,
-          change: (index.percentChange || 0) / 100 // Convert percentage to decimal
-        }));
+          // Create an indices list item for each index
+          const items = indices.map(index => ({
+            symbol: index.indexSymbol,
+            name: index.indexName,
+            price: index.lastPrice || 0,
+            change: (index.percentChange || 0) / 100 // Convert percentage to decimal
+          }));
 
-        // Create an indices list with the indices
-        const mainIndicesList = {
-          id: 'main-indices',
-          name: 'Market Indices',
-          description: 'All market indices from the indices API',
-          items: items
-        };
+          // Create an indices list with the indices
+          const mainIndicesList = {
+            id: 'main-indices',
+            name: 'Market Indices',
+            description: 'All market indices from the indices API',
+            items: items
+          };
 
-        // Set the indicesLists property with the main indices list as the first item
-        this.indicesLists = [mainIndicesList];
+          // Set the indicesLists property with the main indices list as the first item
+          this.indicesLists = [mainIndicesList];
 
-        // Set the active tab to the first list
-        this.activeTab = '0';
-      },
-      error: (error: any) => {
-        console.error('Failed to load indices:', error);
-        this.isLoadingIndices = false;
-        
-        // If there's an error, use empty indices list
-        const emptyIndicesList = {
-          id: 'main-indices',
-          name: 'Market Indices',
-          description: 'All market indices from the indices API',
-          items: []
-        };
-        
-        // Set the indicesLists property with the empty list
-        this.indicesLists = [emptyIndicesList];
-        
-        // Set the active tab to the first list
-        this.activeTab = '0';
-      }
-    });
+          // Set the active tab to the first list
+          this.activeTab = '0';
+        },
+        error: (error: any) => {
+          console.error('Failed to load indices:', error);
+          this.isLoadingIndices = false;
+          
+          // If there's an error, use empty indices list
+          const emptyIndicesList = {
+            id: 'main-indices',
+            name: 'Market Indices',
+            description: 'All market indices from the indices API',
+            items: []
+          };
+          
+          // Set the indicesLists property with the empty list
+          this.indicesLists = [emptyIndicesList];
+          
+          // Set the active tab to the first list
+          this.activeTab = '0';
+        }
+      });
+    } catch (error) {
+      console.error('Error in loadIndicesLists:', error);
+      this.isLoadingIndices = false;
+      
+      // If there's an error, use empty indices list
+      const emptyIndicesList = {
+        id: 'main-indices',
+        name: 'Market Indices',
+        description: 'All market indices from the indices API',
+        items: []
+      };
+      
+      // Set the indicesLists property with the empty list
+      this.indicesLists = [emptyIndicesList];
+      
+      // Set the active tab to the first list
+      this.activeTab = '0';
+    }
   }
 }

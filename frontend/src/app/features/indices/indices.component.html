@@ -55,7 +55,6 @@
                       [value]="indicesTreeData" 
                       [scrollable]="true" 
                       scrollHeight="85vh"
-                      [sortMode]="'multiple'"
                       [globalFilterFields]="['keyCategory', 'symbol']"
                       [filterMode]="'lenient'"
                       #tt
@@ -63,25 +62,20 @@
                       
                       <ng-template pTemplate="header">
                         <tr>
-                          <th pSortableColumn="keyCategory" style="width:25%">
+                          <th style="width:25%">
                             Category
-                            <p-sortIcon field="keyCategory"></p-sortIcon>
                           </th>
-                          <th pSortableColumn="symbol" style="width:20%">
+                          <th style="width:20%">
                             Symbol
-                            <p-sortIcon field="symbol"></p-sortIcon>
                           </th>
-                          <th pSortableColumn="lastPrice" style="width:15%">
+                          <th style="width:15%">
                             Last Price
-                            <p-sortIcon field="lastPrice"></p-sortIcon>
                           </th>
-                          <th pSortableColumn="variation" style="width:15%">
+                          <th style="width:15%">
                             Variation
-                            <p-sortIcon field="variation"></p-sortIcon>
                           </th>
-                          <th pSortableColumn="percentChange" style="width:15%">
+                          <th style="width:15%">
                             Change (%)
-                            <p-sortIcon field="percentChange"></p-sortIcon>
                           </th>
                         </tr>
                       </ng-template>

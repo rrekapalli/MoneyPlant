@@ -16,6 +16,7 @@ export const enabledFeatures = [
   'portfolios',
   'scanners',
   'strategies',
+  'indices',
   'settings',
   'user-profile',
   'notifications'

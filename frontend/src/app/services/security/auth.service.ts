@@ -77,8 +77,6 @@ export class AuthService {
   }
 
   private checkAuthStatus(): void {
-    console.log('AuthService - Starting authentication check...');
-    
     // Check for token in URL parameters (OAuth2 callback)
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get('token');
@@ -91,7 +89,6 @@ export class AuthService {
     }
 
     if (token) {
-      console.log('AuthService - Found token in URL parameters');
       // Store token and clear URL parameters
       this.setToken(token);
       window.history.replaceState({}, document.title, window.location.pathname);
@@ -99,7 +96,6 @@ export class AuthService {
       // Validate token with backend
       this.validateToken(token).subscribe({
         next: (user) => {
-          console.log('AuthService - Token validation successful:', user);
           this.currentUserSubject.next(user);
           this.isAuthenticatedSubject.next(true);
           this.startTokenRefreshTimer();
@@ -113,14 +109,11 @@ export class AuthService {
     } else {
       // Check for existing token
       const existingToken = this.getToken();
-      console.log('AuthService - Checking existing token:', existingToken ? 'exists' : 'not found');
       
       if (existingToken && !this.isTokenExpired()) {
-        console.log('AuthService - Token exists and not expired, validating with backend');
         // Validate existing token with backend
         this.validateToken(existingToken).subscribe({
           next: (user) => {
-            console.log('AuthService - Existing token validation successful:', user);
             this.currentUserSubject.next(user);
             this.isAuthenticatedSubject.next(true);
             this.startTokenRefreshTimer();
@@ -131,17 +124,14 @@ export class AuthService {
           }
         });
       } else if (existingToken && this.isTokenExpired()) {
-        console.log('AuthService - Token exists but expired, attempting refresh');
         // Token is expired, try to refresh it
         this.refreshToken().subscribe({
           next: (response) => {
             if (response.success && response.token) {
-              console.log('AuthService - Token refresh successful');
               this.currentUserSubject.next(response.user);
               this.isAuthenticatedSubject.next(true);
               this.startTokenRefreshTimer();
             } else {
-              console.log('AuthService - Token refresh failed');
               this.logout();
             }
           },
@@ -151,7 +141,6 @@ export class AuthService {
           }
         });
       } else {
-        console.log('AuthService - No valid token found, user not authenticated');
         // No token or token is invalid, ensure user is marked as not authenticated
         this.currentUserSubject.next(null);
         this.isAuthenticatedSubject.next(false);
@@ -221,19 +210,16 @@ export class AuthService {
     // Check if we have a token and it's not expired
     const token = this.getToken();
     if (!token) {
-      console.log('AuthService.isLoggedIn() - No token found');
       return false;
     }
     
     // Check if token is expired
     if (this.isTokenExpired()) {
-      console.log('AuthService.isLoggedIn() - Token is expired');
       return false;
     }
     
     // Check the current authentication state
     const result = this.isAuthenticatedSubject.value;
-    console.log('AuthService.isLoggedIn() - Authentication state:', result);
     return result;
   }
 
