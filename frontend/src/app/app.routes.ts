@@ -1,11 +1,18 @@
 import { Routes } from '@angular/router';
 import { AppShellComponent } from './core/shell/app-shell.component';
-import { featureFlagGuard } from './core/guards';
+import { featureFlagGuard, authGuard } from './core/guards';
 
 export const routes: Routes = [
   {
+    path: 'login',
+    loadComponent: () => import('./features/login/login.component')
+      .then(m => m.LoginComponent),
+    title: 'Login - MoneyPlant'
+  },
+  {
     path: '',
     component: AppShellComponent,
+    canActivate: [authGuard],
     children: [
       {
         path: '',

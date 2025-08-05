@@ -67,4 +67,7 @@ temp/
 
 # Build outputs
 build/
-out/ 
+out/
+
+# Passwords & All
+.env

@@ -362,7 +362,7 @@ export class StockListChartBuilder extends ApacheEchartBuilder<StockListChartOpt
   /**
    * Set currency formatter
    */
-  override setCurrencyFormatter(currency: string = '₹', locale: string = 'en-IN'): this {
+  override setCurrencyFormatter(currency: string = 'INR', locale: string = 'en-IN'): this {
     this.currencyFormatter = { currency, locale };
     return this;
   }
@@ -432,8 +432,8 @@ export class StockListChartBuilder extends ApacheEchartBuilder<StockListChartOpt
    */
   setStockPerformanceConfiguration(): StockListChartBuilder {
     this.setXAxisName('Stock Symbol');
-    this.setYAxisName('Price (₹)');
-    this.setCurrencyFormatter('₹', 'en-IN');
+    this.setYAxisName('Price (INR)');
+    this.setCurrencyFormatter('INR', 'en-IN');
     return this;
   }
 

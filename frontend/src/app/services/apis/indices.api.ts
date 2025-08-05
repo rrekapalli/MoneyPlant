@@ -8,6 +8,7 @@ import { Index, IndexCreateDto, IndexResponseDto } from '../entities/indices';
 })
 export class IndicesService {
   private readonly endpoint = '/api/v1/index';
+  private readonly publicEndpoint = '/api/public/indices';
 
   constructor(private apiService: ApiService) {}
 
@@ -21,11 +22,11 @@ export class IndicesService {
   }
 
   /**
-   * Gets all indices
+   * Gets all indices (public endpoint - no authentication required)
    * @returns An Observable of index responses array
    */
   getAllIndices(): Observable<IndexResponseDto[]> {
-    return this.apiService.get<IndexResponseDto[]>(this.endpoint);
+    return this.apiService.get<IndexResponseDto[]>(this.publicEndpoint);
   }
 
   /**

@@ -448,14 +448,37 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
       .setSkipDefaultFiltering(true)
       .build();
 
-
+    // Stock Price Candlestick Chart
+    const candlestickChart = CandlestickChartBuilder.create()
+      .setData(this.filteredDashboardData || [])
+      .setHeader('Stock Price Movement')
+      .setCurrencyFormatter('INR', 'en-IN')
+      .setPredefinedPalette('finance')
+      .setAccessor('symbol')
+      .setFilterColumn('symbol')
+      .setEvents((widget, chart) => {
+        if (chart) {
+          chart.off('click');
+          chart.on('click', (params: any) => {
+            params.event?.stop?.();
+            const symbolName = params.name || (params.data && params.data.name);
+            if (symbolName && typeof symbolName === 'string' && isNaN(Number(symbolName))) {
+              this.filterChartsBySymbol(symbolName);
+            }
+            return false;
+          });
+        }
+      })
+      .setId('candlestick-chart')
+      .setSkipDefaultFiltering(true)
+      .build();
 
     // Stock List Widget - Initialize with empty data, will be populated later
     const stockListWidget = StockListChartBuilder.create()
       .setData(this.filteredDashboardData)
       .setStockPerformanceConfiguration()
       .setHeader('Stock List')
-      .setCurrencyFormatter('₹', 'en-IN')
+      .setCurrencyFormatter('INR', 'en-IN')
       .setPredefinedPalette('finance')
       .setAccessor('symbol')
       .setFilterColumn('symbol', FilterBy.Value)
@@ -469,9 +492,11 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
     filterWidget.position = { x: 0, y: 1, cols: 12, rows: 1 };
 
     // Position charts with proper spacing
-    barStockIndustry.position = { x: 0, y: 2, cols: 4, rows: 8 };
-    pieStockSector.position = { x: 4, y: 2, cols: 4, rows: 8 };
-    stockListWidget.position = { x: 8, y: 2, cols: 4, rows: 12 };
+    candlestickChart.position = { x: 0, y: 3, cols: 8, rows: 8 };
+    stockListWidget.position = { x: 8, y: 3, cols: 4, rows: 16 };
+
+    barStockIndustry.position = { x: 0, y: 11, cols: 4, rows: 8 };
+    pieStockSector.position = { x: 4, y: 11, cols: 4, rows: 8 };
     
     // Use the Fluent API to build the dashboard config with filter highlighting enabled
     this.dashboardConfig = StandardDashboardBuilder.createStandard()
@@ -488,6 +513,7 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
         filterWidget,
         barStockIndustry,
         pieStockSector,
+        candlestickChart,
         stockListWidget,
       ])
       .setEditMode(false)
@@ -602,6 +628,23 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
       case 'Portfolio Distribution':
         // This is a pie chart - provide asset allocation data
         return this.groupByAndSum(this.filteredDashboardData || this.dashboardData, 'industry', 'totalTradedValue');
+      case 'Stock Price Movement':
+        // This is a candlestick chart - provide OHLC data
+        const stockData = this.filteredDashboardData || this.dashboardData;
+        if (!stockData || stockData.length === 0) {
+          return [];
+        }
+        const candlestickData = stockData.map(stock => [
+          stock.openPrice || 0,
+          stock.lastPrice || 0,
+          stock.dayLow || 0,
+          stock.dayHigh || 0
+        ]);
+        const xAxisLabels = stockData.map(stock => stock.symbol || 'Unknown');
+        return {
+          data: candlestickData,
+          xAxisLabels: xAxisLabels
+        };
       default:
         return null;
     }
@@ -724,6 +767,28 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
             children: industryChildren
           };
         }).sort((a, b) => b.value - a.value);
+
+      case 'Stock Price Movement':
+        // Use stock ticks data for candlestick chart with OHLC data
+        if (!sourceData) {
+          return [];
+        }
+        
+        // Transform stock data to candlestick format: [open, close, low, high]
+        const candlestickData = sourceData.map(stock => [
+          stock.openPrice || 0,
+          stock.lastPrice || 0,
+          stock.dayLow || 0,
+          stock.dayHigh || 0
+        ]);
+        
+        // Set X-axis labels (symbols)
+        const xAxisLabels = sourceData.map(stock => stock.symbol || 'Unknown');
+        
+        return {
+          data: candlestickData,
+          xAxisLabels: xAxisLabels
+        };
 
       default:
         return null;
@@ -1088,6 +1153,15 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
           operator: 'equals',
           source: 'Filter Widget'
         });
+      } else if (filter.filterColumn === 'symbol' && categoryName && 
+                 typeof categoryName === 'string' && isNaN(Number(categoryName))) {
+        newAppliedFilters.push({
+          type: 'symbol',
+          field: 'symbol',
+          value: categoryName,
+          operator: 'equals',
+          source: 'Filter Widget'
+        });
       }
     });
     
@@ -1105,6 +1179,7 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
     
     this.updateBarChartWithFilteredData();
     this.updatePieChartWithFilteredData();
+    this.updateCandlestickChartWithFilteredData();
     this.updateStockListWithFilteredData();
     
     // Update metric tiles with filtered data
@@ -1172,6 +1247,26 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
       value: macro,
       operator: 'equals',
       source: 'Treemap Chart'
+    });
+  }
+
+  private filterChartsBySymbol(symbol: string): void {
+    if (!this.dashboardData || this.dashboardData.length === 0 || 
+        typeof symbol !== 'string' || !isNaN(Number(symbol))) {
+      return;
+    }
+
+    const availableSymbols = [...new Set(this.dashboardData.map(s => s.symbol))];
+    if (!availableSymbols.includes(symbol)) {
+      return;
+    }
+
+    this.addFilter({
+      type: 'symbol',
+      field: 'symbol',
+      value: symbol,
+      operator: 'equals',
+      source: 'Candlestick Chart'
     });
   }
 
@@ -1274,6 +1369,45 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
         this.updateEchartWidget(barWidget, barData);
       } catch (error) {
         // Silent error handling
+      }
+    }
+  }
+
+  /**
+   * Update candlestick chart with filtered data
+   */
+  private updateCandlestickChartWithFilteredData(): void {
+    if (!this.dashboardConfig?.widgets || !this.filteredDashboardData) return;
+
+    const candlestickWidget = this.dashboardConfig.widgets.find(widget => 
+      widget.config?.header?.title === 'Stock Price Movement'
+    );
+
+    if (candlestickWidget) {
+      // Create candlestick data from filtered stock data
+      const candlestickData = this.filteredDashboardData.map(stock => [
+        stock.openPrice || 0,
+        stock.lastPrice || 0,
+        stock.dayLow || 0,
+        stock.dayHigh || 0
+      ]);
+      
+      // Create X-axis labels (symbols)
+      const xAxisLabels = this.filteredDashboardData.map(stock => stock.symbol || 'Unknown');
+      
+      // Update the widget with new data and X-axis labels
+      this.updateEchartWidget(candlestickWidget, candlestickData);
+      
+      // Update X-axis labels if chart instance exists
+      if (candlestickWidget.chartInstance && typeof candlestickWidget.chartInstance.setOption === 'function') {
+        const newOptions = {
+          ...candlestickWidget.config?.options,
+          xAxis: {
+            ...((candlestickWidget.config?.options as any)?.xAxis || {}),
+            data: xAxisLabels
+          }
+        };
+        candlestickWidget.chartInstance.setOption(newOptions, true);
       }
     }
   }
