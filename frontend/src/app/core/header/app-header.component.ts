@@ -5,11 +5,13 @@ import { MenubarModule } from 'primeng/menubar';
 import { ButtonModule } from 'primeng/button';
 import { BadgeModule } from 'primeng/badge';
 import { PopoverModule } from 'primeng/popover';
+import { MenuModule } from 'primeng/menu';
 import { MenuItem } from 'primeng/api';
 import { filter, Subscription, Observable } from 'rxjs';
 import { FeatureFlagDirective } from '../../core/directives';
 import { NotificationsStateService, ToastService, SettingsStateService } from '../../services';
 import { Notification, NotificationType } from '../../services/entities/notification';
+import { AuthService } from '../../services/security/auth.service';
 
 @Component({
   selector: 'app-header',
@@ -21,6 +23,7 @@ import { Notification, NotificationType } from '../../services/entities/notifica
     ButtonModule,
     BadgeModule,
     PopoverModule,
+    MenuModule,
     FeatureFlagDirective
   ],
   templateUrl: './app-header.component.html',
@@ -29,6 +32,7 @@ import { Notification, NotificationType } from '../../services/entities/notifica
 export class AppHeaderComponent implements OnInit, OnDestroy {
   title = 'MoneyPlant';
   menuItems: MenuItem[] = [];
+  userMenuItems: MenuItem[] = [];
   private routerSubscription: Subscription | undefined;
   private notificationsSubscription: Subscription | undefined;
   private refreshStylesHandler?: () => void;
@@ -42,11 +46,13 @@ export class AppHeaderComponent implements OnInit, OnDestroy {
     private router: Router,
     private notificationsState: NotificationsStateService,
     private toastService: ToastService,
-    private settingsState: SettingsStateService
+    private settingsState: SettingsStateService,
+    private authService: AuthService
   ) {}
 
   ngOnInit() {
     this.initMenuItems();
+    this.initUserMenuItems();
     this.setupActiveRouteTracking();
 
     // Create bound function references for the event listeners
@@ -281,6 +287,75 @@ export class AppHeaderComponent implements OnInit, OnDestroy {
         command: updateStylesAfterClick
       }
     ];
+  }
+
+  /**
+   * Initialize user menu items
+   */
+  private initUserMenuItems() {
+    this.userMenuItems = [
+      {
+        label: 'Profile',
+        icon: 'pi pi-user',
+        command: () => {
+          // Navigate to profile page or show profile modal
+          console.log('Profile clicked');
+        }
+      },
+      {
+        separator: true
+      },
+      {
+        label: 'Logout',
+        icon: 'pi pi-sign-out',
+        command: () => {
+          this.logout();
+        }
+      }
+    ];
+  }
+
+  /**
+   * Get user display name for the menu button
+   */
+  getUserDisplayName(): string {
+    const currentUser = this.authService.getCurrentUser();
+    if (currentUser) {
+      // Priority order: fullName > firstName + lastName > name > email > 'User'
+      if (currentUser.fullName && currentUser.fullName.trim()) {
+        return currentUser.fullName.trim();
+      }
+      
+      if (currentUser.firstName && currentUser.lastName) {
+        return `${currentUser.firstName.trim()} ${currentUser.lastName.trim()}`;
+      }
+      
+      if (currentUser.firstName && currentUser.firstName.trim()) {
+        return currentUser.firstName.trim();
+      }
+      
+      if (currentUser.name && currentUser.name.trim()) {
+        return currentUser.name.trim();
+      }
+      
+      if (currentUser.email && currentUser.email.trim()) {
+        // Extract name from email (everything before @)
+        const emailName = currentUser.email.split('@')[0];
+        // Capitalize first letter and replace dots/underscores with spaces
+        return emailName
+          .replace(/[._]/g, ' ')
+          .replace(/\b\w/g, l => l.toUpperCase());
+      }
+    }
+    return 'User';
+  }
+
+  /**
+   * Handle user logout
+   */
+  logout(): void {
+    this.authService.logout();
+    // The auth service will handle navigation to login page
   }
 
   private setupActiveRouteTracking() {

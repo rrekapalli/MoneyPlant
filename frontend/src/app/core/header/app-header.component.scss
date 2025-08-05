@@ -82,6 +82,37 @@
   gap: var(--spacing-sm);
 }
 
+/* User profile button styles */
+.user-profile-button {
+  min-width: 120px;
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  
+  ::ng-deep .p-button-label {
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+}
+
+/* User menu styles */
+::ng-deep .p-menu {
+  min-width: 180px;
+  
+  .p-menuitem-link {
+    padding: 0.75rem 1rem;
+    
+    .p-menuitem-icon {
+      margin-right: 0.5rem;
+    }
+  }
+  
+  .p-menuitem-separator {
+    margin: 0.25rem 0;
+  }
+}
+
 /* Notification styles */
 .notification-badge {
   position: relative;
@@ -197,6 +228,15 @@
 
   .app-title {
     font-size: 1.2rem;
+  }
+
+  .user-profile-button {
+    min-width: 100px;
+    max-width: 150px;
+    
+    ::ng-deep .p-button-label {
+      font-size: 0.8rem;
+    }
   }
 
   ::ng-deep .p-menubar {
