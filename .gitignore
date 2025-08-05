@@ -151,3 +151,6 @@ out/
 # Application specific
 application-local.properties
 application-dev-local.properties
+application-local.yml
+application-dev-local.yml
+application-prod.yml
