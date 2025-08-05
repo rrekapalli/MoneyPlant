@@ -13,6 +13,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -37,7 +38,7 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers("/", "/error", "/api/public/**", "/swagger-ui/**", "/v1/api-docs/**", 
-                               "/actuator/**", "/login/**", "/oauth2/**").permitAll()
+                               "/actuator/**", "/login/**", "/oauth2/**", "/api/auth/email-login").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
@@ -50,7 +51,7 @@ public class SecurityConfig {
                     String token = tokenProvider.generateToken(authentication);
                     String redirectUrl = request.getParameter("redirect_uri");
                     if (redirectUrl == null) {
-                        redirectUrl = "http://localhost:4200"; // Default frontend URL
+                        redirectUrl = "http://localhost:4200/dashboard"; // Default frontend URL
                     }
                     response.sendRedirect(redirectUrl + "?token=" + token);
                 })
@@ -72,4 +73,7 @@ public class SecurityConfig {
     public JwtAuthenticationFilter jwtAuthenticationFilter() {
         return new JwtAuthenticationFilter(tokenProvider, userDetailsService);
     }
+
+
+
 } 

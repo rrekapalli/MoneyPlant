@@ -1,6 +1,7 @@
 package com.moneyplant.core.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.moneyplant.app.MoneyPlantApplication;
 import com.moneyplant.core.entity.User;
 import com.moneyplant.core.repository.UserRepository;
 import com.moneyplant.core.security.JwtTokenProvider;
@@ -12,6 +13,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
@@ -25,6 +27,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(AuthController.class)
+@ContextConfiguration(classes = MoneyPlantApplication.class)
 class AuthControllerTest {
 
     @Autowired

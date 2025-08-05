@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
@@ -32,8 +33,26 @@ public class JwtTokenProvider {
     }
 
     public String generateToken(Authentication authentication) {
-        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        return generateToken(userDetails.getUsername());
+        Object principal = authentication.getPrincipal();
+        String username;
+        
+        if (principal instanceof UserDetails) {
+            username = ((UserDetails) principal).getUsername();
+        } else if (principal instanceof OAuth2User) {
+            OAuth2User oauth2User = (OAuth2User) principal;
+            // Try to get email from OAuth2User attributes
+            Map<String, Object> attributes = oauth2User.getAttributes();
+            username = (String) attributes.get("email");
+            if (username == null) {
+                // Fallback to name if email is not available
+                username = oauth2User.getName();
+            }
+        } else {
+            // Fallback for other authentication types
+            username = principal.toString();
+        }
+        
+        return generateToken(username);
     }
 
     public String generateToken(String username) {

@@ -1,0 +1,67 @@
+<div class="login-container">
+  <div class="login-card">
+    <!-- Logo Section -->
+    <div class="logo-section">
+      <img src="assets/images/moneytree-logo.png" alt="MoneyPlant Logo" class="logo">
+      <h1 class="logo-text">MoneyPlant</h1>
+    </div>
+
+    <!-- Login Form -->
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
+      <!-- Email Input -->
+      <mat-form-field appearance="outline" class="email-field">
+        <mat-label>Email</mat-label>
+        <input 
+          matInput 
+          type="email" 
+          formControlName="email" 
+          placeholder="Enter your email..."
+          autocomplete="email">
+        <mat-error *ngIf="loginForm.get('email')?.hasError('required')">
+          Email is required.
+        </mat-error>
+        <mat-error *ngIf="loginForm.get('email')?.hasError('email')">
+          Please enter a valid email address.
+        </mat-error>
+      </mat-form-field>
+
+      <!-- Error Message -->
+      <div *ngIf="errorMessage" class="error-message">
+        {{ errorMessage }}
+      </div>
+
+      <!-- Sign In Button -->
+      <button 
+        mat-raised-button 
+        color="primary" 
+        type="submit" 
+        class="signin-button"
+        [disabled]="isLoading || !loginForm.valid">
+        <mat-spinner *ngIf="isLoading" diameter="20" class="spinner"></mat-spinner>
+        <span *ngIf="!isLoading">Sign in</span>
+      </button>
+    </form>
+
+    <!-- Separator -->
+    <div class="separator">
+      <span class="separator-text">OR</span>
+    </div>
+
+    <!-- OAuth Buttons -->
+    <div class="oauth-buttons">
+      <!-- Microsoft Sign In -->
+      <button 
+        mat-stroked-button 
+        class="oauth-button microsoft-button"
+        (click)="signInWithMicrosoft()">
+        <img src="assets/images/microsoft-logo.svg" alt="Microsoft" class="oauth-icon">
+        <span>Sign in with Microsoft</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <p>&copy; 2025 MoneyPlant</p>
+  </div>
+</div> 

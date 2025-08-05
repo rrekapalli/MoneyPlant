@@ -9,8 +9,12 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 
 class JwtTokenProviderTest {
 
@@ -71,6 +75,47 @@ class JwtTokenProviderTest {
         assertNotNull(token);
         assertTrue(tokenProvider.validateToken(token));
         assertEquals("test@example.com", tokenProvider.getUsernameFromToken(token));
+    }
+
+    @Test
+    void generateToken_WithOAuth2User_ShouldCreateValidToken() {
+        // Given
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put("email", "test@example.com");
+        attributes.put("name", "Test User");
+        attributes.put("sub", "test-sub-id");
+        
+        var authorities = Collections.singleton(new SimpleGrantedAuthority("ROLE_USER"));
+        var oauth2User = new DefaultOAuth2User(authorities, attributes, "email");
+        var authentication = new OAuth2AuthenticationToken(oauth2User, authorities, "microsoft");
+
+        // When
+        String token = tokenProvider.generateToken(authentication);
+
+        // Then
+        assertNotNull(token);
+        assertTrue(tokenProvider.validateToken(token));
+        assertEquals("test@example.com", tokenProvider.getUsernameFromToken(token));
+    }
+
+    @Test
+    void generateToken_WithOAuth2UserNoEmail_ShouldUseName() {
+        // Given
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put("name", "Test User");
+        attributes.put("sub", "test-sub-id");
+        
+        var authorities = Collections.singleton(new SimpleGrantedAuthority("ROLE_USER"));
+        var oauth2User = new DefaultOAuth2User(authorities, attributes, "sub");
+        var authentication = new OAuth2AuthenticationToken(oauth2User, authorities, "microsoft");
+
+        // When
+        String token = tokenProvider.generateToken(authentication);
+
+        // Then
+        assertNotNull(token);
+        assertTrue(tokenProvider.validateToken(token));
+        assertEquals("test-sub-id", tokenProvider.getUsernameFromToken(token));
     }
 
     @Test
