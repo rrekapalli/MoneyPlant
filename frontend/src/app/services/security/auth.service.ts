@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { BehaviorSubject, Observable, of } from 'rxjs';
-import { tap, catchError } from 'rxjs/operators';
+import { BehaviorSubject, Observable, of, interval } from 'rxjs';
+import { tap, catchError, switchMap, take } from 'rxjs/operators';
+import { environment } from '../../../environments/environment';
 
 export interface LoginResponse {
   success: boolean;
@@ -32,10 +33,48 @@ export class AuthService {
     private http: HttpClient,
     private router: Router
   ) {
+    // Initialize authentication state immediately
+    this.initializeAuthState();
     this.checkAuthStatus();
   }
 
+  private initializeAuthState(): void {
+    const token = this.getToken();
+    if (token && !this.isTokenExpired()) {
+      // If we have a valid token, assume user is authenticated initially
+      // The backend validation will confirm this
+      this.isAuthenticatedSubject.next(true);
+    } else {
+      // No token or expired token, user is not authenticated
+      this.isAuthenticatedSubject.next(false);
+    }
+  }
+
+  private startTokenRefreshTimer(): void {
+    // Refresh token every 50 minutes (assuming 1-hour token expiration)
+    interval(50 * 60 * 1000).pipe(
+      switchMap(() => {
+        if (this.isLoggedIn() && !this.isTokenExpired()) {
+          return this.refreshToken();
+        }
+        return of(null);
+      })
+    ).subscribe({
+      next: (response) => {
+        if (response && response.success) {
+          console.log('Token refreshed successfully');
+        }
+      },
+      error: (error) => {
+        console.error('Token refresh failed:', error);
+        this.logout();
+      }
+    });
+  }
+
   private checkAuthStatus(): void {
+    console.log('AuthService - Starting authentication check...');
+    
     // Check for token in URL parameters (OAuth2 callback)
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get('token');
@@ -48,6 +87,7 @@ export class AuthService {
     }
 
     if (token) {
+      console.log('AuthService - Found token in URL parameters');
       // Store token and clear URL parameters
       this.setToken(token);
       window.history.replaceState({}, document.title, window.location.pathname);
@@ -55,34 +95,68 @@ export class AuthService {
       // Validate token with backend
       this.validateToken(token).subscribe({
         next: (user) => {
+          console.log('AuthService - Token validation successful:', user);
           this.currentUserSubject.next(user);
           this.isAuthenticatedSubject.next(true);
+          this.startTokenRefreshTimer();
           this.router.navigate(['/dashboard']);
         },
-        error: () => {
+        error: (error) => {
+          console.error('AuthService - Token validation failed:', error);
           this.logout();
         }
       });
     } else {
       // Check for existing token
       const existingToken = this.getToken();
-      if (existingToken) {
+      console.log('AuthService - Checking existing token:', existingToken ? 'exists' : 'not found');
+      
+      if (existingToken && !this.isTokenExpired()) {
+        console.log('AuthService - Token exists and not expired, validating with backend');
         // Validate existing token with backend
         this.validateToken(existingToken).subscribe({
           next: (user) => {
+            console.log('AuthService - Existing token validation successful:', user);
             this.currentUserSubject.next(user);
             this.isAuthenticatedSubject.next(true);
+            this.startTokenRefreshTimer();
           },
-          error: () => {
+          error: (error) => {
+            console.error('AuthService - Existing token validation failed:', error);
             this.logout();
           }
         });
+      } else if (existingToken && this.isTokenExpired()) {
+        console.log('AuthService - Token exists but expired, attempting refresh');
+        // Token is expired, try to refresh it
+        this.refreshToken().subscribe({
+          next: (response) => {
+            if (response.success && response.token) {
+              console.log('AuthService - Token refresh successful');
+              this.currentUserSubject.next(response.user);
+              this.isAuthenticatedSubject.next(true);
+              this.startTokenRefreshTimer();
+            } else {
+              console.log('AuthService - Token refresh failed');
+              this.logout();
+            }
+          },
+          error: (error) => {
+            console.error('AuthService - Token refresh error:', error);
+            this.logout();
+          }
+        });
+      } else {
+        console.log('AuthService - No valid token found, user not authenticated');
+        // No token or token is invalid, ensure user is marked as not authenticated
+        this.currentUserSubject.next(null);
+        this.isAuthenticatedSubject.next(false);
       }
     }
   }
 
   private validateToken(token: string): Observable<AuthUser> {
-    return this.http.get<AuthUser>('/api/auth/validate', {
+    return this.http.get<AuthUser>(`${environment.apiUrl}/api/auth/validate`, {
       headers: new HttpHeaders({
         'Authorization': `Bearer ${token}`
       })
@@ -90,7 +164,7 @@ export class AuthService {
   }
 
   loginWithEmail(email: string): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>('/api/auth/email-login', { email })
+    return this.http.post<LoginResponse>(`${environment.apiUrl}/api/auth/email-login`, { email })
       .pipe(
         tap(response => {
           if (response.success && response.token) {
@@ -98,6 +172,7 @@ export class AuthService {
             if (response.user) {
               this.currentUserSubject.next(response.user);
               this.isAuthenticatedSubject.next(true);
+              this.startTokenRefreshTimer();
             }
           }
         }),
@@ -119,7 +194,7 @@ export class AuthService {
   }
 
   loginWithOAuth(provider: 'google' | 'microsoft'): void {
-    const oauthUrl = `/oauth2/authorization/${provider}`;
+    const oauthUrl = `${environment.apiUrl}/oauth2/authorization/${provider}`;
     window.location.href = oauthUrl;
   }
 
@@ -139,10 +214,56 @@ export class AuthService {
   }
 
   isLoggedIn(): boolean {
-    // Check email authentication
+    // Check if we have a token and it's not expired
+    const token = this.getToken();
+    if (!token) {
+      console.log('AuthService.isLoggedIn() - No token found');
+      return false;
+    }
+    
+    // Check if token is expired
+    if (this.isTokenExpired()) {
+      console.log('AuthService.isLoggedIn() - Token is expired');
+      return false;
+    }
+    
+    // Check the current authentication state
     const result = this.isAuthenticatedSubject.value;
-    console.log('AuthService.isLoggedIn() - result:', result);
+    console.log('AuthService.isLoggedIn() - Authentication state:', result);
     return result;
+  }
+
+  // Method to wait for authentication check to complete
+  waitForAuthCheck(): Promise<boolean> {
+    return new Promise((resolve) => {
+      // If authentication check is already complete, return immediately
+      if (this.isAuthenticatedSubject.value !== null) {
+        resolve(this.isAuthenticatedSubject.value);
+        return;
+      }
+      
+      // Wait for the first authentication status
+      this.isAuthenticated$.pipe(take(1)).subscribe(isAuthenticated => {
+        resolve(isAuthenticated);
+      });
+    });
+  }
+
+  isTokenExpired(): boolean {
+    const token = this.getToken();
+    if (!token) {
+      return true;
+    }
+
+    try {
+      // Decode the JWT token to check expiration
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const currentTime = Date.now() / 1000;
+      return payload.exp < currentTime;
+    } catch (error) {
+      console.error('Error parsing token:', error);
+      return true;
+    }
   }
 
   getCurrentUser(): AuthUser | null {
@@ -151,7 +272,7 @@ export class AuthService {
 
   // Handle OAuth callback
   handleOAuthCallback(): Observable<AuthUser> {
-    return this.http.get<AuthUser>('/api/auth/oauth-callback')
+    return this.http.get<AuthUser>(`${environment.apiUrl}/api/auth/oauth-callback`)
       .pipe(
         tap(user => {
           this.currentUserSubject.next(user);
@@ -168,7 +289,7 @@ export class AuthService {
       return of({ success: false, message: 'No token available' });
     }
 
-    return this.http.post<LoginResponse>('/api/auth/refresh', { token })
+    return this.http.post<LoginResponse>(`${environment.apiUrl}/api/auth/refresh`, { token })
       .pipe(
         tap(response => {
           if (response.success && response.token) {
