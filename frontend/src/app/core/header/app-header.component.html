@@ -79,11 +79,19 @@
             </ng-template>
           </p-popover>
         </ng-container>
-        <ng-container *featureFlag="'settings'">
-          <button pButton icon="pi pi-cog" class="p-button-rounded p-button-text p-button-plain" aria-label="Settings"></button>
-        </ng-container>
+        <!-- <ng-container *featureFlag="'settings'">
+          <button pButton icon="pi pi-user" class="p-button-rounded p-button-text p-button-plain" aria-label="User Settings"></button>
+        </ng-container> -->
         <ng-container *featureFlag="'user-profile'">
-          <button pButton icon="pi pi-user" class="p-button-rounded p-button-outlined" aria-label="User profile"></button>
+          <button 
+            pButton 
+            [label]="getUserDisplayName()" 
+            icon="pi pi-user" 
+            class="p-button-rounded p-button-outlined user-profile-button" 
+            aria-label="User profile"
+            (click)="userMenu.toggle($event)"
+          ></button>
+          <p-menu #userMenu [model]="userMenuItems" [popup]="true" appendTo="body"></p-menu>
         </ng-container>
       </div>
     </div>

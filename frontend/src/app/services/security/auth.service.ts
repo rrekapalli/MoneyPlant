@@ -16,7 +16,11 @@ export interface AuthUser {
   id: string;
   email: string;
   name?: string;
+  firstName?: string;
+  lastName?: string;
+  fullName?: string;
   avatar?: string;
+  profilePictureUrl?: string;
 }
 
 @Injectable({
