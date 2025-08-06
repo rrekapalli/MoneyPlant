@@ -1,25 +1,18 @@
 import { Injectable } from '@angular/core';
 import { Observable, BehaviorSubject } from 'rxjs';
-import { StompNativeWebSocketService, StompWebSocketConfig } from './stomp-native-websocket.service';
+import { StompNativeWebSocketService } from './stomp-native-websocket.service';
 import { IndexDataDto, IndicesDto, WebSocketConnectionState } from '../entities/indices-websocket';
+import { environment } from '../../../environments/environment';
 
 /**
  * Modern Angular v20 Indices WebSocket Service
- * High-level service for NSE indices data using native Angular WebSocket capabilities
- * No external dependencies - uses RxJS WebSocketSubject internally
+ * High-level service for NSE indices data using proper STOMP over SockJS
+ * Uses @stomp/stompjs and sockjs-client libraries for full compatibility
  */
 @Injectable({
   providedIn: 'root'
 })
 export class ModernIndicesWebSocketService {
-  private readonly config: StompWebSocketConfig = {
-    url: 'ws://localhost:4200/ws/indices', // Proxied through Angular dev server
-    reconnectInterval: 5000,
-    maxReconnectAttempts: 3, // Reduced attempts to avoid spam
-    debug: false, // Disable debug to reduce console noise
-    heartbeatIncoming: 4000,
-    heartbeatOutgoing: 4000
-  };
 
   constructor(private stompWebSocket: StompNativeWebSocketService) {}
 
@@ -49,7 +42,8 @@ export class ModernIndicesWebSocketService {
    */
   async connect(): Promise<void> {
     try {
-      await this.stompWebSocket.connect(this.config);
+      console.log('Connecting to Modern Indices WebSocket using STOMP over SockJS...');
+      await this.stompWebSocket.connect();
       console.log('Modern Indices WebSocket connected successfully');
     } catch (error) {
       console.warn('WebSocket connection failed - backend may not be available:', (error as Error).message || error);
@@ -62,7 +56,7 @@ export class ModernIndicesWebSocketService {
    * @returns Observable of all indices data
    */
   subscribeToAllIndices(): Observable<IndicesDto> {
-    console.log('Subscribing to all indices data...');
+    console.log('Subscribing to all indices data via STOMP...');
     return this.stompWebSocket.subscribeToAllIndices();
   }
 
@@ -72,7 +66,7 @@ export class ModernIndicesWebSocketService {
    * @returns Observable of specific index data
    */
   subscribeToIndex(indexName: string): Observable<IndicesDto> {
-    console.log(`Subscribing to index: ${indexName}`);
+    console.log(`Subscribing to index via STOMP: ${indexName}`);
     return this.stompWebSocket.subscribeToIndex(indexName);
   }
 

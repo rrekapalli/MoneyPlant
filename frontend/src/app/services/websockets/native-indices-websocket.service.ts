@@ -12,7 +12,7 @@ import { IndexDataDto, IndicesDto, WebSocketConnectionState } from '../entities/
   providedIn: 'root'
 })
 export class NativeIndicesWebSocketService {
-  private readonly baseUrl = `ws://localhost:8080/ws/indices`;
+  private readonly baseUrl = `ws://localhost:8080/ws/indices-native`; // Raw WebSocket endpoint
   private readonly config: NativeWebSocketConfig = {
     url: this.baseUrl,
     reconnectInterval: 3000,

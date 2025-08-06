@@ -17,6 +17,9 @@ import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.annotation.SubscribeMapping;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 /**
  * WebSocket controller for real-time NSE indices data streaming.
@@ -29,12 +32,62 @@ import org.springframework.stereotype.Controller;
  * 2. /indices/{indexName} - Subscribe to specific index data
  */
 @Controller
+@RestController
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Indices", description = "Real-time NSE indices WebSocket API")
 public class IndicesController {
 
     private final IndicesService indicesService;
+
+    /**
+     * REST endpoint to manually trigger subscription for testing
+     */
+    @PostMapping("/api/test/subscribe/{indexName}")
+    @Operation(
+        summary = "Test subscription to specific index",
+        description = "Manually trigger subscription to test NSE WebSocket connection"
+    )
+    public IndicesDto testSubscribeToIndex(@PathVariable String indexName) {
+        try {
+            log.info("Test subscription request for index: {}", indexName);
+            
+            // Convert URL-friendly index name back to original format
+            String originalIndexName = indexName.replace("-", " ").toUpperCase();
+            
+            // Subscribe to updates for this specific index
+            indicesService.subscribeToIndex(originalIndexName);
+            
+            // Return current data immediately
+            return indicesService.getIndexData(originalIndexName);
+            
+        } catch (Exception e) {
+            log.error("Error during test subscription for index {}: {}", indexName, e.getMessage(), e);
+            throw new ServiceException("Failed to test subscribe to index: " + indexName, e);
+        }
+    }
+
+    /**
+     * REST endpoint to check WebSocket connection status
+     */
+    @GetMapping("/api/test/status")
+    @Operation(
+        summary = "Check WebSocket connection status",
+        description = "Check if NSE WebSocket connection is active"
+    )
+    public Object testConnectionStatus() {
+        try {
+            // This is a simple test - in a real implementation you'd expose connection status
+            return Map.of(
+                "status", "Service is running",
+                "timestamp", java.time.Instant.now().toString(),
+                "message", "Check backend logs for NSE WebSocket connection status"
+            );
+        } catch (Exception e) {
+            log.error("Error checking connection status: {}", e.getMessage(), e);
+            throw new ServiceException("Failed to check connection status", e);
+        }
+    }
 
     /**
      * WebSocket subscription endpoint for all indices data.
@@ -117,6 +170,46 @@ public class IndicesController {
             throw e;
         } catch (Exception e) {
             log.error("Unexpected error during index subscription for index {}: {}", indexName, e.getMessage(), e);
+            throw new ServiceException("Failed to subscribe to index: " + indexName, e);
+        }
+    }
+
+    /**
+     * WebSocket message mapping for subscribing to all indices updates.
+     */
+    @MessageMapping("/subscribe-indices")
+    @Operation(
+        summary = "Subscribe to all indices data",
+        description = "Trigger subscription to all indices and connect to NSE WebSocket"
+    )
+    public void subscribeToAllIndicesMessage() {
+        try {
+            log.info("WebSocket message request for all indices subscription");
+            indicesService.subscribeToAllIndices();
+        } catch (Exception e) {
+            log.error("Error during subscribe to all indices: {}", e.getMessage(), e);
+            throw new ServiceException("Failed to subscribe to all indices", e);
+        }
+    }
+
+    /**
+     * WebSocket message mapping for subscribing to specific index updates.
+     */
+    @MessageMapping("/subscribe-indices/{indexName}")
+    @Operation(
+        summary = "Subscribe to specific index data",
+        description = "Trigger subscription to specific index and connect to NSE WebSocket"
+    )
+    public void subscribeToIndexMessage(
+            @DestinationVariable 
+            @Parameter(description = "Index name to subscribe to", required = true)
+            String indexName) {
+        try {
+            log.info("WebSocket message request for index subscription: {}", indexName);
+            String originalIndexName = indexName.replace("-", " ").toUpperCase();
+            indicesService.subscribeToIndex(originalIndexName);
+        } catch (Exception e) {
+            log.error("Error during subscribe to index {}: {}", indexName, e.getMessage(), e);
             throw new ServiceException("Failed to subscribe to index: " + indexName, e);
         }
     }

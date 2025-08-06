@@ -2,7 +2,6 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, Subject } from 'rxjs';
 import { filter, map } from 'rxjs/operators';
 import { Client, IMessage, StompConfig, IFrame } from '@stomp/stompjs';
-import SockJS from 'sockjs-client';
 import { IndexDataDto, IndicesDto, WebSocketConnectionState } from '../entities/indices-websocket';
 import { environment } from '../../../environments/environment';
 
@@ -14,7 +13,7 @@ import { environment } from '../../../environments/environment';
 @Injectable({
   providedIn: 'root'
 })
-export class StompNativeWebSocketService {
+export class StompSockJSWebSocketService {
   private client: Client;
   private connectionState$ = new BehaviorSubject<WebSocketConnectionState>(WebSocketConnectionState.DISCONNECTED);
   private errors$ = new Subject<string>();
@@ -36,12 +35,12 @@ export class StompNativeWebSocketService {
    */
   private createStompClient(): Client {
     const config: StompConfig = {
-      // Use SockJS for transport (Spring Boot STOMP endpoint)
+      // Use native WebSocket for transport
       webSocketFactory: () => {
         const baseUrl = environment.production ? 
-          'https://your-domain.com/ws/indices' : 
-          'http://localhost:8080/ws/indices';
-        return new SockJS(baseUrl);
+          'wss://your-domain.com/ws/indices-native' : 
+          'ws://localhost:8080/ws/indices-native';
+        return new WebSocket(baseUrl);
       },
       
       // Connection options
@@ -202,9 +201,9 @@ export class StompNativeWebSocketService {
 
     this.activeSubscriptions.set(destination, subscription);
     
-    // Send subscription message to backend to trigger NSE connection
+    // Send subscription message to backend
     this.client.publish({
-      destination: '/app/subscribe-indices',
+      destination: '/app/indices',
       body: JSON.stringify({ action: 'subscribe' })
     });
 
@@ -261,10 +260,10 @@ export class StompNativeWebSocketService {
 
     this.activeSubscriptions.set(destination, subscription);
     
-    // Send subscription message to backend to trigger NSE connection
+    // Send subscription message to backend
     this.client.publish({
-      destination: `/app/subscribe-indices/${indexName}`,
-      body: JSON.stringify({ indexName })
+      destination: `/app/indices/${indexName}`,
+      body: JSON.stringify({ action: 'subscribe', indexName })
     });
 
     return this.specificIndicesData.get(indexName)!.asObservable().pipe(

@@ -32,6 +32,11 @@
     "secure": false,
     "changeOrigin": true,
     "ws": true,
-    "logLevel": "debug"
+    "logLevel": "debug",
+    "timeout": 120000,
+    "headers": {
+      "Connection": "Upgrade",
+      "Upgrade": "websocket"
+    }
   }
 } 

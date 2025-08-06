@@ -392,6 +392,10 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
    * @param data - Dashboard data (not used, we use stockTicksData instead)
    */
   protected createMetricTiles(data: StockDataDto[]): IWidget[] {
+    console.log('Creating metric tiles with data:', {
+      stockData: this.filteredDashboardData || this.dashboardData,
+      selectedIndexData: this.currentSelectedIndexData
+    });
     return createMetricTilesFunction(this.filteredDashboardData || this.dashboardData, this.currentSelectedIndexData);
   }
 
@@ -399,13 +403,19 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
    * Override updateMetricTilesWithFilters to use filtered data
    */
   protected override updateMetricTilesWithFilters(filters: any[]): void {
+    console.log('Updating metric tiles with filters:', filters);
+    
     // Find all tile widgets
     const tileWidgets = this.dashboardConfig.widgets.filter(widget => 
       widget.config?.component === 'tile'
     );
 
+    console.log('Found tile widgets:', tileWidgets.length);
+
     // Create new metric tiles with filtered data - use filteredDashboardData
     const updatedMetricTiles = this.createMetricTiles(this.filteredDashboardData || this.dashboardData);
+
+    console.log('Updated metric tiles:', updatedMetricTiles.length);
 
     // Update each tile widget with new data
     tileWidgets.forEach((widget, index) => {
@@ -420,6 +430,7 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
           // Update the widget's options with new tile data
           if (widget.config?.options) {
             Object.assign(widget.config.options, updatedTile.config?.options);
+            console.log(`Updated tile ${index} with data:`, updatedTile.config?.options);
           }
         }
       }
@@ -1552,27 +1563,29 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
                   // Update current selected index data
                   this.currentSelectedIndexData = indicesData.indices[0];
                   
+                  console.log('Updated currentSelectedIndexData:', this.currentSelectedIndexData);
+                  
                   // Update metric tiles with real-time data
                   this.updateMetricTilesWithFilters([]);
                   this.cdr.detectChanges();
                   
-                  console.log('Received real-time index data:', this.currentSelectedIndexData);
+                  console.log('Received real-time index data for', webSocketIndexName, ':', this.currentSelectedIndexData);
                 }
               } catch (error) {
                 console.error('Error processing received index data:', error);
               }
             },
             error: (error) => {
-              console.warn('WebSocket subscription error:', error.message || error);
+              console.warn('WebSocket subscription error for', webSocketIndexName, ':', error.message || error);
               this.currentSelectedIndexData = null;
               this.cdr.detectChanges();
             },
             complete: () => {
-              console.log('WebSocket subscription completed');
+              console.log('WebSocket subscription completed for', webSocketIndexName);
             }
           });
           
-        console.log(`Subscribed to WebSocket updates for: ${webSocketIndexName}`);
+        console.log(`Subscribed to WebSocket updates for specific index: ${webSocketIndexName}`);
       } else {
         console.log('WebSocket not connected - skipping real-time subscription');
       }

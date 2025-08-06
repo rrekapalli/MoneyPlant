@@ -38,7 +38,8 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers("/", "/error", "/api/public/**", "/swagger-ui/**", "/v1/api-docs/**", 
-                               "/actuator/**", "/login/**", "/oauth2/**", "/api/auth/email-login").permitAll()
+                               "/actuator/**", "/login/**", "/oauth2/**", "/api/auth/email-login",
+                               "/ws/**").permitAll() // Allow WebSocket endpoints for development
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )

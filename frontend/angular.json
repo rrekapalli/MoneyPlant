@@ -95,6 +95,7 @@
             "browser": "src/main.ts",
             "polyfills": [
               "zone.js",
+              "src/polyfills/node-globals.ts",
               "src/polyfills/unicode-property-escapes.ts"
             ],
             "tsConfig": "tsconfig.app.json",

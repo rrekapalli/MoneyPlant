@@ -9,7 +9,28 @@
   <link rel="icon" type="image/png" href="assets/images/moneytree-logo.png">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
   
-  <!-- No global polyfill needed - using native Angular v20 WebSocket -->
+  <!-- Node.js globals polyfill for sockjs-client compatibility -->
+  <script>
+    // Set global before any modules load to prevent "global is not defined" errors
+    window.global = window;
+    if (typeof global === 'undefined') {
+      global = window;
+    }
+    
+    // Basic crypto polyfill
+    if (typeof window.crypto === 'undefined') {
+      window.crypto = {
+        getRandomValues: function(array) {
+          for (let i = 0; i < array.length; i++) {
+            array[i] = Math.floor(Math.random() * 256);
+          }
+          return array;
+        }
+      };
+    }
+    
+    console.log('Node.js globals polyfill loaded in index.html');
+  </script>
 </head>
 <body>
   <app-root></app-root>

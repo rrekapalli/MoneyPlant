@@ -20,6 +20,7 @@ import org.springframework.web.socket.client.WebSocketClient;
 import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.socket.WebSocketHttpHeaders;
+import org.springframework.web.socket.TextMessage;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -100,6 +101,12 @@ public class IndicesService {
             WebSocketHttpHeaders headers = new WebSocketHttpHeaders();
             headers.add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
             headers.add("Origin", "https://www.nseindia.com");
+            headers.add("Accept", "*/*");
+            headers.add("Accept-Language", "en-US,en;q=0.9");
+            headers.add("Accept-Encoding", "gzip, deflate, br");
+            headers.add("Connection", "keep-alive");
+            headers.add("Upgrade", "websocket");
+            headers.add("Sec-WebSocket-Version", "13");
             
             webSocketClient.doHandshake(
                 new NseIndicesWebSocketHandler(), 
@@ -110,10 +117,25 @@ public class IndicesService {
                     webSocketSession = result;
                     isConnecting = false;
                     log.info("Successfully connected to NSE WebSocket");
+                    
+                    // Send initial subscription message if needed
+                    try {
+                        String subscriptionMessage = "{\"action\":\"subscribe\",\"channel\":\"indices\"}";
+                        webSocketSession.sendMessage(new TextMessage(subscriptionMessage));
+                        log.info("Sent subscription message to NSE WebSocket");
+                    } catch (Exception e) {
+                        log.warn("Failed to send subscription message to NSE: {}", e.getMessage());
+                    }
                 },
                 failure -> {
                     isConnecting = false;
                     log.error("Failed to connect to NSE WebSocket: {}", failure.getMessage());
+                    log.error("This might be due to network restrictions or NSE requiring authentication");
+                    
+                    // Fallback to mock data for testing
+                    log.info("Falling back to mock data for testing purposes");
+                    startMockDataGeneration();
+                    
                     scheduleReconnectionIfNeeded();
                 }
             );
@@ -121,7 +143,82 @@ public class IndicesService {
         } catch (Exception e) {
             isConnecting = false;
             log.error("Failed to connect to NSE WebSocket: {}", e.getMessage(), e);
+            
+            // Fallback to mock data for testing
+            log.info("Falling back to mock data for testing purposes");
+            startMockDataGeneration();
+            
             scheduleReconnectionIfNeeded();
+        }
+    }
+    
+    /**
+     * Generate mock data for testing when NSE connection fails
+     */
+    private void startMockDataGeneration() {
+        if (reconnectExecutor != null && !reconnectExecutor.isShutdown()) {
+            reconnectExecutor.scheduleAtFixedRate(() -> {
+                if (hasActiveSubscribers()) {
+                    generateAndBroadcastMockData();
+                }
+            }, 0, 5, TimeUnit.SECONDS); // Generate mock data every 5 seconds
+        }
+    }
+    
+    /**
+     * Generate mock indices data for testing
+     */
+    private void generateAndBroadcastMockData() {
+        try {
+            IndicesDto mockData = new IndicesDto();
+            mockData.setTimestamp(Instant.now().toString());
+            mockData.setSource("Mock Data (NSE connection failed)");
+            
+            List<IndexDataDto> mockIndices = new ArrayList<>();
+            
+            // Generate mock data for common indices
+            String[] indexNames = {"NIFTY 50", "SENSEX", "BANK NIFTY", "NIFTY IT", "NIFTY PHARMA"};
+            
+            for (String indexName : indexNames) {
+                IndexDataDto mockIndex = new IndexDataDto();
+                mockIndex.setIndexName(indexName);
+                mockIndex.setIndexSymbol(indexName.replace(" ", "").toUpperCase());
+                mockIndex.setLastPrice((float)(18000.0 + Math.random() * 2000));
+                mockIndex.setVariation((float)(Math.random() * 100 - 50));
+                mockIndex.setPercentChange((float)(Math.random() * 2 - 1));
+                mockIndex.setOpenPrice((float)(17900.0 + Math.random() * 1000));
+                mockIndex.setDayHigh((float)(18200.0 + Math.random() * 500));
+                mockIndex.setDayLow((float)(17800.0 + Math.random() * 300));
+                mockIndex.setPreviousClose((float)(17950.0 + Math.random() * 100));
+                mockIndex.setYearHigh((float)(19000.0 + Math.random() * 1000));
+                mockIndex.setYearLow((float)(17000.0 + Math.random() * 500));
+                mockIndex.setIndicativeClose((float)(18050.0 + Math.random() * 100));
+                mockIndex.setPeRatio((float)(20.0 + Math.random() * 5));
+                mockIndex.setPbRatio((float)(3.0 + Math.random() * 2));
+                mockIndex.setDividendYield((float)(1.5 + Math.random() * 1));
+                mockIndex.setAdvances((int)(Math.random() * 100));
+                mockIndex.setDeclines((int)(Math.random() * 50));
+                mockIndex.setUnchanged((int)(Math.random() * 20));
+                
+                mockIndices.add(mockIndex);
+            }
+            
+            mockData.setIndices(mockIndices);
+            
+            // Update cache
+            latestIndicesData = mockData;
+            updateIndexDataCache(mockData);
+            
+            // Broadcast to subscribers
+            if (allIndicesSubscribed || !activeSubscriptions.isEmpty()) {
+                broadcastAllIndices(mockData);
+            }
+            broadcastSpecificIndices(mockData);
+            
+            log.debug("Generated and broadcasted mock indices data");
+            
+        } catch (Exception e) {
+            log.error("Error generating mock data: {}", e.getMessage(), e);
         }
     }
 
@@ -245,13 +342,20 @@ public class IndicesService {
             
             List<IndexDataDto> indices = new ArrayList<>();
             
-            // Parse indices data from NSE response
+            // Handle different NSE data formats
             if (rootNode.has("data") && rootNode.get("data").isArray()) {
+                // Format: {"data": [{"indexName": "...", "currentPrice": ...}, ...]}
                 for (JsonNode indexNode : rootNode.get("data")) {
                     IndexDataDto indexData = parseIndexNode(indexNode);
                     if (indexData != null) {
                         indices.add(indexData);
                     }
+                }
+            } else if (rootNode.has("indexName")) {
+                // Format: {"indexName": "...", "currentPrice": ...} (single index)
+                IndexDataDto indexData = parseIndexNode(rootNode);
+                if (indexData != null) {
+                    indices.add(indexData);
                 }
             }
             
@@ -276,7 +380,43 @@ public class IndicesService {
      */
     private IndexDataDto parseIndexNode(JsonNode indexNode) {
         try {
-            return objectMapper.treeToValue(indexNode, IndexDataDto.class);
+            IndexDataDto indexData = new IndexDataDto();
+            
+            // Map NSE field names to DTO field names
+            if (indexNode.has("indexName")) {
+                indexData.setIndexName(indexNode.get("indexName").asText());
+            }
+            if (indexNode.has("brdCstIndexName")) {
+                indexData.setIndexSymbol(indexNode.get("brdCstIndexName").asText());
+            }
+            if (indexNode.has("currentPrice")) {
+                indexData.setLastPrice((float) indexNode.get("currentPrice").asDouble());
+            }
+            if (indexNode.has("change")) {
+                indexData.setVariation((float) indexNode.get("change").asDouble());
+            }
+            if (indexNode.has("perChange")) {
+                indexData.setPercentChange((float) indexNode.get("perChange").asDouble());
+            }
+            if (indexNode.has("open")) {
+                indexData.setOpenPrice((float) indexNode.get("open").asDouble());
+            }
+            if (indexNode.has("high")) {
+                indexData.setDayHigh((float) indexNode.get("high").asDouble());
+            }
+            if (indexNode.has("low")) {
+                indexData.setDayLow((float) indexNode.get("low").asDouble());
+            }
+            if (indexNode.has("previousClose")) {
+                indexData.setPreviousClose((float) indexNode.get("previousClose").asDouble());
+            }
+            
+            // Set key for identification
+            indexData.setKey(indexData.getIndexName());
+            
+            log.debug("Parsed index data: {}", indexData);
+            return indexData;
+            
         } catch (Exception e) {
             log.error("Error parsing index node: {}", e.getMessage(), e);
             return null;
@@ -322,7 +462,7 @@ public class IndicesService {
                     specificDto.setMarketStatus(indicesDto.getMarketStatus());
                     specificDto.setIndices(List.of(indexData));
                     
-                    String destination = "/topic/indices/" + indexName.replace(" ", "-").toLowerCase();
+                    String destination = "/topic/indices/" + indexName.replace(" ", "-").toUpperCase();
                     messagingTemplate.convertAndSend(destination, specificDto);
                     log.debug("Broadcasted index data for {} to destination {}", indexName, destination);
                 }
