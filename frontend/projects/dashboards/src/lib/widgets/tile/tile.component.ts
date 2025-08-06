@@ -15,6 +15,7 @@ import {ITileOptions} from '../../entities/ITileOptions';
         <div class="tile-left">
           <div class="tile-value" [style.color]="tileOptions.color">{{ tileOptions.value }}</div>
           <div class="tile-description" [style.color]="tileOptions.color">{{ tileOptions.description }}</div>
+          <div class="tile-subtitle" [style.color]="tileOptions.color" *ngIf="tileOptions.subtitle">{{ tileOptions.subtitle }}</div>
         </div>
         <div class="tile-right">
           <div class="tile-change" [class]="'change-' + tileOptions.changeType" [style.color]="tileOptions.color">
@@ -60,6 +61,11 @@ import {ITileOptions} from '../../entities/ITileOptions';
     .tile-description {
       font-size: 1.2rem;
       opacity: 0.8;
+    }
+    .tile-subtitle {
+      font-size: 0.875rem;
+      opacity: 0.7;
+      margin-top: 0.25rem;
     }
     .tile-change {
       font-size: 0.875rem;

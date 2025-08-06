@@ -439,7 +439,7 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
             color: tileOptions?.color || '',
             backgroundColor: tileOptions?.backgroundColor || '',
             title: tileOptions?.title || '',
-            subtitle: tileOptions?.subtitle || ''
+            subtitle: tileOptions?.subtitle || tileOptions?.customData?.subtitle || ''
           };
           
           // Use TileBuilder to properly update the tile data
@@ -1578,8 +1578,8 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
                   // Update current selected index data
                   this.currentSelectedIndexData = indicesData.indices[0];
                   
-                  // Update metric tiles with real-time data
-                  this.updateMetricTilesWithFilters([]);
+                  // Force complete recreation of metric tiles with new data
+                  this.recreateMetricTiles();
                   
                   this.forceDashboardRefresh(); // Force refresh to update all widgets
                   this.cdr.detectChanges();
@@ -1625,6 +1625,43 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
       this.cdr.detectChanges();
       this.cdr.markForCheck();
     }, 100);
+  }
+
+  private recreateMetricTiles(): void {
+    const currentMetricTiles = this.dashboardConfig.widgets.filter(widget => 
+      widget.config?.component === 'tile'
+    );
+
+    const newMetricTiles = this.createMetricTiles(this.filteredDashboardData || this.dashboardData);
+
+    currentMetricTiles.forEach((widget, index) => {
+      if (index < newMetricTiles.length) {
+        const updatedTile = newMetricTiles[index];
+        
+        // Check if this tile should update on data change
+        const tileOptions = widget.config?.options as any;
+        const shouldUpdate = tileOptions?.updateOnDataChange !== false;
+        
+        if (shouldUpdate) {
+          // Extract tile data properties from the updated tile
+          const tileOptions = updatedTile.config?.options as any;
+          const tileData = {
+            value: tileOptions?.value || '',
+            change: tileOptions?.change || '',
+            changeType: tileOptions?.changeType || 'neutral',
+            description: tileOptions?.description || '',
+            icon: tileOptions?.icon || '',
+            color: tileOptions?.color || '',
+            backgroundColor: tileOptions?.backgroundColor || '',
+            title: tileOptions?.title || '',
+            subtitle: tileOptions?.subtitle || tileOptions?.customData?.subtitle || ''
+          };
+          
+          // Use TileBuilder to properly update the tile data
+          TileBuilder.updateData(widget, tileData);
+        }
+      }
+    });
   }
 
 }

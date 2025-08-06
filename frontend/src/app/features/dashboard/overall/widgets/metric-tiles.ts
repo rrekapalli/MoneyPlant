@@ -50,24 +50,31 @@ export function createMetricTiles(stockTicksData: StockDataDto[] | null, selecte
     const lastPrice = selectedIndexData.lastPrice || selectedIndexData.last || 0;
     const percentChange = selectedIndexData.percentChange || 0;
     const variation = selectedIndexData.variation || 0;
+    const dayHigh = selectedIndexData.dayHigh || selectedIndexData.high || 0;
+    const dayLow = selectedIndexData.dayLow || selectedIndexData.low || 0;
     
-    // Index Price Tile - Show current price, change, and % change
+    // Index Price Tile - Show current price, change, and day high/low
     const changeColor = (variation || 0) >= 0 ? '#16a34a' : '#dc2626';
     const changeBgColor = (variation || 0) >= 0 ? '#bbf7d0' : '#fecaca';
     const changeBorderColor = (variation || 0) >= 0 ? '#4ade80' : '#f87171';
     const changeIcon = (variation || 0) >= 0 ? 'fas fa-arrow-up' : 'fas fa-arrow-down';
     
+    // Create subtitle with day high and low
+    const subtitle = `H: ₹${dayHigh.toLocaleString()} | L: ₹${dayLow.toLocaleString()}`;
+    
     tiles.push(
       TileBuilder.createFinancialTile(
         lastPrice,
         percentChange,
-        indexName,
+        '', // Empty description - we'll set it separately
         '₹',
         changeIcon
       )
         .setColor(changeColor)
         .setBackgroundColor(changeBgColor)
         .setBorder(changeBorderColor, 1, 8)
+        .setDescription(indexName) // Set the index name as description
+        .setData({ subtitle: subtitle }) // Set day high/low as subtitle directly in data
         .setUpdateOnDataChange(true)
         .setPosition({ x: 0, y: 0, cols: 2, rows: 2 })
         .build()

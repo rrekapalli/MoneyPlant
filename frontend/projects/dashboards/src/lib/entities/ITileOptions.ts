@@ -18,6 +18,8 @@ export interface ITileOptions {
   backgroundColor?: string;
   /** Description text for the tile */
   description: string;
+  /** Subtitle text for the tile */
+  subtitle?: string;
   /** Background opacity for the tile (0-1) */
   backgroundOpacity?: number;
   /** Whether the tile should update when data/filters change */
