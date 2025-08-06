@@ -16,3 +16,4 @@ export * from './nse-historical-data-id';
 export * from './nse-historical-data';
 export * from './nse-quote-equity';
 export * from './indices';
+export * from './indices-websocket';

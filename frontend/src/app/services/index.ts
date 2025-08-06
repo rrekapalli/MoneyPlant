@@ -16,3 +16,4 @@ export * from './toast.service';
 export * from './logging.service';
 export * from './lazy-load.service';
 export * from './security';
+export * from './websockets';
