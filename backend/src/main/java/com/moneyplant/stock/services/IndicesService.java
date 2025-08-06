@@ -320,8 +320,8 @@ public class IndicesService {
                 // Broadcast to specific index subscribers
                 broadcastSpecificIndices(indicesDto);
                 
-                // Update database with latest data
-                updateDatabaseWithLatestData(indicesDto);
+                // Update database with latest data - DISABLED to prevent unnecessary database load
+                // updateDatabaseWithLatestData(indicesDto);
             }
             
         } catch (JsonProcessingException e) {

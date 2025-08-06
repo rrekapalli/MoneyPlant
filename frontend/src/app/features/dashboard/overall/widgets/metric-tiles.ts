@@ -37,19 +37,31 @@ export function createMetricTiles(stockTicksData: StockDataDto[] | null, selecte
   // Create tiles
   const tiles = [];
 
-  // First tile - Show selected index data if available, otherwise show stocks count
-  if (selectedIndexData) {
+  // Check if selectedIndexData exists and has valid data
+  // Handle both expected field names (indexName, lastPrice) and actual WebSocket field names (index, last)
+  const hasValidIndexData = selectedIndexData && 
+    (selectedIndexData.indexName || selectedIndexData.index) && 
+    (selectedIndexData.lastPrice !== undefined || selectedIndexData.last !== undefined) && 
+    (selectedIndexData.lastPrice !== null || selectedIndexData.last !== null);
+
+  if (hasValidIndexData) {
+    // Extract data using actual WebSocket field names
+    const indexName = selectedIndexData.indexName || selectedIndexData.index || 'Index';
+    const lastPrice = selectedIndexData.lastPrice || selectedIndexData.last || 0;
+    const percentChange = selectedIndexData.percentChange || 0;
+    const variation = selectedIndexData.variation || 0;
+    
     // Index Price Tile - Show current price, change, and % change
-    const changeColor = (selectedIndexData.variation || 0) >= 0 ? '#16a34a' : '#dc2626';
-    const changeBgColor = (selectedIndexData.variation || 0) >= 0 ? '#bbf7d0' : '#fecaca';
-    const changeBorderColor = (selectedIndexData.variation || 0) >= 0 ? '#4ade80' : '#f87171';
-    const changeIcon = (selectedIndexData.variation || 0) >= 0 ? 'fas fa-arrow-up' : 'fas fa-arrow-down';
+    const changeColor = (variation || 0) >= 0 ? '#16a34a' : '#dc2626';
+    const changeBgColor = (variation || 0) >= 0 ? '#bbf7d0' : '#fecaca';
+    const changeBorderColor = (variation || 0) >= 0 ? '#4ade80' : '#f87171';
+    const changeIcon = (variation || 0) >= 0 ? 'fas fa-arrow-up' : 'fas fa-arrow-down';
     
     tiles.push(
       TileBuilder.createFinancialTile(
-        selectedIndexData.lastPrice || 0,
-        selectedIndexData.percentChange || 0,
-        selectedIndexData.indexName || 'Index',
+        lastPrice,
+        percentChange,
+        indexName,
         '₹',
         changeIcon
       )

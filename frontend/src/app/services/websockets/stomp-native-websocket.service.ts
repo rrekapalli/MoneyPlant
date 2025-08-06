@@ -35,66 +35,48 @@ export class StompNativeWebSocketService {
    * Create and configure STOMP client
    */
   private createStompClient(): Client {
-    const config: StompConfig = {
-      // Use SockJS for transport (Spring Boot STOMP endpoint)
+    const client = new Client({
       webSocketFactory: () => {
-        const baseUrl = environment.production ? 
-          'https://your-domain.com/ws/indices' : 
-          'http://localhost:8080/ws/indices';
+        const baseUrl = environment.production ?
+          `${environment.apiUrl}/ws/indices` :
+          `${environment.apiUrl}/ws/indices`;
         return new SockJS(baseUrl);
       },
-      
-      // Connection options
-      connectHeaders: {
-        // Add any authentication headers here if needed
+      debug: (msg) => {
+        // Debug logging disabled for production
       },
-      
-      // Heartbeat configuration
-      heartbeatIncoming: 4000, // Expect heartbeat every 4 seconds
-      heartbeatOutgoing: 4000, // Send heartbeat every 4 seconds
-      
-      // Reconnection
-      reconnectDelay: 5000, // 5 seconds
-      maxWebSocketChunkSize: 8 * 1024, // 8KB chunks
-      
-      // Debugging
-      debug: (msg: string) => {
-        if (!environment.production) {
-          console.log('STOMP Debug:', msg);
-        }
-      },
-      
-      // Connection callbacks
-      onConnect: (frame: IFrame) => {
-        console.log('STOMP Connected:', frame);
-        this.connectionState$.next(WebSocketConnectionState.CONNECTED);
-      },
-      
-      onDisconnect: (frame: IFrame) => {
-        console.log('STOMP Disconnected:', frame);
-        this.connectionState$.next(WebSocketConnectionState.DISCONNECTED);
-        this.clearSubscriptions();
-      },
-      
-      onStompError: (frame: IFrame) => {
-        console.error('STOMP Error:', frame);
-        this.errors$.next(`STOMP Error: ${frame.headers['message']}`);
-        this.connectionState$.next(WebSocketConnectionState.ERROR);
-      },
-      
-      onWebSocketError: (error: any) => {
-        console.error('WebSocket Error:', error);
-        this.errors$.next(`WebSocket Error: ${error.message || error}`);
-        this.connectionState$.next(WebSocketConnectionState.ERROR);
-      },
-      
-      onWebSocketClose: (event: CloseEvent) => {
-        console.warn('WebSocket Closed:', event);
-        this.connectionState$.next(WebSocketConnectionState.DISCONNECTED);
-      }
+      reconnectDelay: 5000,
+      heartbeatIncoming: 4000,
+      heartbeatOutgoing: 4000
+    });
+
+    // Set up connection callbacks
+    client.onConnect = (frame: IFrame) => {
+      this.connectionState$.next(WebSocketConnectionState.CONNECTED);
     };
 
-    return new Client(config);
+    client.onDisconnect = (frame: IFrame) => {
+      this.connectionState$.next(WebSocketConnectionState.DISCONNECTED);
+      this.clearSubscriptions();
+    };
+
+    client.onStompError = (frame: IFrame) => {
+      console.error('STOMP Error:', frame);
+      this.errors$.next(`STOMP Error: ${frame.headers['message']}`);
+      this.connectionState$.next(WebSocketConnectionState.ERROR);
+    };
+
+    client.onWebSocketError = (error: any) => {
+      console.error('WebSocket Error:', error);
+      this.errors$.next(`WebSocket Error: ${error.message || error}`);
+      this.connectionState$.next(WebSocketConnectionState.ERROR);
+    };
+
+    client.onWebSocketClose = (event: CloseEvent) => {
+      this.connectionState$.next(WebSocketConnectionState.DISCONNECTED);
+    };
+
+    return client;
   }
 
   /**
@@ -123,7 +105,6 @@ export class StompNativeWebSocketService {
    */
   async connect(): Promise<void> {
     try {
-      console.log('Connecting to STOMP over SockJS...');
       this.connectionState$.next(WebSocketConnectionState.CONNECTING);
       
       this.client.activate();
@@ -158,7 +139,6 @@ export class StompNativeWebSocketService {
    */
   async disconnect(): Promise<void> {
     try {
-      console.log('Disconnecting from STOMP WebSocket...');
       this.clearSubscriptions();
       await this.client.deactivate();
       this.connectionState$.next(WebSocketConnectionState.DISCONNECTED);
@@ -186,13 +166,10 @@ export class StompNativeWebSocketService {
         filter((data): data is IndicesDto => data !== null)
       );
     }
-
-    console.log('Subscribing to all indices data...');
     
     const subscription = this.client.subscribe(destination, (message: IMessage) => {
       try {
         const indicesData: IndicesDto = JSON.parse(message.body);
-        console.log('Received all indices data:', indicesData);
         this.allIndicesData$.next(indicesData);
       } catch (error) {
         console.error('Error parsing indices data:', error);
@@ -240,8 +217,6 @@ export class StompNativeWebSocketService {
         );
       }
     }
-
-    console.log(`Subscribing to index data: ${indexName}`);
     
     // Create data subject if it doesn't exist
     if (!this.specificIndicesData.has(indexName)) {
@@ -251,7 +226,6 @@ export class StompNativeWebSocketService {
     const subscription = this.client.subscribe(destination, (message: IMessage) => {
       try {
         const indicesData: IndicesDto = JSON.parse(message.body);
-        console.log(`Received data for index ${indexName}:`, indicesData);
         this.specificIndicesData.get(indexName)?.next(indicesData);
       } catch (error) {
         console.error(`Error parsing data for index ${indexName}:`, error);
@@ -312,7 +286,6 @@ export class StompNativeWebSocketService {
     if (subscription) {
       subscription.unsubscribe();
       this.activeSubscriptions.delete(destination);
-      console.log(`Unsubscribed from: ${destination}`);
     }
   }
 
@@ -322,7 +295,6 @@ export class StompNativeWebSocketService {
   private clearSubscriptions(): void {
     this.activeSubscriptions.forEach((subscription, destination) => {
       subscription.unsubscribe();
-      console.log(`Cleared subscription: ${destination}`);
     });
     this.activeSubscriptions.clear();
   }

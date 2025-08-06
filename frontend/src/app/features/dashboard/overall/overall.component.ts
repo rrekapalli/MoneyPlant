@@ -106,7 +106,9 @@ import {
   StockListChartBuilder,
   StockListData,
   // Filter enum
-  FilterBy
+  FilterBy,
+  // Tile Builder for updating tiles
+  TileBuilder
 } from '@dashboards/public-api';
 
 // Import only essential widget creation functions and data
@@ -369,6 +371,15 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
     // Add the new data row
     this.dashboardData = [dashboardDataRow, ...this.dashboardData];
     
+    // Set initial selected index data for immediate display
+    this.currentSelectedIndexData = {
+      indexName: selectedIndex.name || selectedIndex.symbol,
+      indexSymbol: selectedIndex.symbol,
+      lastPrice: selectedIndex.lastPrice || 0,
+      variation: selectedIndex.variation || 0,
+      percentChange: selectedIndex.percentChange || 0
+    };
+    
     // Fetch stock ticks data for the selected index
     // Extract symbol from selectedIndex object
     const indexSymbol = selectedIndex.symbol;
@@ -392,10 +403,6 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
    * @param data - Dashboard data (not used, we use stockTicksData instead)
    */
   protected createMetricTiles(data: StockDataDto[]): IWidget[] {
-    console.log('Creating metric tiles with data:', {
-      stockData: this.filteredDashboardData || this.dashboardData,
-      selectedIndexData: this.currentSelectedIndexData
-    });
     return createMetricTilesFunction(this.filteredDashboardData || this.dashboardData, this.currentSelectedIndexData);
   }
 
@@ -403,19 +410,13 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
    * Override updateMetricTilesWithFilters to use filtered data
    */
   protected override updateMetricTilesWithFilters(filters: any[]): void {
-    console.log('Updating metric tiles with filters:', filters);
-    
     // Find all tile widgets
     const tileWidgets = this.dashboardConfig.widgets.filter(widget => 
       widget.config?.component === 'tile'
     );
 
-    console.log('Found tile widgets:', tileWidgets.length);
-
     // Create new metric tiles with filtered data - use filteredDashboardData
     const updatedMetricTiles = this.createMetricTiles(this.filteredDashboardData || this.dashboardData);
-
-    console.log('Updated metric tiles:', updatedMetricTiles.length);
 
     // Update each tile widget with new data
     tileWidgets.forEach((widget, index) => {
@@ -427,14 +428,30 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
         const shouldUpdate = tileOptions?.updateOnDataChange !== false;
         
         if (shouldUpdate) {
-          // Update the widget's options with new tile data
-          if (widget.config?.options) {
-            Object.assign(widget.config.options, updatedTile.config?.options);
-            console.log(`Updated tile ${index} with data:`, updatedTile.config?.options);
-          }
+          // Extract tile data properties from the updated tile
+          const tileOptions = updatedTile.config?.options as any;
+          const tileData = {
+            value: tileOptions?.value || '',
+            change: tileOptions?.change || '',
+            changeType: tileOptions?.changeType || 'neutral',
+            description: tileOptions?.description || '',
+            icon: tileOptions?.icon || '',
+            color: tileOptions?.color || '',
+            backgroundColor: tileOptions?.backgroundColor || '',
+            title: tileOptions?.title || '',
+            subtitle: tileOptions?.subtitle || ''
+          };
+          
+          // Use TileBuilder to properly update the tile data
+          TileBuilder.updateData(widget, tileData);
         }
       }
     });
+    
+    // Trigger change detection to ensure tiles are refreshed
+    setTimeout(() => {
+      this.cdr.detectChanges();
+    }, 50);
   }
 
   protected initializeDashboardConfig(): void {
@@ -1291,8 +1308,6 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
   private filterChartsByMacro(macro: string): void {
     if (!this.dashboardData || this.dashboardData.length === 0) return;
 
-    console.log(`🎯 filterChartsByMacro: Filtering by macro: ${macro}`);
-
     // Use centralized filter system
     this.addFilter({
       type: 'macro',
@@ -1563,13 +1578,13 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
                   // Update current selected index data
                   this.currentSelectedIndexData = indicesData.indices[0];
                   
-                  console.log('Updated currentSelectedIndexData:', this.currentSelectedIndexData);
-                  
                   // Update metric tiles with real-time data
                   this.updateMetricTilesWithFilters([]);
-                  this.cdr.detectChanges();
                   
-                  console.log('Received real-time index data for', webSocketIndexName, ':', this.currentSelectedIndexData);
+                  this.forceDashboardRefresh(); // Force refresh to update all widgets
+                  this.cdr.detectChanges();
+                } else {
+                  console.warn('WebSocket received data but no valid indices found:', indicesData);
                 }
               } catch (error) {
                 console.error('Error processing received index data:', error);
@@ -1577,23 +1592,39 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
             },
             error: (error) => {
               console.warn('WebSocket subscription error for', webSocketIndexName, ':', error.message || error);
-              this.currentSelectedIndexData = null;
+              // Don't clear currentSelectedIndexData on WebSocket errors to prevent tile from reverting
               this.cdr.detectChanges();
             },
             complete: () => {
-              console.log('WebSocket subscription completed for', webSocketIndexName);
+              // WebSocket subscription completed
             }
           });
           
-        console.log(`Subscribed to WebSocket updates for specific index: ${webSocketIndexName}`);
       } else {
-        console.log('WebSocket not connected - skipping real-time subscription');
+        // WebSocket not connected - skipping real-time subscription
       }
     } catch (error) {
       console.warn(`WebSocket subscription failed for ${webSocketIndexName} - continuing without real-time data:`, (error as Error).message || error);
-      this.currentSelectedIndexData = null;
+      // Don't clear currentSelectedIndexData on WebSocket connection failures to prevent tile from reverting
       this.cdr.detectChanges();
     }
+  }
+
+  /**
+   * Force refresh the dashboard to update all widgets
+   */
+  private forceDashboardRefresh(): void {
+    // Update metric tiles with current data
+    this.updateMetricTilesWithFilters([]);
+    
+    // Trigger change detection
+    this.cdr.detectChanges();
+    
+    // Force another change detection after a short delay
+    setTimeout(() => {
+      this.cdr.detectChanges();
+      this.cdr.markForCheck();
+    }, 100);
   }
 
 }

@@ -41,13 +41,15 @@ export class ModernIndicesWebSocketService {
    * Connect to WebSocket server
    */
   async connect(): Promise<void> {
+    if (this.isConnected) {
+      return;
+    }
+
     try {
-      console.log('Connecting to Modern Indices WebSocket using STOMP over SockJS...');
       await this.stompWebSocket.connect();
-      console.log('Modern Indices WebSocket connected successfully');
     } catch (error) {
-      console.warn('WebSocket connection failed - backend may not be available:', (error as Error).message || error);
-      // Don't throw error to allow app to continue functioning without WebSocket
+      console.error('WebSocket connection failed - backend may not be available:', error);
+      throw error;
     }
   }
 
@@ -56,7 +58,6 @@ export class ModernIndicesWebSocketService {
    * @returns Observable of all indices data
    */
   subscribeToAllIndices(): Observable<IndicesDto> {
-    console.log('Subscribing to all indices data via STOMP...');
     return this.stompWebSocket.subscribeToAllIndices();
   }
 
@@ -66,7 +67,6 @@ export class ModernIndicesWebSocketService {
    * @returns Observable of specific index data
    */
   subscribeToIndex(indexName: string): Observable<IndicesDto> {
-    console.log(`Subscribing to index via STOMP: ${indexName}`);
     return this.stompWebSocket.subscribeToIndex(indexName);
   }
 
@@ -74,7 +74,6 @@ export class ModernIndicesWebSocketService {
    * Unsubscribe from all indices data
    */
   unsubscribeFromAllIndices(): void {
-    console.log('Unsubscribing from all indices...');
     this.stompWebSocket.unsubscribeFromAllIndices();
   }
 
@@ -83,7 +82,6 @@ export class ModernIndicesWebSocketService {
    * @param indexName The name of the index to unsubscribe from
    */
   unsubscribeFromIndex(indexName: string): void {
-    console.log(`Unsubscribing from index: ${indexName}`);
     this.stompWebSocket.unsubscribeFromIndex(indexName);
   }
 
@@ -91,7 +89,6 @@ export class ModernIndicesWebSocketService {
    * Disconnect from WebSocket server
    */
   async disconnect(): Promise<void> {
-    console.log('Disconnecting from Modern Indices WebSocket...');
     this.stompWebSocket.disconnect();
   }
 

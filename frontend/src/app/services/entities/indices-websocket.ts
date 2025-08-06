@@ -33,6 +33,15 @@ export interface IndexDataDto {
   percentChange30d?: number;
   chart30dPath?: string;
   chartTodayPath?: string;
+  
+  // Actual WebSocket field names from backend
+  index?: string;
+  last?: number;
+  open?: number;
+  high?: number;
+  low?: number;
+  perChange?: number;
+  change?: number;
 }
 
 /**
