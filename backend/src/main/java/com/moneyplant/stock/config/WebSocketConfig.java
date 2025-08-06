@@ -7,8 +7,8 @@ import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
 /**
- * WebSocket configuration for real-time stock ticks data streaming.
- * Enables STOMP messaging protocol over WebSocket for broadcasting stock data.
+ * WebSocket configuration for real-time stock data streaming.
+ * Enables STOMP messaging protocol over WebSocket for broadcasting stock ticks and indices data.
  */
 @Configuration
 @EnableWebSocketMessageBroker
@@ -36,5 +36,17 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         registry.addEndpoint("/ws/stock-ticks")
                 .setAllowedOriginPatterns("*") // Allow all origins for development
                 .withSockJS(); // Enable SockJS fallback options
+        
+        // Register the "/ws/indices" endpoint for indices WebSocket connections
+        registry.addEndpoint("/ws/indices")
+                .setAllowedOriginPatterns("*") // Allow all origins for development
+                .withSockJS(); // Enable SockJS fallback options
+        
+        // Also register native WebSocket endpoints without SockJS
+        registry.addEndpoint("/ws/indices-native")
+                .setAllowedOriginPatterns("*"); // Native WebSocket support
+        
+        registry.addEndpoint("/ws/stock-ticks-native")
+                .setAllowedOriginPatterns("*"); // Native WebSocket support
     }
 }

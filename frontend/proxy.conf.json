@@ -26,5 +26,17 @@
     "target": "http://localhost:8080",
     "secure": false,
     "changeOrigin": true
+  },
+  "/ws": {
+    "target": "http://localhost:8080",
+    "secure": false,
+    "changeOrigin": true,
+    "ws": true,
+    "logLevel": "debug",
+    "timeout": 120000,
+    "headers": {
+      "Connection": "Upgrade",
+      "Upgrade": "websocket"
+    }
   }
 } 

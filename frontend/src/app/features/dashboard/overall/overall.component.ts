@@ -106,7 +106,9 @@ import {
   StockListChartBuilder,
   StockListData,
   // Filter enum
-  FilterBy
+  FilterBy,
+  // Tile Builder for updating tiles
+  TileBuilder
 } from '@dashboards/public-api';
 
 // Import only essential widget creation functions and data
@@ -130,6 +132,9 @@ import { ComponentCommunicationService, SelectedIndexData } from '../../../servi
 // Import stock ticks service and entities
 import { StockTicksService } from '../../../services/apis/stock-ticks.api';
 import {StockDataDto, StockTicksDto} from '../../../services/entities/stock-ticks';
+
+// Import modern Angular v20 WebSocket services and entities
+import { ModernIndicesWebSocketService, IndexDataDto, IndicesDto } from '../../../services/websockets';
 
 /**
  * Filter criteria interface for centralized filtering system
@@ -195,13 +200,21 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
   
   // Subscription management
   private selectedIndexSubscription: Subscription | null = null;
+  
+  // Chart update control to prevent rapid reinitialization
+  private chartUpdateTimer: any = null;
+  private indicesWebSocketSubscription: Subscription | null = null;
+  
+  // Current selected index data from WebSocket
+  private currentSelectedIndexData: IndexDataDto | null = null;
 
   constructor(
     cdr: ChangeDetectorRef,
     excelExportService: ExcelExportService,
     filterService: FilterService,
     private componentCommunicationService: ComponentCommunicationService,
-    private stockTicksService: StockTicksService
+    private stockTicksService: StockTicksService,
+    private modernIndicesWebSocketService: ModernIndicesWebSocketService
   ) {
     super(cdr, excelExportService, filterService);
   }
@@ -217,6 +230,9 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
     }).catch(() => {
       // Handle world map loading error silently
     });
+
+    // Initialize WebSocket connection
+    this.initializeWebSocket();
 
     // Clear any existing subscription
     if (this.selectedIndexSubscription) {
@@ -248,16 +264,32 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
   }
 
   protected onChildDestroy(): void {
+    // Clean up chart update timer
+    if (this.chartUpdateTimer) {
+      clearTimeout(this.chartUpdateTimer);
+      this.chartUpdateTimer = null;
+    }
+    
     // Unsubscribe from selected index subscription to prevent memory leaks
     if (this.selectedIndexSubscription) {
       this.selectedIndexSubscription.unsubscribe();
       this.selectedIndexSubscription = null;
     }
     
+    // Unsubscribe from WebSocket subscription
+    if (this.indicesWebSocketSubscription) {
+      this.indicesWebSocketSubscription.unsubscribe();
+      this.indicesWebSocketSubscription = null;
+    }
+    
+    // Disconnect modern WebSocket
+    this.modernIndicesWebSocketService.disconnect();
+    
     // Clear stock ticks data and reset filters
     this.dashboardData = [];
     this.filteredDashboardData = null;
     this.appliedFilters = [];
+    this.currentSelectedIndexData = null;
   }
 
   private loadDefaultNifty50Data(): void {
@@ -339,10 +371,27 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
     // Add the new data row
     this.dashboardData = [dashboardDataRow, ...this.dashboardData];
     
+    // Set initial selected index data for immediate display
+    this.currentSelectedIndexData = {
+      indexName: selectedIndex.name || selectedIndex.symbol,
+      indexSymbol: selectedIndex.symbol,
+      lastPrice: selectedIndex.lastPrice || 0,
+      variation: selectedIndex.variation || 0,
+      percentChange: selectedIndex.percentChange || 0
+    };
+    
     // Fetch stock ticks data for the selected index
     // Extract symbol from selectedIndex object
     const indexSymbol = selectedIndex.symbol;
     this.loadStockTicksData(indexSymbol);
+    
+    // Subscribe to WebSocket updates for the selected index
+    const indexName = selectedIndex.name || selectedIndex.symbol;
+    if (indexName) {
+      this.subscribeToIndexWebSocket(indexName).catch(error => {
+        console.error('Failed to subscribe to WebSocket:', error);
+      });
+    }
     
     // Trigger change detection and update widgets
     this.populateWidgetsWithInitialData();
@@ -350,11 +399,11 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
   }
 
   /**
-   * Create metric tiles using stock ticks data
+   * Create metric tiles using stock ticks data and indices data
    * @param data - Dashboard data (not used, we use stockTicksData instead)
    */
   protected createMetricTiles(data: StockDataDto[]): IWidget[] {
-    return createMetricTilesFunction(this.filteredDashboardData || this.dashboardData);
+    return createMetricTilesFunction(this.filteredDashboardData || this.dashboardData, this.currentSelectedIndexData);
   }
 
   /**
@@ -379,13 +428,30 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
         const shouldUpdate = tileOptions?.updateOnDataChange !== false;
         
         if (shouldUpdate) {
-          // Update the widget's options with new tile data
-          if (widget.config?.options) {
-            Object.assign(widget.config.options, updatedTile.config?.options);
-          }
+          // Extract tile data properties from the updated tile
+          const tileOptions = updatedTile.config?.options as any;
+          const tileData = {
+            value: tileOptions?.value || '',
+            change: tileOptions?.change || '',
+            changeType: tileOptions?.changeType || 'neutral',
+            description: tileOptions?.description || '',
+            icon: tileOptions?.icon || '',
+            color: tileOptions?.color || '',
+            backgroundColor: tileOptions?.backgroundColor || '',
+            title: tileOptions?.title || '',
+            subtitle: tileOptions?.subtitle || tileOptions?.customData?.subtitle || ''
+          };
+          
+          // Use TileBuilder to properly update the tile data
+          TileBuilder.updateData(widget, tileData);
         }
       }
     });
+    
+    // Trigger change detection to ensure tiles are refreshed
+    setTimeout(() => {
+      this.cdr.detectChanges();
+    }, 50);
   }
 
   protected initializeDashboardConfig(): void {
@@ -488,10 +554,10 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
     const filterWidget = createFilterWidget();
     const metricTiles = this.createMetricTiles([]);
 
-    // Position filter widget at row 1 (below metric tiles)
-    filterWidget.position = { x: 0, y: 1, cols: 12, rows: 1 };
+    // Position filter widget at row 2 (below metric tiles which occupy rows 0-1)
+    filterWidget.position = { x: 0, y: 2, cols: 12, rows: 1 };
 
-    // Position charts with proper spacing
+    // Position charts with proper spacing - start from row 4 to avoid filter collision  
     candlestickChart.position = { x: 0, y: 3, cols: 8, rows: 8 };
     stockListWidget.position = { x: 8, y: 3, cols: 4, rows: 16 };
 
@@ -1177,19 +1243,23 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
       return;
     }
     
-    this.updateBarChartWithFilteredData();
-    this.updatePieChartWithFilteredData();
-    this.updateCandlestickChartWithFilteredData();
-    this.updateStockListWithFilteredData();
+    // Debounce chart updates to prevent rapid reinitialization
+    if (this.chartUpdateTimer) {
+      clearTimeout(this.chartUpdateTimer);
+    }
     
-    // Update metric tiles with filtered data
-    this.updateMetricTilesWithFilters([]);
-    
-    this.cdr.detectChanges();
-    setTimeout(() => {
-      this.cdr.markForCheck();
+    this.chartUpdateTimer = setTimeout(() => {
+      this.updateBarChartWithFilteredData();
+      this.updatePieChartWithFilteredData();
+      this.updateCandlestickChartWithFilteredData();
+      this.updateStockListWithFilteredData();
+      
+      // Update metric tiles with filtered data
+      this.updateMetricTilesWithFilters([]);
+      
       this.cdr.detectChanges();
-    }, 100);
+      this.chartUpdateTimer = null;
+    }, 150); // Increased delay and debounce to reduce chart reinitialization
   }
 
   private filterChartsByIndustry(industry: string): void {
@@ -1237,8 +1307,6 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
    */
   private filterChartsByMacro(macro: string): void {
     if (!this.dashboardData || this.dashboardData.length === 0) return;
-
-    console.log(`🎯 filterChartsByMacro: Filtering by macro: ${macro}`);
 
     // Use centralized filter system
     this.addFilter({
@@ -1455,18 +1523,145 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
       }
     });
     
+    // Batch the change detection and refresh operations
+    setTimeout(() => {
+      this.cdr.detectChanges();
+      
+      stockListWidgets.forEach(widget => {
+        if (widget.data && typeof (widget.data as any).refresh === 'function') {
+          (widget.data as any).refresh();
+        }
+      });
+      
+      this.cdr.markForCheck();
+    }, 50);
+  }
+
+  /**
+   * Initialize WebSocket connection for indices data
+   */
+  private async initializeWebSocket(): Promise<void> {
+    try {
+      await this.modernIndicesWebSocketService.connect();
+    } catch (error) {
+      console.warn('WebSocket initialization failed - continuing without real-time data:', (error as Error).message || error);
+    }
+  }
+
+  /**
+   * Subscribe to WebSocket updates for the selected index
+   * @param indexName - The name of the index to subscribe to
+   */
+  private async subscribeToIndexWebSocket(indexName: string): Promise<void> {
+    // Unsubscribe from previous subscription if any
+    if (this.indicesWebSocketSubscription) {
+      this.indicesWebSocketSubscription.unsubscribe();
+      this.indicesWebSocketSubscription = null;
+    }
+
+    // Convert index name to WebSocket format (e.g., "NIFTY METAL" -> "NIFTY-METAL")
+    const webSocketIndexName = indexName.replace(/\s+/g, '-').toUpperCase();
+
+    try {
+      // Use the modern Angular v20 WebSocket service
+      await this.modernIndicesWebSocketService.connect();
+      
+      // Only subscribe if WebSocket is actually connected
+      if (this.modernIndicesWebSocketService.isConnected) {
+        // Subscribe to specific index data using modern service
+        this.indicesWebSocketSubscription = this.modernIndicesWebSocketService
+          .subscribeToIndex(webSocketIndexName)
+          .subscribe({
+            next: (indicesData: IndicesDto) => {
+              try {
+                if (indicesData && indicesData.indices && indicesData.indices.length > 0) {
+                  // Update current selected index data
+                  this.currentSelectedIndexData = indicesData.indices[0];
+                  
+                  // Force complete recreation of metric tiles with new data
+                  this.recreateMetricTiles();
+                  
+                  this.forceDashboardRefresh(); // Force refresh to update all widgets
+                  this.cdr.detectChanges();
+                } else {
+                  console.warn('WebSocket received data but no valid indices found:', indicesData);
+                }
+              } catch (error) {
+                console.error('Error processing received index data:', error);
+              }
+            },
+            error: (error) => {
+              console.warn('WebSocket subscription error for', webSocketIndexName, ':', error.message || error);
+              // Don't clear currentSelectedIndexData on WebSocket errors to prevent tile from reverting
+              this.cdr.detectChanges();
+            },
+            complete: () => {
+              // WebSocket subscription completed
+            }
+          });
+          
+      } else {
+        // WebSocket not connected - skipping real-time subscription
+      }
+    } catch (error) {
+      console.warn(`WebSocket subscription failed for ${webSocketIndexName} - continuing without real-time data:`, (error as Error).message || error);
+      // Don't clear currentSelectedIndexData on WebSocket connection failures to prevent tile from reverting
+      this.cdr.detectChanges();
+    }
+  }
+
+  /**
+   * Force refresh the dashboard to update all widgets
+   */
+  private forceDashboardRefresh(): void {
+    // Update metric tiles with current data
+    this.updateMetricTilesWithFilters([]);
+    
+    // Trigger change detection
     this.cdr.detectChanges();
     
-    stockListWidgets.forEach(widget => {
-      if (widget.data && typeof (widget.data as any).refresh === 'function') {
-        (widget.data as any).refresh();
+    // Force another change detection after a short delay
+    setTimeout(() => {
+      this.cdr.detectChanges();
+      this.cdr.markForCheck();
+    }, 100);
+  }
+
+  private recreateMetricTiles(): void {
+    const currentMetricTiles = this.dashboardConfig.widgets.filter(widget => 
+      widget.config?.component === 'tile'
+    );
+
+    const newMetricTiles = this.createMetricTiles(this.filteredDashboardData || this.dashboardData);
+
+    currentMetricTiles.forEach((widget, index) => {
+      if (index < newMetricTiles.length) {
+        const updatedTile = newMetricTiles[index];
+        
+        // Check if this tile should update on data change
+        const tileOptions = widget.config?.options as any;
+        const shouldUpdate = tileOptions?.updateOnDataChange !== false;
+        
+        if (shouldUpdate) {
+          // Extract tile data properties from the updated tile
+          const tileOptions = updatedTile.config?.options as any;
+          const tileData = {
+            value: tileOptions?.value || '',
+            change: tileOptions?.change || '',
+            changeType: tileOptions?.changeType || 'neutral',
+            description: tileOptions?.description || '',
+            icon: tileOptions?.icon || '',
+            color: tileOptions?.color || '',
+            backgroundColor: tileOptions?.backgroundColor || '',
+            title: tileOptions?.title || '',
+            subtitle: tileOptions?.subtitle || tileOptions?.customData?.subtitle || ''
+          };
+          
+          // Use TileBuilder to properly update the tile data
+          TileBuilder.updateData(widget, tileData);
+        }
       }
     });
-    
-    setTimeout(() => {
-      this.cdr.markForCheck();
-      this.cdr.detectChanges();
-    }, 10);
   }
 
 }

@@ -1,14 +1,15 @@
 import { TileBuilder } from '@dashboards/public-api';
 import { DashboardDataRow } from './dashboard-data';
 import {StockDataDto, StockTicksDto} from '../../../../services/entities/stock-ticks';
+import { IndexDataDto } from '../../../../services/entities/indices-websocket';
 
 /**
- * Create metric tiles that display key statistics from stock ticks data
+ * Create metric tiles that display key statistics from stock ticks data and indices data
  */
-export function createMetricTiles(stockTicksData: StockDataDto[] | null) {
+export function createMetricTiles(stockTicksData: StockDataDto[] | null, selectedIndexData?: IndexDataDto | null) {
   // Handle null or undefined stockTicksData
   if (!stockTicksData) {
-    return createEmptyMetricTiles();
+    return createEmptyMetricTiles(selectedIndexData);
   }
 
   // Calculate metrics from stockTicksData
@@ -34,21 +35,70 @@ export function createMetricTiles(stockTicksData: StockDataDto[] | null) {
   const safeTotalTradedVolume = isNaN(totalTradedVolume) || !isFinite(totalTradedVolume) ? 0 : totalTradedVolume;
 
   // Create tiles
-  const tiles = [
-    // Stocks - Total number of stocks
-    TileBuilder.createInfoTile(
-      'Stocks',
-      stocksCount.toString(),
-      'Total Stocks',
-      'fas fa-chart-line',
-      '#1e40af'
-    )
-      .setBackgroundColor('#bfdbfe')
-      .setBorder('#7dd3fc', 1, 8)
-      .setUpdateOnDataChange(true)
-      .setPosition({ x: 0, y: 0, cols: 2, rows: 2 })
-      .build(),
+  const tiles = [];
 
+  // Check if selectedIndexData exists and has valid data
+  // Handle both expected field names (indexName, lastPrice) and actual WebSocket field names (index, last)
+  const hasValidIndexData = selectedIndexData && 
+    (selectedIndexData.indexName || selectedIndexData.index) && 
+    (selectedIndexData.lastPrice !== undefined || selectedIndexData.last !== undefined) && 
+    (selectedIndexData.lastPrice !== null || selectedIndexData.last !== null);
+
+  if (hasValidIndexData) {
+    // Extract data using actual WebSocket field names
+    const indexName = selectedIndexData.indexName || selectedIndexData.index || 'Index';
+    const lastPrice = selectedIndexData.lastPrice || selectedIndexData.last || 0;
+    const percentChange = selectedIndexData.percentChange || 0;
+    const variation = selectedIndexData.variation || 0;
+    const dayHigh = selectedIndexData.dayHigh || selectedIndexData.high || 0;
+    const dayLow = selectedIndexData.dayLow || selectedIndexData.low || 0;
+    
+    // Index Price Tile - Show current price, change, and day high/low
+    const changeColor = (variation || 0) >= 0 ? '#16a34a' : '#dc2626';
+    const changeBgColor = (variation || 0) >= 0 ? '#bbf7d0' : '#fecaca';
+    const changeBorderColor = (variation || 0) >= 0 ? '#4ade80' : '#f87171';
+    const changeIcon = (variation || 0) >= 0 ? 'fas fa-arrow-up' : 'fas fa-arrow-down';
+    
+    // Create subtitle with day high and low
+    const subtitle = `H: ₹${dayHigh.toLocaleString()} | L: ₹${dayLow.toLocaleString()}`;
+    
+    tiles.push(
+      TileBuilder.createFinancialTile(
+        lastPrice,
+        percentChange,
+        '', // Empty description - we'll set it separately
+        '₹',
+        changeIcon
+      )
+        .setColor(changeColor)
+        .setBackgroundColor(changeBgColor)
+        .setBorder(changeBorderColor, 1, 8)
+        .setDescription(indexName) // Set the index name as description
+        .setData({ subtitle: subtitle }) // Set day high/low as subtitle directly in data
+        .setUpdateOnDataChange(true)
+        .setPosition({ x: 0, y: 0, cols: 2, rows: 2 })
+        .build()
+    );
+  } else {
+    // Default Stocks tile when no index is selected
+    tiles.push(
+      TileBuilder.createInfoTile(
+        'Stocks',
+        stocksCount.toString(),
+        'Total Stocks',
+        'fas fa-chart-line',
+        '#1e40af'
+      )
+        .setBackgroundColor('#bfdbfe')
+        .setBorder('#7dd3fc', 1, 8)
+        .setUpdateOnDataChange(true)
+        .setPosition({ x: 0, y: 0, cols: 2, rows: 2 })
+        .build()
+    );
+  }
+
+  // Add remaining tiles
+  tiles.push(
     // Declines - Number of declining stocks
     TileBuilder.createInfoTile(
       'Declines',
@@ -119,7 +169,7 @@ export function createMetricTiles(stockTicksData: StockDataDto[] | null) {
       .setUpdateOnDataChange(true)
       .setPosition({ x: 10, y: 0, cols: 2, rows: 2 })
       .build()
-  ];
+  );
 
   return tiles;
 }
@@ -127,7 +177,7 @@ export function createMetricTiles(stockTicksData: StockDataDto[] | null) {
 /**
  * Create empty metric tiles when stockTicksData is null or unavailable
  */
-function createEmptyMetricTiles() {
+function createEmptyMetricTiles(selectedIndexData?: IndexDataDto | null) {
   const tiles = [
     // Stocks - Empty state
     TileBuilder.createInfoTile(
