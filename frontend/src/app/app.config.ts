@@ -4,10 +4,10 @@ import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { routes } from './app.routes';
 import { providePrimeNG } from 'primeng/config';
-import Aura from '@primeng/themes/aura';
 import { GlobalErrorHandler } from './core/error-handler';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { authInterceptor } from './services/security/auth.interceptor';
+import Aura from '@primeng/themes/aura';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -21,12 +21,12 @@ export const appConfig: ApplicationConfig = {
     provideAnimations(),
     providePrimeNG({
       theme: {
-          preset: Aura
+        preset: Aura
       }
     }),
     { 
       provide: ErrorHandler, 
-      useClass: GlobalErrorHandler 
+      useClass: GlobalErrorHandler
     }
   ]
 };
