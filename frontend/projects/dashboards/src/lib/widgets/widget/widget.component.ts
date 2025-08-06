@@ -5,6 +5,7 @@ import {EchartComponent} from '../echarts/echart.component';
 import {FilterComponent} from '../filter/filter.component';
 import {TableComponent} from '../table/table.component';
 import {TileComponent} from '../tile/tile.component';
+import {StockTileComponent} from '../stock-tile/stock-tile.component';
 import {MarkdownCellComponent} from '../markdown-cell/markdown-cell.component';
 import {CodeCellComponent} from '../code-cell/code-cell.component';
 import {StockListTableComponent} from '@dashboards/echart-chart-builders/stock-list/stock-list-table.component';
@@ -26,6 +27,8 @@ const onGetWidget = (widget: IWidget) => {
       return TableComponent;
     case 'tile':
       return TileComponent;
+    case 'stock-tile':
+      return StockTileComponent;
     case 'markdownCell':
       return MarkdownCellComponent;
     case 'codeCell':
@@ -46,7 +49,7 @@ const onGetWidget = (widget: IWidget) => {
   selector: 'vis-widget',
   standalone: true,
   templateUrl:'./widget.component.html',
-  imports: [NgComponentOutlet],
+  imports: [NgComponentOutlet, TileComponent, StockTileComponent],
   providers: [
     provideEchartsCore({
       echarts: () => import('echarts'),

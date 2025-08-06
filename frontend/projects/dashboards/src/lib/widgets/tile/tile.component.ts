@@ -36,6 +36,7 @@ import {ITileOptions} from '../../entities/ITileOptions';
       height: 100%;
       display: flex;
       align-items: center;
+      min-height: 120px;
     }
     .tile-content {
       display: flex;

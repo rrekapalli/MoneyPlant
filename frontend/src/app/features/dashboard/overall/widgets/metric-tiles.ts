@@ -1,4 +1,4 @@
-import { TileBuilder } from '@dashboards/public-api';
+import { TileBuilder, StockTileBuilder } from '@dashboards/public-api';
 import { DashboardDataRow } from './dashboard-data';
 import {StockDataDto, StockTicksDto} from '../../../../services/entities/stock-ticks';
 import { IndexDataDto } from '../../../../services/entities/indices-websocket';
@@ -53,45 +53,30 @@ export function createMetricTiles(stockTicksData: StockDataDto[] | null, selecte
     const dayHigh = selectedIndexData.dayHigh || selectedIndexData.high || 0;
     const dayLow = selectedIndexData.dayLow || selectedIndexData.low || 0;
     
-    // Index Price Tile - Show current price, change, and day high/low
-    const changeColor = (variation || 0) >= 0 ? '#16a34a' : '#dc2626';
-    const changeBgColor = (variation || 0) >= 0 ? '#bbf7d0' : '#fecaca';
-    const changeBorderColor = (variation || 0) >= 0 ? '#4ade80' : '#f87171';
-    const changeIcon = (variation || 0) >= 0 ? 'fas fa-arrow-up' : 'fas fa-arrow-down';
-    
-    // Create subtitle with day high and low
-    const subtitle = `H: ₹${dayHigh.toLocaleString()} | L: ₹${dayLow.toLocaleString()}`;
-    
+    // Index Price Tile - Show current price, change, and day high/low using stock tile
     tiles.push(
-      TileBuilder.createFinancialTile(
+      StockTileBuilder.createStockTile(
         lastPrice,
         percentChange,
-        '', // Empty description - we'll set it separately
-        '₹',
-        changeIcon
+        indexName,
+        dayHigh,
+        dayLow,
+        '₹'
       )
-        .setColor(changeColor)
-        .setBackgroundColor(changeBgColor)
-        .setBorder(changeBorderColor, 1, 8)
-        .setDescription(indexName) // Set the index name as description
-        .setData({ subtitle: subtitle }) // Set day high/low as subtitle directly in data
-        .setUpdateOnDataChange(true)
         .setPosition({ x: 0, y: 0, cols: 2, rows: 2 })
         .build()
     );
   } else {
-    // Default Stocks tile when no index is selected
+    // Default Stocks tile when no index is selected - use stock tile format
     tiles.push(
-      TileBuilder.createInfoTile(
-        'Stocks',
-        stocksCount.toString(),
-        'Total Stocks',
-        'fas fa-chart-line',
-        '#1e40af'
+      StockTileBuilder.createStockTile(
+        0, // current price
+        0, // percent change
+        'Market Overview', // description
+        0, // high value
+        0, // low value
+        '₹' // currency
       )
-        .setBackgroundColor('#bfdbfe')
-        .setBorder('#7dd3fc', 1, 8)
-        .setUpdateOnDataChange(true)
         .setPosition({ x: 0, y: 0, cols: 2, rows: 2 })
         .build()
     );
@@ -179,17 +164,15 @@ export function createMetricTiles(stockTicksData: StockDataDto[] | null, selecte
  */
 function createEmptyMetricTiles(selectedIndexData?: IndexDataDto | null) {
   const tiles = [
-    // Stocks - Empty state
-    TileBuilder.createInfoTile(
-      'Stocks',
-      '0',
-      'Total Stocks',
-      'fas fa-chart-line',
-      '#6b7280'
+    // Stocks - Empty state - use stock tile format
+    StockTileBuilder.createStockTile(
+      0, // current price
+      0, // percent change
+      'Market Overview', // description
+      0, // high value
+      0, // low value
+      '₹' // currency
     )
-      .setBackgroundColor('#f3f4f6')
-      .setBorder('#d1d5db', 1, 8)
-      .setUpdateOnDataChange(true)
       .setPosition({ x: 0, y: 0, cols: 2, rows: 2 })
       .build(),
 

@@ -108,7 +108,8 @@ import {
   // Filter enum
   FilterBy,
   // Tile Builder for updating tiles
-  TileBuilder
+  TileBuilder,
+  StockTileBuilder
 } from '@dashboards/public-api';
 
 // Import only essential widget creation functions and data
@@ -410,9 +411,9 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
    * Override updateMetricTilesWithFilters to use filtered data
    */
   protected override updateMetricTilesWithFilters(filters: any[]): void {
-    // Find all tile widgets
+    // Find all tile widgets (both regular tiles and stock tiles)
     const tileWidgets = this.dashboardConfig.widgets.filter(widget => 
-      widget.config?.component === 'tile'
+      widget.config?.component === 'tile' || widget.config?.component === 'stock-tile'
     );
 
     // Create new metric tiles with filtered data - use filteredDashboardData
@@ -430,20 +431,41 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
         if (shouldUpdate) {
           // Extract tile data properties from the updated tile
           const tileOptions = updatedTile.config?.options as any;
-          const tileData = {
-            value: tileOptions?.value || '',
-            change: tileOptions?.change || '',
-            changeType: tileOptions?.changeType || 'neutral',
-            description: tileOptions?.description || '',
-            icon: tileOptions?.icon || '',
-            color: tileOptions?.color || '',
-            backgroundColor: tileOptions?.backgroundColor || '',
-            title: tileOptions?.title || '',
-            subtitle: tileOptions?.subtitle || tileOptions?.customData?.subtitle || ''
-          };
           
-          // Use TileBuilder to properly update the tile data
-          TileBuilder.updateData(widget, tileData);
+          if (widget.config?.component === 'stock-tile') {
+            // Handle stock tile updates
+            const stockTileData = {
+              value: tileOptions?.value || '',
+              change: tileOptions?.change || '',
+              changeType: tileOptions?.changeType || 'neutral',
+              description: tileOptions?.description || '',
+              icon: tileOptions?.icon || '',
+              color: tileOptions?.color || '',
+              backgroundColor: tileOptions?.backgroundColor || '',
+              highValue: tileOptions?.highValue || '',
+              lowValue: tileOptions?.lowValue || '',
+              currency: tileOptions?.currency || '₹'
+            };
+            
+            // Use StockTileBuilder to properly update the stock tile data
+            StockTileBuilder.updateData(widget, stockTileData);
+          } else {
+            // Handle regular tile updates
+            const tileData = {
+              value: tileOptions?.value || '',
+              change: tileOptions?.change || '',
+              changeType: tileOptions?.changeType || 'neutral',
+              description: tileOptions?.description || '',
+              icon: tileOptions?.icon || '',
+              color: tileOptions?.color || '',
+              backgroundColor: tileOptions?.backgroundColor || '',
+              title: tileOptions?.title || '',
+              subtitle: tileOptions?.subtitle || tileOptions?.customData?.subtitle || ''
+            };
+            
+            // Use TileBuilder to properly update the tile data
+            TileBuilder.updateData(widget, tileData);
+          }
         }
       }
     });
@@ -1629,7 +1651,7 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
 
   private recreateMetricTiles(): void {
     const currentMetricTiles = this.dashboardConfig.widgets.filter(widget => 
-      widget.config?.component === 'tile'
+      widget.config?.component === 'tile' || widget.config?.component === 'stock-tile'
     );
 
     const newMetricTiles = this.createMetricTiles(this.filteredDashboardData || this.dashboardData);
@@ -1645,20 +1667,41 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
         if (shouldUpdate) {
           // Extract tile data properties from the updated tile
           const tileOptions = updatedTile.config?.options as any;
-          const tileData = {
-            value: tileOptions?.value || '',
-            change: tileOptions?.change || '',
-            changeType: tileOptions?.changeType || 'neutral',
-            description: tileOptions?.description || '',
-            icon: tileOptions?.icon || '',
-            color: tileOptions?.color || '',
-            backgroundColor: tileOptions?.backgroundColor || '',
-            title: tileOptions?.title || '',
-            subtitle: tileOptions?.subtitle || tileOptions?.customData?.subtitle || ''
-          };
           
-          // Use TileBuilder to properly update the tile data
-          TileBuilder.updateData(widget, tileData);
+          if (widget.config?.component === 'stock-tile') {
+            // Handle stock tile updates
+            const stockTileData = {
+              value: tileOptions?.value || '',
+              change: tileOptions?.change || '',
+              changeType: tileOptions?.changeType || 'neutral',
+              description: tileOptions?.description || '',
+              icon: tileOptions?.icon || '',
+              color: tileOptions?.color || '',
+              backgroundColor: tileOptions?.backgroundColor || '',
+              highValue: tileOptions?.highValue || '',
+              lowValue: tileOptions?.lowValue || '',
+              currency: tileOptions?.currency || '₹'
+            };
+            
+            // Use StockTileBuilder to properly update the stock tile data
+            StockTileBuilder.updateData(widget, stockTileData);
+          } else {
+            // Handle regular tile updates
+            const tileData = {
+              value: tileOptions?.value || '',
+              change: tileOptions?.change || '',
+              changeType: tileOptions?.changeType || 'neutral',
+              description: tileOptions?.description || '',
+              icon: tileOptions?.icon || '',
+              color: tileOptions?.color || '',
+              backgroundColor: tileOptions?.backgroundColor || '',
+              title: tileOptions?.title || '',
+              subtitle: tileOptions?.subtitle || tileOptions?.customData?.subtitle || ''
+            };
+            
+            // Use TileBuilder to properly update the tile data
+            TileBuilder.updateData(widget, tileData);
+          }
         }
       }
     });
