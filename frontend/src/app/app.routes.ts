@@ -179,13 +179,13 @@ export const routes: Routes = [
           .then(m => m.MarketComponent),
         title: 'Market Details - MoneyPlant',
         canActivate: [featureFlagGuard('market')]
-      },
-      {
-        path: '**',
-        loadComponent: () => import('./features/not-found/not-found.component')
-          .then(m => m.NotFoundComponent),
-        title: 'Page Not Found - MoneyPlant'
       }
     ]
+  },
+  {
+    path: '**',
+    loadComponent: () => import('./features/not-found/not-found.component')
+      .then(m => m.NotFoundComponent),
+    title: 'Page Not Found - MoneyPlant'
   }
 ];

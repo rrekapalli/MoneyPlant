@@ -2,12 +2,11 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { MatCardModule } from '@angular/material/card';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { InputTextModule } from 'primeng/inputtext';
+import { ButtonModule } from 'primeng/button';
+import { CardModule } from 'primeng/card';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { MessageModule } from 'primeng/message';
 import { AuthService } from '../../services/security/auth.service';
 
 @Component({
@@ -16,12 +15,11 @@ import { AuthService } from '../../services/security/auth.service';
   imports: [
     CommonModule,
     ReactiveFormsModule,
-    MatCardModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatButtonModule,
-    MatIconModule,
-    MatProgressSpinnerModule
+    InputTextModule,
+    ButtonModule,
+    CardModule,
+    ProgressSpinnerModule,
+    MessageModule
   ],
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss']
@@ -75,7 +73,13 @@ export class LoginComponent implements OnInit {
     }
   }
 
-  // Google authentication removed - focusing on Microsoft only
+  signInWithGoogle(): void {
+    this.isLoading = true;
+    this.errorMessage = '';
+    
+    // Redirect to backend OAuth2 endpoint
+    window.location.href = 'http://localhost:8080/oauth2/authorization/google';
+  }
 
   signInWithMicrosoft(): void {
     this.isLoading = true;
