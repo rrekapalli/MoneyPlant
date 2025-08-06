@@ -52,6 +52,7 @@
       transition: all 0.2s ease;
       background-color: #f9fafb;
       color: #1a1a1a;
+      box-sizing: border-box;
 
       &:hover {
         border-color: #9ca3af;
@@ -70,7 +71,7 @@
       }
     }
 
-    .p-error {
+    .error-text {
       color: #dc2626;
       font-size: 12px;
       margin-top: 4px;
@@ -80,55 +81,60 @@
 
   .error-message {
     margin-bottom: 16px;
-
-    ::ng-deep .p-message {
-      border-radius: 6px;
-      border: 1px solid #fecaca;
-      background-color: #fef2f2;
-      color: #dc2626;
-      padding: 8px 12px;
-      font-size: 14px;
-      text-align: center;
-    }
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid #fecaca;
+    background-color: #fef2f2;
+    color: #dc2626;
+    font-size: 14px;
+    text-align: center;
   }
 
   .signin-button {
     width: 100%;
+    height: 44px;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: 500;
+    text-transform: none;
+    background-color: #374151;
+    border: 1px solid #374151;
+    color: white;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
 
-    ::ng-deep .p-button {
-      width: 100%;
-      height: 44px;
-      border-radius: 6px;
-      font-size: 16px;
-      font-weight: 500;
-      text-transform: none;
-      background-color: #374151;
-      border: 1px solid #374151;
-      color: white;
-      transition: all 0.2s ease;
+    &:hover:not(:disabled) {
+      background-color: #1f2937;
+      border-color: #1f2937;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
 
-      &:hover:not(:disabled) {
-        background-color: #1f2937;
-        border-color: #1f2937;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-      }
+    &:active:not(:disabled) {
+      transform: translateY(0);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
 
-      &:active:not(:disabled) {
-        transform: translateY(0);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-      }
+    &:disabled {
+      background-color: #d1d5db;
+      border-color: #d1d5db;
+      color: #9ca3af;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
 
-      &:disabled {
-        background-color: #d1d5db;
-        border-color: #d1d5db;
-        color: #9ca3af;
-        cursor: not-allowed;
-      }
-
-      .p-button-loading-icon {
-        margin-right: 8px;
-      }
+    .loading-spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid transparent;
+      border-top: 2px solid currentColor;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
     }
   }
 }
@@ -170,13 +176,42 @@
   gap: 12px;
   width: 320px;
 
-  ::ng-deep .p-button {
-    width: 320px !important;
+  .oauth-button {
+    width: 320px;
     height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 12px;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: 500;
+    text-transform: none;
+    border: 1px solid #d1d5db;
+    background-color: transparent;
+    color: #374151;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+    &:hover:not(:disabled) {
+      border-color: #9ca3af;
+      background-color: #f9fafb;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    &:active:not(:disabled) {
+      transform: translateY(0);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
 
     .oauth-icon {
       width: 20px;
@@ -186,6 +221,20 @@
 
     span {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+  }
+
+  .google-button {
+    &:hover:not(:disabled) {
+      border-color: #ea4335;
+      background-color: #fef2f2;
+    }
+  }
+
+  .microsoft-button {
+    &:hover:not(:disabled) {
+      border-color: #0078d4;
+      background-color: #f0f8ff;
     }
   }
 }
@@ -221,6 +270,12 @@
   }
 }
 
+// Loading animation
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 // Responsive Design
 @media (max-width: 480px) {
   .login-container {
@@ -245,10 +300,8 @@
     max-width: 100%;
 
     .signin-button {
-      ::ng-deep .p-button {
-        height: 44px;
-        font-size: 16px;
-      }
+      height: 44px;
+      font-size: 16px;
     }
   }
 
@@ -256,8 +309,8 @@
     width: 100%;
     max-width: 320px;
 
-    ::ng-deep .p-button {
-      width: 100% !important;
+    .oauth-button {
+      width: 100%;
       height: 44px;
       gap: 10px;
 
@@ -311,14 +364,12 @@
     }
 
     .signin-button {
-      ::ng-deep .p-button {
-        background-color: #3b82f6;
-        border-color: #3b82f6;
+      background-color: #3b82f6;
+      border-color: #3b82f6;
 
-        &:hover:not(:disabled) {
-          background-color: #2563eb;
-          border-color: #2563eb;
-        }
+      &:hover:not(:disabled) {
+        background-color: #2563eb;
+        border-color: #2563eb;
       }
     }
   }
@@ -343,10 +394,17 @@
   }
 
   .error-message {
-    ::ng-deep .p-message {
-      background-color: #1f1f1f;
-      border-color: #5d2f2f;
-      color: #fca5a5;
+    background-color: #1f1f1f;
+    border-color: #5d2f2f;
+    color: #fca5a5;
+  }
+
+  .oauth-button {
+    border-color: #374151;
+    color: #ffffff;
+
+    &:hover:not(:disabled) {
+      background-color: #374151;
     }
   }
 }
@@ -354,18 +412,19 @@
 // Accessibility improvements
 @media (prefers-reduced-motion: reduce) {
   .signin-button,
-  .oauth-button,
-  .oauth-icon {
+  .oauth-button {
     transition: none;
+  }
+
+  .loading-spinner {
+    animation: none;
   }
 }
 
 // High contrast mode
 @media (prefers-contrast: high) {
   .oauth-button {
-    ::ng-deep .p-button {
-      border-width: 2px;
-    }
+    border-width: 2px;
   }
 
   .separator::before {

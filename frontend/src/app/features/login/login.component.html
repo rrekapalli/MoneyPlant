@@ -10,32 +10,33 @@
     <!-- Email Input -->
     <div class="email-field">
       <input 
-        pInputText 
         id="email"
         type="email" 
         formControlName="email" 
         placeholder="Enter your email..."
         autocomplete="email"
         class="email-input">
-      <small *ngIf="loginForm.get('email')?.hasError('required') && loginForm.get('email')?.touched" class="p-error">
+      <small *ngIf="loginForm.get('email')?.hasError('required') && loginForm.get('email')?.touched" class="error-text">
         Email is required.
       </small>
-      <small *ngIf="loginForm.get('email')?.hasError('email') && loginForm.get('email')?.touched" class="p-error">
+      <small *ngIf="loginForm.get('email')?.hasError('email') && loginForm.get('email')?.touched" class="error-text">
         Please enter a valid email address.
       </small>
     </div>
 
     <!-- Error Message -->
-    <p-message *ngIf="errorMessage" severity="error" [text]="errorMessage" class="error-message"></p-message>
+    <div *ngIf="errorMessage" class="error-message">
+      {{ errorMessage }}
+    </div>
 
     <!-- Sign In Button -->
-    <p-button 
+    <button 
       type="submit" 
-      label="Sign in"
-      [loading]="isLoading"
-      [disabled]="!loginForm.valid"
+      [disabled]="!loginForm.valid || isLoading"
       class="signin-button">
-    </p-button>
+      <span *ngIf="isLoading" class="loading-spinner"></span>
+      <span>{{ isLoading ? 'Signing in...' : 'Sign in' }}</span>
+    </button>
   </form>
 
   <!-- Separator -->
@@ -46,25 +47,23 @@
   <!-- OAuth Buttons -->
   <div class="oauth-buttons">
     <!-- Google Sign In -->
-    <p-button 
-      styleClass="p-button-outlined"
+    <button 
+      type="button"
       [disabled]="true"
-      (onClick)="signInWithGoogle()">
-      <ng-template pTemplate="content">
-        <img src="assets/images/google-logo.svg" alt="Google" class="oauth-icon">
-        <span>Sign in with Google</span>
-      </ng-template>
-    </p-button>
+      (click)="signInWithGoogle()"
+      class="oauth-button google-button">
+      <img src="assets/images/google-logo.svg" alt="Google" class="oauth-icon">
+      <span>Sign in with Google</span>
+    </button>
 
     <!-- Microsoft Sign In -->
-    <p-button 
-      styleClass="p-button-outlined"
-      (onClick)="signInWithMicrosoft()">
-      <ng-template pTemplate="content">
-        <img src="assets/images/microsoft-logo.svg" alt="Microsoft" class="oauth-icon">
-        <span>Sign in with Microsoft</span>
-      </ng-template>
-    </p-button>
+    <button 
+      type="button"
+      (click)="signInWithMicrosoft()"
+      class="oauth-button microsoft-button">
+      <img src="assets/images/microsoft-logo.svg" alt="Microsoft" class="oauth-icon">
+      <span>Sign in with Microsoft</span>
+    </button>
   </div>
 
   <!-- Footer -->
