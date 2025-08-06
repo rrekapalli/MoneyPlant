@@ -46,4 +46,5 @@ export * from './lib/widgets/echarts/echart.component';
 export * from './lib/widgets/filter/filter.component';
 export * from './lib/widgets/table/table.component';
 export * from './lib/widgets/tile';
+export * from './lib/widgets/stock-tile';
 export * from './lib/widgets/markdown-cell/markdown-cell.component';
