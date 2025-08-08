@@ -16,9 +16,9 @@
         <relativePath/> <!-- lookup parent from a repository -->
     </parent>
 
-    <!-- All modules have been consolidated into moneyplant-app using Spring Boot Modulith -->
+    <!-- Backend module -->
     <modules>
-        <module>moneyplant-app</module>
+        <module>backend</module>
     </modules>
 
     <properties>
