@@ -148,3 +148,25 @@ Please read the [Contribution Guidelines](docs/contributing.md) before submittin
 ## Troubleshooting
 
 For common issues and solutions, please refer to the [Troubleshooting Guide](docs/troubleshooting.md).
+
+
+*********** Delete ****************
+ .\start-backend.bat
+≡ƒÜÇ Starting MoneyPlant Backend in Development Mode...
+Backend will be available at: http://localhost:8080
+API Documentation: http://localhost:8080/swagger-ui.html
+Health Check: http://localhost:8080/actuator/health
+
+≡ƒôï Loading environment variables from .env file...
+Γ£à Environment variables loaded from .env file
+
+≡ƒöì Verifying environment variables:
+DB_HOST: postgres.tailce422e.ts.net
+DB_PASSWORD: [HIDDEN]
+MICROSOFT_CLIENT_ID: your_microsoft_client_id_here
+JWT_SECRET: [HIDDEN]
+
+≡ƒÅâ Starting Spring Boot application...
+
+'mvn' is not recognized as an internal or external command,
+operable program or batch file.
