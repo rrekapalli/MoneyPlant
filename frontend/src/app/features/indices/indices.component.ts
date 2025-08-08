@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, signal, computed, effect, ChangeDetectionStrategy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
@@ -43,40 +43,60 @@ import { ModernIndicesWebSocketService, IndexDataDto, IndicesDto } from '../../s
     TooltipModule
   ],
   templateUrl: './indices.component.html',
-  styleUrls: ['./indices.component.scss']
+  styleUrls: ['./indices.component.scss'],
+  changeDetection: ChangeDetectionStrategy.Default
 })
 export class IndicesComponent implements OnInit, OnDestroy {
-  // Indices lists
-  indicesLists: any[] = [];
+  // Convert main data properties to signals for better performance
+  indices = signal<IndexResponseDto[]>([]);
+  indicesTreeData = signal<TreeNode[]>([]);
+  indicesLists = signal<any[]>([]);
+  searchResults = signal<any[]>([]);
+  selectedIndexSymbol = signal<string | null>(null);
+  
+  // Loading states as signals
+  isLoadingIndices = signal<boolean>(true); // Start with loading true
+  isSearching = signal<boolean>(false);
+  
 
-  // Indices data
-  indices: IndexResponseDto[] = [];
-  isLoadingIndices: boolean = false;
-
-  // TreeTable data
-  indicesTreeData: TreeNode[] = [];
 
   // Search functionality
-  searchQuery: string = '';
-  isSearching: boolean = false;
-  searchResults: any[] = [];
-
-  // Global filter for TreeTable
-  globalFilterValue: string = '';
+  searchQuery = signal<string>('');
+  globalFilterValue = signal<string>('');
 
   // Tab functionality
-  activeTab: string = '0';
+  activeTab = signal<string>('0');
+  
 
-  // Selected index tracking for highlighting
-  selectedIndexSymbol: string | null = null;
+  
+  // Method to update active tab (for two-way binding)
+  updateActiveTab(value: string | number): void {
+    this.activeTab.set(value.toString());
+  }
+  
+  // Method to update global filter value (for two-way binding)
+  updateGlobalFilterValue(value: string | number): void {
+    this.globalFilterValue.set(value.toString());
+  }
+
+  // Computed signals for derived data
+  hasIndices = computed(() => this.indices().length > 0);
+  hasTreeData = computed(() => this.indicesTreeData().length > 0);
+  hasSearchResults = computed(() => this.searchResults().length > 0);
+
+  currentIndicesList = computed(() => {
+    const index = parseInt(this.activeTab(), 10);
+    return this.indicesLists()[index] || null;
+  });
 
   // WebSocket subscription management
   private indicesWebSocketSubscription: Subscription | null = null;
   private allIndicesWebSocketSubscription: Subscription | null = null;
+  private webSocketUpdateTimer: any = null;
 
   // Helper method to get current indices list index from activeTab
   private getCurrentIndicesListIndex(): number {
-    return parseInt(this.activeTab, 10);
+    return parseInt(this.activeTab(), 10);
   }
 
   // TrackBy function for ngFor performance optimization
@@ -92,6 +112,7 @@ export class IndicesComponent implements OnInit, OnDestroy {
     private modernIndicesWebSocketService: ModernIndicesWebSocketService,
     private cdr: ChangeDetectorRef
   ) {
+    // Removed effects to prevent infinite loops
   }
 
   ngOnInit(): void {
@@ -126,6 +147,12 @@ export class IndicesComponent implements OnInit, OnDestroy {
     if (this.allIndicesWebSocketSubscription) {
       this.allIndicesWebSocketSubscription.unsubscribe();
       this.allIndicesWebSocketSubscription = null;
+    }
+    
+    // Clear any pending WebSocket update timer
+    if (this.webSocketUpdateTimer) {
+      clearTimeout(this.webSocketUpdateTimer);
+      this.webSocketUpdateTimer = null;
     }
     
     // Disconnect WebSocket
@@ -166,16 +193,23 @@ export class IndicesComponent implements OnInit, OnDestroy {
             next: (indicesData: IndicesDto) => {
               try {
                 if (indicesData && indicesData.indices && indicesData.indices.length > 0) {
-                  // Update indices data with WebSocket data
-                  this.updateIndicesWithWebSocketData(indicesData.indices);
+                  // Debounce WebSocket updates to prevent excessive signal updates
+                  if (this.webSocketUpdateTimer) {
+                    clearTimeout(this.webSocketUpdateTimer);
+                  }
                   
-                  // Update TreeTable data
-                  this.indicesTreeData = this.transformToTreeData(this.indices);
-                  
-                  // Update indices lists
-                  this.updateIndicesLists();
-                  
-                  this.cdr.detectChanges();
+                  this.webSocketUpdateTimer = setTimeout(() => {
+                    // Update indices data with WebSocket data
+                    if (indicesData.indices) {
+                      this.updateIndicesWithWebSocketData(indicesData.indices);
+                      
+                      // Update TreeTable data
+                      this.indicesTreeData.set(this.transformToTreeData(this.indices()));
+                      
+                      // Update indices lists
+                      this.updateIndicesLists();
+                    }
+                  }, 100); // 100ms debounce
                 } else {
                   console.warn('WebSocket received data but no valid indices found:', indicesData);
                 }
@@ -185,7 +219,6 @@ export class IndicesComponent implements OnInit, OnDestroy {
             },
             error: (error) => {
               console.warn('WebSocket subscription error for all indices:', error.message || error);
-              this.cdr.detectChanges();
             },
             complete: () => {
               // WebSocket subscription completed
@@ -197,7 +230,6 @@ export class IndicesComponent implements OnInit, OnDestroy {
       }
     } catch (error) {
       console.warn('WebSocket subscription failed for all indices - continuing without real-time data:', (error as Error).message || error);
-      this.cdr.detectChanges();
     }
   }
 
@@ -212,7 +244,7 @@ export class IndicesComponent implements OnInit, OnDestroy {
 
     // Create a map of existing indices by symbol for quick lookup
     const existingIndicesMap = new Map<string, IndexResponseDto>();
-    this.indices.forEach(index => {
+    this.indices().forEach(index => {
       if (index.indexSymbol) {
         existingIndicesMap.set(index.indexSymbol.toUpperCase(), index);
       }
@@ -232,14 +264,14 @@ export class IndicesComponent implements OnInit, OnDestroy {
           // Create new index from WebSocket data
           const newIndex = this.createIndexFromWebSocketData(webSocketIndex);
           if (newIndex) {
-            this.indices.push(newIndex);
+            this.indices.update(prev => [...prev, newIndex]);
           }
         }
       }
     });
 
     // Sort indices by symbol for consistent display
-    this.indices.sort((a, b) => (a.indexSymbol || '').localeCompare(b.indexSymbol || ''));
+    this.indices.update(prev => [...prev].sort((a, b) => (a.indexSymbol || '').localeCompare(b.indexSymbol || '')));
   }
 
   /**
@@ -353,19 +385,22 @@ export class IndicesComponent implements OnInit, OnDestroy {
    * Update indices lists with current indices data
    */
   private updateIndicesLists(): void {
-    if (this.indicesLists.length === 0) {
+    const currentIndicesLists = this.indicesLists();
+    if (currentIndicesLists.length === 0) {
       return;
     }
 
     // Update the main indices list (first item)
-    const mainIndicesList = this.indicesLists[0];
+    const updatedIndicesLists = [...currentIndicesLists];
+    const mainIndicesList = updatedIndicesLists[0];
     if (mainIndicesList) {
-      mainIndicesList.items = this.indices.map(index => ({
+      mainIndicesList.items = this.indices().map(index => ({
         symbol: index.indexSymbol,
         name: index.indexName,
         price: index.lastPrice || 0,
         change: (index.percentChange || 0) / 100 // Convert percentage to decimal
       }));
+      this.indicesLists.set(updatedIndicesLists);
     }
   }
 
@@ -375,15 +410,15 @@ export class IndicesComponent implements OnInit, OnDestroy {
    */
   searchIndices(query: string): void {
     if (!query || query.trim() === '') {
-      this.searchResults = [];
+      this.searchResults.set([]);
       return;
     }
 
-    this.isSearching = true;
+    this.isSearching.set(true);
 
     // Search within the loaded indices
     const normalizedQuery = query.toLowerCase().trim();
-    this.searchResults = this.indices
+    this.searchResults.set(this.indices()
       .filter(index => 
         (index.indexSymbol?.toLowerCase().includes(normalizedQuery)) || 
         (index.indexName?.toLowerCase().includes(normalizedQuery))
@@ -393,9 +428,9 @@ export class IndicesComponent implements OnInit, OnDestroy {
         name: index.indexName,
         price: index.lastPrice || 0,
         change: (index.percentChange || 0) / 100 // Convert percentage to decimal
-      }));
+      })));
 
-    this.isSearching = false;
+    this.isSearching.set(false);
   }
 
   /**
@@ -411,7 +446,8 @@ export class IndicesComponent implements OnInit, OnDestroy {
     }
 
     // Check if the index is already in the list
-    const currentIndicesList = this.indicesLists[currentIndicesListIndex];
+    const currentIndicesLists = this.indicesLists();
+    const currentIndicesList = currentIndicesLists[currentIndicesListIndex];
     if (!currentIndicesList) return;
 
     const indexExists = currentIndicesList.items.some((item: { symbol: any; }) => item.symbol === index.symbol);
@@ -420,11 +456,16 @@ export class IndicesComponent implements OnInit, OnDestroy {
     }
 
     // Add the index to the list
-    currentIndicesList.items.push(index);
+    const updatedIndicesLists = [...currentIndicesLists];
+    updatedIndicesLists[currentIndicesListIndex] = {
+      ...currentIndicesList,
+      items: [...currentIndicesList.items, index]
+    };
+    this.indicesLists.set(updatedIndicesLists);
 
     // Clear search results
-    this.searchResults = [];
-    this.searchQuery = '';
+    this.searchResults.set([]);
+    this.searchQuery.set('');
   }
 
   /**
@@ -498,7 +539,7 @@ export class IndicesComponent implements OnInit, OnDestroy {
     }
 
     // Set the selected index symbol for highlighting
-    this.selectedIndexSymbol = rowData.symbol;
+    this.selectedIndexSymbol.set(rowData.symbol);
 
     // Transform the row data to SelectedIndexData format
     const selectedIndexData: SelectedIndexData = {
@@ -524,15 +565,15 @@ export class IndicesComponent implements OnInit, OnDestroy {
    */
   private loadIndicesLists(): void {
     try {
-      this.isLoadingIndices = true;
+      this.isLoadingIndices.set(true);
       // Get all indices from the API
       this.indicesService.getAllIndices().subscribe({
         next: (indices: IndexResponseDto[]) => {
-          this.indices = indices;
-          this.isLoadingIndices = false;
+          this.indices.set(indices);
+          this.isLoadingIndices.set(false);
 
           // Transform to TreeTable data
-          this.indicesTreeData = this.transformToTreeData(indices);
+          this.indicesTreeData.set(this.transformToTreeData(indices));
 
           // Create an indices list item for each index
           const items = indices.map(index => ({
@@ -551,14 +592,16 @@ export class IndicesComponent implements OnInit, OnDestroy {
           };
 
           // Set the indicesLists property with the main indices list as the first item
-          this.indicesLists = [mainIndicesList];
-
+          this.indicesLists.set([mainIndicesList]);
           // Set the active tab to the first list
-          this.activeTab = '0';
+          this.activeTab.set('0');
+          
+          // Force change detection to ensure template updates
+          this.cdr.detectChanges();
         },
         error: (error: any) => {
           console.error('Failed to load indices:', error);
-          this.isLoadingIndices = false;
+          this.isLoadingIndices.set(false);
           
           // If there's an error, use empty indices list
           const emptyIndicesList = {
@@ -569,15 +612,15 @@ export class IndicesComponent implements OnInit, OnDestroy {
           };
           
           // Set the indicesLists property with the empty list
-          this.indicesLists = [emptyIndicesList];
+          this.indicesLists.set([emptyIndicesList]);
           
           // Set the active tab to the first list
-          this.activeTab = '0';
+          this.activeTab.set('0');
         }
       });
     } catch (error) {
       console.error('Error in loadIndicesLists:', error);
-      this.isLoadingIndices = false;
+      this.isLoadingIndices.set(false);
       
       // If there's an error, use empty indices list
       const emptyIndicesList = {
@@ -588,10 +631,10 @@ export class IndicesComponent implements OnInit, OnDestroy {
       };
       
       // Set the indicesLists property with the empty list
-      this.indicesLists = [emptyIndicesList];
+      this.indicesLists.set([emptyIndicesList]);
       
       // Set the active tab to the first list
-      this.activeTab = '0';
+      this.activeTab.set('0');
     }
   }
 }
