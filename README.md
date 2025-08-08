@@ -79,10 +79,10 @@ These scripts will:
 1. Set up the backend environment:
    ```bash
    # Linux/Mac
-   build/linux/backend/setup-env.sh
+   scripts/linux/backend/setup-env.sh
    
    # Windows
-   build\windows\backend\setup-env.bat
+   scripts\windows\backend\setup-env.bat
    ```
 
 2. Edit the generated `backend/.env` file with your actual credentials
@@ -101,10 +101,10 @@ These scripts will:
 1. Set up the frontend environment:
    ```bash
    # Linux/Mac
-   build/linux/frontend/setup-env.sh
+   scripts/linux/frontend/setup-env.sh
    
    # Windows
-   build\windows\frontend\setup-env.bat
+   scripts\windows\frontend\setup-env.bat
    ```
 
 2. Install dependencies and start the frontend:
