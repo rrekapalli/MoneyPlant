@@ -53,6 +53,67 @@ The application is organized into the following modules:
 
 ## Setup Instructions
 
+### Quick Start
+
+The project includes a comprehensive build system that handles both backend and frontend setup automatically.
+
+#### Windows
+```cmd
+start-application.bat
+```
+
+#### Linux/Mac
+```bash
+./start-application.sh
+```
+
+These scripts will:
+- Check prerequisites (Java, Node.js, npm)
+- Set up environment files for both backend and frontend
+- Provide next steps for configuration
+
+### Manual Setup
+
+#### Backend Setup
+
+1. Set up the backend environment:
+   ```bash
+   # Linux/Mac
+   build/linux/backend/setup-env.sh
+   
+   # Windows
+   build\windows\backend\setup-env.bat
+   ```
+
+2. Edit the generated `backend/.env` file with your actual credentials
+
+3. Start the backend:
+   ```bash
+   # Linux/Mac
+   ./start-backend.sh
+   
+   # Windows
+   start-backend.bat
+   ```
+
+#### Frontend Setup
+
+1. Set up the frontend environment:
+   ```bash
+   # Linux/Mac
+   build/linux/frontend/setup-env.sh
+   
+   # Windows
+   build\windows\frontend\setup-env.bat
+   ```
+
+2. Install dependencies and start the frontend:
+   ```bash
+   cd frontend
+   npm install
+   npm start
+   ```
+
 ### Building the Angular Frontend
 
 The project includes an Angular frontend that needs to be built and deployed to the `resources/static` directory for the Spring Boot application to serve it. A convenience script is provided to automate this process:
@@ -149,24 +210,3 @@ Please read the [Contribution Guidelines](docs/contributing.md) before submittin
 
 For common issues and solutions, please refer to the [Troubleshooting Guide](docs/troubleshooting.md).
 
-
-*********** Delete ****************
- .\start-backend.bat
-≡ƒÜÇ Starting MoneyPlant Backend in Development Mode...
-Backend will be available at: http://localhost:8080
-API Documentation: http://localhost:8080/swagger-ui.html
-Health Check: http://localhost:8080/actuator/health
-
-≡ƒôï Loading environment variables from .env file...
-Γ£à Environment variables loaded from .env file
-
-≡ƒöì Verifying environment variables:
-DB_HOST: postgres.tailce422e.ts.net
-DB_PASSWORD: [HIDDEN]
-MICROSOFT_CLIENT_ID: your_microsoft_client_id_here
-JWT_SECRET: [HIDDEN]
-
-≡ƒÅâ Starting Spring Boot application...
-
-'mvn' is not recognized as an internal or external command,
-operable program or batch file.
