@@ -1,10 +1,15 @@
 @echo off
-
-echo Starting MoneyPlant Frontend in Development Mode...
-echo Frontend will be available at: http://localhost:4200
-echo Make sure the backend is running on port 8080
+echo 🚀 MoneyPlant Frontend Startup for Windows
+echo ==========================================
 echo.
 
-cd frontend
-call npm install
-call npm run start:dev 
+REM Check if we're on Windows
+if "%OS%"=="Windows_NT" (
+    echo ✅ Windows detected. Using Windows build scripts...
+    call build\windows\start-frontend.bat
+) else (
+    echo ❌ This script is for Windows only.
+    echo Please use start-frontend.sh for Linux/Mac.
+    pause
+    exit /b 1
+) 
