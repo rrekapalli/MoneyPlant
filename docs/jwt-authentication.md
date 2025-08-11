@@ -13,13 +13,13 @@ The JWT tokens are configured in the application properties:
 ```properties
 # JWT Configuration
 jwt.secret=your-256-bit-secret-key-here-make-it-long-and-secure-for-production
-jwt.expiration=3600000        # 1 hour in milliseconds
+jwt.expiration=32400000        # 9 hours in milliseconds
 jwt.refresh-expiration=86400000 # 24 hours in milliseconds
 ```
 
 ### Token Expiration Times
 
-- **Access Token**: 1 hour (3,600,000 milliseconds)
+- **Access Token**: 9 hours (32,400,000 milliseconds)
 - **Refresh Token**: 24 hours (86,400,000 milliseconds)
 
 ## Frontend Token Management
@@ -29,7 +29,7 @@ jwt.refresh-expiration=86400000 # 24 hours in milliseconds
 The application implements several mechanisms to handle token expiration:
 
 1. **HTTP Interceptor**: Automatically catches 401 errors and attempts to refresh the token
-2. **Periodic Refresh**: Refreshes tokens every 50 minutes to prevent expiration
+2. **Periodic Refresh**: Refreshes tokens every 8 hours to prevent expiration
 3. **Page Load Check**: Validates token on page refresh and attempts refresh if expired
 
 ### Token Validation Flow

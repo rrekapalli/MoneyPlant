@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from './api.base';
 import { Index, IndexCreateDto, IndexResponseDto } from '../entities/indices';
+import { IndexHistoricalData } from '../entities/index-historical-data';
 
 @Injectable({
   providedIn: 'root'
@@ -63,5 +64,14 @@ export class IndicesService {
    */
   getIndexByKeyCategory(category: string): Observable<IndexResponseDto> {
     return this.apiService.get<IndexResponseDto>(`${this.endpoint}/category/${category}`);
+  }
+
+  /**
+   * Gets historical data for a given index name
+   * @param indexName The name of the index to retrieve historical data for
+   * @returns An Observable of index historical data array
+   */
+  getIndexHistoricalData(indexName: string): Observable<IndexHistoricalData[]> {
+    return this.apiService.get<IndexHistoricalData[]>(`${this.endpoint}/${indexName}/historical-data`);
   }
 }

@@ -2,6 +2,7 @@ package com.moneyplant.index.services;
 
 import com.moneyplant.index.dtos.IndexDto;
 import com.moneyplant.index.dtos.IndexResponseDto;
+import com.moneyplant.index.dtos.IndexHistoricalDataDto;
 import com.moneyplant.core.entities.Index;
 import com.moneyplant.core.exceptions.ResourceNotFoundException;
 import com.moneyplant.core.exceptions.ServiceException;
@@ -10,8 +11,10 @@ import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 
 @Slf4j
@@ -19,6 +22,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class IndexService {
     private final IndexRepository indexRepository;
+    private final JdbcTemplate jdbcTemplate;
 
     private static final String INDEX_SERVICE = "indexService";
 
@@ -184,6 +188,56 @@ public class IndexService {
     }
 
     /**
+     * Gets historical data for a given index name using Trino query.
+     * 
+     * @param indexName The name of the index to retrieve historical data for
+     * @return List of historical data for the index
+     * @throws ResourceNotFoundException if the index is not found
+     * @throws ServiceException if there is an error retrieving the historical data
+     */
+    @CircuitBreaker(name = INDEX_SERVICE, fallbackMethod = "getIndexHistoricalDataFallback")
+    public List<IndexHistoricalDataDto> getIndexHistoricalData(String indexName) {
+        try {
+            // First verify the index exists
+            Index index = indexRepository.findByIndexNameIgnoreCase(indexName)
+                    .orElseThrow(() -> new ResourceNotFoundException("Index not found with name: " + indexName));
+
+            // Query historical data using Trino
+            String sql = """
+                SELECT 
+                    index_name,
+                    date,
+                    open,
+                    high,
+                    low,
+                    close,
+                    volume
+                FROM nse_indices_historical_data 
+                WHERE index_name = ? 
+                ORDER BY date DESC
+                """;
+
+            return jdbcTemplate.query(sql, 
+                (rs, rowNum) -> new IndexHistoricalDataDto(
+                    rs.getString("index_name"),
+                    rs.getDate("date").toLocalDate(),
+                    rs.getFloat("open"),
+                    rs.getFloat("high"),
+                    rs.getFloat("low"),
+                    rs.getFloat("close"),
+                    rs.getFloat("volume")
+                ),
+                indexName
+            );
+        } catch (ResourceNotFoundException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Error retrieving historical data for index {}: {}", indexName, e.getMessage());
+            throw new ServiceException("Error retrieving historical data for index: " + e.getMessage(), e);
+        }
+    }
+
+    /**
      * Fallback method for getAllIndices when the circuit is open.
      * 
      * @param e The exception that triggered the fallback
@@ -239,6 +293,18 @@ public class IndexService {
      */
     public IndexResponseDto getIndexByKeyCategoryFallback(String keyCategory, Exception e) {
         log.error("Circuit breaker triggered for getIndexByKeyCategory with key category {}: {}", keyCategory, e.getMessage());
+        throw new ServiceException("Service unavailable", e);
+    }
+
+    /**
+     * Fallback method for getIndexHistoricalData when the circuit is open.
+     * 
+     * @param indexName The name of the index that was being retrieved
+     * @param e The exception that triggered the fallback
+     * @return null
+     */
+    public List<IndexHistoricalDataDto> getIndexHistoricalDataFallback(String indexName, Exception e) {
+        log.error("Circuit breaker triggered for getIndexHistoricalData with index name {}: {}", indexName, e.getMessage());
         throw new ServiceException("Service unavailable", e);
     }
 

@@ -2,6 +2,7 @@ package com.moneyplant.index.controllers;
 
 import com.moneyplant.index.dtos.IndexDto;
 import com.moneyplant.index.dtos.IndexResponseDto;
+import com.moneyplant.index.dtos.IndexHistoricalDataDto;
 import com.moneyplant.core.exceptions.ResourceNotFoundException;
 import com.moneyplant.index.services.IndexService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -151,6 +152,29 @@ public class IndexController {
             @Parameter(description = "Key category of the index to retrieve", required = true)
             @PathVariable String category){
         return indexService.getIndexByKeyCategory(category);
+    }
+
+    /**
+     * Gets historical data for a given index name
+     * 
+     * @param indexName The name of the index to retrieve historical data for
+     * @return List of historical data for the index
+     * @throws ResourceNotFoundException if the index is not found
+     */
+    @Operation(summary = "Get historical data for an index", description = "Retrieves historical data for a given index name from nse_indices_historical_data table")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved historical data",
+                content = @Content(schema = @Schema(implementation = IndexHistoricalDataDto.class))),
+        @ApiResponse(responseCode = "404", description = "Index not found"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @GetMapping("/{indexName}/historical-data")
+    @ResponseStatus(HttpStatus.OK)
+    public List<IndexHistoricalDataDto> getIndexHistoricalData(
+            @Parameter(description = "Name of the index to retrieve historical data for", required = true)
+            @PathVariable String indexName){
+        return indexService.getIndexHistoricalData(indexName);
     }
 
 }
