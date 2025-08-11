@@ -1,81 +1,102 @@
 #!/bin/bash
 
-# MoneyPlant Frontend Environment Setup Script
-# This script generates frontend environment files from environment variables
+# MoneyPlant Environment Setup Script
+# This script helps you set up environment variables for development
 
-echo "🔐 MoneyPlant Frontend Environment Setup"
-echo "=========================================="
+echo "🔐 MoneyPlant Environment Setup"
+echo "================================"
 echo ""
 
-# Check if we're in the frontend directory
-if [ ! -f "angular.json" ]; then
-    echo "❌ This script must be run from the frontend directory"
-    exit 1
+# Check if .env file exists
+if [ -f ".env" ]; then
+    echo "⚠️  .env file already exists. Do you want to overwrite it? (y/N)"
+    read -r response
+    if [[ ! "$response" =~ ^[Yy]$ ]]; then
+        echo "Setup cancelled."
+        exit 0
+    fi
 fi
 
-# Check if .env file exists in the backend directory
-if [ -f "../backend/.env" ]; then
-    echo "📋 Loading environment variables from backend .env file..."
-    set -a  # automatically export all variables
-    source ../backend/.env
-    set +a  # stop automatically exporting
-else
-    echo "⚠️  Backend .env file not found. Using default values..."
-    # Set default values
-    GOOGLE_CLIENT_ID="your-google-client-id"
-    MICROSOFT_CLIENT_ID="your-microsoft-client-id"
-fi
-
-echo "📝 Generating frontend environment files..."
+echo "📝 Creating .env file with comprehensive template..."
 echo ""
 
-# Generate development environment
-cat > src/environments/environment.ts << EOF
-export const environment = {
-  production: false,
-  apiUrl: 'http://localhost:8080',
-  useMockData: true,
-  
-  // OAuth Configuration
-  oauth: {
-    google: {
-      clientId: '${GOOGLE_CLIENT_ID:-your-google-client-id}', // Replace with your Google Client ID
-      redirectUri: 'http://localhost:4200'
-    },
-    microsoft: {
-      clientId: '${MICROSOFT_CLIENT_ID:-your-microsoft-client-id}', // Replace with your Microsoft Azure AD Client ID
-      redirectUri: 'http://localhost:4200'
-    }
-  }
-};
+# Create .env file with comprehensive template
+cat > .env << 'EOF'
+# =============================================================================
+# MoneyPlant Environment Configuration
+# =============================================================================
+# This file contains all environment variables for the MoneyPlant application.
+# DO NOT commit this file to version control - it contains sensitive information.
+# Copy this file to .env.local for local development and set actual values.
+
+# =============================================================================
+# Database Configuration
+# =============================================================================
+DB_HOST=postgres.tailce422e.ts.net
+DB_PORT=5432
+DB_NAME=MoneyPlant
+DB_USERNAME=postgres
+DB_PASSWORD=your_database_password_here
+
+# =============================================================================
+# OAuth2 Configuration
+# =============================================================================
+GOOGLE_CLIENT_ID=your_google_client_id_here
+GOOGLE_CLIENT_SECRET=your_google_client_secret_here
+MICROSOFT_CLIENT_ID=your_microsoft_client_id_here
+MICROSOFT_CLIENT_SECRET=your_microsoft_client_secret_here
+
+# =============================================================================
+# JWT Configuration
+# =============================================================================
+JWT_SECRET=your_super_secret_jwt_key_at_least_256_bits_long_here
+
+# =============================================================================
+# CORS Configuration
+# =============================================================================
+CORS_ALLOWED_ORIGINS=http://localhost:4200,https://your-frontend-domain.com
+
+# =============================================================================
+# Apache Trino Configuration
+# =============================================================================
+TRINO_URL=jdbc:trino://trino.tailce422e.ts.net:8080
+TRINO_CATALOG=
+TRINO_SCHEMA=
+TRINO_USER=trino
+TRINO_PASSWORD=
+TRINO_SSL_ENABLED=false
+
+# =============================================================================
+# Trino PostgreSQL Configuration
+# =============================================================================
+TRINO_PG_HOST=postgres.tailce422e.ts.net
+TRINO_PG_PORT=5432
+TRINO_PG_DATABASE=MoneyPlant
+TRINO_PG_USER=postgres
+TRINO_PG_PASSWORD=your_trino_pg_password_here
+
+# =============================================================================
+# Application Configuration
+# =============================================================================
+SPRING_PROFILES_ACTIVE=dev
+SERVER_PORT=8080
+SERVER_HOST=0.0.0.0
+
+# =============================================================================
+# Logging Configuration
+# =============================================================================
+LOGGING_LEVEL_ROOT=info
+LOGGING_LEVEL_COM_MONEYPLANT=debug
+LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY=debug
 EOF
 
-# Generate production environment
-cat > src/environments/environment.prod.ts << EOF
-export const environment = {
-  production: true,
-  apiUrl: '/api', // In production, the API is typically served from the same domain
-  useMockData: false,
-  
-  // OAuth Configuration
-  oauth: {
-    google: {
-      clientId: '${GOOGLE_CLIENT_ID:-your-google-client-id}', // Replace with your Google Client ID
-      redirectUri: window.location.origin
-    },
-    microsoft: {
-      clientId: '${MICROSOFT_CLIENT_ID:-your-microsoft-client-id}', // Replace with your Microsoft Azure AD Client ID
-      redirectUri: window.location.origin
-    }
-  }
-};
-EOF
-
-echo "✅ Frontend environment files generated successfully!"
+echo "✅ .env file created successfully!"
 echo ""
-echo "📋 Generated files:"
-echo "- src/environments/environment.ts (development)"
-echo "- src/environments/environment.prod.ts (production)"
+echo "📋 Next steps:"
+echo "1. Edit the .env file and replace the placeholder values with your actual credentials"
+echo "2. Source the environment variables: source .env"
+echo "3. Start your application"
 echo ""
-echo "🔒 Security reminder: Client IDs are not sensitive secrets and can be safely included in frontend code."
-echo "However, client secrets should never be included in frontend code." 
+echo "🔒 Security reminder: The .env file is already in .gitignore and will not be committed to the repository."
+echo ""
+echo "📖 For more information, see docs/ENVIRONMENT_SETUP.md" 

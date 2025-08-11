@@ -134,6 +134,10 @@ import { ComponentCommunicationService, SelectedIndexData } from '../../../servi
 import { StockTicksService } from '../../../services/apis/stock-ticks.api';
 import {StockDataDto, StockTicksDto} from '../../../services/entities/stock-ticks';
 
+// Import indices service and historical data entities
+import { IndicesService } from '../../../services/apis/indices.api';
+import { IndexHistoricalData } from '../../../services/entities/index-historical-data';
+
 // Import modern Angular v20 WebSocket services and entities
 import { ModernIndicesWebSocketService, IndexDataDto, IndicesDto } from '../../../services/websockets';
 
@@ -208,6 +212,9 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
   
   // Current selected index data from WebSocket
   private currentSelectedIndexData: IndexDataDto | null = null;
+  
+  // Historical data for candlestick chart
+  private historicalData: IndexHistoricalData[] = [];
 
   constructor(
     cdr: ChangeDetectorRef,
@@ -215,6 +222,7 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
     filterService: FilterService,
     private componentCommunicationService: ComponentCommunicationService,
     private stockTicksService: StockTicksService,
+    private indicesService: IndicesService,
     private modernIndicesWebSocketService: ModernIndicesWebSocketService
   ) {
     super(cdr, excelExportService, filterService);
@@ -291,6 +299,7 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
     this.filteredDashboardData = null;
     this.appliedFilters = [];
     this.currentSelectedIndexData = null;
+    this.historicalData = [];
   }
 
   private loadDefaultNifty50Data(): void {
@@ -329,6 +338,28 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
           
           this.updateMetricTilesWithFilters([]);
           this.updateAllChartsWithFilteredData();
+          this.cdr.detectChanges();
+        }
+      });
+    }
+  }
+
+  /**
+   * Load historical data for the selected index
+   * @param indexName The name of the index to load historical data for
+   */
+  private loadHistoricalData(indexName: string): void {
+    if (indexName && indexName.trim()) {
+      this.indicesService.getIndexHistoricalData(indexName).subscribe({
+        next: (historicalData: IndexHistoricalData[]) => {
+          this.historicalData = historicalData || [];
+          this.updateCandlestickChartWithHistoricalData();
+          this.cdr.detectChanges();
+        },
+        error: (error) => {
+          console.warn('Failed to load historical data for', indexName, ':', error);
+          this.historicalData = [];
+          this.updateCandlestickChartWithHistoricalData();
           this.cdr.detectChanges();
         }
       });
@@ -386,9 +417,12 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
     const indexSymbol = selectedIndex.symbol;
     this.loadStockTicksData(indexSymbol);
     
-    // Subscribe to WebSocket updates for the selected index
+    // Load historical data for the selected index
     const indexName = selectedIndex.name || selectedIndex.symbol;
     if (indexName) {
+      this.loadHistoricalData(indexName);
+      
+      // Subscribe to WebSocket updates for the selected index
       this.subscribeToIndexWebSocket(indexName).catch(error => {
         console.error('Failed to subscribe to WebSocket:', error);
       });
@@ -536,10 +570,10 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
       .setSkipDefaultFiltering(true)
       .build();
 
-    // Stock Price Candlestick Chart
+    // Stock Price Candlestick Chart - Now shows historical data
     const candlestickChart = CandlestickChartBuilder.create()
       .setData(this.filteredDashboardData || [])
-      .setHeader('Stock Price Movement')
+      .setHeader('Index Historical Price Movement')
       .setCurrencyFormatter('INR', 'en-IN')
       .setPredefinedPalette('finance')
       .setAccessor('symbol')
@@ -549,10 +583,9 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
           chart.off('click');
           chart.on('click', (params: any) => {
             params.event?.stop?.();
-            const symbolName = params.name || (params.data && params.data.name);
-            if (symbolName && typeof symbolName === 'string' && isNaN(Number(symbolName))) {
-              this.filterChartsBySymbol(symbolName);
-            }
+            // For historical data, we don't filter by symbol since it's all the same index
+            // Just log the click for debugging
+            console.log('Candlestick chart clicked:', params);
             return false;
           });
         }
@@ -716,23 +749,45 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
       case 'Portfolio Distribution':
         // This is a pie chart - provide asset allocation data
         return this.groupByAndSum(this.filteredDashboardData || this.dashboardData, 'industry', 'totalTradedValue');
-      case 'Stock Price Movement':
-        // This is a candlestick chart - provide OHLC data
-        const stockData = this.filteredDashboardData || this.dashboardData;
-        if (!stockData || stockData.length === 0) {
-          return [];
+      case 'Index Historical Price Movement':
+        // This is a candlestick chart - provide OHLC data from historical data if available
+        if (this.historicalData.length > 0) {
+          // Use historical data for candlestick chart
+          const candlestickData = this.historicalData.map(item => [
+            item.open,
+            item.close,
+            item.low,
+            item.high
+          ]);
+          const xAxisLabels = this.historicalData.map(item => {
+            const date = new Date(item.date);
+            return date.toLocaleDateString('en-US', { 
+              month: 'short', 
+              day: 'numeric' 
+            });
+          });
+          return {
+            data: candlestickData,
+            xAxisLabels: xAxisLabels
+          };
+        } else {
+          // Fallback to stock data
+          const stockData = this.filteredDashboardData || this.dashboardData;
+          if (!stockData || stockData.length === 0) {
+            return [];
+          }
+          const candlestickData = stockData.map(stock => [
+            stock.openPrice || 0,
+            stock.lastPrice || 0,
+            stock.dayLow || 0,
+            stock.dayHigh || 0
+          ]);
+          const xAxisLabels = stockData.map(stock => stock.symbol || 'Unknown');
+          return {
+            data: candlestickData,
+            xAxisLabels: xAxisLabels
+          };
         }
-        const candlestickData = stockData.map(stock => [
-          stock.openPrice || 0,
-          stock.lastPrice || 0,
-          stock.dayLow || 0,
-          stock.dayHigh || 0
-        ]);
-        const xAxisLabels = stockData.map(stock => stock.symbol || 'Unknown');
-        return {
-          data: candlestickData,
-          xAxisLabels: xAxisLabels
-        };
       default:
         return null;
     }
@@ -856,27 +911,52 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
           };
         }).sort((a, b) => b.value - a.value);
 
-      case 'Stock Price Movement':
-        // Use stock ticks data for candlestick chart with OHLC data
-        if (!sourceData) {
-          return [];
+      case 'Index Historical Price Movement':
+        // Use historical data for candlestick chart if available, otherwise use stock data
+        if (this.historicalData.length > 0) {
+          // Transform historical data to candlestick format: [open, close, low, high]
+          const candlestickData = this.historicalData.map(item => [
+            item.open,
+            item.close,
+            item.low,
+            item.high
+          ]);
+          
+          // Set X-axis labels (dates)
+          const xAxisLabels = this.historicalData.map(item => {
+            const date = new Date(item.date);
+            return date.toLocaleDateString('en-US', { 
+              month: 'short', 
+              day: 'numeric' 
+            });
+          });
+          
+          return {
+            data: candlestickData,
+            xAxisLabels: xAxisLabels
+          };
+        } else {
+          // Fallback to stock data
+          if (!sourceData) {
+            return [];
+          }
+          
+          // Transform stock data to candlestick format: [open, close, low, high]
+          const candlestickData = sourceData.map(stock => [
+            stock.openPrice || 0,
+            stock.lastPrice || 0,
+            stock.dayLow || 0,
+            stock.dayHigh || 0
+          ]);
+          
+          // Set X-axis labels (symbols)
+          const xAxisLabels = sourceData.map(stock => stock.symbol || 'Unknown');
+          
+          return {
+            data: candlestickData,
+            xAxisLabels: xAxisLabels
+          };
         }
-        
-        // Transform stock data to candlestick format: [open, close, low, high]
-        const candlestickData = sourceData.map(stock => [
-          stock.openPrice || 0,
-          stock.lastPrice || 0,
-          stock.dayLow || 0,
-          stock.dayHigh || 0
-        ]);
-        
-        // Set X-axis labels (symbols)
-        const xAxisLabels = sourceData.map(stock => stock.symbol || 'Unknown');
-        
-        return {
-          data: candlestickData,
-          xAxisLabels: xAxisLabels
-        };
 
       default:
         return null;
@@ -1273,7 +1353,12 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
     this.chartUpdateTimer = setTimeout(() => {
       this.updateBarChartWithFilteredData();
       this.updatePieChartWithFilteredData();
-      this.updateCandlestickChartWithFilteredData();
+      // Use historical data for candlestick chart if available, otherwise use filtered data
+      if (this.historicalData.length > 0) {
+        this.updateCandlestickChartWithHistoricalData();
+      } else {
+        this.updateCandlestickChartWithFilteredData();
+      }
       this.updateStockListWithFilteredData();
       
       // Update metric tiles with filtered data
@@ -1464,13 +1549,58 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
   }
 
   /**
-   * Update candlestick chart with filtered data
+   * Update candlestick chart with historical data from the API
+   */
+  private updateCandlestickChartWithHistoricalData(): void {
+    if (!this.dashboardConfig?.widgets) return;
+
+    const candlestickWidget = this.dashboardConfig.widgets.find(widget => 
+      widget.config?.header?.title === 'Index Historical Price Movement'
+    );
+
+    if (candlestickWidget && this.historicalData.length > 0) {
+      // Transform historical data to candlestick format: [open, close, low, high]
+      const candlestickData = this.historicalData.map(item => [
+        item.open,
+        item.close,
+        item.low,
+        item.high
+      ]);
+      
+      // Create X-axis labels (dates)
+      const xAxisLabels = this.historicalData.map(item => {
+        const date = new Date(item.date);
+        return date.toLocaleDateString('en-US', { 
+          month: 'short', 
+          day: 'numeric' 
+        });
+      });
+      
+      // Update the widget with historical data
+      this.updateEchartWidget(candlestickWidget, candlestickData);
+      
+      // Update X-axis labels if chart instance exists
+      if (candlestickWidget.chartInstance && typeof candlestickWidget.chartInstance.setOption === 'function') {
+        const newOptions = {
+          ...candlestickWidget.config?.options,
+          xAxis: {
+            ...((candlestickWidget.config?.options as any)?.xAxis || {}),
+            data: xAxisLabels
+          }
+        };
+        candlestickWidget.chartInstance.setOption(newOptions, true);
+      }
+    }
+  }
+
+  /**
+   * Update candlestick chart with filtered data (fallback to stock data)
    */
   private updateCandlestickChartWithFilteredData(): void {
     if (!this.dashboardConfig?.widgets || !this.filteredDashboardData) return;
 
     const candlestickWidget = this.dashboardConfig.widgets.find(widget => 
-      widget.config?.header?.title === 'Stock Price Movement'
+      widget.config?.header?.title === 'Index Historical Price Movement'
     );
 
     if (candlestickWidget) {

@@ -5,10 +5,11 @@
     "ng": "ng",
     "start": "ng serve --proxy-config proxy.conf.json",
     "start:dev": "ng serve --proxy-config proxy.conf.json --port 4200",
-    "build": "npm run build:dashboards && npm run build:superset-integration && ng build",
+    "build": "npm run build:dashboards && npm run build:superset-integration && npm run build:query-builder && ng build",
     "build:dashboards": "ng build dashboards",
     "build:superset-integration": "ng build superset-integration",
-    "build:prod": "npm run build:dashboards && npm run build:superset-integration && ng build --configuration production",
+    "build:query-builder": "ng build query-builder",
+    "build:prod": "npm run build:dashboards && npm run build:superset-integration && npm run build:query-builder && ng build --configuration production",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
   },

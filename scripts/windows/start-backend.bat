@@ -7,7 +7,7 @@ echo API Documentation: http://localhost:8080/swagger-ui.html
 echo Health Check: http://localhost:8080/actuator/health
 echo.
 
-cd ..\..\backend
+cd backend
 
 REM Check if .env file exists
 if exist ".env" (

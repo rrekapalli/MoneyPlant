@@ -55,8 +55,8 @@ export class AuthService {
   }
 
   private startTokenRefreshTimer(): void {
-    // Refresh token every 50 minutes (assuming 1-hour token expiration)
-    interval(50 * 60 * 1000).pipe(
+    // Refresh token every 8 hours (assuming 9-hour token expiration)
+    interval(8 * 60 * 60 * 1000).pipe(
       switchMap(() => {
         if (this.isLoggedIn() && !this.isTokenExpired()) {
           return this.refreshToken();
