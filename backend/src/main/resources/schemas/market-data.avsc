@@ -1,0 +1,57 @@
+{
+  "type": "record",
+  "name": "MarketData",
+  "namespace": "com.moneyplant.trading.avro",
+  "fields": [
+    {
+      "name": "symbol",
+      "type": "string",
+      "doc": "Stock symbol"
+    },
+    {
+      "name": "exchange",
+      "type": "string",
+      "doc": "Exchange name"
+    },
+    {
+      "name": "timestamp",
+      "type": "long",
+      "doc": "Timestamp in milliseconds"
+    },
+    {
+      "name": "open",
+      "type": "double",
+      "doc": "Opening price"
+    },
+    {
+      "name": "high",
+      "type": "double",
+      "doc": "Highest price"
+    },
+    {
+      "name": "low",
+      "type": "double",
+      "doc": "Lowest price"
+    },
+    {
+      "name": "close",
+      "type": "double",
+      "doc": "Closing price"
+    },
+    {
+      "name": "volume",
+      "type": "long",
+      "doc": "Trading volume"
+    },
+    {
+      "name": "priceChange",
+      "type": "double",
+      "doc": "Price change from previous period"
+    },
+    {
+      "name": "priceChangePercent",
+      "type": "double",
+      "doc": "Price change percentage from previous period"
+    }
+  ]
+}

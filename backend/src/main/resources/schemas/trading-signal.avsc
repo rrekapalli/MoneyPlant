@@ -1,0 +1,65 @@
+{
+  "type": "record",
+  "name": "TradingSignal",
+  "namespace": "com.moneyplant.trading.avro",
+  "fields": [
+    {
+      "name": "id",
+      "type": "string",
+      "doc": "Unique signal identifier"
+    },
+    {
+      "name": "symbol",
+      "type": "string",
+      "doc": "Stock symbol"
+    },
+    {
+      "name": "signalType",
+      "type": {
+        "type": "enum",
+        "name": "SignalType",
+        "symbols": ["BUY", "SELL", "HOLD", "STRONG_BUY", "STRONG_SELL"]
+      },
+      "doc": "Type of trading signal"
+    },
+    {
+      "name": "strategyType",
+      "type": {
+        "type": "enum",
+        "name": "StrategyType",
+        "symbols": ["RSI", "MACD", "BOLLINGER_BANDS", "MOVING_AVERAGE", "CANDLESTICK_PATTERN", "MEAN_REVERSION", "MOMENTUM", "ARBITRAGE", "CUSTOM"]
+      },
+      "doc": "Strategy that generated the signal"
+    },
+    {
+      "name": "timestamp",
+      "type": "long",
+      "doc": "Timestamp in milliseconds"
+    },
+    {
+      "name": "price",
+      "type": "double",
+      "doc": "Current price when signal was generated"
+    },
+    {
+      "name": "stopLoss",
+      "type": ["null", "double"],
+      "doc": "Stop loss price"
+    },
+    {
+      "name": "takeProfit",
+      "type": ["null", "double"],
+      "doc": "Take profit price"
+    },
+    {
+      "name": "confidence",
+      "type": "double",
+      "doc": "Signal confidence level (0.0 to 1.0)"
+    },
+    {
+      "name": "description",
+      "type": "string",
+      "doc": "Signal description"
+    }
+  ]
+}

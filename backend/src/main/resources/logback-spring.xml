@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    
+    <springProfile name="!prod">
+        <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+    </springProfile>
+    
+    <springProfile name="prod">
+        <include resource="org/springframework/boot/logging/logback/file-appender.xml"/>
+    </springProfile>
+    
+    <logger name="com.moneyplant.trading" level="INFO"/>
+    <logger name="org.apache.kafka" level="WARN"/>
+    <logger name="org.apache.spark" level="WARN"/>
+    <logger name="org.apache.hudi" level="INFO"/>
+    <logger name="org.apache.iceberg" level="INFO"/>
+    <logger name="io.trino" level="INFO"/>
+    <logger name="org.springframework.kafka" level="INFO"/>
+    
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <springProfile name="prod">
+            <appender-ref ref="FILE"/>
+        </springProfile>
+    </root>
+</configuration>
