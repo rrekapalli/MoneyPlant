@@ -61,7 +61,7 @@ export function createMetricTiles(stockTicksData: StockDataDto[] | null, selecte
         indexName,
         dayHigh,
         dayLow,
-        '₹'
+        ''
       )
         .setPosition({ x: 0, y: 0, cols: 2, rows: 2 })
         .build()
@@ -75,7 +75,7 @@ export function createMetricTiles(stockTicksData: StockDataDto[] | null, selecte
         'Market Overview', // description
         0, // high value
         0, // low value
-        '₹' // currency
+        '' // currency
       )
         .setPosition({ x: 0, y: 0, cols: 2, rows: 2 })
         .build()

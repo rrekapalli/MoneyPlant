@@ -19,6 +19,7 @@
     <!-- Backend module -->
     <modules>
         <module>backend</module>
+        <module>engines</module>
     </modules>
 
     <properties>

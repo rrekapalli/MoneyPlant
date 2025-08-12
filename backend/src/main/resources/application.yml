@@ -35,62 +35,11 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
 
-# Spark Configuration
-spark:
-  app:
-    name: trading-spark-app
-  master: local[*]
-  driver:
-    memory: 2g
-  executor:
-    memory: 2g
-  sql:
-    adaptive:
-      enabled: true
-      coalescePartitions:
-        enabled: true
-
-# Trino Configuration
-trino:
-  url: jdbc:trino://localhost:8080
-  user: admin
-  catalog: hive
-  schema: default
-
-# Hudi Configuration
-hudi:
-  base:
-    path: /tmp/hudi
-  table:
-    name: market_data
-  record:
-    key:
-      field: timestamp
-  partition:
-    path:
-      field: date
-
-# Iceberg Configuration
-iceberg:
-  warehouse:
-    path: /tmp/iceberg
-  table:
-    name: market_data
-  format:
-    version: 2
-  write:
-    delete:
-      enabled: true
-
 # Logging Configuration
 logging:
   level:
     com.moneyplant.trading: INFO
     org.apache.kafka: WARN
-    org.apache.spark: WARN
-    org.apache.hudi: INFO
-    org.apache.iceberg: INFO
-    io.trino: INFO
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
 
