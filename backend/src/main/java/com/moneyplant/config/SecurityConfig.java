@@ -1,4 +1,4 @@
-package com.moneyplant.app.config;
+package com.moneyplant.config;
 
 import com.moneyplant.core.security.CustomOAuth2UserService;
 import com.moneyplant.core.security.CustomUserDetailsService;

@@ -1,0 +1,51 @@
+spring:
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: test-trading-group
+      auto-offset-reset: earliest
+    producer:
+      acks: 1
+      retries: 1
+
+  datasource:
+    url: jdbc:h2:mem:testdb
+    username: sa
+    password: 
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+
+# Test-specific configurations
+spark:
+  master: local[1]
+  driver:
+    memory: 1g
+  executor:
+    memory: 1g
+
+trino:
+  url: jdbc:trino://localhost:8080
+  user: test
+  catalog: test
+  schema: test
+
+hudi:
+  base:
+    path: /tmp/test/hudi
+  table:
+    name: test_market_data
+
+iceberg:
+  warehouse:
+    path: /tmp/test/iceberg
+  table:
+    name: test_market_data
+
+logging:
+  level:
+    com.moneyplant.trading: DEBUG
+    root: WARN

@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
  * in the application, ensuring consistent error responses.
  */
 @Slf4j
-@RestControllerAdvice(basePackages = {"com.moneyplant.core", "com.moneyplant.portfolioservice", "com.moneyplant.transactionservice", "com.moneyplant.watchlistservice", "com.moneyplant.app"})
+@RestControllerAdvice(basePackages = {"com.moneyplant.core", "com.moneyplant.portfolio", "com.moneyplant.transaction", "com.moneyplant.watchlist", "com.moneyplant"})
 public class GlobalExceptionHandler {
 
     /**

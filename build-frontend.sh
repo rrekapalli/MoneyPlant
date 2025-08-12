@@ -4,8 +4,8 @@
 
 # Store the absolute path to the project root
 PROJECT_ROOT="$(cd "$(dirname "$0")" && pwd)"
-STATIC_DIR="$PROJECT_ROOT/moneyplant-app/src/main/resources/static"
-DIST_DIR="$PROJECT_ROOT/moneyplant-app/src/main/moneyplant-app/dist/money-plant-frontend"
+STATIC_DIR="$PROJECT_ROOT/backend/src/main/resources/static"
+DIST_DIR="$PROJECT_ROOT/frontend/dist/money-plant-frontend"
 BROWSER_DIR="$DIST_DIR/browser"
 
 # Print paths for debugging
