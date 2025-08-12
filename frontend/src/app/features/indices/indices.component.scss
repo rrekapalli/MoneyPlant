@@ -28,6 +28,24 @@
   min-height: 0; /* Important for Firefox */
 }
 
+/* NSE Indices Status Bar */
+.nse-indices-status-bar {
+  background: linear-gradient(135deg, var(--surface-50) 0%, var(--surface-100) 100%);
+  border: 1px solid var(--surface-border);
+  
+  .text-green-600 {
+    color: var(--green-600) !important;
+  }
+  
+  .text-red-600 {
+    color: var(--red-600) !important;
+  }
+  
+  .text-gray-600 {
+    color: var(--gray-600) !important;
+  }
+}
+
 /* Custom styling for bottom tabs */
 ::ng-deep .bottom-tabs {
   display: flex;

@@ -1,6 +1,7 @@
 export const environment = {
   production: true,
   apiUrl: '/api', // In production, the API is typically served from the same domain
+  enginesApiUrl: '/engines', // In production, engines might be served from the same domain
   useMockData: false,
   
   // OAuth Configuration

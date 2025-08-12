@@ -138,6 +138,9 @@ import {StockDataDto, StockTicksDto} from '../../../services/entities/stock-tick
 import { IndicesService } from '../../../services/apis/indices.api';
 import { IndexHistoricalData } from '../../../services/entities/index-historical-data';
 
+// Import NSE Indices service and entities
+
+
 // Import modern Angular v20 WebSocket services and entities
 import { ModernIndicesWebSocketService, IndexDataDto, IndicesDto } from '../../../services/websockets';
 
@@ -216,6 +219,8 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
   // Historical data for candlestick chart
   private historicalData: IndexHistoricalData[] = [];
 
+
+
   constructor(
     cdr: ChangeDetectorRef,
     excelExportService: ExcelExportService,
@@ -223,7 +228,8 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
     private componentCommunicationService: ComponentCommunicationService,
     private stockTicksService: StockTicksService,
     private indicesService: IndicesService,
-    private modernIndicesWebSocketService: ModernIndicesWebSocketService
+    private modernIndicesWebSocketService: ModernIndicesWebSocketService,
+
   ) {
     super(cdr, excelExportService, filterService);
   }
@@ -242,6 +248,8 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
 
     // Initialize WebSocket connection
     this.initializeWebSocket();
+
+
 
     // Clear any existing subscription
     if (this.selectedIndexSubscription) {
@@ -290,6 +298,8 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
       this.indicesWebSocketSubscription.unsubscribe();
       this.indicesWebSocketSubscription = null;
     }
+
+
     
     // Disconnect modern WebSocket
     this.modernIndicesWebSocketService.disconnect();
@@ -300,6 +310,7 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
     this.appliedFilters = [];
     this.currentSelectedIndexData = null;
     this.historicalData = [];
+
   }
 
   private loadDefaultNifty50Data(): void {
@@ -365,6 +376,18 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
       });
     }
   }
+
+
+
+
+
+
+
+
+
+
+
+
 
   /**
    * Clear all widgets data to prevent stale data display
@@ -606,6 +629,8 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
       .setId('stock-list-widget')
       .build();
 
+
+
     const filterWidget = createFilterWidget();
     const metricTiles = this.createMetricTiles([]);
 
@@ -632,6 +657,7 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
       .setWidgets([
         ...metricTiles,
         filterWidget,
+
         barStockIndustry,
         pieStockSector,
         candlestickChart,
@@ -709,6 +735,10 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
         }
       }
     });
+
+
+
+
 
     // Populate metric tiles with initial data
     this.updateMetricTilesWithFilters([]);
