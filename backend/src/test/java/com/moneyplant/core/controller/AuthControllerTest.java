@@ -1,7 +1,7 @@
 package com.moneyplant.core.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.moneyplant.app.MoneyPlantApplication;
+import com.moneyplant.MoneyPlantApplication;
 import com.moneyplant.core.entity.User;
 import com.moneyplant.core.repository.UserRepository;
 import com.moneyplant.core.security.JwtTokenProvider;
