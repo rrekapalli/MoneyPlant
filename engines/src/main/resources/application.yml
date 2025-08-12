@@ -1,3 +1,8 @@
+server:
+  port: 8081
+  servlet:
+    context-path: /engines
+
 spring:
   application:
     name: moneyplant-engines
@@ -6,39 +11,29 @@ spring:
     active: dev
   
   datasource:
-    url: jdbc:postgresql://localhost:5432/moneyplant_engines
-    username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:postgres}
+    url: jdbc:postgresql://postgres.tailce422e.ts.net:5432/MoneyPlant
+    username: postgres
+    password: mysecretpassword
     driver-class-name: org.postgresql.Driver
     hikari:
-      maximum-pool-size: 20
-      minimum-idle: 5
       connection-timeout: 30000
+      maximum-pool-size: 10
+      minimum-idle: 2
       idle-timeout: 600000
       max-lifetime: 1800000
-  
+
   jpa:
     hibernate:
       ddl-auto: update
     show-sql: false
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
-        jdbc:
-          batch_size: 50
-        order_inserts: true
-        order_updates: true
+        connection:
+          provider_disables_autocommit: true
   
   kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
-    consumer:
-      group-id: moneyplant-engines
-      auto-offset-reset: earliest
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
-      properties:
-        spring.json.trusted.packages: "*"
+    bootstrap-servers: localhost:9092
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
@@ -47,192 +42,126 @@ spring:
       batch-size: 16384
       linger-ms: 1
       buffer-memory: 33554432
+    consumer:
+      group-id: moneyplant-engines
+      auto-offset-reset: earliest
+      enable-auto-commit: true
+      auto-commit-interval-ms: 1000
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
   
-  cache:
-    type: redis
-    redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:}
-      timeout: 2000ms
-      lettuce:
-        pool:
-          max-active: 8
-          max-idle: 8
-          min-idle: 0
-          max-wait: -1ms
+  boot:
+    admin:
+      client:
+        url: http://localhost:8080
+
+# Kafka topic configuration
+kafka:
+  topics:
+    nse-indices-ticks: nse-indices-ticks
+    market-data: market-data
+    trading-signals: trading-signals
+    backtest-results: backtest-results
+  group-id: moneyplant-engines
+
+# NSE WebSocket configuration
+nse:
+  websocket:
+    url: wss://www.nseindia.com/streams/indices/high/drdMkt
+    reconnect:
+      interval: 30
 
 # Spark Configuration
 spark:
-  app:
-    name: MoneyPlant-Engines
-  master: ${SPARK_MASTER:local[*]}
-  driver:
-    memory: ${SPARK_DRIVER_MEMORY:2g}
-  executor:
-    memory: ${SPARK_EXECUTOR_MEMORY:2g}
+  app-name: MoneyPlant-Engines
+  master: local[*]
+  driver-memory: 2g
+  executor-memory: 2g
   sql:
-    warehouse:
-      dir: /tmp/spark-warehouse
-
-# Data Lake Configuration
-data-lake:
-  base-path: ${DATA_LAKE_PATH:/tmp/moneyplant-data}
-  formats:
-    - parquet
-    - iceberg
-    - hudi
-  compression: snappy
-  partitioning:
-    enabled: true
-    columns:
-      - symbol
-      - date
-
-# Market Data Sources
-market-data:
-  sources:
-    yahoo-finance:
+    adaptive:
       enabled: true
-      rate-limit: 100
-      timeout: 30000
-    alpha-vantage:
-      enabled: false
-      api-key: ${ALPHA_VANTAGE_API_KEY:}
-      rate-limit: 5
-    polygon:
-      enabled: false
-      api-key: ${POLYGON_API_KEY:}
-      rate-limit: 5
-  
-  ingestion:
-    batch-size: 1000
-    max-workers: 10
-    retry-attempts: 3
-    retry-delay: 5000
+      coalescePartitions:
+        enabled: true
+      skewJoin:
+        enabled: true
+      localShuffleReader:
+        enabled: true
+      optimizeSkewedJoin:
+        enabled: true
 
-# Backtesting Configuration
-backtesting:
-  max-concurrent-jobs: 5
-  default-initial-capital: 100000.0
-  commission-rate: 0.001
-  slippage: 0.0001
-  risk-free-rate: 0.02
-  
-  performance-metrics:
-    calculate-sharpe: true
-    calculate-sortino: true
-    calculate-max-drawdown: true
-    calculate-win-rate: true
+# Trino Configuration
+trino:
+  url: jdbc:trino://trino.tailce422e.ts.net:8080
+  username: trino
+  password: 
+  catalog: 
+  schema: 
+  connection-pool:
+    maximum-pool-size: 10
+    minimum-idle: 2
+    connection-timeout: 30000
+    idle-timeout: 600000
+    max-lifetime: 1800000
 
-# Strategy Configuration
-strategy:
-  validation:
-    enabled: true
-    max-parameters: 50
-    max-rules-length: 10000
-  
-  execution:
-    max-concurrent-strategies: 10
-    default-timeout: 300000
+# Apache Hudi Configuration
+hudi:
+  base-path: /tmp/hudi
+  table-name: market_data
+  key-generator: org.apache.hudi.keygen.SimpleKeyGenerator
+  partition-path-field: date
+  write-options:
+    table.type: COPY_ON_WRITE
+    recordkey.field: symbol
+    partitionpath.field: date
+    precombine.field: timestamp
+    keygenerator.class: org.apache.hudi.keygen.SimpleKeyGenerator
+    hive.style.partitioning: true
+    operation: upsert
+    table.name: market_data
+    base.path: /tmp/hudi
 
-# Scanner Configuration
-scanner:
-  default-timeframe: 1d
-  max-symbols-per-scan: 1000
-  scan-interval: 300000
-  alert:
-    enabled: true
-    channels:
-      - email
-      - slack
-      - webhook
+# Apache Iceberg Configuration
+iceberg:
+  catalog-name: iceberg_catalog
+  warehouse-location: /tmp/iceberg
+  io-impl: org.apache.iceberg.aws.s3.S3FileIO
+  s3:
+    endpoint: 
+    access-key: 
+    secret-key: 
+  catalog-properties:
+    catalog-impl: org.apache.iceberg.aws.glue.GlueCatalog
+    warehouse: /tmp/iceberg
+    io-impl: org.apache.iceberg.aws.s3.S3FileIO
+  table-properties:
+    write.format.default: parquet
+    write.parquet.compression: snappy
+    write.parquet.row-group-size-bytes: 134217728
+    write.parquet.page-size-bytes: 1048576
+    write.parquet.dict-size-bytes: 2097152
 
-# Storage Configuration
-storage:
-  compression:
-    enabled: true
-    algorithm: snappy
-    level: 1
-  
-  archiving:
-    enabled: true
-    retention-days: 2555
-    compression: gzip
-  
-  backup:
-    enabled: true
-    schedule: "0 2 * * *"
-    retention: 30
-  
-  optimization:
-    enabled: true
-    schedule: "0 3 * * 0"
-    vacuum: true
-    analyze: true
-
-# Query Configuration
-query:
-  max-result-size: 100000
-  timeout: 300000
-  cache:
-    enabled: true
-    ttl: 3600000
-  
-  aggregation:
-    default-interval: 1d
-    supported-intervals:
-      - 1m
-      - 5m
-      - 15m
-      - 1h
-      - 4h
-      - 1d
-      - 1w
-      - 1M
-
-# Logging Configuration
+# Logging configuration
 logging:
   level:
     com.moneyplant.engines: INFO
-    org.apache.spark: WARN
-    org.apache.kafka: INFO
-    org.hibernate: WARN
+    org.springframework.kafka: INFO
+    org.apache.kafka: WARN
+    org.springframework.web.socket: DEBUG
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
-    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
 
-# Management Configuration
+# Management endpoints
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,prometheus
+        include: health,info,metrics
   endpoint:
     health:
-      show-details: when-authorized
+      show-details: always
   metrics:
     export:
       prometheus:
         enabled: true
-
-# Server Configuration
-server:
-  port: ${SERVER_PORT:8081}
-  servlet:
-    context-path: /engines
-  compression:
-    enabled: true
-    mime-types: text/html,text/xml,text/plain,text/css,text/javascript,application/javascript,application/json
-    min-response-size: 1024
-
-# Security Configuration
-security:
-  jwt:
-    secret: ${JWT_SECRET:your-secret-key}
-    expiration: 86400000
-  oauth2:
-    enabled: false
-    client-id: ${OAUTH2_CLIENT_ID:}
-    client-secret: ${OAUTH2_CLIENT_SECRET:}
-    redirect-uri: ${OAUTH2_REDIRECT_URI:}

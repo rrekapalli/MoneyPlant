@@ -17,15 +17,16 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Kafka configuration for MoneyPlant Engines
+ * Kafka configuration for the engines application
+ * Provides producer and consumer configurations for NSE indices data ingestion
  */
 @Configuration
 public class KafkaConfig {
-
-    @Value("${spring.kafka.bootstrap-servers:localhost:9092}")
+    
+    @Value("${kafka.bootstrap-servers:localhost:9092}")
     private String bootstrapServers;
 
-    @Value("${spring.kafka.consumer.group-id:moneyplant-engines}")
+    @Value("${kafka.group-id:moneyplant-engines}")
     private String groupId;
 
     @Bean
@@ -55,7 +56,8 @@ public class KafkaConfig {
         configProps.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         configProps.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class);
         configProps.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-        configProps.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
+        configProps.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, true);
+        configProps.put(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, 1000);
         return new DefaultKafkaConsumerFactory<>(configProps);
     }
 
@@ -67,24 +69,23 @@ public class KafkaConfig {
         return factory;
     }
 
-    // Kafka Topics
+    @Bean
+    public NewTopic nseIndicesTicksTopic() {
+        return new NewTopic("nse-indices-ticks", 3, (short) 1);
+    }
+
     @Bean
     public NewTopic marketDataTopic() {
         return new NewTopic("market-data", 3, (short) 1);
     }
 
     @Bean
+    public NewTopic tradingSignalsTopic() {
+        return new NewTopic("trading-signals", 3, (short) 1);
+    }
+
+    @Bean
     public NewTopic backtestResultsTopic() {
         return new NewTopic("backtest-results", 3, (short) 1);
-    }
-
-    @Bean
-    public NewTopic strategySignalsTopic() {
-        return new NewTopic("strategy-signals", 3, (short) 1);
-    }
-
-    @Bean
-    public NewTopic scannerResultsTopic() {
-        return new NewTopic("scanner-results", 3, (short) 1);
     }
 }
