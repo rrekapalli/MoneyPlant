@@ -314,19 +314,19 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
   }
 
   private loadDefaultNifty50Data(): void {
-    this.dashboardTitle = 'NIFTY METAL - Financial Dashboard';
+    this.dashboardTitle = 'NIFTY 50 - Financial Dashboard';
     
-    const defaultNiftyMetalData: SelectedIndexData = {
-      id: 'NIFTYMETAL',
-      symbol: 'NIFTY METAL',
-      name: 'NIFTY-METAL',
+    const defaultNifty50Data: SelectedIndexData = {
+      id: 'NIFTY50',
+      symbol: 'NIFTY 50',
+      name: 'NIFTY 50',
       lastPrice: 0,
       variation: 0,
       percentChange: 0,
       keyCategory: 'Index'
     };
     
-    this.updateDashboardWithSelectedIndex(defaultNiftyMetalData);
+    this.updateDashboardWithSelectedIndex(defaultNifty50Data);
   }
 
   private loadStockTicksData(indexSymbol: string): void {
@@ -376,18 +376,6 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
       });
     }
   }
-
-
-
-
-
-
-
-
-
-
-
-
 
   /**
    * Clear all widgets data to prevent stale data display
@@ -601,6 +589,13 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
       .setPredefinedPalette('finance')
       .setAccessor('symbol')
       .setFilterColumn('symbol')
+      .setXAxisName('Trading Date')
+      .setYAxisName('Price (₹)')
+      .enableDataZoom(70, 100)  // Show last 30% by default with zoom functionality
+      .setBarWidth('60%')  // Set candlestick bar width for better visibility
+      .enableBrush()  // Enable brush selection for technical analysis
+      .setLargeMode(100)  // Enable large mode for datasets with 100+ points
+      .setTooltipType('axis')  // Enable crosshair tooltip for better analysis
       .setEvents((widget, chart) => {
         if (chart) {
           chart.off('click');
@@ -616,6 +611,161 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
       .setId('candlestick-chart')
       .setSkipDefaultFiltering(true)
       .build();
+
+    // Add enhanced X-axis and Y-axis configuration to candlestick chart
+    if (candlestickChart.config?.options) {
+      const options = candlestickChart.config.options as any;
+      
+      // Enhanced X-axis configuration for better date display
+      options.xAxis = {
+        ...options.xAxis,
+        type: 'category',
+        data: [],
+        axisLabel: {
+          rotate: 45,
+          fontSize: 10,
+          color: '#666',
+          formatter: (value: string) => {
+            // Format date labels for better readability
+            if (value && typeof value === 'string') {
+              try {
+                const date = new Date(value);
+                if (!isNaN(date.getTime())) {
+                  return date.toLocaleDateString('en-IN', { 
+                    month: 'short', 
+                    day: 'numeric',
+                    year: '2-digit'
+                  });
+                }
+              } catch (e) {
+                // If not a valid date, return as is
+              }
+            }
+            return value;
+          }
+        },
+        axisTick: {
+          alignWithLabel: true
+        },
+        axisLine: {
+          lineStyle: {
+            color: '#ddd'
+          }
+        }
+      };
+
+      // Enhanced Y-axis configuration
+      options.yAxis = {
+        ...options.yAxis,
+        type: 'value',
+        scale: true,
+        axisLabel: {
+          formatter: (value: number) => {
+            return new Intl.NumberFormat('en-IN', {
+              style: 'currency',
+              currency: 'INR',
+              minimumFractionDigits: 0,
+              maximumFractionDigits: 2
+            }).format(value);
+          },
+          color: '#333',  // Full opacity for y-axis labels
+          fontSize: 10
+        },
+        axisLine: {
+          lineStyle: {
+            color: '#ddd'
+          }
+        },
+        splitLine: {
+          lineStyle: {
+            color: '#f0f0f0',
+            type: 'dashed'
+          }
+        }
+      };
+
+      // Enhanced tooltip configuration
+      options.tooltip = {
+        ...options.tooltip,
+        trigger: 'axis',
+        axisPointer: {
+          type: 'cross',
+          crossStyle: {
+            color: '#999'
+          }
+        },
+        formatter: (params: any) => {
+          const param = Array.isArray(params) ? params[0] : params;
+          const data = param.data;
+          const date = param.name;
+          
+          // Format date for tooltip
+          let formattedDate = date;
+          try {
+            const dateObj = new Date(date);
+            if (!isNaN(dateObj.getTime())) {
+              formattedDate = dateObj.toLocaleDateString('en-IN', {
+                weekday: 'short',
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+              });
+            }
+          } catch (e) {
+            // Keep original date if parsing fails
+          }
+
+          const formatter = new Intl.NumberFormat('en-IN', {
+            style: 'currency',
+            currency: 'INR',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+          });
+
+          return `
+            <div style="padding: 8px;">
+              <div style="font-weight: bold; margin-bottom: 8px;">${formattedDate}</div>
+              <div style="margin: 4px 0;">
+                <span style="color: #666;">Open:</span> 
+                <span style="font-weight: bold;">${formatter.format(data[0])}</span>
+              </div>
+              <div style="margin: 4px 0;">
+                <span style="color: #666;">Close:</span> 
+                <span style="font-weight: bold;">${formatter.format(data[1])}</span>
+              </div>
+              <div style="margin: 4px 0;">
+                <span style="color: #666;">Low:</span> 
+                <span style="font-weight: bold;">${formatter.format(data[2])}</span>
+              </div>
+              <div style="margin: 4px 0;">
+                <span style="color: #666;">High:</span> 
+                <span style="font-weight: bold;">${formatter.format(data[3])}</span>
+              </div>
+            </div>
+          `;
+        }
+      };
+
+      // Enhanced grid configuration for better spacing
+      options.grid = {
+        ...options.grid,
+        top: '15%',
+        left: '5%',   // Reduced from 10% to 5%
+        right: '5%',  // Reduced from 10% to 5%
+        bottom: '18%',  // Reduced from 25% to 18% to bring zoom control closer
+        containLabel: true
+      };
+
+      // Update data zoom configuration with increased height
+      if (options.dataZoom && Array.isArray(options.dataZoom)) {
+        options.dataZoom.forEach((zoom: any) => {
+          if (zoom.type === 'slider') {
+            zoom.height = '8%';  // Increased from 3% to 8%
+            zoom.bottom = '1%';   // Reduced from 3% to 1% to bring it closer to x-axis
+          }
+        });
+      }
+    }
 
     // Stock List Widget - Initialize with empty data, will be populated later
     const stockListWidget = StockListChartBuilder.create()
@@ -952,13 +1102,10 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
             item.high
           ]);
           
-          // Set X-axis labels (dates)
+          // Set X-axis labels (dates) with proper ISO format for consistency
           const xAxisLabels = this.historicalData.map(item => {
             const date = new Date(item.date);
-            return date.toLocaleDateString('en-US', { 
-              month: 'short', 
-              day: 'numeric' 
-            });
+            return date.toISOString().split('T')[0]; // Use ISO date format for consistency
           });
           
           return {
@@ -979,8 +1126,21 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
             stock.dayHigh || 0
           ]);
           
-          // Set X-axis labels (symbols)
-          const xAxisLabels = sourceData.map(stock => stock.symbol || 'Unknown');
+          // Set X-axis labels (symbols or dates if available)
+          const xAxisLabels = sourceData.map(stock => {
+            // Try to use lastUpdateTime if available, otherwise fall back to symbol
+            if (stock.lastUpdateTime) {
+              try {
+                const date = new Date(stock.lastUpdateTime);
+                if (!isNaN(date.getTime())) {
+                  return date.toISOString().split('T')[0];
+                }
+              } catch (e) {
+                // Fall back to symbol if date parsing fails
+              }
+            }
+            return stock.symbol || 'Unknown';
+          });
           
           return {
             data: candlestickData,
@@ -1597,28 +1757,50 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
         item.high
       ]);
       
-      // Create X-axis labels (dates)
+      // Create X-axis labels (dates) with proper formatting
       const xAxisLabels = this.historicalData.map(item => {
         const date = new Date(item.date);
-        return date.toLocaleDateString('en-US', { 
-          month: 'short', 
-          day: 'numeric' 
-        });
+        return date.toISOString().split('T')[0]; // Use ISO date format for consistency
       });
       
       // Update the widget with historical data
       this.updateEchartWidget(candlestickWidget, candlestickData);
       
-      // Update X-axis labels if chart instance exists
+      // Update X-axis labels and chart options if chart instance exists
       if (candlestickWidget.chartInstance && typeof candlestickWidget.chartInstance.setOption === 'function') {
+        const currentOptions = candlestickWidget.chartInstance.getOption();
         const newOptions = {
-          ...candlestickWidget.config?.options,
+          ...currentOptions,
           xAxis: {
-            ...((candlestickWidget.config?.options as any)?.xAxis || {}),
+            ...((currentOptions as any)?.xAxis || {}),
             data: xAxisLabels
-          }
+          },
+          series: [{
+            ...((currentOptions as any)?.series?.[0] || {}),
+            data: candlestickData
+          }]
         };
+        
+        // Apply the new options
         candlestickWidget.chartInstance.setOption(newOptions, true);
+        
+        // Force a resize to ensure proper rendering
+        setTimeout(() => {
+          if (candlestickWidget.chartInstance && typeof candlestickWidget.chartInstance.resize === 'function') {
+            candlestickWidget.chartInstance.resize();
+          }
+        }, 100);
+      }
+      
+      // Also update the widget's config options for consistency
+      if (candlestickWidget.config?.options) {
+        const options = candlestickWidget.config.options as any;
+        if (options.xAxis) {
+          options.xAxis.data = xAxisLabels;
+        }
+        if (options.series && options.series[0]) {
+          options.series[0].data = candlestickData;
+        }
       }
     }
   }
@@ -1642,22 +1824,60 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
         stock.dayHigh || 0
       ]);
       
-      // Create X-axis labels (symbols)
-      const xAxisLabels = this.filteredDashboardData.map(stock => stock.symbol || 'Unknown');
+      // Create X-axis labels (symbols or dates if available)
+      const xAxisLabels = this.filteredDashboardData.map(stock => {
+        // Try to use lastUpdateTime if available, otherwise fall back to symbol
+        if (stock.lastUpdateTime) {
+          try {
+            const date = new Date(stock.lastUpdateTime);
+            if (!isNaN(date.getTime())) {
+              return date.toISOString().split('T')[0];
+            }
+          } catch (e) {
+            // Fall back to symbol if date parsing fails
+          }
+        }
+        return stock.symbol || 'Unknown';
+      });
       
       // Update the widget with new data and X-axis labels
       this.updateEchartWidget(candlestickWidget, candlestickData);
       
-      // Update X-axis labels if chart instance exists
+      // Update X-axis labels and chart options if chart instance exists
       if (candlestickWidget.chartInstance && typeof candlestickWidget.chartInstance.setOption === 'function') {
+        const currentOptions = candlestickWidget.chartInstance.getOption();
         const newOptions = {
-          ...candlestickWidget.config?.options,
+          ...currentOptions,
           xAxis: {
-            ...((candlestickWidget.config?.options as any)?.xAxis || {}),
+            ...((currentOptions as any)?.xAxis || {}),
             data: xAxisLabels
-          }
+          },
+          series: [{
+            ...((currentOptions as any)?.series?.[0] || {}),
+            data: candlestickData
+          }]
         };
+        
+        // Apply the new options
         candlestickWidget.chartInstance.setOption(newOptions, true);
+        
+        // Force a resize to ensure proper rendering
+        setTimeout(() => {
+          if (candlestickWidget.chartInstance && typeof candlestickWidget.chartInstance.resize === 'function') {
+            candlestickWidget.chartInstance.resize();
+          }
+        }, 100);
+      }
+      
+      // Also update the widget's config options for consistency
+      if (candlestickWidget.config?.options) {
+        const options = candlestickWidget.config.options as any;
+        if (options.xAxis) {
+          options.xAxis.data = xAxisLabels;
+        }
+        if (options.series && options.series[0]) {
+          options.series[0].data = candlestickData;
+        }
       }
     }
   }
