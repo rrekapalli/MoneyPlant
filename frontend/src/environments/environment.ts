@@ -2,6 +2,7 @@ export const environment = {
   production: false,
   apiUrl: 'http://localhost:8080',
   enginesApiUrl: 'http://localhost:8081/engines',
+  enginesWebSocketUrl: 'ws://localhost:8081/engines',
   useMockData: true,
   
   // OAuth Configuration

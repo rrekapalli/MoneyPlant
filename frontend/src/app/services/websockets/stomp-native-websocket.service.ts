@@ -10,6 +10,7 @@ import { environment } from '../../../environments/environment';
  * Modern STOMP WebSocket service
  * Uses @stomp/stompjs with native WebSocket
  * Compatible with Spring Boot STOMP endpoints
+ * Now connects to engines project instead of backend
  */
 @Injectable({
   providedIn: 'root'
@@ -33,13 +34,12 @@ export class StompNativeWebSocketService {
 
   /**
    * Create and configure STOMP client
+   * Now connects to engines project WebSocket endpoints
    */
   private createStompClient(): Client {
     const client = new Client({
       webSocketFactory: () => {
-        const baseUrl = environment.production ?
-          `${environment.apiUrl}/ws/indices` :
-          `${environment.apiUrl}/ws/indices`;
+        const baseUrl = environment.enginesWebSocketUrl + '/ws/nse-indices';
         return new SockJS(baseUrl);
       },
       debug: (msg) => {
@@ -87,7 +87,7 @@ export class StompNativeWebSocketService {
   }
 
   /**
-   * Get errors observable
+   * Get error observable
    */
   get errors(): Observable<string> {
     return this.errors$.asObservable();
@@ -97,214 +97,223 @@ export class StompNativeWebSocketService {
    * Check if currently connected
    */
   get isConnected(): boolean {
-    return this.client.connected;
+    return this.client?.connected === true;
   }
 
   /**
-   * Connect to WebSocket server
+   * Connect to engines WebSocket
    */
   async connect(): Promise<void> {
-    try {
-      this.connectionState$.next(WebSocketConnectionState.CONNECTING);
-      
-      this.client.activate();
-      
-      // Wait for connection with timeout
-      return new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          reject(new Error('Connection timeout'));
-        }, 10000); // 10 second timeout
+    if (this.isConnected) {
+      return Promise.resolve();
+    }
 
-        const subscription = this.connectionState$.subscribe(state => {
-          if (state === WebSocketConnectionState.CONNECTED) {
-            clearTimeout(timeout);
-            subscription.unsubscribe();
-            resolve();
-          } else if (state === WebSocketConnectionState.ERROR) {
-            clearTimeout(timeout);
-            subscription.unsubscribe();
-            reject(new Error('Connection failed'));
-          }
-        });
-      });
+    try {
+      await this.client.activate();
+      console.log('Connected to engines STOMP WebSocket');
     } catch (error) {
-      console.error('Failed to connect to STOMP WebSocket:', error);
-      this.connectionState$.next(WebSocketConnectionState.ERROR);
+      console.error('Failed to connect to engines STOMP WebSocket:', error);
       throw error;
     }
   }
 
   /**
-   * Disconnect from WebSocket server
+   * Disconnect from engines WebSocket
    */
-  async disconnect(): Promise<void> {
-    try {
-      this.clearSubscriptions();
-      await this.client.deactivate();
-      this.connectionState$.next(WebSocketConnectionState.DISCONNECTED);
-    } catch (error) {
-      console.error('Error during disconnect:', error);
+  disconnect(): void {
+    if (this.client) {
+      this.client.deactivate();
     }
+    this.clearSubscriptions();
   }
 
   /**
-   * Subscribe to all indices data
+   * Subscribe to all indices data from engines
    */
   subscribeToAllIndices(): Observable<IndicesDto> {
-    const destination = '/topic/indices';
-    
-    if (!this.client.connected) {
-      console.warn('Client not connected, cannot subscribe to all indices');
-      return this.allIndicesData$.asObservable().pipe(
-        filter((data): data is IndicesDto => data !== null)
-      );
+    if (!this.isConnected) {
+      throw new Error('WebSocket not connected');
     }
 
-    // Check if already subscribed
-    if (this.activeSubscriptions.has(destination)) {
-      return this.allIndicesData$.asObservable().pipe(
-        filter((data): data is IndicesDto => data !== null)
-      );
-    }
-    
-    const subscription = this.client.subscribe(destination, (message: IMessage) => {
+    const subscription = this.client.subscribe('/topic/indices', (message: IMessage) => {
       try {
-        const indicesData: IndicesDto = JSON.parse(message.body);
+        const data = JSON.parse(message.body);
+        const indicesData = this.parseIndicesData(data);
         this.allIndicesData$.next(indicesData);
       } catch (error) {
-        console.error('Error parsing indices data:', error);
-        this.errors$.next(`Failed to parse indices data: ${error}`);
+        console.error('Error parsing indices message:', error);
       }
     });
 
-    this.activeSubscriptions.set(destination, subscription);
-    
-    // Send subscription message to backend to trigger NSE connection
-    this.client.publish({
-      destination: '/app/subscribe-indices',
-      body: JSON.stringify({ action: 'subscribe' })
-    });
+    this.activeSubscriptions.set('all-indices', subscription);
 
-    return this.allIndicesData$.asObservable().pipe(
+    return this.allIndicesData$.pipe(
       filter((data): data is IndicesDto => data !== null)
     );
   }
 
   /**
-   * Subscribe to specific index data
+   * Subscribe to specific index data from engines
    */
   subscribeToIndex(indexName: string): Observable<IndicesDto> {
-    const destination = `/topic/indices/${indexName}`;
-    
-    if (!this.client.connected) {
-      console.warn(`Client not connected, cannot subscribe to index: ${indexName}`);
-      
-      // Return cached data or create new subject
-      if (!this.specificIndicesData.has(indexName)) {
-        this.specificIndicesData.set(indexName, new BehaviorSubject<IndicesDto | null>(null));
-      }
-      return this.specificIndicesData.get(indexName)!.asObservable().pipe(
-        filter((data): data is IndicesDto => data !== null)
-      );
+    if (!this.isConnected) {
+      throw new Error('WebSocket not connected');
     }
 
-    // Check if already subscribed
-    if (this.activeSubscriptions.has(destination)) {
-      const existingSubject = this.specificIndicesData.get(indexName);
-      if (existingSubject) {
-        return existingSubject.asObservable().pipe(
-          filter((data): data is IndicesDto => data !== null)
-        );
+    const topic = `/topic/indices/${indexName.replace(/\s+/g, '-').toLowerCase()}`;
+    const subscription = this.client.subscribe(topic, (message: IMessage) => {
+      try {
+        const data = JSON.parse(message.body);
+        const indicesData = this.parseIndicesData(data);
+        
+        if (!this.specificIndicesData.has(indexName)) {
+          this.specificIndicesData.set(indexName, new BehaviorSubject<IndicesDto | null>(null));
+        }
+        this.specificIndicesData.get(indexName)?.next(indicesData);
+      } catch (error) {
+        console.error('Error parsing index message:', error);
       }
-    }
-    
-    // Create data subject if it doesn't exist
+    });
+
+    this.activeSubscriptions.set(`index-${indexName}`, subscription);
+
+    // Ensure we have a BehaviorSubject for this index
     if (!this.specificIndicesData.has(indexName)) {
       this.specificIndicesData.set(indexName, new BehaviorSubject<IndicesDto | null>(null));
     }
 
-    const subscription = this.client.subscribe(destination, (message: IMessage) => {
-      try {
-        const indicesData: IndicesDto = JSON.parse(message.body);
-        this.specificIndicesData.get(indexName)?.next(indicesData);
-      } catch (error) {
-        console.error(`Error parsing data for index ${indexName}:`, error);
-        this.errors$.next(`Failed to parse data for index ${indexName}: ${error}`);
-      }
-    });
-
-    this.activeSubscriptions.set(destination, subscription);
-    
-    // Send subscription message to backend to trigger NSE connection
-    this.client.publish({
-      destination: `/app/subscribe-indices/${indexName}`,
-      body: JSON.stringify({ indexName })
-    });
-
-    return this.specificIndicesData.get(indexName)!.asObservable().pipe(
+    // Return observable that filters out null values and ensures type safety
+    return this.specificIndicesData.get(indexName)!.pipe(
       filter((data): data is IndicesDto => data !== null)
     );
   }
 
   /**
-   * Unsubscribe from all indices
+   * Unsubscribe from all indices data
    */
   unsubscribeFromAllIndices(): void {
-    const destination = '/topic/indices';
-    this.unsubscribeFromDestination(destination);
-    
-    // Send unsubscribe message to backend
-    if (this.client.connected) {
-      this.client.publish({
-        destination: '/app/unsubscribe-indices',
-        body: JSON.stringify({ action: 'unsubscribe' })
-      });
-    }
-  }
-
-  /**
-   * Unsubscribe from specific index
-   */
-  unsubscribeFromIndex(indexName: string): void {
-    const destination = `/topic/indices/${indexName}`;
-    this.unsubscribeFromDestination(destination);
-    
-    // Send unsubscribe message to backend
-    if (this.client.connected) {
-      this.client.publish({
-        destination: `/app/unsubscribe-indices/${indexName}`,
-        body: JSON.stringify({ action: 'unsubscribe', indexName })
-      });
-    }
-  }
-
-  /**
-   * Unsubscribe from a specific destination
-   */
-  private unsubscribeFromDestination(destination: string): void {
-    const subscription = this.activeSubscriptions.get(destination);
+    const subscription = this.activeSubscriptions.get('all-indices');
     if (subscription) {
       subscription.unsubscribe();
-      this.activeSubscriptions.delete(destination);
+      this.activeSubscriptions.delete('all-indices');
+      this.allIndicesData$.next(null);
     }
+  }
+
+  /**
+   * Unsubscribe from specific index data
+   */
+  unsubscribeFromIndex(indexName: string): void {
+    const subscription = this.activeSubscriptions.get(`index-${indexName}`);
+    if (subscription) {
+      subscription.unsubscribe();
+      this.activeSubscriptions.delete(`index-${indexName}`);
+      
+      if (this.specificIndicesData.has(indexName)) {
+        this.specificIndicesData.get(indexName)?.next(null);
+      }
+    }
+  }
+
+  /**
+   * Send message to engines WebSocket
+   */
+  sendMessage(destination: string, message: any): void {
+    if (this.isConnected) {
+      this.client.publish({
+        destination: destination,
+        body: JSON.stringify(message)
+      });
+    } else {
+      console.warn('Cannot send message: WebSocket not connected');
+    }
+  }
+
+  /**
+   * Parse indices data from engines WebSocket message
+   */
+  private parseIndicesData(data: any): IndicesDto {
+    // Handle different data formats from engines
+    if (data.indices && Array.isArray(data.indices)) {
+      return {
+        timestamp: data.timestamp || new Date().toISOString(),
+        indices: data.indices.map((index: any) => this.parseIndexData(index)),
+        source: 'Engines STOMP WebSocket',
+        marketStatus: data.marketStatus || { status: 'ACTIVE' }
+      };
+    }
+    
+    // Single index format
+    if (data.indexName || data.name) {
+      return {
+        timestamp: data.timestamp || new Date().toISOString(),
+        indices: [this.parseIndexData(data)],
+        source: 'Engines STOMP WebSocket',
+        marketStatus: data.marketStatus || { status: 'ACTIVE' }
+      };
+    }
+    
+    // Fallback
+    return {
+      timestamp: new Date().toISOString(),
+      indices: [],
+      source: 'Engines STOMP WebSocket',
+      marketStatus: { status: 'UNKNOWN' }
+    };
+  }
+
+  /**
+   * Parse individual index data
+   */
+  private parseIndexData(indexData: any): IndexDataDto {
+    return {
+      key: indexData.key || indexData.indexName || indexData.name,
+      indexName: indexData.indexName || indexData.name,
+      indexSymbol: indexData.indexSymbol || indexData.symbol,
+      lastPrice: indexData.lastPrice || indexData.last || 0,
+      variation: indexData.variation || indexData.change || 0,
+      percentChange: indexData.percentChange || indexData.percentChange || 0,
+      openPrice: indexData.openPrice || indexData.open || 0,
+      dayHigh: indexData.dayHigh || indexData.high || 0,
+      dayLow: indexData.dayLow || indexData.low || 0,
+      previousClose: indexData.previousClose || indexData.prevClose || 0,
+      yearHigh: indexData.yearHigh || 0,
+      yearLow: indexData.yearLow || 0,
+      indicativeClose: indexData.indicativeClose || 0,
+      peRatio: indexData.peRatio || 0,
+      pbRatio: indexData.pbRatio || 0,
+      dividendYield: indexData.dividendYield || 0,
+      declines: indexData.declines || 0,
+      advances: indexData.advances || 0,
+      unchanged: indexData.unchanged || 0,
+      percentChange365d: indexData.percentChange365d || 0,
+      date365dAgo: indexData.date365dAgo || '',
+      percentChange30d: indexData.percentChange30d || 0,
+      date30dAgo: indexData.date30dAgo || '',
+      chart365dPath: indexData.chart365dPath || '',
+      chart30dPath: indexData.chart30dPath || '',
+      chartTodayPath: indexData.chartTodayPath || ''
+    };
   }
 
   /**
    * Clear all subscriptions
    */
   private clearSubscriptions(): void {
-    this.activeSubscriptions.forEach((subscription, destination) => {
+    this.activeSubscriptions.forEach(subscription => {
       subscription.unsubscribe();
     });
     this.activeSubscriptions.clear();
+    this.allIndicesData$.next(null);
+    this.specificIndicesData.forEach(subject => subject.next(null));
   }
 
   /**
-   * Cleanup on service destroy
+   * Cleanup on service destruction
    */
   ngOnDestroy(): void {
+    this.disconnect();
     this.destroy$.next();
     this.destroy$.complete();
-    this.disconnect();
   }
 }

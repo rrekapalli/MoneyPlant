@@ -8,16 +8,18 @@ import {
   WebSocketSubscription,
   WebSocketServiceConfig
 } from '../entities/indices-websocket';
+import { environment } from '../../../environments/environment';
 
 /**
- * Service for consuming NSE Indices WebSocket endpoints
- * Implements the endpoints exposed in IndicesController.java
+ * Service for consuming NSE Indices WebSocket endpoints from engines project
+ * Implements the endpoints exposed in engines project
+ * Now connects to engines instead of backend
  */
 @Injectable({
   providedIn: 'root'
 })
 export class IndicesWebSocketService {
-  private readonly baseUrl = '/ws/indices';
+  private readonly baseUrl = `${environment.enginesWebSocketUrl}/ws/nse-indices`;
   private readonly config: WebSocketServiceConfig = {
     brokerURL: this.baseUrl,
     heartbeatIncoming: 4000,
@@ -45,7 +47,7 @@ export class IndicesWebSocketService {
   }
 
   /**
-   * Get connection errors
+   * Get errors
    */
   get errors(): Observable<string> {
     return this.baseWebSocketService.errors;
@@ -59,151 +61,69 @@ export class IndicesWebSocketService {
   }
 
   /**
-   * Connect to indices WebSocket
+   * Connect to engines WebSocket
    */
   async connect(): Promise<void> {
     try {
       await this.baseWebSocketService.connect(this.config);
-      console.log('Connected to indices WebSocket service');
+      console.log('Connected to engines indices WebSocket');
     } catch (error) {
-      console.error('Failed to connect to indices WebSocket:', error);
+      console.error('Failed to connect to engines indices WebSocket:', error);
       throw error;
     }
   }
 
   /**
-   * Disconnect from indices WebSocket
+   * Disconnect from engines WebSocket
    */
-  async disconnect(): Promise<void> {
-    // Unsubscribe from all active subscriptions
-    this.unsubscribeFromAllIndices();
-    this.unsubscribeFromAllSpecificIndices();
-    
-    await this.baseWebSocketService.disconnect();
-    console.log('Disconnected from indices WebSocket service');
+  disconnect(): void {
+    this.baseWebSocketService.disconnect();
+    this.clearSubscriptions();
   }
 
   /**
-   * Subscribe to all indices data
-   * Endpoint: /topic/indices
+   * Subscribe to all indices data from engines
    */
   subscribeToAllIndices(): Observable<IndicesDto> {
-    const destination = '/topic/indices';
-    
     if (!this.isConnected) {
-      throw new Error('WebSocket not connected. Call connect() first.');
+      throw new Error('WebSocket not connected');
     }
 
-    // Check if already subscribed
-    const existingSubscription = this.activeSubscriptions.get('ALL_INDICES');
-    if (existingSubscription?.isActive) {
-      return this.allIndicesData$.asObservable().pipe(
-        filter(data => data !== null),
-        map(data => data!)
-      );
-    }
+    // Send subscription message to engines
+    this.baseWebSocketService.publish('/app/subscribe-indices', {
+      action: 'subscribe',
+      channel: 'nse-indices'
+    });
 
-    const subscriptionId = this.baseWebSocketService.subscribe<IndicesDto>(
-      destination,
-      (data: IndicesDto) => {
-        console.log('Received all indices data:', data);
-        this.allIndicesData$.next(data);
-        
-        // Update subscription with last message
-        const subscription = this.activeSubscriptions.get('ALL_INDICES');
-        if (subscription) {
-          subscription.lastMessage = data;
-        }
-      }
-    );
-
-    // Track subscription
-    const subscription: WebSocketSubscription = {
-      id: subscriptionId,
-      config: {
-        endpoint: this.baseUrl,
-        destination,
-        autoReconnect: true
-      },
-      isActive: true,
-      subscriptionTime: new Date()
-    };
-    
-    this.activeSubscriptions.set('ALL_INDICES', subscription);
-    console.log('Subscribed to all indices data');
-
-    return this.allIndicesData$.asObservable().pipe(
-      filter(data => data !== null),
-      map(data => data!)
+    // Return observable that filters messages for all indices
+    return this.allIndicesData$.pipe(
+      filter((data): data is IndicesDto => data !== null)
     );
   }
 
   /**
-   * Subscribe to specific index data
-   * Endpoint: /topic/indices/{indexName}
-   * @param indexName The name of the index (e.g., "NIFTY-50", "SENSEX")
+   * Subscribe to specific index data from engines
    */
   subscribeToIndex(indexName: string): Observable<IndicesDto> {
-    const normalizedIndexName = indexName.replace(' ', '-').toUpperCase();
-    const destination = `/topic/indices/${normalizedIndexName.toLowerCase()}`;
-    const subscriptionKey = `INDEX_${normalizedIndexName}`;
-    
     if (!this.isConnected) {
-      throw new Error('WebSocket not connected. Call connect() first.');
+      throw new Error('WebSocket not connected');
     }
 
-    // Check if already subscribed to this index
-    const existingSubscription = this.activeSubscriptions.get(subscriptionKey);
-    if (existingSubscription?.isActive) {
-      const existingObservable = this.specificIndicesData.get(normalizedIndexName);
-      if (existingObservable) {
-        return existingObservable.asObservable().pipe(
-          filter(data => data !== null),
-          map(data => data!)
-        );
-      }
+    // Send subscription message to engines for specific index
+    this.baseWebSocketService.publish('/app/subscribe-indices', {
+      action: 'subscribe',
+      channel: 'nse-indices',
+      index: indexName
+    });
+
+    // Track this subscription
+    if (!this.specificIndicesData.has(indexName)) {
+      this.specificIndicesData.set(indexName, new BehaviorSubject<IndicesDto | null>(null));
     }
 
-    // Create observable for this specific index if not exists
-    if (!this.specificIndicesData.has(normalizedIndexName)) {
-      this.specificIndicesData.set(normalizedIndexName, new BehaviorSubject<IndicesDto | null>(null));
-    }
-
-    const indexObservable = this.specificIndicesData.get(normalizedIndexName)!;
-
-    const subscriptionId = this.baseWebSocketService.subscribe<IndicesDto>(
-      destination,
-      (data: IndicesDto) => {
-        console.log(`Received ${indexName} data:`, data);
-        indexObservable.next(data);
-        
-        // Update subscription with last message
-        const subscription = this.activeSubscriptions.get(subscriptionKey);
-        if (subscription) {
-          subscription.lastMessage = data;
-        }
-      }
-    );
-
-    // Track subscription
-    const subscription: WebSocketSubscription = {
-      id: subscriptionId,
-      config: {
-        endpoint: this.baseUrl,
-        destination,
-        indexName: normalizedIndexName,
-        autoReconnect: true
-      },
-      isActive: true,
-      subscriptionTime: new Date()
-    };
-    
-    this.activeSubscriptions.set(subscriptionKey, subscription);
-    console.log(`Subscribed to ${indexName} data`);
-
-    return indexObservable.asObservable().pipe(
-      filter(data => data !== null),
-      map(data => data!)
+    // Return observable that filters messages for specific index
+    return this.specificIndicesData.get(indexName)!.pipe(
+      filter((data): data is IndicesDto => data !== null)
     );
   }
 
@@ -211,140 +131,109 @@ export class IndicesWebSocketService {
    * Unsubscribe from all indices data
    */
   unsubscribeFromAllIndices(): void {
-    const subscription = this.activeSubscriptions.get('ALL_INDICES');
-    if (subscription?.isActive) {
-      this.baseWebSocketService.unsubscribe(subscription.id);
-      
-      // Send unsubscribe message to backend
-      if (this.isConnected) {
-        this.baseWebSocketService.send('/app/unsubscribe-indices');
-      }
-      
-      subscription.isActive = false;
-      this.activeSubscriptions.delete('ALL_INDICES');
-      this.allIndicesData$.next(null);
-      
-      console.log('Unsubscribed from all indices data');
-    }
+    this.baseWebSocketService.publish('/app/unsubscribe-indices', {
+      action: 'unsubscribe',
+      channel: 'nse-indices'
+    });
+    
+    this.allIndicesData$.next(null);
   }
 
   /**
    * Unsubscribe from specific index data
-   * @param indexName The name of the index to unsubscribe from
    */
   unsubscribeFromIndex(indexName: string): void {
-    const normalizedIndexName = indexName.replace(' ', '-').toUpperCase();
-    const subscriptionKey = `INDEX_${normalizedIndexName}`;
+    this.baseWebSocketService.publish('/app/unsubscribe-indices', {
+      action: 'unsubscribe',
+      channel: 'nse-indices',
+      index: indexName
+    });
     
-    const subscription = this.activeSubscriptions.get(subscriptionKey);
-    if (subscription?.isActive) {
-      this.baseWebSocketService.unsubscribe(subscription.id);
-      
-      // Send unsubscribe message to backend
-      if (this.isConnected) {
-        const unsubscribeDestination = `/app/unsubscribe-indices/${normalizedIndexName.toLowerCase()}`;
-        this.baseWebSocketService.send(unsubscribeDestination);
-      }
-      
-      subscription.isActive = false;
-      this.activeSubscriptions.delete(subscriptionKey);
-      
-      // Clear the observable
-      const indexObservable = this.specificIndicesData.get(normalizedIndexName);
-      if (indexObservable) {
-        indexObservable.next(null);
-      }
-      
-      console.log(`Unsubscribed from ${indexName} data`);
+    // Clear specific index data cache
+    if (this.specificIndicesData.has(indexName)) {
+      this.specificIndicesData.get(indexName)?.next(null);
     }
   }
 
   /**
-   * Unsubscribe from all specific indices
+   * Get all indices data (cached)
    */
-  unsubscribeFromAllSpecificIndices(): void {
-    const specificSubscriptions = Array.from(this.activeSubscriptions.entries())
-      .filter(([key]) => key.startsWith('INDEX_'));
-    
-    specificSubscriptions.forEach(([key, subscription]) => {
-      if (subscription.isActive && subscription.config.indexName) {
-        this.unsubscribeFromIndex(subscription.config.indexName);
-      }
-    });
+  getAllIndicesData(): Observable<IndicesDto | null> {
+    return this.allIndicesData$.asObservable();
   }
 
   /**
-   * Get current all indices data (latest received)
+   * Get specific index data (cached)
    */
-  getCurrentAllIndicesData(): IndicesDto | null {
-    return this.allIndicesData$.value;
-  }
-
-  /**
-   * Get current specific index data (latest received)
-   * @param indexName The name of the index
-   */
-  getCurrentIndexData(indexName: string): IndicesDto | null {
-    const normalizedIndexName = indexName.replace(' ', '-').toUpperCase();
-    const indexObservable = this.specificIndicesData.get(normalizedIndexName);
-    return indexObservable?.value || null;
-  }
-
-  /**
-   * Get list of active subscriptions
-   */
-  getActiveSubscriptions(): WebSocketSubscription[] {
-    return Array.from(this.activeSubscriptions.values()).filter(sub => sub.isActive);
+  getIndexData(indexName: string): Observable<IndicesDto | null> {
+    if (!this.specificIndicesData.has(indexName)) {
+      this.specificIndicesData.set(indexName, new BehaviorSubject<IndicesDto | null>(null));
+    }
+    return this.specificIndicesData.get(indexName)!.asObservable();
   }
 
   /**
    * Check if subscribed to all indices
    */
   isSubscribedToAllIndices(): boolean {
-    const subscription = this.activeSubscriptions.get('ALL_INDICES');
-    return subscription?.isActive === true;
+    return this.allIndicesData$.value !== null;
   }
 
   /**
    * Check if subscribed to specific index
-   * @param indexName The name of the index
    */
   isSubscribedToIndex(indexName: string): boolean {
-    const normalizedIndexName = indexName.replace(' ', '-').toUpperCase();
-    const subscriptionKey = `INDEX_${normalizedIndexName}`;
-    const subscription = this.activeSubscriptions.get(subscriptionKey);
-    return subscription?.isActive === true;
+    return this.specificIndicesData.has(indexName) && 
+           this.specificIndicesData.get(indexName)?.value !== null;
   }
 
   /**
-   * Get observable for specific index by name
-   * @param indexName The name of the index
+   * Get active subscriptions
    */
-  getIndexObservable(indexName: string): Observable<IndicesDto> | null {
-    const normalizedIndexName = indexName.replace(' ', '-').toUpperCase();
-    const indexObservable = this.specificIndicesData.get(normalizedIndexName);
-    
-    if (indexObservable) {
-      return indexObservable.asObservable().pipe(
-        filter(data => data !== null),
-        map(data => data!)
-      );
+  getActiveSubscriptions(): WebSocketSubscription[] {
+    return Array.from(this.activeSubscriptions.values());
+  }
+
+  /**
+   * Handle incoming WebSocket messages from engines
+   */
+  private handleIncomingMessage(data: any): void {
+    try {
+      // Check if this is indices data from engines
+      if (data.indices || data.type === 'nse-indices') {
+        const indicesData: IndicesDto = {
+          timestamp: data.timestamp || new Date().toISOString(),
+          indices: data.indices || [],
+          marketStatus: data.marketStatus,
+          source: 'Engines WebSocket'
+        };
+
+        // Update all indices data if applicable
+        if (data.topic === 'all-indices' || !data.indexName) {
+          this.allIndicesData$.next(indicesData);
+        }
+
+        // Update specific index data if applicable
+        if (data.indexName) {
+          const dataSubject = this.specificIndicesData.get(data.indexName);
+          if (dataSubject) {
+            dataSubject.next(indicesData);
+          }
+        }
+
+        console.log('Processed indices data from engines:', indicesData);
+      }
+    } catch (error) {
+      console.error('Error processing incoming message from engines:', error);
     }
-    
-    return null;
   }
 
   /**
-   * Enable debug mode
+   * Clear all subscriptions
    */
-  enableDebug(): void {
-    this.config.debug = true;
-  }
-
-  /**
-   * Disable debug mode
-   */
-  disableDebug(): void {
-    this.config.debug = false;
+  private clearSubscriptions(): void {
+    this.activeSubscriptions.clear();
+    this.allIndicesData$.next(null);
+    this.specificIndicesData.forEach(subject => subject.next(null));
   }
 }

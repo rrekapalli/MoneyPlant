@@ -6,6 +6,7 @@ import { NseIndicesTickDto } from '../entities/nse-indices';
 /**
  * WebSocket service for connecting to MoneyPlant Engines module
  * Provides real-time data streaming for NSE indices and other engine data
+ * Connects to engines project WebSocket endpoints instead of backend
  */
 @Injectable({
   providedIn: 'root'
@@ -33,10 +34,12 @@ export class EnginesWebSocketService {
 
   /**
    * Initialize WebSocket connection to engines module
+   * Uses the new engines WebSocket endpoints instead of backend
    */
   private initializeWebSocket(): void {
     try {
-      const wsUrl = environment.enginesApiUrl.replace('http', 'ws') + '/ws/nse-indices';
+      // Use the engines WebSocket endpoint for NSE indices
+      const wsUrl = environment.enginesWebSocketUrl + '/ws/nse-indices-native';
       console.log('Connecting to engines WebSocket:', wsUrl);
       
       this.socket = new WebSocket(wsUrl);
@@ -91,14 +94,17 @@ export class EnginesWebSocketService {
   }
 
   /**
-   * Handle incoming WebSocket messages
+   * Handle incoming WebSocket messages from engines
    */
   private handleWebSocketMessage(data: any): void {
     if (data && data.indices) {
-      // This is NSE indices data
+      // This is NSE indices data from engines
+      this.nseIndicesSubject.next(data);
+    } else if (data && data.type === 'nse-indices') {
+      // Alternative format for NSE indices data
       this.nseIndicesSubject.next(data);
     } else {
-      console.log('Received WebSocket message:', data);
+      console.log('Received WebSocket message from engines:', data);
     }
   }
 

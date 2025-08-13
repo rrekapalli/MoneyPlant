@@ -1,5 +1,6 @@
 import {Component, EventEmitter, Input, Output} from '@angular/core';
 import {NgComponentOutlet} from '@angular/common';
+import {provideEchartsCore} from 'ngx-echarts';
 import {IWidget} from '../../entities/IWidget';
 import {EchartComponent} from '../echarts/echart.component';
 import {FilterComponent} from '../filter/filter.component';
@@ -9,7 +10,6 @@ import {StockTileComponent} from '../stock-tile/stock-tile.component';
 import {MarkdownCellComponent} from '../markdown-cell/markdown-cell.component';
 import {CodeCellComponent} from '../code-cell/code-cell.component';
 import {StockListTableComponent} from '@dashboards/echart-chart-builders/stock-list/stock-list-table.component';
-import { provideEchartsCore } from 'ngx-echarts';
 import {ITableOptions} from '../../entities/ITableOptions';
 
 /**
@@ -49,7 +49,7 @@ const onGetWidget = (widget: IWidget) => {
   selector: 'vis-widget',
   standalone: true,
   templateUrl:'./widget.component.html',
-  imports: [NgComponentOutlet, TileComponent, StockTileComponent],
+  imports: [NgComponentOutlet],
   providers: [
     provideEchartsCore({
       echarts: () => import('echarts'),
