@@ -16,84 +16,25 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.messaging.handler.annotation.DestinationVariable;
-import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.handler.annotation.SendTo;
-import org.springframework.messaging.simp.annotation.SubscribeMapping;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 /**
- * WebSocket controller for real-time stock ticks data streaming.
- * Provides endpoints for subscribing to stock index data updates.
+ * REST controller for stock ticks data.
+ * Provides endpoints for retrieving stock index data.
+ * Note: WebSocket functionality has been moved to the engines project.
  */
-@Controller
+@RestController
 @RequiredArgsConstructor
 @Slf4j
-@Tag(name = "Stock Ticks", description = "Real-time stock ticks WebSocket API")
+@Tag(name = "Stock Ticks", description = "Stock ticks REST API")
 public class StockTicksController {
 
     private final StockTicksService stockTicksService;
 
     /**
-     * WebSocket subscription endpoint for stock ticks data.
-     * Clients can subscribe to receive real-time updates for a specific index.
-     * 
-     * @param indexName The name of the stock index (e.g., "NIFTY-50")
-     * @return Current stock ticks data for the specified index
-     */
-    @SubscribeMapping("/stock-ticks/{indexName}")
-    public StockTicksDto subscribeToStockTicks(
-            @DestinationVariable String indexName) {
-        try {
-            log.info("WebSocket subscription request for stock ticks: {}", indexName);
-            
-            // Convert URL-friendly index name back to original format
-            String originalIndexName = indexName.replace("-", " ").toUpperCase();
-            
-            // Subscribe to updates for this index
-            stockTicksService.subscribeToStockTicks(originalIndexName);
-            
-            // Return current data immediately
-            return stockTicksService.getStockTicks(originalIndexName);
-            
-        } catch (ServiceException e) {
-            log.error("Service error during stock ticks subscription for index {}: {}", 
-                    indexName, e.getMessage());
-            throw e;
-        } catch (Exception e) {
-            log.error("Unexpected error during stock ticks subscription for index {}: {}", 
-                    indexName, e.getMessage(), e);
-            throw new ServiceException("Failed to subscribe to stock ticks for index: " + indexName, e);
-        }
-    }
-
-    /**
-     * WebSocket message mapping for unsubscribing from stock ticks updates.
-     * 
-     * @param indexName The name of the stock index to unsubscribe from
-     */
-    @MessageMapping("/unsubscribe-stock-ticks/{indexName}")
-    public void unsubscribeFromStockTicks(@DestinationVariable String indexName) {
-        try {
-            log.info("WebSocket unsubscribe request for stock ticks: {}", indexName);
-            
-            // Convert URL-friendly index name back to original format
-            String originalIndexName = indexName.replace("-", " ").toUpperCase();
-            
-            stockTicksService.unsubscribeFromStockTicks(originalIndexName);
-            
-        } catch (Exception e) {
-            log.error("Error during stock ticks unsubscription for index {}: {}", 
-                    indexName, e.getMessage(), e);
-        }
-    }
-
-    /**
      * REST endpoint to get current stock ticks data for a specific index.
-     * This is a fallback HTTP endpoint for clients that don't support WebSocket.
      * 
      * @param indexName The name of the stock index
      * @return Current stock ticks data

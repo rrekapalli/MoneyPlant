@@ -13,246 +13,139 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.messaging.handler.annotation.DestinationVariable;
-import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.simp.annotation.SubscribeMapping;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
 /**
- * WebSocket controller for real-time NSE indices data streaming.
- * Connects to NSE indices WebSocket stream and provides endpoints for subscribing to indices data updates.
- * 
- * Data source: wss://www.nseindia.com/streams/indices/high/drdMkt
- * 
- * Available endpoints:
- * 1. /indices - Subscribe to all indices data
- * 2. /indices/{indexName} - Subscribe to specific index data
+ * REST controller for NSE indices data.
+ * Provides endpoints for retrieving indices data.
+ * Note: WebSocket functionality has been moved to the engines project.
  */
-@Controller
 @RestController
 @RequiredArgsConstructor
 @Slf4j
-@Tag(name = "Indices", description = "Real-time NSE indices WebSocket API")
+@Tag(name = "Indices", description = "NSE indices REST API")
 public class IndicesController {
 
     private final IndicesService indicesService;
 
     /**
-     * REST endpoint to manually trigger subscription for testing
+     * REST endpoint to get indices data for a specific index.
      */
-    @PostMapping("/api/test/subscribe/{indexName}")
+    @GetMapping("/api/v1/indices/{indexName}")
     @Operation(
-        summary = "Test subscription to specific index",
-        description = "Manually trigger subscription to test NSE WebSocket connection"
-    )
-    public IndicesDto testSubscribeToIndex(@PathVariable String indexName) {
-        try {
-            log.info("Test subscription request for index: {}", indexName);
-            
-            // Convert URL-friendly index name back to original format
-            String originalIndexName = indexName.replace("-", " ").toUpperCase();
-            
-            // Subscribe to updates for this specific index
-            indicesService.subscribeToIndex(originalIndexName);
-            
-            // Return current data immediately
-            return indicesService.getIndexData(originalIndexName);
-            
-        } catch (Exception e) {
-            log.error("Error during test subscription for index {}: {}", indexName, e.getMessage(), e);
-            throw new ServiceException("Failed to test subscribe to index: " + indexName, e);
-        }
-    }
-
-    /**
-     * REST endpoint to check WebSocket connection status
-     */
-    @GetMapping("/api/test/status")
-    @Operation(
-        summary = "Check WebSocket connection status",
-        description = "Check if NSE WebSocket connection is active"
-    )
-    public Object testConnectionStatus() {
-        try {
-            // This is a simple test - in a real implementation you'd expose connection status
-            return Map.of(
-                "status", "Service is running",
-                "timestamp", java.time.Instant.now().toString(),
-                "message", "Check backend logs for NSE WebSocket connection status"
-            );
-        } catch (Exception e) {
-            log.error("Error checking connection status: {}", e.getMessage(), e);
-            throw new ServiceException("Failed to check connection status", e);
-        }
-    }
-
-    /**
-     * WebSocket subscription endpoint for all indices data.
-     * Clients can subscribe to receive real-time updates for all NSE indices.
-     * 
-     * Subscription path: /topic/indices
-     * 
-     * @return Current indices data for all indices
-     */
-    @SubscribeMapping("/indices")
-    @Operation(
-        summary = "Subscribe to all indices data",
-        description = "Subscribe to real-time updates for all NSE indices data from NSE WebSocket stream"
+        summary = "Get indices data for specific index",
+        description = "Retrieves current indices data for the specified index"
     )
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Successfully subscribed to all indices data",
-                content = @Content(mediaType = "application/json", schema = @Schema(implementation = IndicesDto.class))),
-        @ApiResponse(responseCode = "500", description = "Internal server error")
-    })
-    public IndicesDto subscribeToAllIndices() {
-        try {
-            log.info("WebSocket subscription request for all indices data");
-            
-            // Subscribe to updates for all indices
-            indicesService.subscribeToAllIndices();
-            
-            // Return current data immediately
-            return indicesService.getAllIndices();
-            
-        } catch (ServiceException e) {
-            log.error("Service error during all indices subscription: {}", e.getMessage());
-            throw e;
-        } catch (Exception e) {
-            log.error("Unexpected error during all indices subscription: {}", e.getMessage(), e);
-            throw new ServiceException("Failed to subscribe to all indices data", e);
-        }
-    }
-
-    /**
-     * WebSocket subscription endpoint for specific index data.
-     * Clients can subscribe to receive real-time updates for a specific NSE index.
-     * 
-     * Subscription path: /topic/indices/{indexName}
-     * 
-     * @param indexName The name of the index (e.g., "NIFTY-50", "SENSEX", "BANKNIFTY")
-     * @return Current indices data for the specified index
-     */
-    @SubscribeMapping("/indices/{indexName}")
-    @Operation(
-        summary = "Subscribe to specific index data",
-        description = "Subscribe to real-time updates for a specific NSE index from NSE WebSocket stream"
-    )
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Successfully subscribed to index data",
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved indices data",
                 content = @Content(mediaType = "application/json", schema = @Schema(implementation = IndicesDto.class))),
         @ApiResponse(responseCode = "404", description = "Index not found"),
         @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    public IndicesDto subscribeToIndex(
-            @DestinationVariable 
-            @Parameter(description = "Index name (e.g., NIFTY-50, SENSEX, BANKNIFTY)", required = true)
-            String indexName) {
+    public IndicesDto getIndexData(@PathVariable String indexName) {
         try {
-            log.info("WebSocket subscription request for index: {}", indexName);
+            log.info("REST request for indices data: {}", indexName);
+            
+            if (indexName == null || indexName.trim().isEmpty()) {
+                throw new IllegalArgumentException("Index name cannot be null or empty");
+            }
             
             // Convert URL-friendly index name back to original format
             String originalIndexName = indexName.replace("-", " ").toUpperCase();
             
-            // Subscribe to updates for this specific index
-            indicesService.subscribeToIndex(originalIndexName);
-            
-            // Return current data immediately
             return indicesService.getIndexData(originalIndexName);
             
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid request parameter for indices: {}", e.getMessage());
+            throw new ServiceException("Invalid index name: " + indexName, e);
         } catch (ResourceNotFoundException e) {
-            log.error("Index not found during subscription for index {}: {}", indexName, e.getMessage());
-            throw e;
-        } catch (ServiceException e) {
-            log.error("Service error during index subscription for index {}: {}", indexName, e.getMessage());
+            log.error("Index not found: {}", indexName);
             throw e;
         } catch (Exception e) {
-            log.error("Unexpected error during index subscription for index {}: {}", indexName, e.getMessage(), e);
-            throw new ServiceException("Failed to subscribe to index: " + indexName, e);
+            log.error("Error retrieving indices data for index {}: {}", indexName, e.getMessage(), e);
+            throw new ServiceException("Failed to retrieve indices data for index: " + indexName, e);
         }
     }
 
     /**
-     * WebSocket message mapping for subscribing to all indices updates.
+     * REST endpoint to get all indices data.
      */
-    @MessageMapping("/subscribe-indices")
+    @GetMapping("/api/v1/indices")
     @Operation(
-        summary = "Subscribe to all indices data",
-        description = "Trigger subscription to all indices and connect to NSE WebSocket"
+        summary = "Get all indices data",
+        description = "Retrieves current data for all available indices"
     )
-    public void subscribeToAllIndicesMessage() {
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved all indices data",
+                content = @Content(mediaType = "application/json", schema = @Schema(implementation = IndicesDto.class))),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public IndicesDto getAllIndices() {
         try {
-            log.info("WebSocket message request for all indices subscription");
-            indicesService.subscribeToAllIndices();
+            log.info("REST request for all indices data");
+            return indicesService.getAllIndices();
         } catch (Exception e) {
-            log.error("Error during subscribe to all indices: {}", e.getMessage(), e);
-            throw new ServiceException("Failed to subscribe to all indices", e);
+            log.error("Error retrieving all indices data: {}", e.getMessage(), e);
+            throw new ServiceException("Failed to retrieve all indices data", e);
         }
     }
 
     /**
-     * WebSocket message mapping for subscribing to specific index updates.
+     * REST endpoint to check service status.
      */
-    @MessageMapping("/subscribe-indices/{indexName}")
+    @GetMapping("/api/v1/indices/status")
     @Operation(
-        summary = "Subscribe to specific index data",
-        description = "Trigger subscription to specific index and connect to NSE WebSocket"
+        summary = "Check service status",
+        description = "Check if the indices service is running"
     )
-    public void subscribeToIndexMessage(
-            @DestinationVariable 
-            @Parameter(description = "Index name to subscribe to", required = true)
-            String indexName) {
+    public Object getServiceStatus() {
         try {
-            log.info("WebSocket message request for index subscription: {}", indexName);
-            String originalIndexName = indexName.replace("-", " ").toUpperCase();
-            indicesService.subscribeToIndex(originalIndexName);
+            return Map.of(
+                "status", "Service is running",
+                "timestamp", java.time.Instant.now().toString(),
+                "message", "Indices service is operational. WebSocket functionality moved to engines project."
+            );
         } catch (Exception e) {
-            log.error("Error during subscribe to index {}: {}", indexName, e.getMessage(), e);
-            throw new ServiceException("Failed to subscribe to index: " + indexName, e);
+            log.error("Error checking service status: {}", e.getMessage(), e);
+            throw new ServiceException("Failed to check service status", e);
         }
     }
 
     /**
-     * WebSocket message mapping for unsubscribing from all indices updates.
+     * REST endpoint to get available indices list.
      */
-    @MessageMapping("/unsubscribe-indices")
+    @GetMapping("/api/v1/indices/available")
     @Operation(
-        summary = "Unsubscribe from all indices data",
-        description = "Stop receiving real-time updates for all indices"
+        summary = "Get available indices list",
+        description = "Retrieves list of available indices"
     )
-    public void unsubscribeFromAllIndices() {
+    public String[] getAvailableIndices() {
         try {
-            log.info("WebSocket unsubscribe request for all indices");
-            indicesService.unsubscribeFromAllIndices();
+            // Return commonly available NSE indices
+            return new String[]{
+                "NIFTY 50",
+                "NIFTY NEXT 50", 
+                "NIFTY 100",
+                "NIFTY 200",
+                "NIFTY 500",
+                "NIFTY MIDCAP 50",
+                "NIFTY MIDCAP 100",
+                "NIFTY SMALLCAP 100",
+                "NIFTY BANK",
+                "NIFTY IT",
+                "NIFTY PHARMA",
+                "NIFTY AUTO",
+                "NIFTY FMCG",
+                "NIFTY METAL",
+                "NIFTY REALTY",
+                "SENSEX",
+                "BANKEX"
+            };
         } catch (Exception e) {
-            log.error("Error during unsubscribe from all indices: {}", e.getMessage(), e);
-            throw new ServiceException("Failed to unsubscribe from all indices", e);
-        }
-    }
-
-    /**
-     * WebSocket message mapping for unsubscribing from specific index updates.
-     * 
-     * @param indexName The name of the index to unsubscribe from
-     */
-    @MessageMapping("/unsubscribe-indices/{indexName}")
-    @Operation(
-        summary = "Unsubscribe from specific index data",
-        description = "Stop receiving real-time updates for a specific index"
-    )
-    public void unsubscribeFromIndex(
-            @DestinationVariable 
-            @Parameter(description = "Index name to unsubscribe from", required = true)
-            String indexName) {
-        try {
-            log.info("WebSocket unsubscribe request for index: {}", indexName);
-            String originalIndexName = indexName.replace("-", " ").toUpperCase();
-            indicesService.unsubscribeFromIndex(originalIndexName);
-        } catch (Exception e) {
-            log.error("Error during unsubscribe from index {}: {}", indexName, e.getMessage(), e);
-            throw new ServiceException("Failed to unsubscribe from index: " + indexName, e);
+            log.error("Error retrieving available indices: {}", e.getMessage(), e);
+            throw new ServiceException("Failed to retrieve available indices", e);
         }
     }
 }
