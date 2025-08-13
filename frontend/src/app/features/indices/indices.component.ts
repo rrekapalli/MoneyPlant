@@ -395,24 +395,37 @@ export class IndicesComponent implements OnInit, OnDestroy {
     // Get current indices lists
     const currentLists = this.indicesLists();
     
-    // Create or update NSE indices list
-    const nseIndicesList = {
-      id: 'nse-indices',
-      name: 'NSE Indices (Real-time)',
-      description: 'Real-time NSE indices data from WebSocket stream',
-      items: nseItems
-    };
-
-    // Add NSE indices list to the beginning
-    const updatedLists = [nseIndicesList, ...currentLists];
-    this.indicesLists.set(updatedLists);
+    // Check if NSE indices list already exists
+    const existingNseIndex = currentLists.findIndex(list => list.id === 'nse-indices');
     
-    // Set active tab to NSE indices if this is the first time
-    if (this.activeTab() === '0') {
-      this.activeTab.set('0'); // Keep it at 0 since we added NSE list at the beginning
+    if (existingNseIndex >= 0) {
+      // Update existing NSE indices list
+      const updatedLists = [...currentLists];
+      updatedLists[existingNseIndex] = {
+        ...updatedLists[existingNseIndex],
+        items: nseItems
+      };
+      this.indicesLists.set(updatedLists);
+    } else {
+      // Create new NSE indices list only if it doesn't exist
+      const nseIndicesList = {
+        id: 'nse-indices',
+        name: 'NSE Indices (Real-time)',
+        description: 'Real-time NSE indices data from WebSocket stream',
+        items: nseItems
+      };
+
+      // Add NSE indices list to the beginning
+      const updatedLists = [nseIndicesList, ...currentLists];
+      this.indicesLists.set(updatedLists);
+      
+      // Set active tab to NSE indices if this is the first time
+      if (this.activeTab() === '0') {
+        this.activeTab.set('0'); // Keep it at 0 since we added NSE list at the beginning
+      }
     }
 
-    console.log('Updated indices lists with NSE data:', updatedLists);
+    console.log('Updated indices lists with NSE data:', this.indicesLists());
   }
 
   /**

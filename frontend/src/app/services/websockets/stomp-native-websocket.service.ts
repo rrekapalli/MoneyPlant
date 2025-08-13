@@ -39,7 +39,7 @@ export class StompNativeWebSocketService {
   private createStompClient(): Client {
     const client = new Client({
       webSocketFactory: () => {
-        const baseUrl = environment.enginesWebSocketUrl + '/ws/nse-indices';
+        const baseUrl = environment.enginesHttpUrl + '/ws/nse-indices';
         return new SockJS(baseUrl);
       },
       debug: (msg) => {

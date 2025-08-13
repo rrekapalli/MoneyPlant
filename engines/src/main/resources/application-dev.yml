@@ -4,7 +4,7 @@
 spring:
   kafka:
     enabled: true
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: localhost:9093
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
@@ -22,11 +22,17 @@ spring:
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
         spring.json.trusted.packages: "*"
+    # Make Kafka optional during startup
+    admin:
+      auto-create: false
+      fail-on-error: false
 
 # Enable Kafka admin for development
 kafka:
   admin:
     enabled: true
+    auto-create: false
+    fail-on-error: false
   topics:
     nse-indices-ticks: nse-indices-ticks
     market-data: market-data

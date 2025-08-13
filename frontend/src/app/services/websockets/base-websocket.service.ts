@@ -62,7 +62,7 @@ export class BaseWebSocketService {
     return new Promise((resolve, reject) => {
       try {
         // Use engines WebSocket endpoint if no specific broker URL provided
-        const brokerURL = config.brokerURL || `${environment.enginesWebSocketUrl}/ws/engines`;
+        const brokerURL = config.brokerURL || `${environment.enginesHttpUrl}/ws/engines`;
         
         this.client = new Client({
           webSocketFactory: () => new SockJS(brokerURL) as IStompSocket,
@@ -209,7 +209,7 @@ export class BaseWebSocketService {
     setTimeout(() => {
       if (this.currentConnectionState === WebSocketConnectionState.DISCONNECTED) {
         this.connect({
-          brokerURL: `${environment.enginesWebSocketUrl}/ws/engines`,
+          brokerURL: `${environment.enginesHttpUrl}/ws/engines`,
           heartbeatIncoming: 4000,
           heartbeatOutgoing: 4000,
           reconnectDelay: this.reconnectInterval,

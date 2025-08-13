@@ -21,9 +21,9 @@ spring:
       retries: 3
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/trading_db
-    username: trading_user
-    password: trading_password
+    url: jdbc:postgresql://postgres.tailce422e.ts.net:5432/MoneyPlant
+    username: postgres
+    password: mysecretpassword
     driver-class-name: org.postgresql.Driver
 
   jpa:

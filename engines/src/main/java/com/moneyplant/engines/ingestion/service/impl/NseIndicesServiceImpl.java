@@ -4,7 +4,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.moneyplant.engines.common.dto.NseIndicesTickDto;
+import com.moneyplant.engines.common.entities.NseIndicesTick;
 import com.moneyplant.engines.ingestion.service.NseIndicesService;
+import com.moneyplant.engines.ingestion.service.NseIndicesTickService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -44,6 +46,7 @@ public class NseIndicesServiceImpl extends TextWebSocketHandler implements NseIn
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final ObjectMapper objectMapper;
     private final SimpMessagingTemplate messagingTemplate;
+    private final NseIndicesTickService nseIndicesTickService;
 
     @Value("${kafka.topics.nse-indices-ticks:nse-indices-ticks}")
     private String kafkaTopic;
@@ -57,7 +60,7 @@ public class NseIndicesServiceImpl extends TextWebSocketHandler implements NseIn
     @Value("${spring.kafka.enabled:true}")
     private boolean kafkaEnabled;
 
-    @Value("${nse.websocket.fallback.enabled:true}")
+    @Value("${nse.websocket.fallback.enabled:false}")
     private boolean fallbackEnabled;
 
     @Value("${nse.websocket.fallback.mock-interval:5000}")
@@ -119,14 +122,13 @@ public class NseIndicesServiceImpl extends TextWebSocketHandler implements NseIn
             return;
         }
 
-        log.info("Starting NSE indices ingestion with mock data generation");
+        log.info("Starting NSE indices ingestion with real NSE WebSocket connection");
         
-        // Always start mock data generation since real NSE data format is unknown
-        startFallbackMockDataGeneration();
-        
-        // Also try to connect to NSE WebSocket for real data
+        // Connect to NSE WebSocket for real data
         if (nseWebSocketEnabled) {
             connectToNseWebSocket();
+        } else {
+            log.warn("NSE WebSocket is disabled. Please enable it to receive real data.");
         }
     }
 
@@ -253,12 +255,28 @@ public class NseIndicesServiceImpl extends TextWebSocketHandler implements NseIn
 
     @Override
     public List<NseIndicesTickDto> getLatestIndicesData() {
-        return new ArrayList<>(latestIndicesData);
+        try {
+            // Get latest data from database instead of local cache
+            List<NseIndicesTick> latestTicks = nseIndicesTickService.getLatestTicksForAllIndices();
+            return latestTicks.stream()
+                .map(nseIndicesTickService::convertEntityToDto)
+                .toList();
+        } catch (Exception e) {
+            log.error("Error retrieving latest indices data from database: {}", e.getMessage(), e);
+            return new ArrayList<>();
+        }
     }
 
     @Override
     public NseIndicesTickDto getLatestIndexData(String indexName) {
-        return latestIndexDataMap.get(indexName);
+        try {
+            // Get latest data from database instead of local cache
+            NseIndicesTick latestTick = nseIndicesTickService.getLatestTickData(indexName);
+            return latestTick != null ? nseIndicesTickService.convertEntityToDto(latestTick) : null;
+        } catch (Exception e) {
+            log.error("Error retrieving latest index data for {} from database: {}", indexName, e.getMessage(), e);
+            return null;
+        }
     }
 
     @Override
@@ -337,11 +355,7 @@ public class NseIndicesServiceImpl extends TextWebSocketHandler implements NseIn
                     log.error("Failed to connect to NSE WebSocket: {}", ex.getMessage());
                     log.error("This might be due to network restrictions or NSE requiring authentication");
                     
-                    // Always start fallback mock data generation when WebSocket fails
-                    log.info("Starting fallback mock data generation");
-                    startFallbackMockDataGeneration();
-                    
-                    // Schedule reconnection
+                    // Schedule reconnection attempt
                     scheduleReconnect();
                 }
             });
@@ -350,11 +364,7 @@ public class NseIndicesServiceImpl extends TextWebSocketHandler implements NseIn
             isConnecting = false;
             log.error("Failed to connect to NSE WebSocket: {}", e.getMessage(), e);
             
-            // Always start fallback mock data generation when WebSocket fails
-            log.info("Starting fallback mock data generation");
-            startFallbackMockDataGeneration();
-            
-            // Schedule reconnection
+            // Schedule reconnection attempt
             scheduleReconnect();
         }
     }
@@ -462,6 +472,14 @@ public class NseIndicesServiceImpl extends TextWebSocketHandler implements NseIn
                         tickData.getIndices() != null ? tickData.getIndices().length : 0,
                         tickData.getSource(),
                         tickData.getMarketStatus() != null ? "present" : "null");
+                
+                // Save to database using UPSERT operation
+                try {
+                    nseIndicesTickService.upsertTickData(tickData);
+                    log.debug("Successfully saved tick data to database");
+                } catch (Exception dbException) {
+                    log.error("Failed to save tick data to database: {}", dbException.getMessage(), dbException);
+                }
                 
                 // Update local cache
                 updateLocalCache(tickData);
@@ -612,7 +630,7 @@ public class NseIndicesServiceImpl extends TextWebSocketHandler implements NseIn
             }
         }
         
-        // Keep only last 100 entries in the list
+        // Keep only last 100 entries in the list for WebSocket broadcasting
         latestIndicesData.add(tickData);
         if (latestIndicesData.size() > 100) {
             latestIndicesData.remove(0);
@@ -672,101 +690,5 @@ public class NseIndicesServiceImpl extends TextWebSocketHandler implements NseIn
         }
     }
 
-    /**
-     * Start fallback mock data generation when NSE connection fails
-     */
-    private void startFallbackMockDataGeneration() {
-        if (reconnectExecutor != null && !reconnectExecutor.isShutdown()) {
-            log.info("Starting fallback mock data generation every {} ms", fallbackMockInterval);
-            reconnectExecutor.scheduleAtFixedRate(() -> {
-                if (!isConnected) {
-                    generateAndPublishMockData();
-                } else {
-                    // Even when connected, generate mock data if the real data is null
-                    generateAndPublishMockData();
-                }
-            }, 0, fallbackMockInterval, TimeUnit.MILLISECONDS);
-        }
-    }
 
-    /**
-     * Generate and publish mock indices data for fallback
-     */
-    private void generateAndPublishMockData() {
-        try {
-            log.debug("Generating fallback mock NSE indices data");
-            
-            NseIndicesTickDto mockData = createFallbackMockData();
-            mockData.setIngestionTimestamp(Instant.now());
-            
-            // Update local cache
-            updateLocalCache(mockData);
-            
-            // Publish to Kafka
-            publishToKafka(mockData);
-            
-            log.debug("Fallback mock NSE indices data published");
-            
-        } catch (Exception e) {
-            log.error("Error generating fallback mock data: {}", e.getMessage(), e);
-        }
-    }
-
-    /**
-     * Create realistic mock indices data for fallback
-     */
-    private NseIndicesTickDto createFallbackMockData() {
-        NseIndicesTickDto mockData = new NseIndicesTickDto();
-        mockData.setTimestamp(Instant.now().toString());
-        mockData.setSource("MOCK_NSE");  // Match what frontend expects
-        
-        // Create mock indices data for multiple indices
-        NseIndicesTickDto.IndexTickDataDto[] mockIndices = new NseIndicesTickDto.IndexTickDataDto[5];
-        
-        // NIFTY 50
-        mockIndices[0] = createRealisticMockIndex("NIFTY 50", "NIFTY", "19500.50", "150.25", "0.78");
-        
-        // SENSEX
-        mockIndices[1] = createRealisticMockIndex("SENSEX", "SENSEX", "64250.75", "450.30", "0.71");
-        
-        // BANKNIFTY
-        mockIndices[2] = createRealisticMockIndex("BANKNIFTY", "BANKNIFTY", "44500.25", "320.15", "0.72");
-        
-        // NIFTY IT
-        mockIndices[3] = createRealisticMockIndex("NIFTY IT", "NIFTYIT", "32500.80", "-125.40", "-0.38");
-        
-        // NIFTY PHARMA
-        mockIndices[4] = createRealisticMockIndex("NIFTY PHARMA", "NIFTYPHARMA", "18500.60", "85.20", "0.46");
-        
-        mockData.setIndices(mockIndices);
-        
-        // Add market status
-        NseIndicesTickDto.MarketStatusTickDto marketStatus = new NseIndicesTickDto.MarketStatusTickDto();
-        marketStatus.setStatus("OPEN");
-        marketStatus.setMessage("Market is open for trading");
-        marketStatus.setTradeDate(java.time.LocalDate.now().toString());
-        marketStatus.setMarketStatusTime(Instant.now().toString());
-        mockData.setMarketStatus(marketStatus);
-        
-        return mockData;
-    }
-    
-    /**
-     * Helper method to create realistic mock index data
-     */
-    private NseIndicesTickDto.IndexTickDataDto createRealisticMockIndex(String name, String symbol, String lastPrice, String variation, String percentChange) {
-        NseIndicesTickDto.IndexTickDataDto mockIndex = new NseIndicesTickDto.IndexTickDataDto();
-        mockIndex.setIndexName(name);
-        mockIndex.setIndexSymbol(symbol);
-        mockIndex.setLastPrice(new java.math.BigDecimal(lastPrice));
-        mockIndex.setVariation(new java.math.BigDecimal(variation));
-        mockIndex.setPercentChange(new java.math.BigDecimal(percentChange));
-        mockIndex.setOpenPrice(new java.math.BigDecimal(lastPrice).subtract(new java.math.BigDecimal(variation)));
-        mockIndex.setDayHigh(new java.math.BigDecimal(lastPrice).add(new java.math.BigDecimal("100")));
-        mockIndex.setDayLow(new java.math.BigDecimal(lastPrice).subtract(new java.math.BigDecimal("50")));
-        mockIndex.setPreviousClose(new java.math.BigDecimal(lastPrice).subtract(new java.math.BigDecimal(variation)));
-        mockIndex.setTickTimestamp(Instant.now());
-        
-        return mockIndex;
-    }
 }

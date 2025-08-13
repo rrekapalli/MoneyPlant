@@ -19,7 +19,7 @@ import { environment } from '../../../environments/environment';
   providedIn: 'root'
 })
 export class IndicesWebSocketService {
-  private readonly baseUrl = `${environment.enginesWebSocketUrl}/ws/nse-indices`;
+  private readonly baseUrl = `${environment.enginesHttpUrl}/ws/nse-indices`;
   private readonly config: WebSocketServiceConfig = {
     brokerURL: this.baseUrl,
     heartbeatIncoming: 4000,

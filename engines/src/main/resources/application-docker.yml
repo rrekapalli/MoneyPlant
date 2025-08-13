@@ -1,24 +1,7 @@
-server:
-  port: 8081
-  servlet:
-    context-path: /engines
+# Docker profile configuration
+# This profile is used when running in Docker containers
 
 spring:
-  application:
-    name: moneyplant-engines
-  
-  profiles:
-    active: local
-  
-  # CORS Configuration for frontend access
-  web:
-    cors:
-      allowed-origins: http://localhost:4200,http://127.0.0.1:4200
-      allowed-methods: GET,POST,PUT,DELETE,OPTIONS,PATCH
-      allowed-headers: "*"
-      allow-credentials: true
-      max-age: 3600
-  
   datasource:
     url: jdbc:postgresql://postgres.tailce422e.ts.net:5432/MoneyPlant
     username: postgres
@@ -69,7 +52,7 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
   kafka:
-    bootstrap-servers: localhost:9093
+    bootstrap-servers: kafka:29092
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
@@ -87,15 +70,9 @@ spring:
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
         spring.json.trusted.packages: "*"
-    # Make Kafka optional during startup
     admin:
       auto-create: false
       fail-on-error: false
-  
-  boot:
-    admin:
-      client:
-        url: http://localhost:8080
 
 # Kafka topic configuration
 kafka:
@@ -106,97 +83,30 @@ kafka:
     backtest-results: backtest-results
   group-id: moneyplant-engines
 
-# NSE WebSocket configuration
+# NSE WebSocket configuration for Docker
 nse:
   websocket:
     url: wss://www.nseindia.com/streams/indices/high/drdMkt
     reconnect:
       interval: 30
-    enabled: false  # Temporarily disable NSE WebSocket to use fallback mock data
+    enabled: false  # Disable NSE WebSocket connection in Docker
     fallback:
-      enabled: true  # Enable fallback to mock data when NSE connection fails
-      mock-interval: 5000  # Generate mock data every 5 seconds when fallback is active
+      enabled: false  # Disable fallback mock data in Docker
 
-# Spark Configuration
-spark:
-  app-name: MoneyPlant-Engines
-  master: local[*]
-  driver-memory: 2g
-  executor-memory: 2g
-  sql:
-    adaptive:
-      enabled: true
-      coalescePartitions:
-        enabled: true
-      skewJoin:
-        enabled: true
-      localShuffleReader:
-        enabled: true
-      optimizeSkewedJoin:
-        enabled: true
-
-# Trino Configuration
-trino:
-  url: jdbc:trino://trino.tailce422e.ts.net:8080
-  username: trino
-  password: 
-  catalog: 
-  schema: 
-  connection-pool:
-    maximum-pool-size: 10
-    minimum-idle: 2
-    connection-timeout: 30000
-    idle-timeout: 600000
-    max-lifetime: 1800000
-
-# Apache Hudi Configuration
-hudi:
-  base-path: /tmp/hudi
-  table-name: market_data
-  key-generator: org.apache.hudi.keygen.SimpleKeyGenerator
-  partition-path-field: date
-  write-options:
-    table.type: COPY_ON_WRITE
-    recordkey.field: symbol
-    partitionpath.field: date
-    precombine.field: timestamp
-    keygenerator.class: org.apache.hudi.keygen.SimpleKeyGenerator
-    hive.style.partitioning: true
-    operation: upsert
-    table.name: market_data
-    base.path: /tmp/hudi
-
-# Apache Iceberg Configuration
-iceberg:
-  catalog-name: iceberg_catalog
-  warehouse-location: /tmp/iceberg
-  io-impl: org.apache.iceberg.aws.s3.S3FileIO
-  s3:
-    endpoint: 
-    access-key: 
-    secret-key: 
-  catalog-properties:
-    catalog-impl: org.apache.iceberg.aws.glue.GlueCatalog
-    warehouse: /tmp/iceberg
-    io-impl: org.apache.iceberg.aws.s3.S3FileIO
-  table-properties:
-    write.format.default: parquet
-    write.parquet.compression: snappy
-    write.parquet.row-group-size-bytes: 134217728
-    write.parquet.page-size-bytes: 1048576
-    write.parquet.dict-size-bytes: 2097152
-
-# Logging configuration
+# Logging configuration for Docker
 logging:
   level:
     com.moneyplant.engines: INFO
     org.springframework.kafka: INFO
-    org.apache.kafka: WARN
-    org.springframework.web.socket: DEBUG
+    org.apache.kafka: INFO
+    org.springframework.web.socket: INFO
+    org.springframework.boot.autoconfigure.kafka: INFO
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
 
-# Management endpoints
+# Management endpoints for Docker
 management:
   endpoints:
     web:
@@ -205,7 +115,19 @@ management:
   endpoint:
     health:
       show-details: always
+      show-components: always
   metrics:
     export:
       prometheus:
         enabled: true
+
+# Redis configuration for Docker
+redis:
+  host: redis
+  port: 6379
+  timeout: 2000ms
+  lettuce:
+    pool:
+      max-active: 8
+      max-idle: 8
+      min-idle: 0
