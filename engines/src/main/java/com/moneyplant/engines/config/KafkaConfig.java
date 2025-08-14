@@ -133,10 +133,10 @@ public class KafkaConfig {
         
         factory.setConsumerFactory(consumerFactory());
         factory.setConcurrency(3); // Number of concurrent consumers
-        factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.MANUAL_IMMEDIATE);
+        factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.BATCH);
         
-        // Make the listener more resilient
-        factory.setAutoStartup(false); // Don't start automatically
+        // Enable automatic startup for consumers
+        factory.setAutoStartup(true); // Changed from false to true
         
         return factory;
     }

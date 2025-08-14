@@ -71,4 +71,9 @@ public interface NseIndicesService {
      * Get connection statistics
      */
     String getConnectionStats();
+    
+    /**
+     * Test Kafka consumer with sample data
+     */
+    void testKafkaConsumer();
 }

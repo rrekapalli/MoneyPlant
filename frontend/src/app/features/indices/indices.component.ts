@@ -19,11 +19,6 @@ import { TreeNode } from 'primeng/api';
 import { IndicesService } from '../../services/apis/indices.api';
 import { IndexResponseDto } from '../../services/entities/indices';
 import { ComponentCommunicationService, SelectedIndexData } from '../../services/component-communication.service';
-import { NseIndicesService } from '../../services/apis/nse-indices.api';
-import { NseIndicesTickDto } from '../../services/entities/nse-indices';
-import { EnginesWebSocketService } from '../../services/websockets/engines-websocket.service';
-
-// Import modern Angular v20 WebSocket services and entities
 import { ModernIndicesWebSocketService, IndexDataDto, IndicesDto } from '../../services/websockets';
 
 @Component({
@@ -57,10 +52,6 @@ export class IndicesComponent implements OnInit, OnDestroy {
   indicesLists = signal<any[]>([]);
   searchResults = signal<any[]>([]);
   selectedIndexSymbol = signal<string | null>(null);
-  
-  // NSE Indices data for real-time streaming
-  nseIndicesData = signal<NseIndicesTickDto[]>([]);
-  isNseIndicesConnected = signal<boolean>(false);
   
   // Loading states as signals
   isLoadingIndices = signal<boolean>(true); // Start with loading true
@@ -105,11 +96,6 @@ export class IndicesComponent implements OnInit, OnDestroy {
   // NSE Indices refresh timer
   private nseIndicesRefreshTimer: any = null;
 
-  // WebSocket subscription
-  private webSocketSubscription: Subscription | null = null;
-  private connectionStatusSubscription: Subscription | null = null;
-  private errorSubscription: Subscription | null = null;
-
   // Helper method to get current indices list index from activeTab
   private getCurrentIndicesListIndex(): number {
     return parseInt(this.activeTab(), 10);
@@ -126,8 +112,6 @@ export class IndicesComponent implements OnInit, OnDestroy {
     private indicesService: IndicesService,
     private componentCommunicationService: ComponentCommunicationService,
     private modernIndicesWebSocketService: ModernIndicesWebSocketService,
-    private nseIndicesService: NseIndicesService,
-    private enginesWebSocketService: EnginesWebSocketService,
     private cdr: ChangeDetectorRef
   ) {
     // Removed effects to prevent infinite loops
@@ -148,15 +132,6 @@ export class IndicesComponent implements OnInit, OnDestroy {
       // Initialize WebSocket connection
       this.initializeWebSocket();
       
-      // Initialize NSE Indices connection
-      this.initializeNseIndices();
-      
-      // Initialize WebSocket connection to engines
-      this.initializeEnginesWebSocket();
-      
-      // Check initial NSE indices status
-      this.checkIngestionStatus();
-      
       // Load indices directly from the indices API
       this.loadIndicesLists();
     } catch (error) {
@@ -176,256 +151,14 @@ export class IndicesComponent implements OnInit, OnDestroy {
       this.allIndicesWebSocketSubscription = null;
     }
     
-    // Clean up engines WebSocket subscriptions
-    if (this.webSocketSubscription) {
-      this.webSocketSubscription.unsubscribe();
-      this.webSocketSubscription = null;
-    }
-    
-    if (this.connectionStatusSubscription) {
-      this.connectionStatusSubscription.unsubscribe();
-      this.connectionStatusSubscription = null;
-    }
-    
-    if (this.errorSubscription) {
-      this.errorSubscription.unsubscribe();
-      this.errorSubscription = null;
-    }
-    
     // Clear any pending WebSocket update timer
     if (this.webSocketUpdateTimer) {
       clearTimeout(this.webSocketUpdateTimer);
       this.webSocketUpdateTimer = null;
     }
     
-    // Clear NSE indices refresh timer
-    if (this.nseIndicesRefreshTimer) {
-      clearInterval(this.nseIndicesRefreshTimer);
-      this.nseIndicesRefreshTimer = null;
-    }
-    
     // Disconnect WebSockets
     this.modernIndicesWebSocketService.disconnect();
-    this.enginesWebSocketService.disconnect();
-  }
-
-  /**
-   * Initialize WebSocket connection to engines module
-   */
-  private initializeEnginesWebSocket(): void {
-    try {
-      // Subscribe to WebSocket connection status
-      this.connectionStatusSubscription = this.enginesWebSocketService.getConnectionStatus()
-        .subscribe(status => {
-          this.isNseIndicesConnected.set(status);
-          console.log('Engines WebSocket connection status:', status);
-        });
-
-      // Subscribe to NSE indices data stream
-      this.webSocketSubscription = this.enginesWebSocketService.getNseIndicesStream()
-        .subscribe(data => {
-          if (data && data.indices && data.indices.length > 0) {
-            console.log('Received NSE indices data via WebSocket:', data);
-            this.nseIndicesData.set([data]);
-            this.updateIndicesListsWithNseData();
-            this.cdr.detectChanges();
-          }
-        });
-
-      // Subscribe to error stream
-      this.errorSubscription = this.enginesWebSocketService.getErrorStream()
-        .subscribe(error => {
-          console.error('Engines WebSocket error:', error);
-        });
-
-      // Start ingestion via WebSocket
-      this.enginesWebSocketService.startIngestion();
-
-    } catch (error) {
-      console.error('Failed to initialize engines WebSocket:', error);
-    }
-  }
-
-  /**
-   * Initialize NSE Indices connection for real-time data streaming
-   */
-  public async initializeNseIndices(): Promise<void> {
-    try {
-      // Start NSE indices ingestion
-      this.nseIndicesService.startIngestion().subscribe({
-        next: (response) => {
-          console.log('NSE Indices ingestion started:', response);
-          
-          // Check the actual ingestion status
-          this.checkIngestionStatus();
-          
-          // Subscribe to all indices data
-          this.subscribeToAllNseIndices();
-          
-          // Start periodic refresh
-          this.startPeriodicNseIndicesRefresh();
-        },
-        error: (error) => {
-          console.warn('Failed to start NSE indices ingestion:', error);
-          this.isNseIndicesConnected.set(false);
-          
-          // Try to get latest data anyway
-          this.getLatestNseIndicesData();
-        }
-      });
-    } catch (error) {
-      console.warn('NSE Indices initialization failed:', error);
-      this.isNseIndicesConnected.set(false);
-    }
-  }
-
-  /**
-   * Subscribe to all NSE indices data
-   */
-  private subscribeToAllNseIndices(): void {
-    this.nseIndicesService.subscribeToAllIndices().subscribe({
-      next: (response) => {
-        console.log('Subscribed to all NSE indices:', response);
-        // Get the latest data
-        this.getLatestNseIndicesData();
-      },
-      error: (error) => {
-        console.warn('Failed to subscribe to all NSE indices:', error);
-        // Try to get latest data anyway
-        this.getLatestNseIndicesData();
-      }
-    });
-  }
-
-  /**
-   * Check the current ingestion status from the API
-   */
-  private checkIngestionStatus(): void {
-    this.nseIndicesService.getIngestionStatus().subscribe({
-      next: (status) => {
-        console.log('Ingestion status:', status);
-        this.isNseIndicesConnected.set(status.ingestionStatus === 'RUNNING');
-      },
-      error: (error) => {
-        console.warn('Failed to get ingestion status:', error);
-        this.isNseIndicesConnected.set(false);
-      }
-    });
-  }
-
-  /**
-   * Get the latest NSE indices data
-   */
-  private getLatestNseIndicesData(): void {
-    this.nseIndicesService.getLatestIndicesData().subscribe({
-      next: (indicesData: NseIndicesTickDto[]) => {
-        this.nseIndicesData.set(indicesData || []);
-        console.log('Loaded NSE indices data:', this.nseIndicesData());
-        
-        // Check if we have valid data
-        const validEntries = indicesData?.filter(entry => 
-          entry.indices && entry.indices.length > 0 && entry.source === 'MOCK_NSE'
-        ) || [];
-        
-        if (validEntries.length > 0) {
-          console.log('Found valid NSE indices entries:', validEntries.length);
-          // Update the indices lists with NSE data
-          this.updateIndicesListsWithNseData();
-        } else {
-          console.log('No valid NSE indices data found in response');
-        }
-        
-        this.cdr.detectChanges();
-      },
-      error: (error) => {
-        console.warn('Failed to load NSE indices data:', error);
-        this.nseIndicesData.set([]);
-        this.cdr.detectChanges();
-      }
-    });
-  }
-
-  /**
-   * Start periodic refresh of NSE indices data
-   * Updates data every 30 seconds
-   */
-  private startPeriodicNseIndicesRefresh(): void {
-    // Clear any existing timer
-    if (this.nseIndicesRefreshTimer) {
-      clearInterval(this.nseIndicesRefreshTimer);
-    }
-    
-    // Refresh every 30 seconds
-    this.nseIndicesRefreshTimer = setInterval(() => {
-      this.refreshNseIndicesData();
-    }, 30000);
-  }
-
-  /**
-   * Update indices lists with NSE indices data
-   */
-  private updateIndicesListsWithNseData(): void {
-    const nseData = this.nseIndicesData();
-    if (!nseData || nseData.length === 0) {
-      return;
-    }
-
-    // Find entries with actual indices data (not just timestamps)
-    const validEntries = nseData.filter(entry => 
-      entry.indices && entry.indices.length > 0 && entry.source === 'MOCK_NSE'
-    );
-
-    if (validEntries.length === 0) {
-      console.log('No valid NSE indices data found');
-      return;
-    }
-
-    // Use the most recent valid entry
-    const latestEntry = validEntries[validEntries.length - 1];
-    console.log('Processing NSE indices data:', latestEntry);
-
-    // Create NSE indices list items
-    const nseItems = latestEntry.indices!.map(index => ({
-      symbol: index.indexSymbol || index.index,
-      name: index.index,
-      price: index.last || 0,
-      change: (index.percentChange || 0) / 100 // Convert percentage to decimal
-    }));
-
-    // Get current indices lists
-    const currentLists = this.indicesLists();
-    
-    // Check if NSE indices list already exists
-    const existingNseIndex = currentLists.findIndex(list => list.id === 'nse-indices');
-    
-    if (existingNseIndex >= 0) {
-      // Update existing NSE indices list
-      const updatedLists = [...currentLists];
-      updatedLists[existingNseIndex] = {
-        ...updatedLists[existingNseIndex],
-        items: nseItems
-      };
-      this.indicesLists.set(updatedLists);
-    } else {
-      // Create new NSE indices list only if it doesn't exist
-      const nseIndicesList = {
-        id: 'nse-indices',
-        name: 'NSE Indices (Real-time)',
-        description: 'Real-time NSE indices data from WebSocket stream',
-        items: nseItems
-      };
-
-      // Add NSE indices list to the beginning
-      const updatedLists = [nseIndicesList, ...currentLists];
-      this.indicesLists.set(updatedLists);
-      
-      // Set active tab to NSE indices if this is the first time
-      if (this.activeTab() === '0') {
-        this.activeTab.set('0'); // Keep it at 0 since we added NSE list at the beginning
-      }
-    }
-
-    console.log('Updated indices lists with NSE data:', this.indicesLists());
   }
 
   /**
@@ -700,14 +433,6 @@ export class IndicesComponent implements OnInit, OnDestroy {
       })));
 
     this.isSearching.set(false);
-  }
-
-  /**
-   * Refresh NSE indices data manually
-   */
-  public refreshNseIndicesData(): void {
-    console.log('Refreshing NSE indices data...');
-    this.getLatestNseIndicesData();
   }
 
   /**

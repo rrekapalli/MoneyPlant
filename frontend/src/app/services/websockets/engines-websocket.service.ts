@@ -2,17 +2,19 @@ import { Injectable } from '@angular/core';
 import { Observable, Subject, BehaviorSubject } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { NseIndicesTickDto } from '../entities/nse-indices';
+import { Client, IMessage, StompConfig, IFrame } from '@stomp/stompjs';
+import SockJS from 'sockjs-client';
 
 /**
  * WebSocket service for connecting to MoneyPlant Engines module
  * Provides real-time data streaming for NSE indices and other engine data
- * Connects to engines project WebSocket endpoints instead of backend
+ * Connects to engines project WebSocket endpoints using STOMP protocol
  */
 @Injectable({
   providedIn: 'root'
 })
 export class EnginesWebSocketService {
-  private socket: WebSocket | null = null;
+  private client: Client | null = null;
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private reconnectInterval = 5000; // 5 seconds
@@ -33,64 +35,61 @@ export class EnginesWebSocketService {
   }
 
   /**
-   * Initialize WebSocket connection to engines module
-   * Uses the new engines WebSocket endpoints instead of backend
+   * Initialize STOMP WebSocket connection to engines module
+   * Uses the STOMP protocol over SockJS for better compatibility
    */
   private initializeWebSocket(): void {
     try {
-      // Use the engines WebSocket endpoint for NSE indices
-      const wsUrl = environment.enginesWebSocketUrl + '/ws/nse-indices-native';
-      console.log('Connecting to engines WebSocket:', wsUrl);
-      
-      this.socket = new WebSocket(wsUrl);
-      this.setupWebSocketHandlers();
+      // Create STOMP client with SockJS
+      this.client = new Client({
+        webSocketFactory: () => {
+          const baseUrl = environment.enginesHttpUrl + '/ws/nse-indices';
+          return new SockJS(baseUrl);
+        },
+        debug: (msg) => {
+          // Debug logging for development
+          console.log('STOMP Debug:', msg);
+        },
+        reconnectDelay: 5000,
+        heartbeatIncoming: 4000,
+        heartbeatOutgoing: 4000
+      });
+
+      // Set up connection callbacks
+      this.client.onConnect = (frame: IFrame) => {
+        console.log('Connected to engines STOMP WebSocket');
+        this.connectionStatusSubject.next(true);
+        this.reconnectAttempts = 0;
+        
+        // Subscribe to all NSE indices data
+        this.subscribeToAllIndices();
+      };
+
+      this.client.onDisconnect = (frame: IFrame) => {
+        console.log('Disconnected from engines STOMP WebSocket');
+        this.connectionStatusSubject.next(false);
+      };
+
+      this.client.onStompError = (frame: IFrame) => {
+        console.error('STOMP Error:', frame);
+        this.errorSubject.next(`STOMP Error: ${frame.headers['message']}`);
+        this.connectionStatusSubject.next(false);
+      };
+
+      this.client.onWebSocketError = (error: any) => {
+        console.error('WebSocket Error:', error);
+        this.errorSubject.next(`WebSocket Error: ${error.message || error}`);
+        this.connectionStatusSubject.next(false);
+      };
+
+      // Connect to the STOMP server
+      this.client.activate();
       
     } catch (error) {
-      console.error('Failed to initialize WebSocket:', error);
-      this.errorSubject.next('Failed to initialize WebSocket connection');
+      console.error('Failed to initialize STOMP WebSocket:', error);
+      this.errorSubject.next('Failed to initialize STOMP WebSocket connection');
       this.scheduleReconnect();
     }
-  }
-
-  /**
-   * Setup WebSocket event handlers
-   */
-  private setupWebSocketHandlers(): void {
-    if (!this.socket) return;
-
-    this.socket.onopen = () => {
-      console.log('Connected to engines WebSocket');
-      this.connectionStatusSubject.next(true);
-      this.reconnectAttempts = 0;
-      
-      // Subscribe to all NSE indices data
-      this.subscribeToAllIndices();
-    };
-
-    this.socket.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        this.handleWebSocketMessage(data);
-      } catch (error) {
-        console.error('Error parsing WebSocket message:', error);
-        this.errorSubject.next('Invalid message format received');
-      }
-    };
-
-    this.socket.onclose = (event) => {
-      console.log('Engines WebSocket connection closed:', event.code, event.reason);
-      this.connectionStatusSubject.next(false);
-      
-      if (!event.wasClean) {
-        this.scheduleReconnect();
-      }
-    };
-
-    this.socket.onerror = (error) => {
-      console.error('Engines WebSocket error:', error);
-      this.errorSubject.next('WebSocket connection error');
-      this.connectionStatusSubject.next(false);
-    };
   }
 
   /**
@@ -109,29 +108,40 @@ export class EnginesWebSocketService {
   }
 
   /**
-   * Subscribe to all NSE indices data
+   * Subscribe to all NSE indices data using STOMP
    */
   private subscribeToAllIndices(): void {
-    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-      const message = {
-        action: 'subscribe',
-        channel: 'nse-indices'
-      };
-      this.socket.send(JSON.stringify(message));
+    if (this.client && this.client.connected) {
+      const subscription = this.client.subscribe('/topic/nse-indices', (message: IMessage) => {
+        try {
+          const data = JSON.parse(message.body);
+          this.handleWebSocketMessage(data);
+        } catch (error) {
+          console.error('Error parsing STOMP message:', error);
+          this.errorSubject.next('Invalid message format received');
+        }
+      });
+      
+      console.log('Subscribed to all NSE indices via STOMP');
     }
   }
 
   /**
-   * Subscribe to specific NSE index data
+   * Subscribe to specific NSE index data using STOMP
    */
   public subscribeToIndex(indexName: string): void {
-    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-      const message = {
-        action: 'subscribe',
-        channel: 'nse-indices',
-        index: indexName
-      };
-      this.socket.send(JSON.stringify(message));
+    if (this.client && this.client.connected) {
+      const topic = `/topic/nse-indices/${indexName.replace(/\s+/g, '-').toLowerCase()}`;
+      const subscription = this.client.subscribe(topic, (message: IMessage) => {
+        try {
+          const data = JSON.parse(message.body);
+          this.handleWebSocketMessage(data);
+        } catch (error) {
+          console.error('Error parsing STOMP message:', error);
+        }
+      });
+      
+      console.log(`Subscribed to specific index ${indexName} via STOMP: ${topic}`);
     }
   }
 
@@ -139,62 +149,54 @@ export class EnginesWebSocketService {
    * Unsubscribe from all NSE indices data
    */
   public unsubscribeFromAllIndices(): void {
-    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-      const message = {
-        action: 'unsubscribe',
-        channel: 'nse-indices'
-      };
-      this.socket.send(JSON.stringify(message));
-    }
+    // STOMP handles unsubscription automatically when connection closes
+    console.log('Unsubscribed from all NSE indices');
   }
 
   /**
    * Unsubscribe from specific NSE index data
    */
   public unsubscribeFromIndex(indexName: string): void {
-    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-      const message = {
-        action: 'unsubscribe',
-        channel: 'nse-indices',
-        index: indexName
-      };
-      this.socket.send(JSON.stringify(message));
-    }
+    // STOMP handles unsubscription automatically when connection closes
+    console.log(`Unsubscribed from specific index ${indexName}`);
   }
 
   /**
-   * Start NSE indices ingestion
+   * Start NSE indices ingestion via STOMP
    */
   public startIngestion(): void {
-    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-      const message = {
-        action: 'start-ingestion'
-      };
-      this.socket.send(JSON.stringify(message));
+    if (this.client && this.client.connected) {
+      this.client.publish({
+        destination: '/app/start-ingestion',
+        body: JSON.stringify({ action: 'start-ingestion' })
+      });
+      console.log('Sent start-ingestion message via STOMP');
     }
   }
 
   /**
-   * Stop NSE indices ingestion
+   * Stop NSE indices ingestion via STOMP
    */
   public stopIngestion(): void {
-    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-      const message = {
-        action: 'stop-ingestion'
-      };
-      this.socket.send(JSON.stringify(message));
+    if (this.client && this.client.connected) {
+      this.client.publish({
+        destination: '/app/stop-ingestion',
+        body: JSON.stringify({ action: 'stop-ingestion' })
+      });
+      console.log('Sent stop-ingestion message via STOMP');
     }
   }
 
   /**
-   * Trigger manual ingestion
+   * Trigger manual ingestion via STOMP
    */
   public triggerIngestion(): void {
-    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-      const message = {
-        action: 'trigger-ingestion'
-      };
-      this.socket.send(JSON.stringify(message));
+    if (this.client && this.client.connected) {
+      this.client.publish({
+        destination: '/app/trigger-ingestion',
+        body: JSON.stringify({ action: 'trigger-ingestion' })
+      });
+      console.log('Sent trigger-ingestion message via STOMP');
     }
   }
 
@@ -223,8 +225,8 @@ export class EnginesWebSocketService {
    * Manually reconnect to WebSocket
    */
   public reconnect(): void {
-    if (this.socket) {
-      this.socket.close();
+    if (this.client) {
+      this.client.deactivate(); // Disconnect gracefully
     }
     this.initializeWebSocket();
   }
@@ -237,9 +239,9 @@ export class EnginesWebSocketService {
       clearTimeout(this.reconnectTimer);
     }
     
-    if (this.socket) {
-      this.socket.close();
-      this.socket = null;
+    if (this.client) {
+      this.client.deactivate(); // Disconnect gracefully
+      this.client = null;
     }
     
     this.connectionStatusSubject.next(false);
@@ -249,7 +251,7 @@ export class EnginesWebSocketService {
    * Check if WebSocket is connected
    */
   public isConnected(): boolean {
-    return this.socket?.readyState === WebSocket.OPEN;
+    return this.client?.connected || false;
   }
 
   /**

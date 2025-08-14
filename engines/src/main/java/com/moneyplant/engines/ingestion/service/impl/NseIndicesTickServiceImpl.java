@@ -17,177 +17,82 @@ import java.util.Optional;
 /**
  * Implementation of NseIndicesTickService for managing NSE indices tick data.
  * Handles database operations including UPSERT operations for real-time data.
+ * 
+ * NOTE: This service is currently disabled to avoid PostgreSQL ingestion failures.
+ * Database operations have been removed from the Kafka subscription flow.
  */
-@Service
+// @Service  // Temporarily disabled
 @RequiredArgsConstructor
 @Slf4j
-@Transactional
+// @Transactional  // Temporarily disabled
 public class NseIndicesTickServiceImpl implements NseIndicesTickService {
 
-    private final NseIndicesTickRepository nseIndicesTickRepository;
+    // private final NseIndicesTickRepository nseIndicesTickRepository;  // Temporarily disabled
 
     @Override
     public void upsertTickData(NseIndicesTickDto tickDto) {
-        try {
-            if (tickDto == null || tickDto.getIndices() == null) {
-                log.warn("Invalid tick data received, skipping upsert");
-                return;
-            }
-
-            log.debug("Upserting tick data for {} indices", tickDto.getIndices().length);
-            
-            // Convert DTO to entity and upsert
-            NseIndicesTick entity = convertDtoToEntity(tickDto);
-            nseIndicesTickRepository.upsertTickData(entity);
-            
-            log.debug("Successfully upserted tick data for index: {}", entity.getIndexName());
-            
-        } catch (Exception e) {
-            log.error("Error upserting tick data: {}", e.getMessage(), e);
-            throw new RuntimeException("Failed to upsert tick data", e);
-        }
+        // Temporarily disabled - repository not available
+        log.warn("Database operations disabled - tick data not saved");
     }
 
     @Override
     public void upsertMultipleTickData(List<NseIndicesTickDto> tickDtos) {
-        try {
-            if (tickDtos == null || tickDtos.isEmpty()) {
-                log.warn("No tick data received for batch upsert");
-                return;
-            }
-
-            log.debug("Batch upserting {} tick data entries", tickDtos.size());
-            
-            for (NseIndicesTickDto tickDto : tickDtos) {
-                upsertTickData(tickDto);
-            }
-            
-            log.debug("Successfully batch upserted {} tick data entries", tickDtos.size());
-            
-        } catch (Exception e) {
-            log.error("Error in batch upsert of tick data: {}", e.getMessage(), e);
-            throw new RuntimeException("Failed to batch upsert tick data", e);
-        }
+        // Temporarily disabled - repository not available
+        log.warn("Database operations disabled - batch tick data not saved");
     }
 
     @Override
-    @Transactional(readOnly = true)
+    // @Transactional(readOnly = true)  // Temporarily disabled
     public NseIndicesTick getLatestTickData(String indexName) {
-        try {
-            if (indexName == null || indexName.trim().isEmpty()) {
-                log.warn("Invalid index name provided for latest tick data retrieval");
-                return null;
-            }
-
-            Optional<NseIndicesTick> latestTick = nseIndicesTickRepository
-                .findFirstByIndexNameOrderByTickTimestampDesc(indexName);
-            
-            return latestTick.orElse(null);
-            
-        } catch (Exception e) {
-            log.error("Error retrieving latest tick data for index {}: {}", indexName, e.getMessage(), e);
-            return null;
-        }
+        // Temporarily disabled - repository not available
+        log.warn("Database operations disabled - latest tick data not retrieved");
+        return null;
     }
 
     @Override
-    @Transactional(readOnly = true)
+    // @Transactional(readOnly = true)  // Temporarily disabled
     public List<NseIndicesTick> getLatestTicksForAllIndices() {
-        try {
-            return nseIndicesTickRepository.findLatestTicksForAllIndices();
-        } catch (Exception e) {
-            log.error("Error retrieving latest ticks for all indices: {}", e.getMessage(), e);
-            return List.of();
-        }
+        // Temporarily disabled - repository not available
+        log.warn("Database operations disabled - latest ticks not retrieved");
+        return List.of();
     }
 
     @Override
-    @Transactional(readOnly = true)
+    // @Transactional(readOnly = true)  // Temporarily disabled
     public List<NseIndicesTick> getTickDataByIndexAndTimeRange(String indexName, Instant startTime, Instant endTime) {
-        try {
-            if (indexName == null || startTime == null || endTime == null) {
-                log.warn("Invalid parameters provided for time range tick data retrieval");
-                return List.of();
-            }
-
-            return nseIndicesTickRepository.findByIndexNameAndTickTimestampBetweenOrderByTickTimestampDesc(
-                indexName, startTime, endTime);
-            
-        } catch (Exception e) {
-            log.error("Error retrieving tick data for index {} in time range {} to {}: {}", 
-                     indexName, startTime, endTime, e.getMessage(), e);
-            return List.of();
-        }
+        // Temporarily disabled - repository not available
+        log.warn("Database operations disabled - tick data not retrieved");
+        return List.of();
     }
 
     @Override
-    @Transactional(readOnly = true)
+    // @Transactional(readOnly = true)  // Temporarily disabled
     public List<NseIndicesTick> getTickDataByTimeRange(Instant startTime, Instant endTime) {
-        try {
-            if (startTime == null || endTime == null) {
-                log.warn("Invalid time range parameters provided for tick data retrieval");
-                return List.of();
-            }
-
-            return nseIndicesTickRepository.findByTickTimestampBetweenOrderByTickTimestampDesc(startTime, endTime);
-            
-        } catch (Exception e) {
-            log.error("Error retrieving tick data in time range {} to {}: {}", 
-                     startTime, endTime, e.getMessage(), e);
-            return List.of();
-        }
+        // Temporarily disabled - repository not available
+        log.warn("Database operations disabled - tick data not retrieved");
+        return List.of();
     }
 
     @Override
     public void cleanupOldTickData(Instant cutoffTime) {
-        try {
-            if (cutoffTime == null) {
-                log.warn("Invalid cutoff time provided for cleanup");
-                return;
-            }
-
-            log.info("Cleaning up tick data older than: {}", cutoffTime);
-            long deletedCount = nseIndicesTickRepository.count();
-            
-            nseIndicesTickRepository.deleteOldTickData(cutoffTime);
-            
-            long remainingCount = nseIndicesTickRepository.count();
-            long actualDeletedCount = deletedCount - remainingCount;
-            
-            log.info("Cleanup completed. Deleted {} old tick data records", actualDeletedCount);
-            
-        } catch (Exception e) {
-            log.error("Error during cleanup of old tick data: {}", e.getMessage(), e);
-        }
+        // Temporarily disabled - repository not available
+        log.warn("Database operations disabled - cleanup not performed");
     }
 
     @Override
-    @Transactional(readOnly = true)
+    // @Transactional(readOnly = true)  // Temporarily disabled
     public long getTotalTickDataCount() {
-        try {
-            return nseIndicesTickRepository.count();
-        } catch (Exception e) {
-            log.error("Error retrieving total tick data count: {}", e.getMessage(), e);
-            return 0;
-        }
+        // Temporarily disabled - repository not available
+        log.warn("Database operations disabled - count not retrieved");
+        return 0;
     }
 
     @Override
-    @Transactional(readOnly = true)
+    // @Transactional(readOnly = true)  // Temporarily disabled
     public List<NseIndicesTick> getTickDataBySource(String source) {
-        try {
-            if (source == null || source.trim().isEmpty()) {
-                log.warn("Invalid source provided for tick data retrieval");
-                return List.of();
-            }
-
-            // Since we no longer have a source field, we'll use createdBy instead
-            return nseIndicesTickRepository.findByCreatedByOrderByTickTimestampDesc(source);
-            
-        } catch (Exception e) {
-            log.error("Error retrieving tick data by source {}: {}", source, e.getMessage(), e);
-            return List.of();
-        }
+        // Temporarily disabled - repository not available
+        log.warn("Database operations disabled - tick data not retrieved");
+        return List.of();
     }
 
     @Override

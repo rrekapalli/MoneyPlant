@@ -135,7 +135,7 @@ export class StompNativeWebSocketService {
       throw new Error('WebSocket not connected');
     }
 
-    const subscription = this.client.subscribe('/topic/indices', (message: IMessage) => {
+    const subscription = this.client.subscribe('/topic/nse-indices', (message: IMessage) => {
       try {
         const data = JSON.parse(message.body);
         const indicesData = this.parseIndicesData(data);
@@ -160,7 +160,10 @@ export class StompNativeWebSocketService {
       throw new Error('WebSocket not connected');
     }
 
-    const topic = `/topic/indices/${indexName.replace(/\s+/g, '-').toLowerCase()}`;
+    // Use the correct topic format that matches the backend controller
+    const topic = `/topic/nse-indices/${indexName.replace(/\s+/g, '-').toLowerCase()}`;
+    console.log(`Subscribing to STOMP topic: ${topic}`);
+    
     const subscription = this.client.subscribe(topic, (message: IMessage) => {
       try {
         const data = JSON.parse(message.body);

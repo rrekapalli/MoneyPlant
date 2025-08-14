@@ -212,12 +212,17 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
   // Chart update control to prevent rapid reinitialization
   private chartUpdateTimer: any = null;
   private indicesWebSocketSubscription: Subscription | null = null;
+  private webSocketConnectionStateSubscription: Subscription | null = null;
   
   // Current selected index data from WebSocket
   private currentSelectedIndexData: IndexDataDto | null = null;
   
   // Historical data for candlestick chart
   private historicalData: IndexHistoricalData[] = [];
+
+  // WebSocket connection state tracking
+  private isWebSocketConnected: boolean = false;
+  private currentSubscribedIndex: string | null = null;
 
 
 
@@ -246,10 +251,9 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
       // Handle world map loading error silently
     });
 
-    // Initialize WebSocket connection
+    // Initialize WebSocket connection and monitor connection state
     this.initializeWebSocket();
-
-
+    this.monitorWebSocketConnectionState();
 
     // Clear any existing subscription
     if (this.selectedIndexSubscription) {
@@ -299,7 +303,11 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
       this.indicesWebSocketSubscription = null;
     }
 
-
+    // Unsubscribe from WebSocket connection state monitoring
+    if (this.webSocketConnectionStateSubscription) {
+      this.webSocketConnectionStateSubscription.unsubscribe();
+      this.webSocketConnectionStateSubscription = null;
+    }
     
     // Disconnect modern WebSocket
     this.modernIndicesWebSocketService.disconnect();
@@ -310,7 +318,10 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
     this.appliedFilters = [];
     this.currentSelectedIndexData = null;
     this.historicalData = [];
-
+    
+    // Reset WebSocket state
+    this.isWebSocketConnected = false;
+    this.currentSubscribedIndex = null;
   }
 
   private loadDefaultNifty50Data(): void {
@@ -1961,7 +1972,10 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
       this.indicesWebSocketSubscription = null;
     }
 
-    // Convert index name to WebSocket format (e.g., "NIFTY METAL" -> "NIFTY-METAL")
+    // Track the current subscribed index
+    this.currentSubscribedIndex = indexName;
+
+    // Convert index name to WebSocket format (e.g., "NIFTY 50" -> "NIFTY-50")
     const webSocketIndexName = indexName.replace(/\s+/g, '-').toUpperCase();
 
     try {
@@ -1970,45 +1984,224 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
       
       // Only subscribe if WebSocket is actually connected
       if (this.modernIndicesWebSocketService.isConnected) {
-        // Subscribe to specific index data using modern service
-        this.indicesWebSocketSubscription = this.modernIndicesWebSocketService
-          .subscribeToIndex(webSocketIndexName)
-          .subscribe({
-            next: (indicesData: IndicesDto) => {
-              try {
-                if (indicesData && indicesData.indices && indicesData.indices.length > 0) {
-                  // Update current selected index data
-                  this.currentSelectedIndexData = indicesData.indices[0];
-                  
-                  // Force complete recreation of metric tiles with new data
-                  this.recreateMetricTiles();
-                  
-                  this.forceDashboardRefresh(); // Force refresh to update all widgets
-                  this.cdr.detectChanges();
-                } else {
-                  console.warn('WebSocket received data but no valid indices found:', indicesData);
-                }
-              } catch (error) {
-                console.error('Error processing received index data:', error);
+        // First try to subscribe to specific index data
+        try {
+          this.indicesWebSocketSubscription = this.modernIndicesWebSocketService
+            .subscribeToIndex(webSocketIndexName)
+            .subscribe({
+              next: (indicesData: IndicesDto) => {
+                this.handleWebSocketData(indicesData, indexName);
+              },
+              error: (error) => {
+                console.warn(`Specific index subscription failed for ${webSocketIndexName}, falling back to all indices:`, error.message || error);
+                // Fallback to all indices subscription
+                this.subscribeToAllIndicesAsFallback(indexName);
+              },
+              complete: () => {
+                // WebSocket subscription completed
               }
-            },
-            error: (error) => {
-              console.warn('WebSocket subscription error for', webSocketIndexName, ':', error.message || error);
-              // Don't clear currentSelectedIndexData on WebSocket errors to prevent tile from reverting
-              this.cdr.detectChanges();
-            },
-            complete: () => {
-              // WebSocket subscription completed
-            }
-          });
+            });
+        } catch (error) {
+          console.warn(`Specific index subscription failed for ${webSocketIndexName}, falling back to all indices:`, error);
+          // Fallback to all indices subscription
+          this.subscribeToAllIndicesAsFallback(indexName);
+        }
           
       } else {
         // WebSocket not connected - skipping real-time subscription
+        console.warn('WebSocket not connected - skipping real-time subscription for', webSocketIndexName);
       }
     } catch (error) {
       console.warn(`WebSocket subscription failed for ${webSocketIndexName} - continuing without real-time data:`, (error as Error).message || error);
       // Don't clear currentSelectedIndexData on WebSocket connection failures to prevent tile from reverting
       this.cdr.detectChanges();
+    }
+  }
+
+  /**
+   * Fallback subscription to all indices data when specific index subscription fails
+   * @param targetIndexName - The name of the index we're looking for
+   */
+  private subscribeToAllIndicesAsFallback(targetIndexName: string): void {
+    try {
+      this.indicesWebSocketSubscription = this.modernIndicesWebSocketService
+        .subscribeToAllIndices()
+        .subscribe({
+          next: (indicesData: IndicesDto) => {
+            // Filter for the target index from all indices data
+            if (indicesData && indicesData.indices && indicesData.indices.length > 0) {
+              const targetIndex = indicesData.indices.find(index => {
+                const indexName = index.indexName || index.index || '';
+                const indexSymbol = index.indexSymbol || index.key || '';
+                return indexName.toLowerCase().includes(targetIndexName.toLowerCase()) ||
+                       indexSymbol.toLowerCase().includes(targetIndexName.toLowerCase()) ||
+                       targetIndexName.toLowerCase().includes(indexName.toLowerCase()) ||
+                       targetIndexName.toLowerCase().includes(indexSymbol.toLowerCase());
+              });
+              
+              if (targetIndex) {
+                this.handleWebSocketData({ ...indicesData, indices: [targetIndex] }, targetIndexName);
+              }
+            }
+          },
+          error: (error) => {
+            console.warn('All indices subscription error:', error.message || error);
+            this.cdr.detectChanges();
+          },
+          complete: () => {
+            // WebSocket subscription completed
+          }
+        });
+    } catch (error) {
+      console.error('Failed to subscribe to all indices as fallback:', error);
+    }
+  }
+
+  /**
+   * Handle WebSocket data updates for the selected index
+   * @param indicesData - Data received from WebSocket
+   * @param indexName - The name of the index being monitored
+   */
+  private handleWebSocketData(indicesData: IndicesDto, indexName: string): void {
+    try {
+      if (indicesData && indicesData.indices && indicesData.indices.length > 0) {
+        // Update current selected index data with real-time information
+        const realTimeIndexData = indicesData.indices[0];
+        this.currentSelectedIndexData = realTimeIndexData;
+        
+        // Update the first tile (index price tile) with real-time data
+        this.updateFirstTileWithRealTimeData(realTimeIndexData);
+        
+        // Force complete recreation of metric tiles with new data
+        this.recreateMetricTiles();
+        
+        this.forceDashboardRefresh(); // Force refresh to update all widgets
+        this.cdr.detectChanges();
+      } else {
+        console.warn('WebSocket received data but no valid indices found:', indicesData);
+      }
+    } catch (error) {
+      console.error('Error processing received index data:', error);
+    }
+  }
+
+  /**
+   * Attempt to reconnect to WebSocket and resubscribe to current index
+   */
+  private async attemptWebSocketReconnection(): Promise<void> {
+    if (!this.currentSubscribedIndex) {
+      return;
+    }
+
+    try {
+      console.log('Attempting WebSocket reconnection...');
+      await this.modernIndicesWebSocketService.connect();
+      
+      if (this.modernIndicesWebSocketService.isConnected) {
+        console.log('WebSocket reconnected successfully, resubscribing to', this.currentSubscribedIndex);
+        this.subscribeToIndexWebSocket(this.currentSubscribedIndex);
+      }
+    } catch (error) {
+      console.warn('WebSocket reconnection failed:', error);
+      // Schedule another reconnection attempt after a delay
+      setTimeout(() => {
+        this.attemptWebSocketReconnection();
+      }, 5000); // 5 second delay before retry
+    }
+  }
+
+  /**
+   * Update the first tile (index price tile) with real-time WebSocket data
+   * @param realTimeIndexData - Real-time index data from WebSocket
+   */
+  private updateFirstTileWithRealTimeData(realTimeIndexData: IndexDataDto): void {
+    if (!this.dashboardConfig?.widgets) {
+      console.warn('Dashboard config not available for first tile update');
+      return;
+    }
+
+    // Find the first tile (index price tile) - it should be at position (0,0)
+    const firstTile = this.dashboardConfig.widgets.find(widget => 
+      widget.position?.x === 0 && widget.position?.y === 0 &&
+      (widget.config?.component === 'stock-tile' || widget.config?.component === 'tile')
+    );
+
+    if (!firstTile) {
+      console.warn('First tile not found at position (0,0)');
+      return;
+    }
+
+    if (!realTimeIndexData) {
+      console.warn('No real-time index data available for first tile update');
+      return;
+    }
+
+    try {
+      // Extract real-time data using both expected and actual WebSocket field names
+      const indexName = realTimeIndexData.indexName || realTimeIndexData.index || 'Index';
+      const lastPrice = realTimeIndexData.lastPrice || realTimeIndexData.last || 0;
+      const percentChange = realTimeIndexData.percentChange || realTimeIndexData.perChange || 0;
+      const dayHigh = realTimeIndexData.dayHigh || realTimeIndexData.high || 0;
+      const dayLow = realTimeIndexData.dayLow || realTimeIndexData.low || 0;
+      const variation = realTimeIndexData.variation || realTimeIndexData.change || 0;
+
+      console.log(`Updating first tile with real-time data for ${indexName}:`, {
+        lastPrice,
+        percentChange,
+        variation,
+        dayHigh,
+        dayLow,
+        timestamp: new Date().toLocaleTimeString()
+      });
+
+      if (firstTile.config?.component === 'stock-tile') {
+        // Update stock tile with real-time data
+        const stockTileData = {
+          value: lastPrice.toFixed(2),
+          change: variation.toFixed(2),
+          changeType: (percentChange >= 0 ? 'positive' : 'negative') as 'positive' | 'negative' | 'neutral',
+          description: indexName,
+          icon: 'fas fa-chart-line',
+          color: percentChange >= 0 ? '#16a34a' : '#dc2626',
+          backgroundColor: percentChange >= 0 ? '#bbf7d0' : '#fecaca',
+          highValue: dayHigh.toFixed(2),
+          lowValue: dayLow.toFixed(2),
+          currency: '₹'
+        };
+        
+        // Use StockTileBuilder to properly update the stock tile data
+        StockTileBuilder.updateData(firstTile, stockTileData);
+        console.log('First tile (stock-tile) updated successfully');
+      } else {
+        // Update regular tile with real-time data
+        const tileData = {
+          value: lastPrice.toFixed(2),
+          change: variation.toFixed(2),
+          changeType: (percentChange >= 0 ? 'positive' : 'negative') as 'positive' | 'negative' | 'neutral',
+          description: indexName,
+          icon: 'fas fa-chart-line',
+          color: percentChange >= 0 ? '#16a34a' : '#dc2626',
+          backgroundColor: percentChange >= 0 ? '#bbf7d0' : '#fecaca',
+          title: indexName,
+          subtitle: `Change: ${percentChange.toFixed(2)}%`
+        };
+        
+        // Use TileBuilder to properly update the tile data
+        TileBuilder.updateData(firstTile, tileData);
+        console.log('First tile (regular tile) updated successfully');
+      }
+
+      // Log real-time update for debugging
+      console.log(`Real-time update for ${indexName}:`, {
+        lastPrice,
+        percentChange,
+        variation,
+        dayHigh,
+        dayLow,
+        timestamp: new Date().toLocaleTimeString()
+      });
+    } catch (error) {
+      console.error('Error updating first tile with real-time data:', error);
     }
   }
 
@@ -2085,6 +2278,42 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
         }
       }
     });
+  }
+
+  /**
+   * Monitor WebSocket connection state changes
+   */
+  private monitorWebSocketConnectionState(): void {
+    this.webSocketConnectionStateSubscription = this.modernIndicesWebSocketService.connectionState
+      .subscribe({
+        next: (state: any) => {
+          this.isWebSocketConnected = state === 'CONNECTED';
+          
+          if (this.isWebSocketConnected) {
+            console.log('WebSocket connected - ready for real-time data');
+            // If we have a current subscribed index, resubscribe
+            if (this.currentSubscribedIndex) {
+              this.subscribeToIndexWebSocket(this.currentSubscribedIndex);
+            }
+          } else if (state === 'DISCONNECTED' || state === 'ERROR') {
+            console.log('WebSocket disconnected or error state:', state);
+            // Attempt reconnection if we have a subscribed index
+            if (this.currentSubscribedIndex) {
+              this.attemptWebSocketReconnection();
+            }
+          } else {
+            console.log('WebSocket state changed:', state);
+          }
+        },
+        error: (error) => {
+          console.error('WebSocket connection state monitoring error:', error);
+          this.isWebSocketConnected = false;
+          // Attempt reconnection on error
+          if (this.currentSubscribedIndex) {
+            this.attemptWebSocketReconnection();
+          }
+        }
+      });
   }
 
 }

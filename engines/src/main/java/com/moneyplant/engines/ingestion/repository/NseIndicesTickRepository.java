@@ -14,8 +14,11 @@ import java.util.Optional;
 /**
  * Repository interface for NseIndicesTick entity.
  * Provides methods to interact with the nse_indices_ticks table in the database.
+ * 
+ * NOTE: This repository is temporarily disabled to avoid PostgreSQL ingestion failures.
+ * Database operations have been removed from the Kafka subscription flow.
  */
-@Repository
+// @Repository  // Temporarily disabled
 public interface NseIndicesTickRepository extends JpaRepository<NseIndicesTick, Long> {
     
     /**

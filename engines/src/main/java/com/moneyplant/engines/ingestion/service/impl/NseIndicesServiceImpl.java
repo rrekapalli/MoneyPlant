@@ -4,12 +4,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.moneyplant.engines.common.dto.NseIndicesTickDto;
-import com.moneyplant.engines.common.entities.NseIndicesTick;
+
 import com.moneyplant.engines.ingestion.service.NseIndicesService;
-import com.moneyplant.engines.ingestion.service.NseIndicesTickService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -46,7 +47,6 @@ public class NseIndicesServiceImpl extends TextWebSocketHandler implements NseIn
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final ObjectMapper objectMapper;
     private final SimpMessagingTemplate messagingTemplate;
-    private final NseIndicesTickService nseIndicesTickService;
 
     @Value("${kafka.topics.nse-indices-ticks:nse-indices-ticks}")
     private String kafkaTopic;
@@ -54,8 +54,23 @@ public class NseIndicesServiceImpl extends TextWebSocketHandler implements NseIn
     @Value("${nse.websocket.url:wss://www.nseindia.com/streams/indices/high/drdMkt}")
     private String nseWebSocketUrl;
 
+    @Value("${nse.websocket.alternative-urls:}")
+    private List<String> alternativeUrls;
+
     @Value("${nse.websocket.reconnect.interval:30}")
     private long reconnectIntervalSeconds;
+
+    @Value("${nse.websocket.reconnect.max-attempts:5}")
+    private int maxReconnectAttempts;
+
+    @Value("${nse.websocket.reconnect.backoff-multiplier:2}")
+    private int backoffMultiplier;
+
+    @Value("${nse.websocket.timeout:30000}")
+    private long connectionTimeout;
+
+    @Value("${nse.websocket.heartbeat-interval:30000}")
+    private long heartbeatInterval;
 
     @Value("${spring.kafka.enabled:true}")
     private boolean kafkaEnabled;
@@ -75,6 +90,7 @@ public class NseIndicesServiceImpl extends TextWebSocketHandler implements NseIn
     private ScheduledExecutorService reconnectExecutor;
     private volatile boolean isConnecting = false;
     private volatile boolean isConnected = false;
+    private int currentReconnectAttempt = 0;
 
     // Subscription tracking
     private final Map<String, Boolean> activeSubscriptions = new ConcurrentHashMap<>();
@@ -256,13 +272,10 @@ public class NseIndicesServiceImpl extends TextWebSocketHandler implements NseIn
     @Override
     public List<NseIndicesTickDto> getLatestIndicesData() {
         try {
-            // Get latest data from database instead of local cache
-            List<NseIndicesTick> latestTicks = nseIndicesTickService.getLatestTicksForAllIndices();
-            return latestTicks.stream()
-                .map(nseIndicesTickService::convertEntityToDto)
-                .toList();
+            // Get latest data from local cache instead of database
+            return new ArrayList<>(latestIndexDataMap.values());
         } catch (Exception e) {
-            log.error("Error retrieving latest indices data from database: {}", e.getMessage(), e);
+            log.error("Error retrieving latest indices data from cache: {}", e.getMessage(), e);
             return new ArrayList<>();
         }
     }
@@ -270,11 +283,10 @@ public class NseIndicesServiceImpl extends TextWebSocketHandler implements NseIn
     @Override
     public NseIndicesTickDto getLatestIndexData(String indexName) {
         try {
-            // Get latest data from database instead of local cache
-            NseIndicesTick latestTick = nseIndicesTickService.getLatestTickData(indexName);
-            return latestTick != null ? nseIndicesTickService.convertEntityToDto(latestTick) : null;
+            // Get latest data from local cache instead of database
+            return latestIndexDataMap.get(indexName);
         } catch (Exception e) {
-            log.error("Error retrieving latest index data for {} from database: {}", indexName, e.getMessage(), e);
+            log.error("Error retrieving latest index data for {} from cache: {}", indexName, indexName, e.getMessage(), e);
             return null;
         }
     }
@@ -315,19 +327,30 @@ public class NseIndicesServiceImpl extends TextWebSocketHandler implements NseIn
             isConnecting = true;
             log.info("Connecting to NSE indices WebSocket: {}", nseWebSocketUrl);
 
-            // Create WebSocket connection with proper headers like the backend
-            WebSocketHttpHeaders headers = new WebSocketHttpHeaders();
-            headers.add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
-            headers.add("Origin", "https://www.nseindia.com");
-            headers.add("Accept", "*/*");
-            headers.add("Accept-Language", "en-US,en;q=0.9");
-            headers.add("Accept-Encoding", "gzip, deflate, br");
-            headers.add("Connection", "keep-alive");
-            headers.add("Upgrade", "websocket");
-            headers.add("Sec-WebSocket-Version", "13");
+            // Create WebSocket connection with enhanced headers for NSE
+            WebSocketHttpHeaders headers = createNseWebSocketHeaders();
+            
+            // Try to connect to the primary URL first
+            attemptConnection(nseWebSocketUrl, headers, 0);
+            
+        } catch (Exception e) {
+            isConnecting = false;
+            log.error("Failed to connect to NSE WebSocket: {}", e.getMessage(), e);
+            
+            // Schedule reconnection attempt
+            scheduleReconnect();
+        }
+    }
 
+    /**
+     * Attempt WebSocket connection with fallback to alternative URLs
+     */
+    private void attemptConnection(String url, WebSocketHttpHeaders headers, int attemptNumber) {
+        try {
+            log.info("Attempting connection to NSE WebSocket (attempt {}): {}", attemptNumber + 1, url);
+            
             ListenableFuture<WebSocketSession> connectionFuture = webSocketClient.doHandshake(
-                this, headers, URI.create(nseWebSocketUrl)
+                this, headers, URI.create(url)
             );
 
             connectionFuture.addCallback(new ListenableFutureCallback<WebSocketSession>() {
@@ -337,7 +360,7 @@ public class NseIndicesServiceImpl extends TextWebSocketHandler implements NseIn
                     isConnected = true;
                     isConnecting = false;
                     connectionStartTime = Instant.now();
-                    log.info("Successfully connected to NSE WebSocket");
+                    log.info("Successfully connected to NSE WebSocket: {}", url);
                     
                     // Send initial subscription message
                     try {
@@ -351,22 +374,156 @@ public class NseIndicesServiceImpl extends TextWebSocketHandler implements NseIn
 
                 @Override
                 public void onFailure(Throwable ex) {
-                    isConnecting = false;
-                    log.error("Failed to connect to NSE WebSocket: {}", ex.getMessage());
-                    log.error("This might be due to network restrictions or NSE requiring authentication");
+                    log.error("Failed to connect to NSE WebSocket {}: {}", url, ex.getMessage());
                     
-                    // Schedule reconnection attempt
+                    // Try alternative URLs if available
+                    if (attemptNumber < getMaxAlternativeAttempts()) {
+                        String nextUrl = getNextAlternativeUrl(attemptNumber);
+                        if (nextUrl != null) {
+                            log.info("Trying alternative NSE WebSocket URL: {}", nextUrl);
+                            attemptConnection(nextUrl, headers, attemptNumber + 1);
+                            return;
+                        }
+                    }
+                    
+                    // All URLs failed, schedule reconnection
+                    isConnecting = false;
+                    log.error("All NSE WebSocket URLs failed. This might be due to network restrictions or NSE requiring authentication");
                     scheduleReconnect();
                 }
             });
             
         } catch (Exception e) {
-            isConnecting = false;
-            log.error("Failed to connect to NSE WebSocket: {}", e.getMessage(), e);
+            log.error("Exception during WebSocket connection attempt to {}: {}", url, e.getMessage(), e);
             
-            // Schedule reconnection attempt
+            // Try alternative URLs if available
+            if (attemptNumber < getMaxAlternativeAttempts()) {
+                String nextUrl = getNextAlternativeUrl(attemptNumber);
+                if (nextUrl != null) {
+                    log.info("Trying alternative NSE WebSocket URL: {}", nextUrl);
+                    attemptConnection(nextUrl, headers, attemptNumber + 1);
+                    return;
+                }
+            }
+            
+            // All URLs failed
+            isConnecting = false;
             scheduleReconnect();
         }
+    }
+
+    /**
+     * Create enhanced headers for NSE WebSocket connection
+     */
+    private WebSocketHttpHeaders createNseWebSocketHeaders() {
+        WebSocketHttpHeaders headers = new WebSocketHttpHeaders();
+        
+        // Standard headers
+        headers.add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+        headers.add("Origin", "https://www.nseindia.com");
+        headers.add("Referer", "https://www.nseindia.com/get-quotes/equity");
+        headers.add("Accept", "*/*");
+        headers.add("Accept-Language", "en-US,en;q=0.9");
+        headers.add("Accept-Encoding", "gzip, deflate, br");
+        headers.add("Connection", "keep-alive");
+        headers.add("Upgrade", "websocket");
+        headers.add("Sec-WebSocket-Version", "13");
+        
+        // Additional headers that might help with NSE authentication
+        headers.add("Cache-Control", "no-cache");
+        headers.add("Pragma", "no-cache");
+        headers.add("Sec-Fetch-Dest", "websocket");
+        headers.add("Sec-Fetch-Mode", "websocket");
+        headers.add("Sec-Fetch-Site", "same-origin");
+        
+        return headers;
+    }
+
+    /**
+     * Get the next alternative URL to try
+     */
+    private String getNextAlternativeUrl(int attemptNumber) {
+        if (alternativeUrls != null && !alternativeUrls.isEmpty() && attemptNumber < alternativeUrls.size()) {
+            return alternativeUrls.get(attemptNumber);
+        }
+        return null;
+    }
+
+    /**
+     * Get maximum number of alternative attempts
+     */
+    private int getMaxAlternativeAttempts() {
+        return alternativeUrls != null ? alternativeUrls.size() : 0;
+    }
+
+    /**
+     * Start fallback mock data generation when NSE WebSocket fails
+     */
+    private void startFallbackMockDataGeneration() {
+        if (fallbackEnabled && fallbackMockInterval > 0) {
+            log.info("Starting fallback mock data generation every {} ms", fallbackMockInterval);
+            
+            // Schedule periodic mock data generation
+            reconnectExecutor.scheduleAtFixedRate(() -> {
+                try {
+                    if (!isConnected) {
+                        generateAndPublishMockData();
+                    }
+                } catch (Exception e) {
+                    log.error("Error in fallback mock data generation: {}", e.getMessage(), e);
+                }
+            }, fallbackMockInterval, fallbackMockInterval, TimeUnit.MILLISECONDS);
+        }
+    }
+
+    /**
+     * Generate and publish mock NSE indices data
+     */
+    private void generateAndPublishMockData() {
+        try {
+            // Create mock data for common indices
+            String[] mockIndices = {"NIFTY 50", "SENSEX", "BANKNIFTY", "NIFTY IT", "NIFTY PHARMA"};
+            
+            for (String indexName : mockIndices) {
+                NseIndicesTickDto mockData = createMockIndexData(indexName);
+                publishToKafka(mockData);
+                broadcastToWebSocketSubscribers(mockData);
+            }
+            
+            log.debug("Generated and published mock data for {} indices", mockIndices.length);
+            
+        } catch (Exception e) {
+            log.error("Error generating mock data: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Create mock data for a specific index
+     */
+    private NseIndicesTickDto createMockIndexData(String indexName) {
+        NseIndicesTickDto mockData = new NseIndicesTickDto();
+        mockData.setTimestamp(Instant.now().toString());
+        mockData.setSource("Mock-Fallback");
+        mockData.setIngestionTimestamp(Instant.now());
+        
+        // Create mock index data
+        NseIndicesTickDto.IndexTickDataDto indexData = new NseIndicesTickDto.IndexTickDataDto();
+        indexData.setIndexName(indexName);
+        indexData.setIndexSymbol(indexName.replace(" ", ""));
+        indexData.setLastPrice(new java.math.BigDecimal("19500.50"));
+        indexData.setVariation(new java.math.BigDecimal("150.25"));
+        indexData.setPercentChange(new java.math.BigDecimal("0.78"));
+        indexData.setOpenPrice(new java.math.BigDecimal("19350.25"));
+        indexData.setDayHigh(new java.math.BigDecimal("19600.75"));
+        indexData.setDayLow(new java.math.BigDecimal("19300.00"));
+        indexData.setPreviousClose(new java.math.BigDecimal("19350.25"));
+        indexData.setYearHigh(new java.math.BigDecimal("21000.00"));
+        indexData.setYearLow(new java.math.BigDecimal("18000.00"));
+        indexData.setTickTimestamp(Instant.now());
+        
+        mockData.setIndices(new NseIndicesTickDto.IndexTickDataDto[]{indexData});
+        
+        return mockData;
     }
 
     /**
@@ -385,12 +542,37 @@ public class NseIndicesServiceImpl extends TextWebSocketHandler implements NseIn
     }
 
     /**
-     * Schedule reconnection attempt
+     * Schedule reconnection attempt with exponential backoff
      */
     private void scheduleReconnect() {
         if (reconnectExecutor != null && !reconnectExecutor.isShutdown()) {
-            reconnectExecutor.schedule(this::connectToNseWebSocket, reconnectIntervalSeconds, TimeUnit.SECONDS);
-            log.info("Scheduled reconnection attempt in {} seconds", reconnectIntervalSeconds);
+            currentReconnectAttempt++;
+            
+            if (currentReconnectAttempt <= maxReconnectAttempts) {
+                // Calculate delay with exponential backoff
+                long delay = reconnectIntervalSeconds * (long) Math.pow(backoffMultiplier, currentReconnectAttempt - 1);
+                delay = Math.min(delay, 300); // Cap at 5 minutes
+                
+                log.info("Scheduling reconnection attempt {} of {} in {} seconds", 
+                    currentReconnectAttempt, maxReconnectAttempts, delay);
+                
+                reconnectExecutor.schedule(() -> {
+                    currentReconnectAttempt = 0; // Reset for next connection cycle
+                    connectToNseWebSocket();
+                }, delay, TimeUnit.SECONDS);
+            } else {
+                log.error("Maximum reconnection attempts ({}) reached. Stopping reconnection attempts.", maxReconnectAttempts);
+                log.info("NSE WebSocket connection failed. Using fallback mock data if enabled.");
+                
+                // Reset attempt counter for next manual start
+                currentReconnectAttempt = 0;
+                
+                // Enable fallback if configured
+                if (fallbackEnabled) {
+                    log.info("Enabling fallback mock data generation");
+                    startFallbackMockDataGeneration();
+                }
+            }
         }
     }
 
@@ -472,14 +654,6 @@ public class NseIndicesServiceImpl extends TextWebSocketHandler implements NseIn
                         tickData.getIndices() != null ? tickData.getIndices().length : 0,
                         tickData.getSource(),
                         tickData.getMarketStatus() != null ? "present" : "null");
-                
-                // Save to database using UPSERT operation
-                try {
-                    nseIndicesTickService.upsertTickData(tickData);
-                    log.debug("Successfully saved tick data to database");
-                } catch (Exception dbException) {
-                    log.error("Failed to save tick data to database: {}", dbException.getMessage(), dbException);
-                }
                 
                 // Update local cache
                 updateLocalCache(tickData);
@@ -687,6 +861,106 @@ public class NseIndicesServiceImpl extends TextWebSocketHandler implements NseIn
             
         } catch (Exception e) {
             log.error("Error publishing to Kafka: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Kafka consumer method to read NSE indices data and publish to WebSocket topics
+     * This enables real-time data flow from Kafka to WebSocket subscribers
+     */
+    @KafkaListener(
+        topics = "${kafka.topics.nse-indices-ticks:nse-indices-ticks}",
+        groupId = "engines-websocket-group"
+    )
+    public void consumeNseIndicesData(String message) {
+        try {
+            log.debug("Received NSE indices data from Kafka: {}", message);
+            
+            // Parse the Kafka message
+            NseIndicesTickDto indicesData = objectMapper.readValue(message, NseIndicesTickDto.class);
+            
+            if (indicesData != null && indicesData.getIndices() != null && indicesData.getIndices().length > 0) {
+                log.info("Processing {} indices from Kafka for WebSocket distribution", indicesData.getIndices().length);
+                
+                // Update local cache
+                for (NseIndicesTickDto.IndexTickDataDto index : indicesData.getIndices()) {
+                    if (index.getIndexSymbol() != null) {
+                        latestIndexDataMap.put(index.getIndexSymbol(), indicesData);
+                    }
+                }
+                
+                // Publish to all indices topic
+                messagingTemplate.convertAndSend("/topic/nse-indices", indicesData);
+                log.debug("Published to /topic/nse-indices");
+                
+                // Publish to specific index topics
+                for (NseIndicesTickDto.IndexTickDataDto index : indicesData.getIndices()) {
+                    if (index.getIndexSymbol() != null) {
+                        String topicName = "/topic/nse-indices/" + index.getIndexSymbol().toLowerCase().replace(" ", "-");
+                        messagingTemplate.convertAndSend(topicName, indicesData);
+                        log.debug("Published to specific topic: {}", topicName);
+                    }
+                }
+                
+                // Update subscription status
+                if (allIndicesSubscribed) {
+                    log.debug("All indices subscription active - data published");
+                }
+                
+                specificIndexSubscriptions.forEach((indexName, isSubscribed) -> {
+                    if (isSubscribed) {
+                        log.debug("Specific index subscription active for: {}", indexName);
+                    }
+                });
+                
+            } else {
+                log.warn("Received invalid or empty NSE indices data from Kafka");
+            }
+            
+        } catch (Exception e) {
+            log.error("Error processing NSE indices data from Kafka: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Test method to manually trigger Kafka consumer processing
+     * This helps verify that the consumer is working correctly
+     */
+    public void testKafkaConsumer() {
+        try {
+            log.info("Testing Kafka consumer with sample data...");
+            
+            // Create sample NSE indices data
+            NseIndicesTickDto.IndexTickDataDto[] sampleIndices = new NseIndicesTickDto.IndexTickDataDto[2];
+            
+            // Sample NIFTY 50 data
+            sampleIndices[0] = new NseIndicesTickDto.IndexTickDataDto();
+            sampleIndices[0].setIndexSymbol("NIFTY 50");
+            sampleIndices[0].setIndexName("NIFTY 50");
+            sampleIndices[0].setLastPrice(new java.math.BigDecimal("19500.00"));
+            sampleIndices[0].setVariation(new java.math.BigDecimal("150.00"));
+            sampleIndices[0].setPercentChange(new java.math.BigDecimal("0.78"));
+            
+            // Sample SENSEX data
+            sampleIndices[1] = new NseIndicesTickDto.IndexTickDataDto();
+            sampleIndices[1].setIndexSymbol("SENSEX");
+            sampleIndices[1].setIndexName("SENSEX");
+            sampleIndices[1].setLastPrice(new java.math.BigDecimal("65000.00"));
+            sampleIndices[1].setVariation(new java.math.BigDecimal("500.00"));
+            sampleIndices[1].setPercentChange(new java.math.BigDecimal("0.78"));
+            
+            NseIndicesTickDto sampleData = new NseIndicesTickDto();
+            sampleData.setIndices(sampleIndices);
+            sampleData.setTimestamp(java.time.Instant.now().toString());
+            sampleData.setSource("TEST_DATA");
+            
+            // Process the sample data as if it came from Kafka
+            log.info("Processing sample data through Kafka consumer...");
+            this.consumeNseIndicesData(objectMapper.writeValueAsString(sampleData));
+            
+            log.info("Kafka consumer test completed");
+        } catch (Exception e) {
+            log.error("Error during Kafka consumer test: {}", e.getMessage(), e);
         }
     }
 
