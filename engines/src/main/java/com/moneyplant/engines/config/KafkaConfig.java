@@ -108,6 +108,10 @@ public class KafkaConfig {
         configProps.put(ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG, 10000); // 10 seconds
         configProps.put(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, 300000); // 5 minutes
         
+        // Add additional deserializer configuration for better error handling
+        configProps.put(JsonDeserializer.TRUSTED_PACKAGES, "*");
+        configProps.put(JsonDeserializer.VALUE_DEFAULT_TYPE, "com.moneyplant.engines.common.dto.NseIndicesTickDto");
+        
         return new DefaultKafkaConsumerFactory<>(configProps);
     }
 
@@ -138,6 +142,29 @@ public class KafkaConfig {
         // Enable automatic startup for consumers
         factory.setAutoStartup(true); // Changed from false to true
         
+        // Add error handling configuration
+        factory.setCommonErrorHandler(new org.springframework.kafka.listener.DefaultErrorHandler((record, exception) -> {
+            // Log the error but don't stop the consumer
+            org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(KafkaConfig.class);
+            log.error("Error processing Kafka record: {}", exception.getMessage());
+            log.error("Failed record: topic={}, partition={}, offset={}", 
+                     record.topic(), record.partition(), record.offset());
+        }, new org.springframework.util.backoff.FixedBackOff(1000L, 3L))); // Retry 3 times with 1 second delay
+        
         return factory;
+    }
+
+    /**
+     * Kafka error handler for handling deserialization and processing errors
+     */
+    @Bean
+    public org.springframework.kafka.listener.KafkaListenerErrorHandler kafkaErrorHandler() {
+        return (message, exception) -> {
+            // Log the error
+            org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(KafkaConfig.class);
+            log.error("Error handling Kafka message: {}", exception.getMessage(), exception);
+            log.error("Failed message content: {}", message);
+            return null;
+        };
     }
 }

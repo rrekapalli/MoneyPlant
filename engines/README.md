@@ -96,6 +96,17 @@ engines/
 - Apache Kafka 3.0 or higher
 - Docker (optional)
 
+### Auto-Start Configuration
+
+The engines application supports **automatic startup** of critical services:
+
+- **NSE Indices Ingestion**: Automatically starts WebSocket connection on boot
+- **Configurable Delays**: Allow other services to initialize first
+- **Profile-Based**: Different settings for development vs production
+- **Fallback Handling**: Graceful error handling for connection failures
+
+See [Auto-Start Configuration](./docs/AUTO_START_CONFIGURATION.md) for detailed setup instructions.
+
 ### Environment Variables
 
 Create a `.env` file with the following variables:

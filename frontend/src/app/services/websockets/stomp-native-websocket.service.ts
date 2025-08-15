@@ -45,17 +45,19 @@ export class StompNativeWebSocketService {
       debug: (msg) => {
         // Debug logging disabled for production
       },
-      reconnectDelay: 5000,
+      // Remove reconnectDelay to prevent automatic disconnection
       heartbeatIncoming: 4000,
       heartbeatOutgoing: 4000
     });
 
     // Set up connection callbacks
     client.onConnect = (frame: IFrame) => {
+      console.log('STOMP client connected successfully');
       this.connectionState$.next(WebSocketConnectionState.CONNECTED);
     };
 
     client.onDisconnect = (frame: IFrame) => {
+      console.log('STOMP client disconnected');
       this.connectionState$.next(WebSocketConnectionState.DISCONNECTED);
       this.clearSubscriptions();
     };
@@ -97,7 +99,9 @@ export class StompNativeWebSocketService {
    * Check if currently connected
    */
   get isConnected(): boolean {
-    return this.client?.connected === true;
+    const connected = this.client?.connected === true;
+    console.log(`WebSocket connection status: ${connected ? 'CONNECTED' : 'DISCONNECTED'}`);
+    return connected;
   }
 
   /**
@@ -105,12 +109,23 @@ export class StompNativeWebSocketService {
    */
   async connect(): Promise<void> {
     if (this.isConnected) {
+      console.log('WebSocket already connected, skipping connection');
       return Promise.resolve();
     }
 
     try {
+      console.log('Attempting to connect to engines STOMP WebSocket...');
       await this.client.activate();
-      console.log('Connected to engines STOMP WebSocket');
+      console.log('STOMP client activation completed');
+      
+      // Wait a bit for the connection to stabilize
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      if (this.isConnected) {
+        console.log('WebSocket connection established successfully');
+      } else {
+        console.warn('WebSocket connection not yet established after activation');
+      }
     } catch (error) {
       console.error('Failed to connect to engines STOMP WebSocket:', error);
       throw error;
@@ -118,13 +133,54 @@ export class StompNativeWebSocketService {
   }
 
   /**
-   * Disconnect from engines WebSocket
+   * Clear all active subscriptions
+   */
+  private clearSubscriptions(): void {
+    console.log('Clearing all active subscriptions');
+    
+    // Unsubscribe from all active subscriptions
+    this.activeSubscriptions.forEach((subscription, key) => {
+      try {
+        subscription.unsubscribe();
+        console.log(`Unsubscribed from: ${key}`);
+      } catch (error) {
+        console.warn(`Error unsubscribing from ${key}:`, error);
+      }
+    });
+    
+    // Clear the subscriptions map
+    this.activeSubscriptions.clear();
+    
+    // Clear all data subjects
+    this.allIndicesData$.next(null);
+    this.specificIndicesData.forEach((subject, indexName) => {
+      subject.next(null);
+    });
+    
+    console.log('All subscriptions cleared');
+  }
+
+  /**
+   * Disconnect from WebSocket
    */
   disconnect(): void {
-    if (this.client) {
-      this.client.deactivate();
+    try {
+      console.log('Disconnecting from WebSocket...');
+      
+      // Clear all subscriptions first
+      this.clearSubscriptions();
+      
+      // Disconnect the STOMP client
+      if (this.client && this.client.connected) {
+        this.client.deactivate();
+      }
+      
+      this.connectionState$.next(WebSocketConnectionState.DISCONNECTED);
+      console.log('WebSocket disconnected successfully');
+    } catch (error) {
+      console.error('Error disconnecting from WebSocket:', error);
+      this.connectionState$.next(WebSocketConnectionState.ERROR);
     }
-    this.clearSubscriptions();
   }
 
   /**
@@ -157,38 +213,61 @@ export class StompNativeWebSocketService {
    */
   subscribeToIndex(indexName: string): Observable<IndicesDto> {
     if (!this.isConnected) {
+      console.error('Cannot subscribe: WebSocket not connected');
       throw new Error('WebSocket not connected');
+    }
+
+    // Check if we're already subscribed to this index
+    const subscriptionKey = `index-${indexName}`;
+    if (this.activeSubscriptions.has(subscriptionKey)) {
+      console.log(`Already subscribed to index: ${indexName}, returning existing subscription`);
+      // Return existing subscription
+      if (!this.specificIndicesData.has(indexName)) {
+        this.specificIndicesData.set(indexName, new BehaviorSubject<IndicesDto | null>(null));
+      }
+      return this.specificIndicesData.get(indexName)!.pipe(
+        filter((data): data is IndicesDto => data !== null)
+      );
     }
 
     // Use the correct topic format that matches the backend controller
     const topic = `/topic/nse-indices/${indexName.replace(/\s+/g, '-').toLowerCase()}`;
     console.log(`Subscribing to STOMP topic: ${topic}`);
     
-    const subscription = this.client.subscribe(topic, (message: IMessage) => {
-      try {
-        const data = JSON.parse(message.body);
-        const indicesData = this.parseIndicesData(data);
-        
-        if (!this.specificIndicesData.has(indexName)) {
-          this.specificIndicesData.set(indexName, new BehaviorSubject<IndicesDto | null>(null));
+    try {
+      const subscription = this.client.subscribe(topic, (message: IMessage) => {
+        try {
+          const data = JSON.parse(message.body);
+          console.log(`Received WebSocket data for ${indexName}:`, data);
+          
+          const indicesData = this.parseIndicesData(data);
+          console.log(`Parsed indices data for ${indexName}:`, indicesData);
+          
+          if (!this.specificIndicesData.has(indexName)) {
+            this.specificIndicesData.set(indexName, new BehaviorSubject<IndicesDto | null>(null));
+          }
+          this.specificIndicesData.get(indexName)?.next(indicesData);
+        } catch (error) {
+          console.error('Error parsing index message:', error);
         }
-        this.specificIndicesData.get(indexName)?.next(indicesData);
-      } catch (error) {
-        console.error('Error parsing index message:', error);
+      });
+
+      this.activeSubscriptions.set(subscriptionKey, subscription);
+      console.log(`Successfully subscribed to topic: ${topic}`);
+
+      // Ensure we have a BehaviorSubject for this index
+      if (!this.specificIndicesData.has(indexName)) {
+        this.specificIndicesData.set(indexName, new BehaviorSubject<IndicesDto | null>(null));
       }
-    });
 
-    this.activeSubscriptions.set(`index-${indexName}`, subscription);
-
-    // Ensure we have a BehaviorSubject for this index
-    if (!this.specificIndicesData.has(indexName)) {
-      this.specificIndicesData.set(indexName, new BehaviorSubject<IndicesDto | null>(null));
+      // Return observable that filters out null values and ensures type safety
+      return this.specificIndicesData.get(indexName)!.pipe(
+        filter((data): data is IndicesDto => data !== null)
+      );
+    } catch (error) {
+      console.error(`Failed to subscribe to topic ${topic}:`, error);
+      throw error;
     }
-
-    // Return observable that filters out null values and ensures type safety
-    return this.specificIndicesData.get(indexName)!.pipe(
-      filter((data): data is IndicesDto => data !== null)
-    );
   }
 
   /**
@@ -207,10 +286,11 @@ export class StompNativeWebSocketService {
    * Unsubscribe from specific index data
    */
   unsubscribeFromIndex(indexName: string): void {
-    const subscription = this.activeSubscriptions.get(`index-${indexName}`);
+    const subscriptionKey = `index-${indexName}`;
+    const subscription = this.activeSubscriptions.get(subscriptionKey);
     if (subscription) {
       subscription.unsubscribe();
-      this.activeSubscriptions.delete(`index-${indexName}`);
+      this.activeSubscriptions.delete(subscriptionKey);
       
       if (this.specificIndicesData.has(indexName)) {
         this.specificIndicesData.get(indexName)?.next(null);
@@ -273,9 +353,9 @@ export class StompNativeWebSocketService {
       key: indexData.key || indexData.indexName || indexData.name,
       indexName: indexData.indexName || indexData.name,
       indexSymbol: indexData.indexSymbol || indexData.symbol,
-      lastPrice: indexData.lastPrice || indexData.last || 0,
+      lastPrice: indexData.lastPrice || indexData.currentPrice || indexData.last || 0,
       variation: indexData.variation || indexData.change || 0,
-      percentChange: indexData.percentChange || indexData.percentChange || 0,
+      percentChange: indexData.percentChange || indexData.perChange || 0,
       openPrice: indexData.openPrice || indexData.open || 0,
       dayHigh: indexData.dayHigh || indexData.high || 0,
       dayLow: indexData.dayLow || indexData.low || 0,
@@ -297,18 +377,6 @@ export class StompNativeWebSocketService {
       chart30dPath: indexData.chart30dPath || '',
       chartTodayPath: indexData.chartTodayPath || ''
     };
-  }
-
-  /**
-   * Clear all subscriptions
-   */
-  private clearSubscriptions(): void {
-    this.activeSubscriptions.forEach(subscription => {
-      subscription.unsubscribe();
-    });
-    this.activeSubscriptions.clear();
-    this.allIndicesData$.next(null);
-    this.specificIndicesData.forEach(subject => subject.next(null));
   }
 
   /**

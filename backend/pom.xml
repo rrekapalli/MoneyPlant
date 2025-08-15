@@ -14,7 +14,7 @@
     <properties>
         <java.version>21</java.version>
         <spring-boot.version>3.2.0</spring-boot.version>
-        <kafka.version>3.6.0</kafka.version>
+    
         <spark.version>3.5.0</spark.version>
         <trino.version>443</trino.version>
         <hudi.version>0.15.0</hudi.version>
@@ -135,21 +135,7 @@
             <version>2.3.0</version>
         </dependency>
 
-        <!-- Apache Kafka -->
-        <dependency>
-            <groupId>org.apache.kafka</groupId>
-            <artifactId>kafka-clients</artifactId>
-            <version>${kafka.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.kafka</groupId>
-            <artifactId>kafka-streams</artifactId>
-            <version>${kafka.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.kafka</groupId>
-            <artifactId>spring-kafka</artifactId>
-        </dependency>
+
 
         <!-- Apache Spark -->
         <dependency>

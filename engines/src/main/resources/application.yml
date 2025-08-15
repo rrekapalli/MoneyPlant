@@ -109,6 +109,13 @@ kafka:
     backtest-results: backtest-results
   group-id: moneyplant-engines
 
+# Ingestion auto-start configuration
+ingestion:
+  auto-start:
+    enabled: false  # Set to true to enable auto-start for other ingestion services
+    # Additional auto-start settings can be added here
+    # For example: yahoo-finance, alpha-vantage, polygon, etc.
+
 # NSE WebSocket configuration
 nse:
   websocket:
@@ -142,6 +149,11 @@ nse:
     fallback:
       enabled: true  # Enable fallback to mock data when NSE connection fails
       mock-interval: 5000  # Generate mock data every 5 seconds when fallback is active
+  
+  # Auto-start configuration for NSE indices ingestion
+  auto-start:
+    enabled: true  # Set to false to disable auto-start
+    delay-seconds: 10  # Delay before starting ingestion (allows other services to initialize)
 
 # Spark Configuration
 spark:

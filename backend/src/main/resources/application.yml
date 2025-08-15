@@ -5,20 +5,7 @@ spring:
   application:
     name: moneyplant-trading-backend
   
-  kafka:
-    bootstrap-servers: localhost:9093
-    consumer:
-      group-id: trading-group
-      auto-offset-reset: earliest
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
-      properties:
-        spring.json.trusted.packages: "*"
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
-      acks: all
-      retries: 3
+
 
   datasource:
     url: jdbc:postgresql://postgres.tailce422e.ts.net:5432/MoneyPlant
@@ -39,7 +26,7 @@ spring:
 logging:
   level:
     com.moneyplant.trading: INFO
-    org.apache.kafka: WARN
+
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
 
@@ -53,10 +40,4 @@ management:
     health:
       show-details: always 
 
-# Kafka topic configuration
-kafka:
-  topics:
-    nse-indices-ticks: nse-indices-ticks
-    market-data: market-data
-    trading-signals: trading-signals
-    backtest-results: backtest-results 
+ 

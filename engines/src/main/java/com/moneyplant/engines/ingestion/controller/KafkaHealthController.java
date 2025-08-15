@@ -1,4 +1,4 @@
-package com.moneyplant.ingestion.controller;
+package com.moneyplant.engines.ingestion.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,8 +11,8 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Health check controller for Kafka connectivity and consumer status.
- * Provides endpoints to verify Kafka is working properly.
+ * Health check controller for Kafka connectivity and consumer status in the engines project.
+ * Provides endpoints to verify Kafka is working properly for data ingestion.
  */
 @RestController
 @RequestMapping("/api/v1/kafka")
@@ -31,20 +31,20 @@ public class KafkaHealthController {
     public KafkaHealthResponse checkKafkaHealth() {
         try {
             // Test Kafka producer connectivity
-            String testMessage = "Kafka health check - " + System.currentTimeMillis();
+            String testMessage = "Kafka health check from engines - " + System.currentTimeMillis();
             CompletableFuture<SendResult<String, Object>> future = 
                 kafkaTemplate.send("kafka-health-test", "health-check", testMessage);
             
             SendResult<String, Object> result = future.get();
             
-            log.info("Kafka health check successful - Topic: {}, Partition: {}, Offset: {}", 
+            log.info("Kafka health check successful from engines - Topic: {}, Partition: {}, Offset: {}", 
                     result.getRecordMetadata().topic(),
                     result.getRecordMetadata().partition(),
                     result.getRecordMetadata().offset());
             
             return KafkaHealthResponse.builder()
                     .status("HEALTHY")
-                    .message("Kafka is working properly")
+                    .message("Kafka is working properly in engines project")
                     .topic(result.getRecordMetadata().topic())
                     .partition(result.getRecordMetadata().partition())
                     .offset(result.getRecordMetadata().offset())
@@ -52,11 +52,11 @@ public class KafkaHealthController {
                     .build();
                     
         } catch (Exception e) {
-            log.error("Kafka health check failed: {}", e.getMessage(), e);
+            log.error("Kafka health check failed in engines: {}", e.getMessage(), e);
             
             return KafkaHealthResponse.builder()
                     .status("UNHEALTHY")
-                    .message("Kafka health check failed: " + e.getMessage())
+                    .message("Kafka health check failed in engines: " + e.getMessage())
                     .error(e.getClass().getSimpleName())
                     .timestamp(System.currentTimeMillis())
                     .build();
@@ -73,22 +73,22 @@ public class KafkaHealthController {
         try {
             // Create a test message
             String testMessage = "{\"timestamp\":\"" + System.currentTimeMillis() + 
-                               "\",\"source\":\"Health Check\",\"indices\":[]}";
+                               "\",\"source\":\"Engines Health Check\",\"indices\":[]}";
             
             CompletableFuture<SendResult<String, Object>> future = 
                 kafkaTemplate.send("nse-indices-ticks", "test-key", testMessage);
             
             SendResult<String, Object> result = future.get();
             
-            log.info("Test message sent to nse-indices-ticks topic - Partition: {}, Offset: {}", 
+            log.info("Test message sent from engines to nse-indices-ticks topic - Partition: {}, Offset: {}", 
                     result.getRecordMetadata().partition(),
                     result.getRecordMetadata().offset());
             
-            return "Test message sent successfully to nse-indices-ticks topic";
+            return "Test message sent successfully from engines to nse-indices-ticks topic";
             
         } catch (Exception e) {
-            log.error("Failed to send test message to nse-indices-ticks topic: {}", e.getMessage(), e);
-            return "Failed to send test message: " + e.getMessage();
+            log.error("Failed to send test message from engines to nse-indices-ticks topic: {}", e.getMessage(), e);
+            return "Failed to send test message from engines: " + e.getMessage();
         }
     }
 

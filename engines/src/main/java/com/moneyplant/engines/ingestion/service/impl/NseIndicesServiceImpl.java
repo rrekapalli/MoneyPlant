@@ -34,6 +34,11 @@ import org.springframework.util.concurrent.ListenableFuture;
 import org.springframework.util.concurrent.ListenableFutureCallback;
 import java.util.List;
 import java.util.ArrayList;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 
 /**
  * Implementation of NseIndicesService for managing NSE indices data ingestion.
@@ -106,6 +111,9 @@ public class NseIndicesServiceImpl extends TextWebSocketHandler implements NseIn
     private long messagesPublished = 0;
     private long lastMessageTimestamp = 0;
     private Instant connectionStartTime;
+
+    // NSE HTTP session cookies
+    private List<String> nseCookies;
 
     /**
      * Initialize WebSocket client and executor on service startup
@@ -327,17 +335,83 @@ public class NseIndicesServiceImpl extends TextWebSocketHandler implements NseIn
             isConnecting = true;
             log.info("Connecting to NSE indices WebSocket: {}", nseWebSocketUrl);
 
-            // Create WebSocket connection with enhanced headers for NSE
-            WebSocketHttpHeaders headers = createNseWebSocketHeaders();
-            
-            // Try to connect to the primary URL first
-            attemptConnection(nseWebSocketUrl, headers, 0);
+            // First establish HTTP session to get authentication cookies
+            establishNseHttpSession();
             
         } catch (Exception e) {
             isConnecting = false;
             log.error("Failed to connect to NSE WebSocket: {}", e.getMessage(), e);
             
             // Schedule reconnection attempt
+            scheduleReconnect();
+        }
+    }
+
+    /**
+     * Establish HTTP session with NSE to get authentication cookies and tokens
+     */
+    private void establishNseHttpSession() {
+        try {
+            log.info("Establishing HTTP session with NSE...");
+            
+            // Create HTTP client with proper headers
+            RestTemplate httpClient = new RestTemplate();
+            HttpHeaders headers = createNseHttpHeaders();
+            
+            // First request to NSE homepage to get initial cookies
+            String nseHomeUrl = "https://www.nseindia.com";
+            HttpEntity<String> request = new HttpEntity<>(headers);
+            
+            ResponseEntity<String> response = httpClient.exchange(
+                nseHomeUrl, 
+                HttpMethod.GET, 
+                request, 
+                String.class
+            );
+            
+            // Extract cookies from response
+            List<String> cookies = response.getHeaders().get("Set-Cookie");
+            if (cookies != null && !cookies.isEmpty()) {
+                log.info("Received {} cookies from NSE", cookies.size());
+                
+                // Store cookies for WebSocket connection
+                nseCookies = cookies;
+                
+                // Now attempt WebSocket connection with cookies
+                attemptWebSocketConnection();
+            } else {
+                log.warn("No cookies received from NSE, attempting WebSocket connection without cookies");
+                attemptWebSocketConnection();
+            }
+            
+        } catch (Exception e) {
+            log.error("Failed to establish HTTP session with NSE: {}", e.getMessage(), e);
+            // Try WebSocket connection anyway
+            attemptWebSocketConnection();
+        }
+    }
+
+    /**
+     * Attempt WebSocket connection with established cookies
+     */
+    private void attemptWebSocketConnection() {
+        try {
+            // Create WebSocket connection with enhanced headers and cookies for NSE
+            WebSocketHttpHeaders headers = createNseWebSocketHeaders();
+            
+            // Add cookies if available
+            if (nseCookies != null && !nseCookies.isEmpty()) {
+                String cookieHeader = String.join("; ", nseCookies);
+                headers.add("Cookie", cookieHeader);
+                log.info("Adding cookies to WebSocket connection: {}", cookieHeader);
+            }
+            
+            // Try to connect to the primary URL first
+            attemptConnection(nseWebSocketUrl, headers, 0);
+            
+        } catch (Exception e) {
+            log.error("Failed to attempt WebSocket connection: {}", e.getMessage(), e);
+            isConnecting = false;
             scheduleReconnect();
         }
     }
@@ -436,6 +510,28 @@ public class NseIndicesServiceImpl extends TextWebSocketHandler implements NseIn
         headers.add("Sec-Fetch-Mode", "websocket");
         headers.add("Sec-Fetch-Site", "same-origin");
         
+        return headers;
+    }
+
+    /**
+     * Create enhanced headers for NSE HTTP session (cookies)
+     */
+    private HttpHeaders createNseHttpHeaders() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+        headers.add("Origin", "https://www.nseindia.com");
+        headers.add("Referer", "https://www.nseindia.com/get-quotes/equity");
+        headers.add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7");
+        headers.add("Accept-Language", "en-US,en;q=0.9");
+        headers.add("Accept-Encoding", "gzip, deflate, br");
+        headers.add("Connection", "keep-alive");
+        headers.add("Upgrade-Insecure-Requests", "1");
+        headers.add("Sec-Fetch-Dest", "document");
+        headers.add("Sec-Fetch-Mode", "navigate");
+        headers.add("Sec-Fetch-Site", "same-origin");
+        headers.add("Sec-Fetch-User", "?1");
+        headers.add("Pragma", "no-cache");
+        headers.add("Cache-Control", "no-cache");
         return headers;
     }
 
@@ -826,8 +922,10 @@ public class NseIndicesServiceImpl extends TextWebSocketHandler implements NseIn
             if (tickData.getIndices() != null) {
                 for (NseIndicesTickDto.IndexTickDataDto indexData : tickData.getIndices()) {
                     if (indexData.getIndexName() != null) {
-                        String topic = "/topic/nse-indices/" + indexData.getIndexName().replace(" ", "-").toLowerCase();
+                        // Use consistent topic naming: convert "NIFTY 50" to "nifty-50"
+                        String topic = "/topic/nse-indices/" + indexData.getIndexName().replaceAll("\\s+", "-").toLowerCase();
                         messagingTemplate.convertAndSend(topic, tickData);
+                        log.debug("Broadcasting to topic: {} for index: {}", topic, indexData.getIndexName());
                     }
                 }
             }
@@ -896,9 +994,12 @@ public class NseIndicesServiceImpl extends TextWebSocketHandler implements NseIn
                 // Publish to specific index topics
                 for (NseIndicesTickDto.IndexTickDataDto index : indicesData.getIndices()) {
                     if (index.getIndexSymbol() != null) {
-                        String topicName = "/topic/nse-indices/" + index.getIndexSymbol().toLowerCase().replace(" ", "-");
+                        // Use consistent topic naming: convert "NIFTY 50" to "nifty-50" 
+                        // Use indexName if available, otherwise fallback to indexSymbol
+                        String indexName = index.getIndexName() != null ? index.getIndexName() : index.getIndexSymbol();
+                        String topicName = "/topic/nse-indices/" + indexName.replaceAll("\\s+", "-").toLowerCase();
                         messagingTemplate.convertAndSend(topicName, indicesData);
-                        log.debug("Published to specific topic: {}", topicName);
+                        log.debug("Published to specific topic: {} for index: {}", topicName, indexName);
                     }
                 }
                 
@@ -923,45 +1024,46 @@ public class NseIndicesServiceImpl extends TextWebSocketHandler implements NseIn
     }
 
     /**
-     * Test method to manually trigger Kafka consumer processing
-     * This helps verify that the consumer is working correctly
+     * Test Kafka consumer with sample data
      */
+    @Override
     public void testKafkaConsumer() {
+        log.info("Testing Kafka consumer with sample data");
+        
+        // Create sample NSE indices data
+        NseIndicesTickDto.IndexTickDataDto[] sampleIndices = new NseIndicesTickDto.IndexTickDataDto[2];
+        
+        // Sample NIFTY 50 data
+        sampleIndices[0] = new NseIndicesTickDto.IndexTickDataDto();
+        sampleIndices[0].setIndexSymbol("NIFTY 50");
+        sampleIndices[0].setIndexName("NIFTY 50");
+        sampleIndices[0].setLastPrice(new java.math.BigDecimal("19500.00"));
+        sampleIndices[0].setVariation(new java.math.BigDecimal("150.00"));
+        sampleIndices[0].setPercentChange(new java.math.BigDecimal("0.78"));
+        
+        // Sample SENSEX data
+        sampleIndices[1] = new NseIndicesTickDto.IndexTickDataDto();
+        sampleIndices[1].setIndexSymbol("SENSEX");
+        sampleIndices[1].setIndexName("SENSEX");
+        sampleIndices[1].setLastPrice(new java.math.BigDecimal("65000.00"));
+        sampleIndices[1].setVariation(new java.math.BigDecimal("500.00"));
+        sampleIndices[1].setPercentChange(new java.math.BigDecimal("0.78"));
+        
+        NseIndicesTickDto sampleData = new NseIndicesTickDto();
+        sampleData.setIndices(sampleIndices);
+        sampleData.setTimestamp(java.time.Instant.now().toString());
+        sampleData.setSource("TEST_DATA");
+        
+        // Process the sample data as if it came from Kafka
+        log.info("Processing sample data through Kafka consumer...");
         try {
-            log.info("Testing Kafka consumer with sample data...");
-            
-            // Create sample NSE indices data
-            NseIndicesTickDto.IndexTickDataDto[] sampleIndices = new NseIndicesTickDto.IndexTickDataDto[2];
-            
-            // Sample NIFTY 50 data
-            sampleIndices[0] = new NseIndicesTickDto.IndexTickDataDto();
-            sampleIndices[0].setIndexSymbol("NIFTY 50");
-            sampleIndices[0].setIndexName("NIFTY 50");
-            sampleIndices[0].setLastPrice(new java.math.BigDecimal("19500.00"));
-            sampleIndices[0].setVariation(new java.math.BigDecimal("150.00"));
-            sampleIndices[0].setPercentChange(new java.math.BigDecimal("0.78"));
-            
-            // Sample SENSEX data
-            sampleIndices[1] = new NseIndicesTickDto.IndexTickDataDto();
-            sampleIndices[1].setIndexSymbol("SENSEX");
-            sampleIndices[1].setIndexName("SENSEX");
-            sampleIndices[1].setLastPrice(new java.math.BigDecimal("65000.00"));
-            sampleIndices[1].setVariation(new java.math.BigDecimal("500.00"));
-            sampleIndices[1].setPercentChange(new java.math.BigDecimal("0.78"));
-            
-            NseIndicesTickDto sampleData = new NseIndicesTickDto();
-            sampleData.setIndices(sampleIndices);
-            sampleData.setTimestamp(java.time.Instant.now().toString());
-            sampleData.setSource("TEST_DATA");
-            
-            // Process the sample data as if it came from Kafka
-            log.info("Processing sample data through Kafka consumer...");
             this.consumeNseIndicesData(objectMapper.writeValueAsString(sampleData));
-            
-            log.info("Kafka consumer test completed");
-        } catch (Exception e) {
-            log.error("Error during Kafka consumer test: {}", e.getMessage(), e);
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            log.error("Error serializing test data to JSON: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to serialize test data", e);
         }
+        
+        log.info("Kafka consumer test completed");
     }
 
 

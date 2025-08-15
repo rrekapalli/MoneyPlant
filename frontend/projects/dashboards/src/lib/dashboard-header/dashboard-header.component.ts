@@ -27,6 +27,7 @@ export class DashboardHeaderComponent implements OnInit, OnChanges {
   @Output() onExportToExcel = new EventEmitter<void>();
   @Output() onToggleHighlighting = new EventEmitter<void>();
   @Output() onSetHighlightingPreset = new EventEmitter<'subtle' | 'medium' | 'strong'>();
+  @Output() onForceTileRefresh = new EventEmitter<void>();
 
   // Convert getter to property for better change detection
   menuItems: MenuItem[] = [];
@@ -197,6 +198,9 @@ export class DashboardHeaderComponent implements OnInit, OnChanges {
         break;
       case 'strong':
         this.setHighlightingPreset('strong');
+        break;
+      case 'refresh':
+        this.onForceTileRefresh.emit();
         break;
     }
   }

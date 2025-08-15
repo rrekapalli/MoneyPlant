@@ -40,13 +40,18 @@ kafka:
     backtest-results: backtest-results
   group-id: moneyplant-engines
 
+# Ingestion auto-start configuration for development
+ingestion:
+  auto-start:
+    enabled: true  # Enable auto-start for other ingestion services in development
+
 # NSE WebSocket configuration for development
 nse:
   websocket:
     url: wss://www.nseindia.com/streams/indices/high/drdMkt
     reconnect:
       interval: 30
-    enabled: false  # Disable NSE WebSocket connection in development
+    enabled: true  # Enable NSE WebSocket connection in development
     # Enable mock data for development when WebSocket is not available
     mock:
       enabled: true
@@ -84,6 +89,11 @@ nse:
           previousClose: 44175.50
           totalTradedVolume: 75000000
           totalTradedValue: 3337500000000
+  
+  # Auto-start configuration for NSE indices ingestion in development
+  auto-start:
+    enabled: true  # Enable auto-start for development
+    delay-seconds: 5  # Shorter delay for development
 
 # Logging configuration for development
 logging:

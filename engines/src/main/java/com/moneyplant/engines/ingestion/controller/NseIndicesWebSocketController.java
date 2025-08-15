@@ -216,21 +216,4 @@ public class NseIndicesWebSocketController {
     public String webSocketHealth() {
         return "WebSocket endpoints are active";
     }
-    
-    /**
-     * Test endpoint to trigger Kafka consumer with sample data
-     * This helps verify that the WebSocket data flow is working
-     */
-    @GetMapping("/ws/test-kafka-consumer")
-    @ResponseBody
-    public String testKafkaConsumer() {
-        try {
-            log.info("REST endpoint triggered Kafka consumer test");
-            nseIndicesService.testKafkaConsumer();
-            return "Kafka consumer test triggered successfully. Check logs for details.";
-        } catch (Exception e) {
-            log.error("Error during Kafka consumer test: {}", e.getMessage(), e);
-            return "Error during Kafka consumer test: " + e.getMessage();
-        }
-    }
 }
