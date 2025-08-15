@@ -2,14 +2,100 @@ import { TileBuilder, StockTileBuilder } from '@dashboards/public-api';
 import { DashboardDataRow } from './dashboard-data';
 import {StockDataDto, StockTicksDto} from '../../../../services/entities/stock-ticks';
 import { IndexDataDto } from '../../../../services/entities/indices-websocket';
+import { IndicesService } from '../../../../services/apis/indices.api';
+import { IndexHistoricalData } from '../../../../services/entities/index-historical-data';
+import { ModernIndicesWebSocketService } from '../../../../services/websockets/modern-indices-websocket.service';
 
 /**
  * Create metric tiles that display key statistics from stock ticks data and indices data
+ * 
+ * WebSocket Integration:
+ * - Stock tiles are configured with data events to receive real-time updates
+ * - When an index is selected, the stock tile listens for WebSocket data matching that index
+ * - Market overview tiles listen for general market data updates
+ * - Data events automatically update the tile display with new values
+ * - Includes fallback to historical data API when WebSocket is not available
+ * 
+ * Usage with WebSocket Health Check and Fallback:
+ * ```typescript
+ * const tiles = createMetricTiles(
+ *   stockTicksData, 
+ *   selectedIndexData, 
+ *   webSocketService,    // ModernIndicesWebSocketService instance
+ *   indicesService       // IndicesService instance
+ * );
+ * ```
+ * 
+ * The function will automatically:
+ * 1. Check WebSocket connection health
+ * 2. Use real-time data when WebSocket is working
+ * 3. Fall back to historical data API when WebSocket is not available
+ * 4. Update tiles with appropriate data source indicators
  */
-export function createMetricTiles(stockTicksData: StockDataDto[] | null, selectedIndexData?: IndexDataDto | null) {
+
+// Helper function to check WebSocket health and get fallback data
+const getFallbackIndexData = async (
+  indexName: string, 
+  indicesService?: IndicesService
+): Promise<IndexHistoricalData | null> => {
+  if (!indicesService) return null;
+  
+  try {
+    console.log(`Attempting to get fallback data for index: ${indexName}`);
+    
+    // First try to get previous day's data from the new endpoint
+    const previousDayData = await indicesService.getPreviousDayIndexData(indexName).toPromise();
+    console.log('Previous day data received:', previousDayData);
+    
+    if (previousDayData && previousDayData.indices && previousDayData.indices.length > 0) {
+      // Convert IndicesDto to IndexHistoricalData format for compatibility
+      const indexData = previousDayData.indices[0];
+      console.log('Index data from previous day:', indexData);
+      
+      // Handle both field name variations (lastPrice/last, dayHigh/high, dayLow/low)
+      const lastPrice = indexData.lastPrice || indexData.last || 0;
+      const dayHigh = indexData.dayHigh || indexData.high || 0;
+      const dayLow = indexData.dayLow || indexData.low || 0;
+      const openPrice = indexData.openPrice || indexData.open || 0;
+      
+      return {
+        indexName: indexData.indexName || indexData.index || indexName,
+        date: new Date().toISOString().split('T')[0], // Use current date as fallback
+        open: openPrice,
+        high: dayHigh,
+        low: dayLow,
+        close: lastPrice,
+        volume: 0 // Volume not available in current indices data
+      };
+    }
+    
+    // Fallback to historical data if previous day data is not available
+    console.log('No previous day data, trying historical data API');
+    const historicalData = await indicesService.getIndexHistoricalData(indexName).toPromise();
+    if (historicalData && historicalData.length > 0) {
+      // Return the most recent data (first item since it's ordered by date DESC)
+      return historicalData[0];
+    }
+  } catch (error) {
+    console.warn(`Failed to get fallback data for index ${indexName}:`, error);
+  }
+  return null;
+};
+
+// Helper function to check if WebSocket is healthy
+const isWebSocketHealthy = (webSocketService?: ModernIndicesWebSocketService): boolean => {
+  return webSocketService?.isConnected === true;
+};
+
+export function createMetricTiles(
+  stockTicksData: StockDataDto[] | null, 
+  selectedIndexData?: IndexDataDto | null,
+  webSocketService?: ModernIndicesWebSocketService,
+  indicesService?: IndicesService
+) {
   // Handle null or undefined stockTicksData
   if (!stockTicksData) {
-    return createEmptyMetricTiles(selectedIndexData);
+    return createEmptyMetricTiles(selectedIndexData, webSocketService, indicesService);
   }
 
   // Calculate metrics from stockTicksData
@@ -42,7 +128,8 @@ export function createMetricTiles(stockTicksData: StockDataDto[] | null, selecte
   const hasValidIndexData = selectedIndexData && 
     (selectedIndexData.indexName || selectedIndexData.index) && 
     (selectedIndexData.lastPrice !== undefined || selectedIndexData.last !== undefined) && 
-    (selectedIndexData.lastPrice !== null || selectedIndexData.last !== null);
+    (selectedIndexData.lastPrice !== null || selectedIndexData.last !== null) &&
+    (selectedIndexData.lastPrice !== 0 || selectedIndexData.last !== 0); // Also check if price is not zero
 
   if (hasValidIndexData) {
     // Extract data using actual WebSocket field names
@@ -64,22 +151,118 @@ export function createMetricTiles(stockTicksData: StockDataDto[] | null, selecte
         ''
       )
         .setPosition({ x: 0, y: 0, cols: 2, rows: 2 })
+        .setDataEvent(async (widget: any, data?: any) => {
+          // Enhanced data event with WebSocket health check and fallback
+          if (data && data.index && (data.index === indexName || data.index === selectedIndexData.index)) {
+            // WebSocket is working - update with real-time data
+            const newPrice = data.lastPrice || data.last || lastPrice;
+            const newPercentChange = data.percentChange || percentChange;
+            const newHigh = data.dayHigh || data.high || dayHigh;
+            const newLow = data.dayLow || data.low || dayLow;
+            
+            // Update widget options with new data
+            if (widget.config?.options) {
+              widget.config.options.value = newPrice.toLocaleString();
+              widget.config.options.change = `${newPercentChange >= 0 ? '+' : ''}${newPercentChange.toFixed(2)}%`;
+              widget.config.options.changeType = newPercentChange >= 0 ? 'positive' : 'negative';
+              widget.config.options.highValue = newHigh.toLocaleString();
+              widget.config.options.lowValue = newLow.toLocaleString();
+            }
+          } else if (!isWebSocketHealthy(webSocketService)) {
+            // WebSocket is not working - try to get fallback data from historical API
+            console.log(`WebSocket not healthy, attempting to get fallback data for index: ${indexName}`);
+            
+            try {
+              const fallbackData = await getFallbackIndexData(indexName, indicesService);
+              if (fallbackData) {
+                // Update widget with historical data
+                if (widget.config?.options) {
+                  widget.config.options.value = fallbackData.close.toLocaleString();
+                  widget.config.options.change = 'Historical Data';
+                  widget.config.options.changeType = 'neutral';
+                  widget.config.options.highValue = fallbackData.high.toLocaleString();
+                  widget.config.options.lowValue = fallbackData.low.toLocaleString();
+                  
+                  // Add a note that this is historical data
+                  widget.config.options.subtitle = `Last updated: ${fallbackData.date}`;
+                }
+                console.log(`Updated stock tile with fallback data for ${indexName}:`, fallbackData);
+              } else {
+                console.warn(`No fallback data available for index: ${indexName}`);
+              }
+            } catch (error) {
+              console.error(`Failed to get fallback data for index ${indexName}:`, error);
+            }
+          }
+        })
         .build()
     );
   } else {
-    // Default Stocks tile when no index is selected - use stock tile format
+    // No valid index data - try to get fallback data immediately for a common index
+    const fallbackIndexName = 'NIFTY 50'; // Default to NIFTY 50
+    
+    // Create a tile that will immediately try to get fallback data
     tiles.push(
       StockTileBuilder.createStockTile(
-        0, // current price
-        0, // percent change
-        'Market Overview', // description
-        0, // high value
-        0, // low value
-        '' // currency
+        0, // current price - will be updated with fallback data
+        0, // percent change - will be updated with fallback data
+        fallbackIndexName, // description
+        0, // high value - will be updated with fallback data
+        0, // low value - will be updated with fallback data
+        '₹' // currency
       )
         .setPosition({ x: 0, y: 0, cols: 2, rows: 2 })
+        .setDataEvent(async (widget: any, data?: any) => {
+          // Enhanced data event with immediate fallback data fetch
+          if (data && data.type === 'market-overview') {
+            // WebSocket is working - update with real-time data
+            if (widget.config?.options) {
+              widget.config.options.value = data.totalStocks || '0';
+              widget.config.options.change = `${data.advances || 0} / ${data.declines || 0}`;
+              widget.config.options.changeType = 'neutral';
+              widget.config.options.highValue = data.totalTradedValue || '0';
+              widget.config.options.lowValue = data.totalTradedVolume || '0';
+            }
+          } else {
+            // Try to get fallback data immediately
+            console.log(`No valid index data, attempting to get fallback data for index: ${fallbackIndexName}`);
+            
+            try {
+              const fallbackData = await getFallbackIndexData(fallbackIndexName, indicesService);
+              if (fallbackData) {
+                // Update widget with fallback data
+                if (widget.config?.options) {
+                  widget.config.options.value = fallbackData.close.toLocaleString();
+                  widget.config.options.change = 'Historical Data';
+                  widget.config.options.changeType = 'neutral';
+                  widget.config.options.highValue = fallbackData.high.toLocaleString();
+                  widget.config.options.lowValue = fallbackData.low.toLocaleString();
+                  widget.config.options.subtitle = `Last updated: ${fallbackData.date}`;
+                }
+                console.log(`Updated stock tile with fallback data for ${fallbackIndexName}:`, fallbackData);
+              } else {
+                console.warn(`No fallback data available for index: ${fallbackIndexName}`);
+              }
+            } catch (error) {
+              console.error(`Failed to get fallback data for index ${fallbackIndexName}:`, error);
+            }
+          }
+        })
         .build()
     );
+    
+    // CRITICAL FIX: Immediately trigger fallback data fetch for this tile
+    if (indicesService) {
+      console.log(`Immediately triggering fallback data fetch for ${fallbackIndexName}`);
+      getFallbackIndexData(fallbackIndexName, indicesService).then(fallbackData => {
+        if (fallbackData) {
+          console.log(`Immediate fallback data fetch successful for ${fallbackIndexName}:`, fallbackData);
+          // The tile will be updated via the data event when it's rendered
+        }
+      }).catch(error => {
+        console.error(`Immediate fallback data fetch failed for ${fallbackIndexName}:`, error);
+      });
+    }
   }
 
   // Add remaining tiles
@@ -162,18 +345,58 @@ export function createMetricTiles(stockTicksData: StockDataDto[] | null, selecte
 /**
  * Create empty metric tiles when stockTicksData is null or unavailable
  */
-function createEmptyMetricTiles(selectedIndexData?: IndexDataDto | null) {
+function createEmptyMetricTiles(
+  selectedIndexData?: IndexDataDto | null,
+  webSocketService?: ModernIndicesWebSocketService,
+  indicesService?: IndicesService
+) {
   const tiles = [
-    // Stocks - Empty state - use stock tile format
+    // Stocks - Empty state - use stock tile format with fallback data
     StockTileBuilder.createStockTile(
-      0, // current price
-      0, // percent change
-      'Market Overview', // description
-      0, // high value
-      0, // low value
+      0, // current price - will be updated with fallback data
+      0, // percent change - will be updated with fallback data
+      'NIFTY 50', // description - default to NIFTY 50
+      0, // high value - will be updated with fallback data
+      0, // low value - will be updated with fallback data
       '₹' // currency
     )
       .setPosition({ x: 0, y: 0, cols: 2, rows: 2 })
+      .setDataEvent(async (widget: any, data?: any) => {
+        // Enhanced data event with immediate fallback data fetch
+        if (data && data.type === 'market-overview') {
+          // WebSocket is working - update with real-time data
+          if (widget.config?.options) {
+            widget.config.options.value = data.totalStocks || '0';
+            widget.config.options.change = `${data.advances || 0} / ${data.declines || 0}`;
+            widget.config.options.changeType = 'neutral';
+            widget.config.options.highValue = data.totalTradedValue || '0';
+            widget.config.options.lowValue = data.totalTradedVolume || '0';
+          }
+        } else {
+          // Try to get fallback data immediately
+          console.log('No valid index data, attempting to get fallback data for NIFTY 50');
+          
+          try {
+            const fallbackData = await getFallbackIndexData('NIFTY 50', indicesService);
+            if (fallbackData) {
+              // Update widget with fallback data
+              if (widget.config?.options) {
+                widget.config.options.value = fallbackData.close.toLocaleString();
+                widget.config.options.change = 'Historical Data';
+                widget.config.options.changeType = 'neutral';
+                widget.config.options.highValue = fallbackData.high.toLocaleString();
+                widget.config.options.lowValue = fallbackData.low.toLocaleString();
+                widget.config.options.subtitle = `Last updated: ${fallbackData.date}`;
+              }
+              console.log('Updated stock tile with fallback data for NIFTY 50:', fallbackData);
+            } else {
+              console.warn('No fallback data available for NIFTY 50');
+            }
+          } catch (error) {
+            console.error('Failed to get fallback data for NIFTY 50:', error);
+          }
+        }
+      })
       .build(),
 
     // Declines - Empty state
@@ -247,6 +470,19 @@ function createEmptyMetricTiles(selectedIndexData?: IndexDataDto | null) {
       .setPosition({ x: 10, y: 0, cols: 2, rows: 2 })
       .build()
   ];
+
+  // CRITICAL FIX: Immediately trigger fallback data fetch for this tile
+  if (indicesService) {
+    console.log('Immediately triggering fallback data fetch for NIFTY 50 in empty tiles');
+    getFallbackIndexData('NIFTY 50', indicesService).then(fallbackData => {
+      if (fallbackData) {
+        console.log('Immediate fallback data fetch successful for NIFTY 50 in empty tiles:', fallbackData);
+        // The tile will be updated via the data event when it's rendered
+      }
+    }).catch(error => {
+      console.error('Immediate fallback data fetch failed for NIFTY 50 in empty tiles:', error);
+    });
+  }
 
   return tiles;
 }

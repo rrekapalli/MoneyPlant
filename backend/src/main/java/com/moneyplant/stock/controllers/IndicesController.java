@@ -93,6 +93,45 @@ public class IndicesController {
     }
 
     /**
+     * REST endpoint to get previous day's indices data for a specific index.
+     */
+    @GetMapping("/api/v1/indices/{indexName}/previous-day")
+    @Operation(
+        summary = "Get previous day's indices data for specific index",
+        description = "Retrieves previous day's indices data for the specified index or the most recent available historical data"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved previous day's indices data",
+                content = @Content(mediaType = "application/json", schema = @Schema(implementation = IndicesDto.class))),
+        @ApiResponse(responseCode = "404", description = "Index not found or no historical data available"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public IndicesDto getPreviousDayIndexData(@PathVariable String indexName) {
+        try {
+            log.info("REST request for previous day's indices data: {}", indexName);
+            
+            if (indexName == null || indexName.trim().isEmpty()) {
+                throw new IllegalArgumentException("Index name cannot be null or empty");
+            }
+            
+            // Convert URL-friendly index name back to original format
+            String originalIndexName = indexName.replace("-", " ").toUpperCase();
+            
+            return indicesService.getPreviousDayIndexData(originalIndexName);
+            
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid request parameter for indices: {}", e.getMessage());
+            throw new ServiceException("Invalid index name: " + indexName, e);
+        } catch (ResourceNotFoundException e) {
+            log.error("Index or historical data not found: {}", indexName);
+            throw e;
+        } catch (Exception e) {
+            log.error("Error retrieving previous day's indices data for index {}: {}", indexName, e.getMessage(), e);
+            throw new ServiceException("Failed to retrieve previous day's indices data for index: " + indexName, e);
+        }
+    }
+
+    /**
      * REST endpoint to check service status.
      */
     @GetMapping("/api/v1/indices/status")

@@ -200,11 +200,6 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
   protected dashboardData: StockDataDto[] = [];
   protected readonly initialDashboardData: StockDataDto[] = [];
 
-
-
-
-
-
   // Filtered stock data for cross-chart filtering
   protected filteredDashboardData: StockDataDto[] | null = this.dashboardData || [];
 
@@ -339,6 +334,37 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
   private loadDefaultNifty50Data(): void {
     this.dashboardTitle = 'NIFTY 50 - Financial Dashboard';
     
+    // Try to get actual NIFTY 50 data from the indices service
+    this.indicesService.getIndexByName('NIFTY 50').subscribe({
+      next: (indexResponse) => {
+        if (indexResponse && indexResponse.lastPrice !== undefined && indexResponse.lastPrice !== null) {
+          // Use actual data from the service
+          const defaultNifty50Data: SelectedIndexData = {
+            id: 'NIFTY50',
+            symbol: 'NIFTY 50',
+            name: 'NIFTY 50',
+            lastPrice: indexResponse.lastPrice || 0,
+            variation: indexResponse.variation || 0,
+            percentChange: indexResponse.percentChange || 0,
+            keyCategory: 'Index'
+          };
+          
+          this.updateDashboardWithSelectedIndex(defaultNifty50Data);
+        } else {
+          // Fallback to hardcoded data if service doesn't return valid data
+          this.loadDefaultNifty50DataFallback();
+        }
+      },
+      error: (error) => {
+        console.warn('Failed to get NIFTY 50 data from service, using fallback:', error);
+        // Fallback to hardcoded data if service fails
+        this.loadDefaultNifty50DataFallback();
+      }
+    });
+  }
+
+  private loadDefaultNifty50DataFallback(): void {
+    // Fallback method with hardcoded data
     const defaultNifty50Data: SelectedIndexData = {
       id: 'NIFTY50',
       symbol: 'NIFTY 50',
@@ -486,9 +512,99 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
       });
     }
     
+    // CRITICAL FIX: Force metric tiles to refresh with new index data
+    this.forceMetricTilesRefresh();
+    
     // Trigger change detection and update widgets
     this.populateWidgetsWithInitialData();
     this.cdr.detectChanges();
+  }
+
+  /**
+   * Force metric tiles to refresh with current index data
+   */
+  private forceMetricTilesRefresh(): void {
+    console.log('Forcing metric tiles refresh with current index data:', this.currentSelectedIndexData);
+    
+    // CRITICAL FIX: Completely recreate metric tiles with new data
+    if (this.dashboardConfig?.widgets) {
+      // Find and remove existing metric tiles
+      const existingTiles = this.dashboardConfig.widgets.filter(widget => 
+        widget.config?.component === 'tile' || widget.config?.component === 'stock-tile'
+      );
+      
+      // Remove existing tiles
+      existingTiles.forEach(tile => {
+        const index = this.dashboardConfig.widgets.indexOf(tile);
+        if (index > -1) {
+          this.dashboardConfig.widgets.splice(index, 1);
+        }
+      });
+      
+      // Create new metric tiles with current data
+      const newMetricTiles = this.createMetricTiles(this.filteredDashboardData || this.dashboardData);
+      
+      // Add new tiles at the beginning
+      this.dashboardConfig.widgets.unshift(...newMetricTiles);
+      
+      console.log(`Replaced ${existingTiles.length} old tiles with ${newMetricTiles.length} new tiles`);
+    }
+    
+    // CRITICAL FIX: Explicitly fetch previous-day data for current index
+    this.fetchAndUpdateCurrentIndexData();
+    
+    // Update metric tiles with current data
+    this.updateMetricTilesWithFilters([]);
+    
+    // Force change detection
+    this.cdr.detectChanges();
+    
+    // Additional refresh after a short delay to ensure tiles are updated
+    setTimeout(() => {
+      this.updateMetricTilesWithFilters([]);
+      this.cdr.detectChanges();
+    }, 100);
+  }
+
+  /**
+   * Fetch previous-day data for the current index and update the metric tiles
+   */
+  private fetchAndUpdateCurrentIndexData(): void {
+    if (!this.currentSelectedIndexData?.indexName) {
+      console.log('No current index name available for fetching previous-day data');
+      return;
+    }
+    
+    const indexName = this.currentSelectedIndexData.indexName;
+    console.log(`Fetching previous-day data for current index: ${indexName}`);
+    
+    // Fetch previous-day data for the current index
+    this.indicesService.getPreviousDayIndexData(indexName).subscribe({
+      next: (fallbackData) => {
+        if (fallbackData && fallbackData.indices && fallbackData.indices.length > 0) {
+          const indexData = fallbackData.indices[0];
+          console.log(`Successfully fetched previous-day data for ${indexName}:`, indexData);
+          
+          // Update the current selected index data with fallback data
+          this.currentSelectedIndexData = {
+            indexName: indexData.indexName || indexData.index || indexName,
+            indexSymbol: indexData.indexSymbol || indexName,
+            lastPrice: indexData.lastPrice || indexData.last || 0,
+            variation: indexData.variation || 0,
+            percentChange: indexData.percentChange || 0
+          };
+          
+          console.log(`Updated currentSelectedIndexData with previous-day data:`, this.currentSelectedIndexData);
+          
+          // Force metric tiles to refresh with new data
+          this.updateMetricTilesWithFilters([]);
+          this.cdr.detectChanges();
+        }
+      },
+      error: (error) => {
+        console.warn(`Failed to fetch previous-day data for ${indexName}:`, error);
+      }
+    });
   }
 
   /**
@@ -496,7 +612,12 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
    * @param data - Dashboard data (not used, we use stockTicksData instead)
    */
   protected createMetricTiles(data: StockDataDto[]): IWidget[] {
-    return createMetricTilesFunction(this.filteredDashboardData || this.dashboardData, this.currentSelectedIndexData);
+    return createMetricTilesFunction(
+      this.filteredDashboardData || this.dashboardData, 
+      this.currentSelectedIndexData,
+      this.modernIndicesWebSocketService,
+      this.indicesService
+    );
   }
 
   /**
@@ -826,8 +947,6 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
       .setId('stock-list-widget')
       .build();
 
-
-
     const filterWidget = createFilterWidget();
     const metricTiles = this.createMetricTiles([]);
 
@@ -933,17 +1052,55 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
       }
     });
 
-
-
-
-
     // Populate metric tiles with initial data
     this.updateMetricTilesWithFilters([]);
+
+    // Trigger immediate fallback data fetch for metric tiles if no valid data
+    this.triggerImmediateFallbackDataFetch();
 
     // Trigger change detection to ensure widgets are updated
     setTimeout(() => {
       this.cdr.detectChanges();
     }, 100);
+  }
+
+  /**
+   * Trigger immediate fallback data fetch for metric tiles if no valid data is available
+   */
+  private triggerImmediateFallbackDataFetch(): void {
+    // Check if we have valid index data
+    if (!this.currentSelectedIndexData || 
+        !this.currentSelectedIndexData.lastPrice || 
+        this.currentSelectedIndexData.lastPrice === 0) {
+      
+      console.log('No valid index data available, triggering immediate fallback data fetch');
+      
+      // Try to get fallback data for NIFTY 50
+      this.indicesService.getPreviousDayIndexData('NIFTY 50').subscribe({
+        next: (fallbackData) => {
+          if (fallbackData && fallbackData.indices && fallbackData.indices.length > 0) {
+            const indexData = fallbackData.indices[0];
+            console.log('Successfully fetched fallback data for NIFTY 50:', indexData);
+            
+            // Update the current selected index data with fallback data
+            this.currentSelectedIndexData = {
+              indexName: indexData.indexName || 'NIFTY 50',
+              indexSymbol: indexData.indexSymbol || 'NIFTY 50',
+              lastPrice: indexData.lastPrice || 0,
+              variation: indexData.variation || 0,
+              percentChange: indexData.percentChange || 0
+            };
+            
+            // Force metric tiles to refresh with new data
+            this.updateMetricTilesWithFilters([]);
+            this.cdr.detectChanges();
+          }
+        },
+        error: (error) => {
+          console.warn('Failed to fetch fallback data for NIFTY 50:', error);
+        }
+      });
+    }
   }
 
   /**
@@ -1199,8 +1356,6 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
         return null;
     }
   }
-
-
 
   /**
    * Enhanced filtering method that applies filters and updates all widgets
