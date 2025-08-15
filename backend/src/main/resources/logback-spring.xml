@@ -11,12 +11,12 @@
     </springProfile>
     
     <logger name="com.moneyplant.trading" level="INFO"/>
-    <logger name="org.apache.kafka" level="WARN"/>
+
     <logger name="org.apache.spark" level="WARN"/>
     <logger name="org.apache.hudi" level="INFO"/>
     <logger name="org.apache.iceberg" level="INFO"/>
     <logger name="io.trino" level="INFO"/>
-    <logger name="org.springframework.kafka" level="INFO"/>
+
     
     <springProfile name="!prod">
         <root level="INFO">

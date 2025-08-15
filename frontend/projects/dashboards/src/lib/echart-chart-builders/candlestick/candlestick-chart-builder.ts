@@ -22,6 +22,7 @@ export interface CandlestickSeriesOptions {
     borderColor?: string;
     borderColor0?: string;
     borderWidth?: number;
+    barWidth?: string; // Added for bar width
   };
 }
 
@@ -76,8 +77,8 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
       grid: {
         containLabel: true,
         top: '15%',
-        left: '10%',
-        right: '10%',
+        left: '5%',   // Reduced from 10% to 5%
+        right: '5%',  // Reduced from 10% to 5%
         bottom: '15%',
       },
       tooltip: {
@@ -242,6 +243,99 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
     (this.chartOptions as any).yAxis = {
       ...(this.chartOptions as any).yAxis,
       name,
+    };
+    return this;
+  }
+
+  /**
+   * Enable data zoom functionality for the candlestick chart
+   * @param startPercent Start percentage (0-100) for initial zoom view
+   * @param endPercent End percentage (0-100) for initial zoom view
+   */
+  enableDataZoom(startPercent: number = 70, endPercent: number = 100): this {
+    (this.chartOptions as any).dataZoom = [
+      {
+        type: 'inside',
+        start: startPercent,
+        end: endPercent,
+        zoomOnMouseWheel: true,
+        moveOnMouseMove: true,
+        moveOnMouseWheel: false
+      },
+      {
+        type: 'slider',
+        start: startPercent,
+        end: endPercent,
+        bottom: '1%',   // Reduced from 3% to 1% to bring it closer to x-axis
+        height: '8%',  // Increased height for better usability
+        borderColor: '#ccc',
+        fillerColor: 'rgba(167,183,204,0.4)',
+        handleStyle: {
+          color: '#fff',
+          shadowBlur: 3,
+          shadowColor: 'rgba(0,0,0,0.6)',
+          shadowOffsetX: 2,
+          shadowOffsetY: 2
+        }
+      }
+    ];
+    return this;
+  }
+
+  /**
+   * Set the width of candlestick bars
+   * @param width Bar width as percentage (e.g., '60%') or pixel value
+   */
+  setBarWidth(width: string): this {
+    if (this.seriesOptions.itemStyle) {
+      this.seriesOptions.itemStyle.barWidth = width;
+    } else {
+      this.seriesOptions.itemStyle = { barWidth: width };
+    }
+    return this;
+  }
+
+  /**
+   * Enable brush selection for technical analysis
+   */
+  enableBrush(): this {
+    (this.chartOptions as any).brush = {
+      xAxisIndex: 0,
+      brushLink: 'all',
+      outOfBrush: {
+        colorAlpha: 0.1
+      },
+      brushStyle: {
+        borderWidth: 1,
+        color: 'rgba(120,140,180,0.3)',
+        borderColor: 'rgba(120,140,180,0.8)'
+      }
+    };
+    return this;
+  }
+
+  /**
+   * Enable large data mode for better performance with many data points
+   * @param threshold Minimum number of data points to enable large mode
+   */
+  setLargeMode(threshold: number = 600): this {
+    if (this.data && this.data.length >= threshold) {
+      (this.chartOptions as any).useUTC = true;
+      (this.chartOptions as any).animation = false;
+      (this.chartOptions as any).progressive = 500;
+      (this.chartOptions as any).progressiveThreshold = 3000;
+    }
+    return this;
+  }
+
+  /**
+   * Set tooltip type for better user experience
+   * @param type Tooltip type: 'item' for data point, 'axis' for crosshair
+   */
+  setTooltipType(type: 'item' | 'axis' = 'axis'): this {
+    (this.chartOptions as any).tooltip = {
+      ...(this.chartOptions as any).tooltip,
+      trigger: type
     };
     return this;
   }

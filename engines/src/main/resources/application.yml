@@ -1,0 +1,249 @@
+server:
+  port: 8081
+  servlet:
+    context-path: /engines
+
+spring:
+  application:
+    name: moneyplant-engines
+  
+  profiles:
+    active: local
+  
+  # CORS Configuration for frontend access
+  web:
+    cors:
+      allowed-origins: http://localhost:4200,http://127.0.0.1:4200
+      allowed-methods: GET,POST,PUT,DELETE,OPTIONS,PATCH
+      allowed-headers: "*"
+      allow-credentials: true
+      max-age: 3600
+  
+  datasource:
+    url: jdbc:postgresql://postgres.tailce422e.ts.net:5432/MoneyPlant
+    username: postgres
+    password: mysecretpassword
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-timeout: 30000
+      maximum-pool-size: 10
+      minimum-idle: 2
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      connection-init-sql: SET SESSION default_transaction_isolation = 'read committed'
+      # Additional connection properties for external database
+      connection-test-query: SELECT 1
+      # SSL configuration for external database
+      data-source-properties:
+        ssl: false
+        sslmode: disable
+      # Connection validation settings
+      validation-timeout: 5000
+      leak-detection-threshold: 60000
+
+
+  jpa:
+    hibernate:
+      ddl-auto: validate  # Use 'validate' to prevent schema changes on existing database
+    show-sql: false
+    # Transaction management configuration
+    open-in-view: false
+    
+    # Explicit transaction management settings
+    defer-datasource-initialization: false
+    
+    properties:
+      hibernate:
+        format_sql: true
+        
+        # Connection and transaction management
+        connection:
+          provider_disables_autocommit: true
+          isolation_level: READ_COMMITTED
+        
+        # JDBC settings
+        jdbc:
+          batch_size: 20
+          time_zone: UTC
+          fetch_size: 50
+        
+        # Transaction settings
+        transaction:
+          jta:
+            platform: org.hibernate.engine.transaction.jta.platform.internal.NoJtaPlatform
+          flush_mode: AUTO
+          default_auto_commit: false
+        
+        # Session management
+        current_session_context_class: thread
+        session:
+          events:
+            log: false
+        
+        # Performance settings
+        order_inserts: true
+        order_updates: true
+        batch_versioned_data: true
+        
+        # Explicitly set the dialect to avoid metadata issues
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  # Kafka configuration moved to profile-specific files to avoid conflicts
+  
+  boot:
+    admin:
+      client:
+        url: http://localhost:8080
+
+# Transaction management configuration
+  transaction:
+    default-timeout: 30s
+    rollback-on-commit-failure: true
+
+# Kafka topic configuration
+kafka:
+  topics:
+    nse-indices-ticks: nse-indices-ticks
+    market-data: market-data
+    trading-signals: trading-signals
+    backtest-results: backtest-results
+  group-id: moneyplant-engines
+
+# Ingestion auto-start configuration
+ingestion:
+  auto-start:
+    enabled: false  # Set to true to enable auto-start for other ingestion services
+    # Additional auto-start settings can be added here
+    # For example: yahoo-finance, alpha-vantage, polygon, etc.
+
+# NSE WebSocket configuration
+nse:
+  websocket:
+    # NSE WebSocket endpoints (multiple options for different data streams)
+    url: wss://www.nseindia.com/streams/indices/high/drdMkt
+    # Alternative endpoints if the main one fails
+    alternative-urls:
+      - wss://www.nseindia.com/streams/indices/high/drdMkt
+      - wss://www.nseindia.com/streams/indices/low/drdMkt
+      - wss://www.nseindia.com/streams/indices/medium/drdMkt
+    reconnect:
+      interval: 30
+      max-attempts: 5
+      backoff-multiplier: 2
+    enabled: true  # Enable NSE WebSocket connection for real data
+    timeout: 30000  # Connection timeout in milliseconds
+    heartbeat-interval: 30000  # Heartbeat interval in milliseconds
+    # Authentication and headers configuration
+    headers:
+      user-agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+      origin: "https://www.nseindia.com"
+      referer: "https://www.nseindia.com/get-quotes/equity"
+      accept: "*/*"
+      accept-language: "en-US,en;q=0.9"
+      accept-encoding: "gzip, deflate, br"
+      connection: "keep-alive"
+      upgrade: "websocket"
+      sec-websocket-version: "13"
+      sec-websocket-key: ""
+      sec-websocket-protocol: ""
+    fallback:
+      enabled: true  # Enable fallback to mock data when NSE connection fails
+      mock-interval: 5000  # Generate mock data every 5 seconds when fallback is active
+  
+  # Auto-start configuration for NSE indices ingestion
+  auto-start:
+    enabled: true  # Set to false to disable auto-start
+    delay-seconds: 10  # Delay before starting ingestion (allows other services to initialize)
+
+# Spark Configuration
+spark:
+  app-name: MoneyPlant-Engines
+  master: local[*]
+  driver-memory: 2g
+  executor-memory: 2g
+  sql:
+    adaptive:
+      enabled: true
+      coalescePartitions:
+        enabled: true
+      skewJoin:
+        enabled: true
+      localShuffleReader:
+        enabled: true
+      optimizeSkewedJoin:
+        enabled: true
+
+# Trino Configuration
+trino:
+  url: jdbc:trino://trino.tailce422e.ts.net:8080
+  username: trino
+  password: 
+  catalog: 
+  schema: 
+  connection-pool:
+    maximum-pool-size: 10
+    minimum-idle: 2
+    connection-timeout: 30000
+    idle-timeout: 600000
+    max-lifetime: 1800000
+
+# Apache Hudi Configuration
+hudi:
+  base-path: /tmp/hudi
+  table-name: market_data
+  key-generator: org.apache.hudi.keygen.SimpleKeyGenerator
+  partition-path-field: date
+  write-options:
+    table.type: COPY_ON_WRITE
+    recordkey.field: symbol
+    partitionpath.field: date
+    precombine.field: timestamp
+    keygenerator.class: org.apache.hudi.keygen.SimpleKeyGenerator
+    hive.style.partitioning: true
+    operation: upsert
+    table.name: market_data
+    base.path: /tmp/hudi
+
+# Apache Iceberg Configuration
+iceberg:
+  catalog-name: iceberg_catalog
+  warehouse-location: /tmp/iceberg
+  io-impl: org.apache.iceberg.aws.s3.S3FileIO
+  s3:
+    endpoint: 
+    access-key: 
+    secret-key: 
+  catalog-properties:
+    catalog-impl: org.apache.iceberg.aws.glue.GlueCatalog
+    warehouse: /tmp/iceberg
+    io-impl: org.apache.iceberg.aws.s3.S3FileIO
+  table-properties:
+    write.format.default: parquet
+    write.parquet.compression: snappy
+    write.parquet.row-group-size-bytes: 134217728
+    write.parquet.page-size-bytes: 1048576
+    write.parquet.dict-size-bytes: 2097152
+
+# Logging configuration
+logging:
+  level:
+    com.moneyplant.engines: INFO
+    org.springframework.kafka: INFO
+    org.apache.kafka: WARN
+    org.springframework.web.socket: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# Management endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true

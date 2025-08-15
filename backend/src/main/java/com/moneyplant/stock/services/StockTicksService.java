@@ -9,18 +9,14 @@ import com.moneyplant.stock.mappers.StockTicksMapper;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Service for fetching and broadcasting stock ticks data from the database.
- * Provides real-time stock data updates via WebSocket connections.
- * Data is sourced from the nse_stock_tick table instead of external APIs.
+ * Service for fetching stock ticks data from the database.
+ * Provides data access for stock information.
+ * Note: WebSocket functionality has been moved to the engines project.
  */
 @Service
 @RequiredArgsConstructor
@@ -31,10 +27,6 @@ public class StockTicksService {
     
     private final NseStockTickRepository nseStockTickRepository;
     private final StockTicksMapper stockTicksMapper;
-    private final SimpMessagingTemplate messagingTemplate;
-    
-    // Store active subscriptions by index name
-    private final Map<String, Boolean> activeSubscriptions = new ConcurrentHashMap<>();
 
     /**
      * Fetches stock ticks data for a specific index from the database.
@@ -68,75 +60,6 @@ public class StockTicksService {
             log.error("Error fetching stock ticks for index {} from database: {}", 
                     indexName, e.getMessage(), e);
             throw new ServiceException("Error fetching stock ticks for index: " + indexName, e);
-        }
-    }
-
-
-    /**
-     * Subscribes to real-time stock ticks updates for a specific index.
-     * 
-     * @param indexName The name of the index to subscribe to
-     */
-    public void subscribeToStockTicks(String indexName) {
-        log.info("Subscribing to stock ticks for index: {}", indexName);
-        activeSubscriptions.put(indexName, true);
-        
-        // Immediately fetch and broadcast current data
-        try {
-            StockTicksDto stockTicks = getStockTicks(indexName);
-            broadcastStockTicks(indexName, stockTicks);
-        } catch (Exception e) {
-            log.error("Error during initial stock ticks fetch for subscription to index {}: {}", 
-                    indexName, e.getMessage());
-        }
-    }
-
-    /**
-     * Unsubscribes from stock ticks updates for a specific index.
-     * 
-     * @param indexName The name of the index to unsubscribe from
-     */
-    public void unsubscribeFromStockTicks(String indexName) {
-        log.info("Unsubscribing from stock ticks for index: {}", indexName);
-        activeSubscriptions.remove(indexName);
-    }
-
-    /**
-     * Scheduled method that runs every 2 minutes to fetch and broadcast stock ticks
-     * for all active subscriptions.
-     */
-    @Scheduled(fixedRate = 120000) // 2 minutes = 120,000 milliseconds
-    public void scheduledStockTicksUpdate() {
-        if (activeSubscriptions.isEmpty()) {
-            log.debug("No active subscriptions, skipping scheduled update");
-            return;
-        }
-
-        log.info("Running scheduled stock ticks update for {} active subscriptions", 
-                activeSubscriptions.size());
-
-        activeSubscriptions.keySet().forEach(indexName -> {
-            try {
-                StockTicksDto stockTicks = getStockTicks(indexName);
-                broadcastStockTicks(indexName, stockTicks);
-            } catch (Exception e) {
-                log.error("Error during scheduled stock ticks update for index {}: {}", 
-                        indexName, e.getMessage());
-            }
-        });
-    }
-
-    /**
-     * Broadcasts stock ticks data to WebSocket subscribers.
-     * 
-     * @param indexName The index name
-     * @param stockTicks The stock ticks data to broadcast
-     */
-    private void broadcastStockTicks(String indexName, StockTicksDto stockTicks) {
-        if (stockTicks != null) {
-            String destination = "/topic/stock-ticks/" + indexName.replace(" ", "-").toLowerCase();
-            messagingTemplate.convertAndSend(destination, stockTicks);
-            log.debug("Broadcasted stock ticks for index {} to destination {}", indexName, destination);
         }
     }
 

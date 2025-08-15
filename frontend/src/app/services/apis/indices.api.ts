@@ -3,6 +3,7 @@ import { Observable } from 'rxjs';
 import { ApiService } from './api.base';
 import { Index, IndexCreateDto, IndexResponseDto } from '../entities/indices';
 import { IndexHistoricalData } from '../entities/index-historical-data';
+import { IndicesDto } from '../entities/indices-websocket';
 
 @Injectable({
   providedIn: 'root'
@@ -10,6 +11,7 @@ import { IndexHistoricalData } from '../entities/index-historical-data';
 export class IndicesService {
   private readonly endpoint = '/api/v1/index';
   private readonly publicEndpoint = '/api/public/indices';
+  private readonly stockEndpoint = '/api/v1/indices';
 
   constructor(private apiService: ApiService) {}
 
@@ -64,6 +66,17 @@ export class IndicesService {
    */
   getIndexByKeyCategory(category: string): Observable<IndexResponseDto> {
     return this.apiService.get<IndexResponseDto>(`${this.endpoint}/category/${category}`);
+  }
+
+  /**
+   * Gets previous day's indices data for a specific index
+   * @param indexName The name of the index to retrieve previous day's data for
+   * @returns An Observable of the indices data for the previous day
+   */
+  getPreviousDayIndexData(indexName: string): Observable<IndicesDto> {
+    // Convert index name to URL-friendly format (replace spaces with hyphens)
+    const urlFriendlyIndexName = indexName.replace(/\s+/g, '-').toLowerCase();
+    return this.apiService.get<IndicesDto>(`${this.stockEndpoint}/${urlFriendlyIndexName}/previous-day`);
   }
 
   /**

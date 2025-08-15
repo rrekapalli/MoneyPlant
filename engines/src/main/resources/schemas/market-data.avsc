@@ -1,0 +1,62 @@
+{
+  "type": "record",
+  "name": "MarketData",
+  "namespace": "com.moneyplant.engines",
+  "fields": [
+    {
+      "name": "symbol",
+      "type": "string",
+      "doc": "Stock symbol/ticker"
+    },
+    {
+      "name": "exchange",
+      "type": "string",
+      "doc": "Exchange where the stock is traded"
+    },
+    {
+      "name": "timestamp",
+      "type": "long",
+      "doc": "Timestamp in milliseconds since epoch"
+    },
+    {
+      "name": "open",
+      "type": "double",
+      "doc": "Opening price"
+    },
+    {
+      "name": "high",
+      "type": "double",
+      "doc": "Highest price during the period"
+    },
+    {
+      "name": "low",
+      "type": "double",
+      "doc": "Lowest price during the period"
+    },
+    {
+      "name": "close",
+      "type": "double",
+      "doc": "Closing price"
+    },
+    {
+      "name": "volume",
+      "type": "long",
+      "doc": "Trading volume"
+    },
+    {
+      "name": "adjustedClose",
+      "type": "double",
+      "doc": "Adjusted closing price"
+    },
+    {
+      "name": "dataSource",
+      "type": "string",
+      "doc": "Source of the market data"
+    },
+    {
+      "name": "dataQuality",
+      "type": "string",
+      "doc": "Quality indicator of the data"
+    }
+  ]
+}

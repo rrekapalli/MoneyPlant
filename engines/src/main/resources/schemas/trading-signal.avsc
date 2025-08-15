@@ -1,0 +1,75 @@
+{
+  "type": "record",
+  "name": "TradingSignal",
+  "namespace": "com.moneyplant.engines",
+  "fields": [
+    {
+      "name": "id",
+      "type": "string",
+      "doc": "Unique identifier for the signal"
+    },
+    {
+      "name": "symbol",
+      "type": "string",
+      "doc": "Stock symbol/ticker"
+    },
+    {
+      "name": "strategy",
+      "type": "string",
+      "doc": "Name of the strategy that generated the signal"
+    },
+    {
+      "name": "timestamp",
+      "type": "long",
+      "doc": "Timestamp in milliseconds since epoch"
+    },
+    {
+      "name": "signalType",
+      "type": {
+        "type": "enum",
+        "name": "SignalType",
+        "symbols": ["BUY", "SELL", "HOLD", "STRONG_BUY", "STRONG_SELL", "WATCH"]
+      },
+      "doc": "Type of trading signal"
+    },
+    {
+      "name": "strength",
+      "type": {
+        "type": "enum",
+        "name": "SignalStrength",
+        "symbols": ["WEAK", "MODERATE", "STRONG", "VERY_STRONG"]
+      },
+      "doc": "Strength of the signal"
+    },
+    {
+      "name": "price",
+      "type": "double",
+      "doc": "Current price when signal was generated"
+    },
+    {
+      "name": "stopLoss",
+      "type": ["null", "double"],
+      "doc": "Recommended stop loss price"
+    },
+    {
+      "name": "takeProfit",
+      "type": ["null", "double"],
+      "doc": "Recommended take profit price"
+    },
+    {
+      "name": "description",
+      "type": "string",
+      "doc": "Description of the signal"
+    },
+    {
+      "name": "source",
+      "type": "string",
+      "doc": "Source of the signal (scanner, strategy, etc.)"
+    },
+    {
+      "name": "confidence",
+      "type": "double",
+      "doc": "Confidence level of the signal (0.0 to 1.0)"
+    }
+  ]
+}

@@ -3,9 +3,11 @@ import { BehaviorSubject, Observable, Subject } from 'rxjs';
 import { Client, IMessage, IStompSocket, StompSubscription } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { WebSocketConnectionState, WebSocketServiceConfig } from '../entities/indices-websocket';
+import { environment } from '../../../environments/environment';
 
 /**
  * Base WebSocket service providing common WebSocket functionality
+ * Now connects to engines project instead of backend
  */
 @Injectable({
   providedIn: 'root'
@@ -34,7 +36,7 @@ export class BaseWebSocketService {
   }
 
   /**
-   * Get current connection state value
+   * Get current connection state
    */
   get currentConnectionState(): WebSocketConnectionState {
     return this.connectionState$.value;
@@ -48,7 +50,7 @@ export class BaseWebSocketService {
   }
 
   /**
-   * Initialize WebSocket connection
+   * Initialize WebSocket connection to engines
    */
   connect(config: WebSocketServiceConfig): Promise<void> {
     if (this.isConnected) {
@@ -59,8 +61,11 @@ export class BaseWebSocketService {
 
     return new Promise((resolve, reject) => {
       try {
+        // Use engines WebSocket endpoint if no specific broker URL provided
+        const brokerURL = config.brokerURL || `${environment.enginesHttpUrl}/ws/engines`;
+        
         this.client = new Client({
-          webSocketFactory: () => new SockJS(config.brokerURL) as IStompSocket,
+          webSocketFactory: () => new SockJS(brokerURL) as IStompSocket,
           heartbeatIncoming: config.heartbeatIncoming || 4000,
           heartbeatOutgoing: config.heartbeatOutgoing || 4000,
           reconnectDelay: config.reconnectDelay || this.reconnectInterval,
@@ -70,18 +75,18 @@ export class BaseWebSocketService {
         this.client.onConnect = () => {
           this.connectionState$.next(WebSocketConnectionState.CONNECTED);
           this.reconnectAttempts = 0;
-          console.log('WebSocket connected successfully');
+          console.log('Connected to engines WebSocket successfully');
           resolve();
         };
 
         this.client.onDisconnect = () => {
           this.connectionState$.next(WebSocketConnectionState.DISCONNECTED);
-          console.log('WebSocket disconnected');
+          console.log('Disconnected from engines WebSocket');
           this.handleReconnection();
         };
 
         this.client.onStompError = (frame) => {
-          const errorMsg = `WebSocket STOMP error: ${frame.headers['message']} - ${frame.body}`;
+          const errorMsg = `WebSocket STOMP error from engines: ${frame.headers['message']} - ${frame.body}`;
           console.error(errorMsg);
           this.error$.next(errorMsg);
           this.connectionState$.next(WebSocketConnectionState.ERROR);
@@ -89,7 +94,7 @@ export class BaseWebSocketService {
         };
 
         this.client.onWebSocketError = (error) => {
-          const errorMsg = `WebSocket error: ${error}`;
+          const errorMsg = `WebSocket error from engines: ${error}`;
           console.error(errorMsg);
           this.error$.next(errorMsg);
           this.connectionState$.next(WebSocketConnectionState.ERROR);
@@ -98,133 +103,159 @@ export class BaseWebSocketService {
 
         this.client.activate();
       } catch (error) {
-        const errorMsg = `Failed to initialize WebSocket: ${error}`;
+        const errorMsg = `Failed to initialize engines WebSocket: ${error}`;
         console.error(errorMsg);
         this.error$.next(errorMsg);
         this.connectionState$.next(WebSocketConnectionState.ERROR);
-        reject(error);
+        reject(new Error(errorMsg));
       }
     });
   }
 
   /**
-   * Disconnect WebSocket
+   * Disconnect from engines WebSocket
    */
-  disconnect(): Promise<void> {
-    if (!this.client) {
-      return Promise.resolve();
+  disconnect(): void {
+    if (this.client) {
+      this.client.deactivate();
+      this.client = null;
+    }
+    this.clearSubscriptions();
+    this.connectionState$.next(WebSocketConnectionState.DISCONNECTED);
+  }
+
+  /**
+   * Subscribe to a topic
+   */
+  subscribe(topic: string, callback: (message: any) => void): StompSubscription | null {
+    if (!this.client || !this.isConnected) {
+      console.warn('Cannot subscribe: WebSocket not connected');
+      return null;
     }
 
-    // Unsubscribe from all subscriptions
-    this.subscriptions.forEach(subscription => subscription.unsubscribe());
-    this.subscriptions.clear();
+    try {
+      const subscription = this.client.subscribe(topic, (message: IMessage) => {
+        try {
+          const data = JSON.parse(message.body);
+          callback(data);
+        } catch (error) {
+          console.error('Error parsing message:', error);
+          this.error$.next(`Failed to parse message: ${error}`);
+        }
+      });
 
-    return new Promise((resolve) => {
-      if (this.client) {
-        this.client.onDisconnect = () => {
-          this.connectionState$.next(WebSocketConnectionState.DISCONNECTED);
-          console.log('WebSocket disconnected');
-          resolve();
-        };
-        this.client.deactivate();
-      } else {
-        resolve();
-      }
-    });
-  }
+      this.subscriptions.set(topic, subscription);
+      console.log(`Subscribed to topic: ${topic}`);
+      return subscription;
 
-  /**
-   * Subscribe to a destination
-   */
-  subscribe<T>(destination: string, callback: (data: T) => void): string {
-    if (!this.isConnected) {
-      throw new Error('WebSocket is not connected. Call connect() first.');
+    } catch (error) {
+      console.error('Error subscribing to topic:', error);
+      this.error$.next(`Failed to subscribe to topic ${topic}: ${error}`);
+      return null;
     }
-
-    const subscriptionId = this.generateSubscriptionId();
-    
-    const subscription = this.client!.subscribe(destination, (message: IMessage) => {
-      try {
-        const data = JSON.parse(message.body) as T;
-        callback(data);
-      } catch (error) {
-        console.error(`Error parsing message from ${destination}:`, error);
-        this.error$.next(`Failed to parse message: ${error}`);
-      }
-    });
-
-    this.subscriptions.set(subscriptionId, subscription);
-    console.log(`Subscribed to ${destination} with ID: ${subscriptionId}`);
-    
-    return subscriptionId;
   }
 
   /**
-   * Unsubscribe from a destination
+   * Unsubscribe from a topic
    */
-  unsubscribe(subscriptionId: string): void {
-    const subscription = this.subscriptions.get(subscriptionId);
+  unsubscribe(topic: string): boolean {
+    const subscription = this.subscriptions.get(topic);
     if (subscription) {
       subscription.unsubscribe();
-      this.subscriptions.delete(subscriptionId);
-      console.log(`Unsubscribed from subscription ID: ${subscriptionId}`);
+      this.subscriptions.delete(topic);
+      console.log(`Unsubscribed from topic: ${topic}`);
+      return true;
     }
+    return false;
   }
 
   /**
-   * Send a message to a destination
+   * Publish message to a topic
    */
-  send(destination: string, body: any = {}): void {
-    if (!this.isConnected) {
-      throw new Error('WebSocket is not connected. Call connect() first.');
+  publish(destination: string, message: any): boolean {
+    if (!this.client || !this.isConnected) {
+      console.warn('Cannot publish: WebSocket not connected');
+      return false;
     }
 
-    this.client!.publish({
-      destination,
-      body: JSON.stringify(body)
-    });
+    try {
+      this.client.publish({
+        destination: destination,
+        body: JSON.stringify(message)
+      });
+      console.log(`Published message to: ${destination}`);
+      return true;
+
+    } catch (error) {
+      console.error('Error publishing message:', error);
+      this.error$.next(`Failed to publish message to ${destination}: ${error}`);
+      return false;
+    }
   }
 
   /**
-   * Handle automatic reconnection
+   * Handle reconnection to engines
    */
   private handleReconnection(): void {
-    if (this.reconnectAttempts < this.maxReconnectAttempts) {
-      this.reconnectAttempts++;
-      this.connectionState$.next(WebSocketConnectionState.RECONNECTING);
-      
-      console.log(`Attempting to reconnect... (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
-      
-      setTimeout(() => {
-        if (this.client && !this.isConnected) {
-          this.client.activate();
-        }
-      }, this.reconnectInterval);
-    } else {
-      console.error('Max reconnection attempts reached');
-      this.error$.next('Connection lost and max reconnection attempts reached');
-      this.connectionState$.next(WebSocketConnectionState.ERROR);
+    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+      console.error('Max reconnection attempts reached for engines WebSocket');
+      this.error$.next('Max reconnection attempts reached');
+      return;
     }
+
+    this.reconnectAttempts++;
+    console.log(`Attempting to reconnect to engines WebSocket (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+
+    setTimeout(() => {
+      if (this.currentConnectionState === WebSocketConnectionState.DISCONNECTED) {
+        this.connect({
+          brokerURL: `${environment.enginesHttpUrl}/ws/engines`,
+          heartbeatIncoming: 4000,
+          heartbeatOutgoing: 4000,
+          reconnectDelay: this.reconnectInterval,
+          debug: false
+        }).catch(error => {
+          console.error('Reconnection failed:', error);
+        });
+      }
+    }, this.reconnectInterval * this.reconnectAttempts);
   }
 
   /**
-   * Generate unique subscription ID
+   * Clear all subscriptions
    */
-  private generateSubscriptionId(): string {
-    return `sub_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  private clearSubscriptions(): void {
+    this.subscriptions.forEach(subscription => {
+      subscription.unsubscribe();
+    });
+    this.subscriptions.clear();
   }
 
   /**
-   * Set max reconnection attempts
+   * Get active subscriptions count
    */
-  setMaxReconnectAttempts(attempts: number): void {
-    this.maxReconnectAttempts = attempts;
+  getActiveSubscriptionsCount(): number {
+    return this.subscriptions.size;
   }
 
   /**
-   * Set reconnection interval
+   * Check if subscribed to a topic
    */
-  setReconnectInterval(interval: number): void {
-    this.reconnectInterval = interval;
+  isSubscribedTo(topic: string): boolean {
+    return this.subscriptions.has(topic);
+  }
+
+  /**
+   * Get all active topic names
+   */
+  getActiveTopics(): string[] {
+    return Array.from(this.subscriptions.keys());
+  }
+
+  /**
+   * Cleanup on service destruction
+   */
+  ngOnDestroy(): void {
+    this.disconnect();
   }
 }

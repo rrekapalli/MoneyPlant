@@ -1,0 +1,122 @@
+# Development profile configuration
+# This profile enables Kafka using Docker containers
+
+spring:
+  kafka:
+    enabled: true
+    bootstrap-servers: localhost:9093
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      retries: 3
+      batch-size: 16384
+      linger-ms: 1
+      buffer-memory: 33554432
+    consumer:
+      group-id: moneyplant-engines
+      auto-offset-reset: earliest
+      enable-auto-commit: true
+      auto-commit-interval-ms: 1000
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+    # Make Kafka optional during startup
+    admin:
+      auto-create: false
+      fail-on-error: false
+
+# Enable Kafka admin for development
+kafka:
+  admin:
+    enabled: true
+    auto-create: false
+    fail-on-error: false
+  topics:
+    nse-indices-ticks: nse-indices-ticks
+    market-data: market-data
+    trading-signals: trading-signals
+    backtest-results: backtest-results
+  group-id: moneyplant-engines
+
+# Ingestion auto-start configuration for development
+ingestion:
+  auto-start:
+    enabled: true  # Enable auto-start for other ingestion services in development
+
+# NSE WebSocket configuration for development
+nse:
+  websocket:
+    url: wss://www.nseindia.com/streams/indices/high/drdMkt
+    reconnect:
+      interval: 30
+    enabled: true  # Enable NSE WebSocket connection in development
+    # Enable mock data for development when WebSocket is not available
+    mock:
+      enabled: true
+      data:
+        - indexName: "NIFTY 50"
+          indexSymbol: "NIFTY"
+          lastPrice: 19500.50
+          variation: 125.75
+          percentChange: 0.65
+          openPrice: 19374.75
+          highPrice: 19525.25
+          lowPrice: 19350.00
+          previousClose: 19374.75
+          totalTradedVolume: 125000000
+          totalTradedValue: 2437500000000
+        - indexName: "SENSEX"
+          indexSymbol: "SENSEX"
+          lastPrice: 64250.25
+          variation: 425.50
+          percentChange: 0.67
+          openPrice: 63824.75
+          highPrice: 64300.00
+          lowPrice: 63750.25
+          previousClose: 63824.75
+          totalTradedVolume: 98000000
+          totalTradedValue: 6282500000000
+        - indexName: "BANKNIFTY"
+          indexSymbol: "BANKNIFTY"
+          lastPrice: 44500.75
+          variation: 325.25
+          percentChange: 0.74
+          openPrice: 44175.50
+          highPrice: 44550.00
+          lowPrice: 44100.25
+          previousClose: 44175.50
+          totalTradedVolume: 75000000
+          totalTradedValue: 3337500000000
+  
+  # Auto-start configuration for NSE indices ingestion in development
+  auto-start:
+    enabled: true  # Enable auto-start for development
+    delay-seconds: 5  # Shorter delay for development
+
+# Logging configuration for development
+logging:
+  level:
+    com.moneyplant.engines: DEBUG
+    org.springframework.kafka: INFO
+    org.apache.kafka: INFO
+    org.springframework.web.socket: DEBUG
+    org.springframework.boot.autoconfigure.kafka: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# Management endpoints for development
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,env
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true

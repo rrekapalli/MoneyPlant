@@ -13,14 +13,12 @@ import { ScrollerModule } from "primeng/scroller";
 import { ScrollPanelModule } from 'primeng/scrollpanel';
 import { TabsModule } from 'primeng/tabs';
 import { TooltipModule } from 'primeng/tooltip';
-import { Subscription } from 'rxjs';
+import { Subject, takeUntil, interval, Subscription } from 'rxjs';
 
 import { TreeNode } from 'primeng/api';
 import { IndicesService } from '../../services/apis/indices.api';
 import { IndexResponseDto } from '../../services/entities/indices';
 import { ComponentCommunicationService, SelectedIndexData } from '../../services/component-communication.service';
-
-// Import modern Angular v20 WebSocket services and entities
 import { ModernIndicesWebSocketService, IndexDataDto, IndicesDto } from '../../services/websockets';
 
 @Component({
@@ -47,6 +45,7 @@ import { ModernIndicesWebSocketService, IndexDataDto, IndicesDto } from '../../s
   changeDetection: ChangeDetectionStrategy.Default
 })
 export class IndicesComponent implements OnInit, OnDestroy {
+
   // Convert main data properties to signals for better performance
   indices = signal<IndexResponseDto[]>([]);
   indicesTreeData = signal<TreeNode[]>([]);
@@ -93,6 +92,9 @@ export class IndicesComponent implements OnInit, OnDestroy {
   private indicesWebSocketSubscription: Subscription | null = null;
   private allIndicesWebSocketSubscription: Subscription | null = null;
   private webSocketUpdateTimer: any = null;
+  
+  // NSE Indices refresh timer
+  private nseIndicesRefreshTimer: any = null;
 
   // Helper method to get current indices list index from activeTab
   private getCurrentIndicesListIndex(): number {
@@ -155,7 +157,7 @@ export class IndicesComponent implements OnInit, OnDestroy {
       this.webSocketUpdateTimer = null;
     }
     
-    // Disconnect WebSocket
+    // Disconnect WebSockets
     this.modernIndicesWebSocketService.disconnect();
   }
 

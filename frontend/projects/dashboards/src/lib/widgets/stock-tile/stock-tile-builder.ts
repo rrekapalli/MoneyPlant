@@ -24,6 +24,10 @@ export interface StockTileData extends TileData {
  *   .setLowValue('₹14,800')
  *   .setCurrency('₹')
  *   .setPosition({ x: 0, y: 0, cols: 2, rows: 2 })
+ *   .setDataEvent((widget: IWidget, data?: any) => {
+ *     console.log('Stock tile data loaded:', data);
+ *     // Handle data loading events
+ *   })
  *   .build();
  * 
  * // Create stock tile from data object
@@ -37,6 +41,10 @@ export interface StockTileData extends TileData {
  * };
  * const widget = StockTileBuilder.createFromData(stockData)
  *   .setPosition({ x: 0, y: 0, cols: 2, rows: 2 })
+ *   .setDataEvent((widget: IWidget, data?: any) => {
+ *     console.log('Stock tile data loaded:', data);
+ *     // Handle data loading events
+ *   })
  *   .build();
  * 
  * // Create stock tile with automatic formatting
@@ -49,6 +57,10 @@ export interface StockTileData extends TileData {
  * )
  *   .setCurrency('₹')
  *   .setPosition({ x: 0, y: 0, cols: 2, rows: 2 })
+ *   .setDataEvent((widget: IWidget, data?: any) => {
+ *     console.log('Stock tile data loaded:', data);
+ *     // Handle data loading events
+ *   })
  *   .build();
  */
 export class StockTileBuilder {
@@ -179,6 +191,17 @@ export class StockTileBuilder {
     return this;
   }
 
+  /**
+   * Set data event handler for the stock tile
+   * This allows setting up data loading and update events at creation time
+   * @param onDataEvent - Callback function for data events
+   * @returns this for method chaining
+   */
+  setDataEvent(onDataEvent: (widget: IWidget, data?: any) => void): this {
+    this.tileBuilder.setEvents(onDataEvent as any);
+    return this;
+  }
+
   setPosition(position: { x: number; y: number; cols: number; rows: number }): this {
     this.tileBuilder.setPosition(position);
     return this;
@@ -271,5 +294,23 @@ export class StockTileBuilder {
    */
   static isStockTileWidget(widget: IWidget): boolean {
     return widget.config?.component === 'stock-tile';
+  }
+
+  /**
+   * Set data event handler on an existing stock tile widget
+   * @param widget - The widget to update
+   * @param onDataEvent - Callback function for data events
+   */
+  static setDataEvent(widget: IWidget, onDataEvent: (widget: IWidget, data?: any) => void): void {
+    if (widget.config?.component !== 'stock-tile') {
+      console.warn('Attempting to set data event on non-stock-tile widget');
+      return;
+    }
+
+    if (!widget.config.events) {
+      widget.config.events = {};
+    }
+    
+    widget.config.events.onChartOptions = onDataEvent as any;
   }
 } 

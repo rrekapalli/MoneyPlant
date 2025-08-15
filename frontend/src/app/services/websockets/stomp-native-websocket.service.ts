@@ -10,6 +10,7 @@ import { environment } from '../../../environments/environment';
  * Modern STOMP WebSocket service
  * Uses @stomp/stompjs with native WebSocket
  * Compatible with Spring Boot STOMP endpoints
+ * Now connects to engines project instead of backend
  */
 @Injectable({
   providedIn: 'root'
@@ -33,29 +34,30 @@ export class StompNativeWebSocketService {
 
   /**
    * Create and configure STOMP client
+   * Now connects to engines project WebSocket endpoints
    */
   private createStompClient(): Client {
     const client = new Client({
       webSocketFactory: () => {
-        const baseUrl = environment.production ?
-          `${environment.apiUrl}/ws/indices` :
-          `${environment.apiUrl}/ws/indices`;
+        const baseUrl = environment.enginesHttpUrl + '/ws/nse-indices';
         return new SockJS(baseUrl);
       },
       debug: (msg) => {
         // Debug logging disabled for production
       },
-      reconnectDelay: 5000,
+      // Remove reconnectDelay to prevent automatic disconnection
       heartbeatIncoming: 4000,
       heartbeatOutgoing: 4000
     });
 
     // Set up connection callbacks
     client.onConnect = (frame: IFrame) => {
+      console.log('STOMP client connected successfully');
       this.connectionState$.next(WebSocketConnectionState.CONNECTED);
     };
 
     client.onDisconnect = (frame: IFrame) => {
+      console.log('STOMP client disconnected');
       this.connectionState$.next(WebSocketConnectionState.DISCONNECTED);
       this.clearSubscriptions();
     };
@@ -87,7 +89,7 @@ export class StompNativeWebSocketService {
   }
 
   /**
-   * Get errors observable
+   * Get error observable
    */
   get errors(): Observable<string> {
     return this.errors$.asObservable();
@@ -97,214 +99,292 @@ export class StompNativeWebSocketService {
    * Check if currently connected
    */
   get isConnected(): boolean {
-    return this.client.connected;
+    const connected = this.client?.connected === true;
+    console.log(`WebSocket connection status: ${connected ? 'CONNECTED' : 'DISCONNECTED'}`);
+    return connected;
   }
 
   /**
-   * Connect to WebSocket server
+   * Connect to engines WebSocket
    */
   async connect(): Promise<void> {
-    try {
-      this.connectionState$.next(WebSocketConnectionState.CONNECTING);
-      
-      this.client.activate();
-      
-      // Wait for connection with timeout
-      return new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          reject(new Error('Connection timeout'));
-        }, 10000); // 10 second timeout
+    if (this.isConnected) {
+      console.log('WebSocket already connected, skipping connection');
+      return Promise.resolve();
+    }
 
-        const subscription = this.connectionState$.subscribe(state => {
-          if (state === WebSocketConnectionState.CONNECTED) {
-            clearTimeout(timeout);
-            subscription.unsubscribe();
-            resolve();
-          } else if (state === WebSocketConnectionState.ERROR) {
-            clearTimeout(timeout);
-            subscription.unsubscribe();
-            reject(new Error('Connection failed'));
-          }
-        });
-      });
+    try {
+      console.log('Attempting to connect to engines STOMP WebSocket...');
+      await this.client.activate();
+      console.log('STOMP client activation completed');
+      
+      // Wait a bit for the connection to stabilize
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      if (this.isConnected) {
+        console.log('WebSocket connection established successfully');
+      } else {
+        console.warn('WebSocket connection not yet established after activation');
+      }
     } catch (error) {
-      console.error('Failed to connect to STOMP WebSocket:', error);
-      this.connectionState$.next(WebSocketConnectionState.ERROR);
+      console.error('Failed to connect to engines STOMP WebSocket:', error);
       throw error;
     }
   }
 
   /**
-   * Disconnect from WebSocket server
+   * Clear all active subscriptions
    */
-  async disconnect(): Promise<void> {
+  private clearSubscriptions(): void {
+    console.log('Clearing all active subscriptions');
+    
+    // Unsubscribe from all active subscriptions
+    this.activeSubscriptions.forEach((subscription, key) => {
+      try {
+        subscription.unsubscribe();
+        console.log(`Unsubscribed from: ${key}`);
+      } catch (error) {
+        console.warn(`Error unsubscribing from ${key}:`, error);
+      }
+    });
+    
+    // Clear the subscriptions map
+    this.activeSubscriptions.clear();
+    
+    // Clear all data subjects
+    this.allIndicesData$.next(null);
+    this.specificIndicesData.forEach((subject, indexName) => {
+      subject.next(null);
+    });
+    
+    console.log('All subscriptions cleared');
+  }
+
+  /**
+   * Disconnect from WebSocket
+   */
+  disconnect(): void {
     try {
+      console.log('Disconnecting from WebSocket...');
+      
+      // Clear all subscriptions first
       this.clearSubscriptions();
-      await this.client.deactivate();
+      
+      // Disconnect the STOMP client
+      if (this.client && this.client.connected) {
+        this.client.deactivate();
+      }
+      
       this.connectionState$.next(WebSocketConnectionState.DISCONNECTED);
+      console.log('WebSocket disconnected successfully');
     } catch (error) {
-      console.error('Error during disconnect:', error);
+      console.error('Error disconnecting from WebSocket:', error);
+      this.connectionState$.next(WebSocketConnectionState.ERROR);
     }
   }
 
   /**
-   * Subscribe to all indices data
+   * Subscribe to all indices data from engines
    */
   subscribeToAllIndices(): Observable<IndicesDto> {
-    const destination = '/topic/indices';
-    
-    if (!this.client.connected) {
-      console.warn('Client not connected, cannot subscribe to all indices');
-      return this.allIndicesData$.asObservable().pipe(
-        filter((data): data is IndicesDto => data !== null)
-      );
+    if (!this.isConnected) {
+      throw new Error('WebSocket not connected');
     }
 
-    // Check if already subscribed
-    if (this.activeSubscriptions.has(destination)) {
-      return this.allIndicesData$.asObservable().pipe(
-        filter((data): data is IndicesDto => data !== null)
-      );
-    }
-    
-    const subscription = this.client.subscribe(destination, (message: IMessage) => {
+    const subscription = this.client.subscribe('/topic/nse-indices', (message: IMessage) => {
       try {
-        const indicesData: IndicesDto = JSON.parse(message.body);
+        const data = JSON.parse(message.body);
+        const indicesData = this.parseIndicesData(data);
         this.allIndicesData$.next(indicesData);
       } catch (error) {
-        console.error('Error parsing indices data:', error);
-        this.errors$.next(`Failed to parse indices data: ${error}`);
+        console.error('Error parsing indices message:', error);
       }
     });
 
-    this.activeSubscriptions.set(destination, subscription);
-    
-    // Send subscription message to backend to trigger NSE connection
-    this.client.publish({
-      destination: '/app/subscribe-indices',
-      body: JSON.stringify({ action: 'subscribe' })
-    });
+    this.activeSubscriptions.set('all-indices', subscription);
 
-    return this.allIndicesData$.asObservable().pipe(
+    return this.allIndicesData$.pipe(
       filter((data): data is IndicesDto => data !== null)
     );
   }
 
   /**
-   * Subscribe to specific index data
+   * Subscribe to specific index data from engines
    */
   subscribeToIndex(indexName: string): Observable<IndicesDto> {
-    const destination = `/topic/indices/${indexName}`;
-    
-    if (!this.client.connected) {
-      console.warn(`Client not connected, cannot subscribe to index: ${indexName}`);
-      
-      // Return cached data or create new subject
+    if (!this.isConnected) {
+      console.error('Cannot subscribe: WebSocket not connected');
+      throw new Error('WebSocket not connected');
+    }
+
+    // Check if we're already subscribed to this index
+    const subscriptionKey = `index-${indexName}`;
+    if (this.activeSubscriptions.has(subscriptionKey)) {
+      console.log(`Already subscribed to index: ${indexName}, returning existing subscription`);
+      // Return existing subscription
       if (!this.specificIndicesData.has(indexName)) {
         this.specificIndicesData.set(indexName, new BehaviorSubject<IndicesDto | null>(null));
       }
-      return this.specificIndicesData.get(indexName)!.asObservable().pipe(
+      return this.specificIndicesData.get(indexName)!.pipe(
         filter((data): data is IndicesDto => data !== null)
       );
     }
 
-    // Check if already subscribed
-    if (this.activeSubscriptions.has(destination)) {
-      const existingSubject = this.specificIndicesData.get(indexName);
-      if (existingSubject) {
-        return existingSubject.asObservable().pipe(
-          filter((data): data is IndicesDto => data !== null)
-        );
-      }
-    }
+    // Use the correct topic format that matches the backend controller
+    const topic = `/topic/nse-indices/${indexName.replace(/\s+/g, '-').toLowerCase()}`;
+    console.log(`Subscribing to STOMP topic: ${topic}`);
     
-    // Create data subject if it doesn't exist
-    if (!this.specificIndicesData.has(indexName)) {
-      this.specificIndicesData.set(indexName, new BehaviorSubject<IndicesDto | null>(null));
-    }
+    try {
+      const subscription = this.client.subscribe(topic, (message: IMessage) => {
+        try {
+          const data = JSON.parse(message.body);
+          console.log(`Received WebSocket data for ${indexName}:`, data);
+          
+          const indicesData = this.parseIndicesData(data);
+          console.log(`Parsed indices data for ${indexName}:`, indicesData);
+          
+          if (!this.specificIndicesData.has(indexName)) {
+            this.specificIndicesData.set(indexName, new BehaviorSubject<IndicesDto | null>(null));
+          }
+          this.specificIndicesData.get(indexName)?.next(indicesData);
+        } catch (error) {
+          console.error('Error parsing index message:', error);
+        }
+      });
 
-    const subscription = this.client.subscribe(destination, (message: IMessage) => {
-      try {
-        const indicesData: IndicesDto = JSON.parse(message.body);
-        this.specificIndicesData.get(indexName)?.next(indicesData);
-      } catch (error) {
-        console.error(`Error parsing data for index ${indexName}:`, error);
-        this.errors$.next(`Failed to parse data for index ${indexName}: ${error}`);
+      this.activeSubscriptions.set(subscriptionKey, subscription);
+      console.log(`Successfully subscribed to topic: ${topic}`);
+
+      // Ensure we have a BehaviorSubject for this index
+      if (!this.specificIndicesData.has(indexName)) {
+        this.specificIndicesData.set(indexName, new BehaviorSubject<IndicesDto | null>(null));
       }
-    });
 
-    this.activeSubscriptions.set(destination, subscription);
-    
-    // Send subscription message to backend to trigger NSE connection
-    this.client.publish({
-      destination: `/app/subscribe-indices/${indexName}`,
-      body: JSON.stringify({ indexName })
-    });
-
-    return this.specificIndicesData.get(indexName)!.asObservable().pipe(
-      filter((data): data is IndicesDto => data !== null)
-    );
+      // Return observable that filters out null values and ensures type safety
+      return this.specificIndicesData.get(indexName)!.pipe(
+        filter((data): data is IndicesDto => data !== null)
+      );
+    } catch (error) {
+      console.error(`Failed to subscribe to topic ${topic}:`, error);
+      throw error;
+    }
   }
 
   /**
-   * Unsubscribe from all indices
+   * Unsubscribe from all indices data
    */
   unsubscribeFromAllIndices(): void {
-    const destination = '/topic/indices';
-    this.unsubscribeFromDestination(destination);
-    
-    // Send unsubscribe message to backend
-    if (this.client.connected) {
-      this.client.publish({
-        destination: '/app/unsubscribe-indices',
-        body: JSON.stringify({ action: 'unsubscribe' })
-      });
-    }
-  }
-
-  /**
-   * Unsubscribe from specific index
-   */
-  unsubscribeFromIndex(indexName: string): void {
-    const destination = `/topic/indices/${indexName}`;
-    this.unsubscribeFromDestination(destination);
-    
-    // Send unsubscribe message to backend
-    if (this.client.connected) {
-      this.client.publish({
-        destination: `/app/unsubscribe-indices/${indexName}`,
-        body: JSON.stringify({ action: 'unsubscribe', indexName })
-      });
-    }
-  }
-
-  /**
-   * Unsubscribe from a specific destination
-   */
-  private unsubscribeFromDestination(destination: string): void {
-    const subscription = this.activeSubscriptions.get(destination);
+    const subscription = this.activeSubscriptions.get('all-indices');
     if (subscription) {
       subscription.unsubscribe();
-      this.activeSubscriptions.delete(destination);
+      this.activeSubscriptions.delete('all-indices');
+      this.allIndicesData$.next(null);
     }
   }
 
   /**
-   * Clear all subscriptions
+   * Unsubscribe from specific index data
    */
-  private clearSubscriptions(): void {
-    this.activeSubscriptions.forEach((subscription, destination) => {
+  unsubscribeFromIndex(indexName: string): void {
+    const subscriptionKey = `index-${indexName}`;
+    const subscription = this.activeSubscriptions.get(subscriptionKey);
+    if (subscription) {
       subscription.unsubscribe();
-    });
-    this.activeSubscriptions.clear();
+      this.activeSubscriptions.delete(subscriptionKey);
+      
+      if (this.specificIndicesData.has(indexName)) {
+        this.specificIndicesData.get(indexName)?.next(null);
+      }
+    }
   }
 
   /**
-   * Cleanup on service destroy
+   * Send message to engines WebSocket
+   */
+  sendMessage(destination: string, message: any): void {
+    if (this.isConnected) {
+      this.client.publish({
+        destination: destination,
+        body: JSON.stringify(message)
+      });
+    } else {
+      console.warn('Cannot send message: WebSocket not connected');
+    }
+  }
+
+  /**
+   * Parse indices data from engines WebSocket message
+   */
+  private parseIndicesData(data: any): IndicesDto {
+    // Handle different data formats from engines
+    if (data.indices && Array.isArray(data.indices)) {
+      return {
+        timestamp: data.timestamp || new Date().toISOString(),
+        indices: data.indices.map((index: any) => this.parseIndexData(index)),
+        source: 'Engines STOMP WebSocket',
+        marketStatus: data.marketStatus || { status: 'ACTIVE' }
+      };
+    }
+    
+    // Single index format
+    if (data.indexName || data.name) {
+      return {
+        timestamp: data.timestamp || new Date().toISOString(),
+        indices: [this.parseIndexData(data)],
+        source: 'Engines STOMP WebSocket',
+        marketStatus: data.marketStatus || { status: 'ACTIVE' }
+      };
+    }
+    
+    // Fallback
+    return {
+      timestamp: new Date().toISOString(),
+      indices: [],
+      source: 'Engines STOMP WebSocket',
+      marketStatus: { status: 'UNKNOWN' }
+    };
+  }
+
+  /**
+   * Parse individual index data
+   */
+  private parseIndexData(indexData: any): IndexDataDto {
+    return {
+      key: indexData.key || indexData.indexName || indexData.name,
+      indexName: indexData.indexName || indexData.name,
+      indexSymbol: indexData.indexSymbol || indexData.symbol,
+      lastPrice: indexData.lastPrice || indexData.currentPrice || indexData.last || 0,
+      variation: indexData.variation || indexData.change || 0,
+      percentChange: indexData.percentChange || indexData.perChange || 0,
+      openPrice: indexData.openPrice || indexData.open || 0,
+      dayHigh: indexData.dayHigh || indexData.high || 0,
+      dayLow: indexData.dayLow || indexData.low || 0,
+      previousClose: indexData.previousClose || indexData.prevClose || 0,
+      yearHigh: indexData.yearHigh || 0,
+      yearLow: indexData.yearLow || 0,
+      indicativeClose: indexData.indicativeClose || 0,
+      peRatio: indexData.peRatio || 0,
+      pbRatio: indexData.pbRatio || 0,
+      dividendYield: indexData.dividendYield || 0,
+      declines: indexData.declines || 0,
+      advances: indexData.advances || 0,
+      unchanged: indexData.unchanged || 0,
+      percentChange365d: indexData.percentChange365d || 0,
+      date365dAgo: indexData.date365dAgo || '',
+      percentChange30d: indexData.percentChange30d || 0,
+      date30dAgo: indexData.date30dAgo || '',
+      chart365dPath: indexData.chart365dPath || '',
+      chart30dPath: indexData.chart30dPath || '',
+      chartTodayPath: indexData.chartTodayPath || ''
+    };
+  }
+
+  /**
+   * Cleanup on service destruction
    */
   ngOnDestroy(): void {
+    this.disconnect();
     this.destroy$.next();
     this.destroy$.complete();
-    this.disconnect();
   }
 }

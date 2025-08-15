@@ -5,7 +5,8 @@
   [isExportingExcel]="isExportingExcel"
   (onExportToExcel)="exportDashboardToExcel()"
   (onToggleHighlighting)="toggleHighlightingMode()"
-  (onSetHighlightingPreset)="setHighlightingPreset($event)">
+  (onSetHighlightingPreset)="setHighlightingPreset($event)"
+  (onForceTileRefresh)="forceTileRefresh()">
 </vis-dashboard-header>
 
 <p-scrollPanel [style]="{ height: '100%', width: '100%', 'overflow-x': 'hidden', 'overflow': 'auto' }">
