@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.moneyplant.engines.common.dto.NseIndicesTickDto;
+import com.moneyplant.engines.common.dto.NseIndexTickDto;
 
 import com.moneyplant.engines.ingestion.service.NseIndicesService;
 
@@ -122,6 +123,15 @@ public class NseIndicesServiceImpl extends TextWebSocketHandler implements NseIn
     public void initializeWebSocketClient() {
         webSocketClient = new StandardWebSocketClient();
         reconnectExecutor = Executors.newSingleThreadScheduledExecutor();
+        // Ensure ObjectMapper can handle slightly non-standard JSON from upstream sources
+        try {
+            this.objectMapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+            this.objectMapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT, true);
+            this.objectMapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.ACCEPT_FLOAT_AS_INT, true);
+            this.objectMapper.configure(com.fasterxml.jackson.core.JsonParser.Feature.ALLOW_UNQUOTED_FIELD_NAMES, true);
+            this.objectMapper.configure(com.fasterxml.jackson.core.JsonParser.Feature.ALLOW_SINGLE_QUOTES, true);
+            this.objectMapper.configure(com.fasterxml.jackson.core.JsonParser.Feature.ALLOW_COMMENTS, true);
+        } catch (Exception ignored) {}
         log.info("NSE Indices WebSocket client initialized. Connection will be established when ingestion starts.");
     }
 
@@ -924,11 +934,18 @@ public class NseIndicesServiceImpl extends TextWebSocketHandler implements NseIn
             // Broadcast to specific index subscribers if we have index data
             if (tickData.getIndices() != null) {
                 for (NseIndicesTickDto.IndexTickDataDto indexData : tickData.getIndices()) {
-                    if (indexData.getIndexName() != null) {
+                    if (indexData.getIndexName() != null || indexData.getIndexSymbol() != null) {
                         // Use consistent topic naming: convert "NIFTY 50" to "nifty-50"
-                        String topic = "/topic/nse-indices/" + indexData.getIndexName().replaceAll("\\s+", "-").toLowerCase();
-                        messagingTemplate.convertAndSend(topic, tickData);
-                        log.debug("Broadcasting to topic: {} for index: {}", topic, indexData.getIndexName());
+                        String idx = indexData.getIndexName() != null ? indexData.getIndexName() : indexData.getIndexSymbol();
+                        String topic = "/topic/nse-indices/" + idx.replaceAll("\\s+", "-").toLowerCase();
+
+                        // Build compact single-index DTO
+                        NseIndexTickDto single = mapToSingleIndexDto(indexData, tickData);
+                        // Normalize source for frontend expectations
+                        single.setSource("Engines STOMP WebSocket");
+
+                        messagingTemplate.convertAndSend(topic, single);
+                        log.debug("Broadcasting compact tick to topic: {} for index: {}", topic, idx);
                     }
                 }
             }
@@ -959,6 +976,38 @@ public class NseIndicesServiceImpl extends TextWebSocketHandler implements NseIn
         } catch (Exception e) {
             log.warn("Failed to normalize indices payload for frontend: {}", e.getMessage());
         }
+    }
+
+    /**
+     * Map a single index entry from the large DTO to a compact single-index DTO for WebSocket consumers.
+     */
+    private NseIndexTickDto mapToSingleIndexDto(NseIndicesTickDto.IndexTickDataDto src, NseIndicesTickDto parent) {
+        NseIndexTickDto d = new NseIndexTickDto();
+        try {
+            d.setTimestamp(parent != null && parent.getTimestamp() != null ? parent.getTimestamp() : Instant.now().toString());
+            d.setIngestionTimestamp(parent != null && parent.getIngestionTimestamp() != null ? parent.getIngestionTimestamp() : Instant.now());
+            d.setSource(parent != null ? parent.getSource() : null);
+
+            d.setIndexName(src.getIndexName());
+            d.setIndexSymbol(src.getIndexSymbol());
+
+            d.setLastPrice(src.getLastPrice());
+            d.setVariation(src.getVariation());
+            d.setPercentChange(src.getPercentChange());
+
+            d.setOpenPrice(src.getOpenPrice());
+            d.setDayHigh(src.getDayHigh());
+            d.setDayLow(src.getDayLow());
+            d.setPreviousClose(src.getPreviousClose());
+
+            d.setYearHigh(src.getYearHigh());
+            d.setYearLow(src.getYearLow());
+
+            d.setTickTimestamp(src.getTickTimestamp());
+        } catch (Exception e) {
+            log.warn("Failed mapping to single index dto: {}", e.getMessage());
+        }
+        return d;
     }
 
     /**
@@ -998,9 +1047,24 @@ public class NseIndicesServiceImpl extends TextWebSocketHandler implements NseIn
         try {
             log.debug("Received NSE indices data from Kafka: {}", message);
             
-            // Parse the Kafka message
-            NseIndicesTickDto indicesData = objectMapper.readValue(message, NseIndicesTickDto.class);
-            
+            NseIndicesTickDto indicesData = null;
+            try {
+                // Try the standard DTO first
+                indicesData = objectMapper.readValue(message, NseIndicesTickDto.class);
+            } catch (Exception ex) {
+                log.warn("Kafka DTO parse failed, attempting raw parsing: {}", ex.getMessage());
+            }
+
+            // If empty or failed, try parsing as raw NSE JSON using existing logic
+            if (indicesData == null || indicesData.getIndices() == null || indicesData.getIndices().length == 0) {
+                try {
+                    JsonNode node = objectMapper.readTree(message);
+                    indicesData = parseNseIndicesData(node);
+                } catch (Exception ex2) {
+                    log.error("Fallback raw parse also failed: {}", ex2.getMessage());
+                }
+            }
+
             if (indicesData != null && indicesData.getIndices() != null && indicesData.getIndices().length > 0) {
                 log.info("Processing {} indices from Kafka for WebSocket distribution", indicesData.getIndices().length);
                 
@@ -1016,15 +1080,17 @@ public class NseIndicesServiceImpl extends TextWebSocketHandler implements NseIn
                 messagingTemplate.convertAndSend("/topic/nse-indices", indicesData);
                 log.debug("Published to /topic/nse-indices");
                 
-                // Publish to specific index topics
+                // Publish to specific index topics with compact DTO
                 for (NseIndicesTickDto.IndexTickDataDto index : indicesData.getIndices()) {
-                    if (index.getIndexSymbol() != null) {
-                        // Use consistent topic naming: convert "NIFTY 50" to "nifty-50" 
-                        // Use indexName if available, otherwise fallback to indexSymbol
+                    if (index.getIndexSymbol() != null || index.getIndexName() != null) {
                         String indexName = index.getIndexName() != null ? index.getIndexName() : index.getIndexSymbol();
                         String topicName = "/topic/nse-indices/" + indexName.replaceAll("\\s+", "-").toLowerCase();
-                        messagingTemplate.convertAndSend(topicName, indicesData);
-                        log.debug("Published to specific topic: {} for index: {}", topicName, indexName);
+
+                        NseIndexTickDto single = mapToSingleIndexDto(index, indicesData);
+                        single.setSource("Engines STOMP WebSocket");
+
+                        messagingTemplate.convertAndSend(topicName, single);
+                        log.debug("Published compact dto to specific topic: {} for index: {}", topicName, indexName);
                     }
                 }
                 
@@ -1040,7 +1106,7 @@ public class NseIndicesServiceImpl extends TextWebSocketHandler implements NseIn
                 });
                 
             } else {
-                log.warn("Received invalid or empty NSE indices data from Kafka");
+                log.warn("Received invalid or empty NSE indices data from Kafka after fallback parsing");
             }
             
         } catch (Exception e) {

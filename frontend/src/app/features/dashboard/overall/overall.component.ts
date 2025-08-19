@@ -149,8 +149,8 @@ import { IndexHistoricalData } from '../../../services/entities/index-historical
 // Import NSE Indices service and entities
 
 
-// Import modern Angular v20 WebSocket services and entities
-import { ModernIndicesWebSocketService, IndexDataDto, IndicesDto } from '../../../services/websockets';
+// Import consolidated WebSocket service and entities
+import { WebSocketService, IndexDataDto, IndicesDto } from '../../../services/websockets';
 
 /**
  * Filter criteria interface for centralized filtering system
@@ -229,8 +229,6 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
   private isSubscribing: boolean = false; // Track if we're currently in the process of subscribing
   private subscribedTopics: Set<string> = new Set(); // Track which topics we're already subscribed to
 
-  // Debug flag to disable destructive dashboard rebuilds and DOM hacks
-  private readonly enableNuclearDebug: boolean = false;
   // Debug flag to control verbose console logging
   private readonly enableDebugLogging: boolean = false;
   // Track last index for which previous-day data was fetched (to avoid repeated calls)
@@ -244,7 +242,7 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
     private componentCommunicationService: ComponentCommunicationService,
     private stockTicksService: StockTicksService,
     private indicesService: IndicesService,
-    private modernIndicesWebSocketService: ModernIndicesWebSocketService,
+    private webSocketService: WebSocketService
 
   ) {
     super(cdr, excelExportService, filterService);
@@ -328,8 +326,8 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
       this.webSocketConnectionStateSubscription = null;
     }
     
-    // Disconnect modern WebSocket
-    this.modernIndicesWebSocketService.disconnect();
+    // Disconnect WebSocket
+    this.webSocketService.disconnect();
     
     // Clear stock ticks data and reset filters
     this.dashboardData = [];
@@ -473,9 +471,7 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
       const webSocketIndexName = this.currentSubscribedIndex.replace(/\s+/g, '-').toLowerCase();
       const topicName = `/topic/nse-indices/${webSocketIndexName}`;
       this.subscribedTopics.delete(topicName);
-      if (this.enableDebugLogging) {
-        console.log('Unsubscribed from topic:', topicName);
-      }
+
     }
     
     this.currentSubscribedIndex = null;
@@ -547,9 +543,7 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
    * Force metric tiles to refresh with current index data
    */
   private forceMetricTilesRefresh(): void {
-    if (this.enableDebugLogging) {
-      console.log('Forcing metric tiles refresh with current index data:', this.currentSelectedIndexData);
-    }
+
     
     // CRITICAL FIX: Completely recreate metric tiles with new data
     if (this.dashboardConfig?.widgets) {
@@ -572,9 +566,7 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
       // Add new tiles at the beginning
       this.dashboardConfig.widgets.unshift(...newMetricTiles);
       
-      if (this.enableDebugLogging) {
-        console.log(`Replaced ${existingTiles.length} old tiles with ${newMetricTiles.length} new tiles`);
-      }
+
     }
     
     // Update metric tiles with current data
@@ -596,23 +588,18 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
   private fetchAndUpdateCurrentIndexData(): void {
     // Note: This method will be invoked only when selected index changes and WebSocket is not connected
     if (!this.currentSelectedIndexData?.indexName) {
-      console.log('No current index name available for fetching previous-day data');
       return;
     }
     
     const indexName = this.currentSelectedIndexData.indexName;
-    if (this.enableDebugLogging) {
-      console.log(`Fetching previous-day data for current index: ${indexName}`);
-    }
+
     
     // Fetch previous-day data for the current index
     this.indicesService.getPreviousDayIndexData(indexName).subscribe({
       next: (fallbackData) => {
         if (fallbackData && fallbackData.indices && fallbackData.indices.length > 0) {
           const indexData = fallbackData.indices[0];
-          if (this.enableDebugLogging) {
-            console.log(`Successfully fetched previous-day data for ${indexName}:`, indexData);
-          }
+
           
           // Update the current selected index data with fallback data
           this.currentSelectedIndexData = {
@@ -623,9 +610,7 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
             percentChange: indexData.percentChange || 0
           };
           
-          if (this.enableDebugLogging) {
-            console.log(`Updated currentSelectedIndexData with previous-day data:`, this.currentSelectedIndexData);
-          }
+          
           
           // Force metric tiles to refresh with new data
           this.updateMetricTilesWithFilters([]);
@@ -660,7 +645,7 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
     return createMetricTilesFunction(
       this.filteredDashboardData || this.dashboardData, 
       this.currentSelectedIndexData,
-      this.modernIndicesWebSocketService,
+      this.webSocketService,
       this.indicesService
     );
   }
@@ -1152,9 +1137,7 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
         }
       } catch { /* no-op */ }
 
-      if (this.enableDebugLogging) {
-        console.log(`Triggering previous-day fallback fetch for ${indexName}`);
-      }
+
 
       // Mark as fetched for this index to prevent duplicates
       this.lastPrevDayFetchIndex = indexName;
@@ -1164,9 +1147,7 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
         next: (fallbackData) => {
           if (fallbackData && fallbackData.indices && fallbackData.indices.length > 0) {
             const indexData = fallbackData.indices[0];
-            if (this.enableDebugLogging) {
-              console.log(`Successfully fetched previous-day data for ${indexName}:`, indexData);
-            }
+            
             
             // Update the current selected index data with fallback data
             this.currentSelectedIndexData = {
@@ -2232,9 +2213,10 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
    */
   private async initializeWebSocket(): Promise<void> {
     try {
-      await this.modernIndicesWebSocketService.connect();
-    } catch (error) {
-      console.warn('WebSocket initialization failed - continuing without real-time data:', (error as Error).message || error);
+      await this.webSocketService.connect();
+    } catch (error: any) {
+      // Silent warning - the application should continue to work without WebSocket
+      // Tiles will show initial values or fallback data from APIs
     }
   }
 
@@ -2245,7 +2227,6 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
   private async subscribeToIndexWebSocket(indexName: string): Promise<void> {
     // Prevent duplicate subscriptions
     if (this.isSubscribing) {
-      console.log('Already in process of subscribing, skipping duplicate request for:', indexName);
       return;
     }
 
@@ -2254,7 +2235,6 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
     const topicName = `/topic/nse-indices/${webSocketIndexName}`;
     
     if (this.subscribedTopics.has(topicName)) {
-      console.log('Already subscribed to topic:', topicName, 'skipping duplicate subscription');
       return;
     }
 
@@ -2269,16 +2249,15 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
     this.isSubscribing = true;
 
     try {
-      // Wait for WebSocket to be connected before attempting subscription
-      if (!this.modernIndicesWebSocketService.isConnected) {
-        console.log('WebSocket not connected, waiting for connection...');
+              // Wait for WebSocket to be connected before attempting subscription
+        if (!this.webSocketService.connected) {
         // Wait for connection to be established
         await new Promise<void>((resolve, reject) => {
           const timeout = setTimeout(() => {
             reject(new Error('WebSocket connection timeout'));
           }, 10000); // 10 second timeout
           
-          const connectionCheck = this.modernIndicesWebSocketService.connectionState
+          const connectionCheck = this.webSocketService.connectionState
             .pipe(filter((state: any) => state === 'CONNECTED'))
             .subscribe({
               next: () => {
@@ -2296,12 +2275,11 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
       }
       
       // Now WebSocket should be connected, verify and subscribe
-      if (this.modernIndicesWebSocketService.isConnected) {
-        console.log('WebSocket connected, subscribing to index:', webSocketIndexName);
+              if (this.webSocketService.connected) {
         
         // First try to subscribe to specific index data
         try {
-          this.indicesWebSocketSubscription = this.modernIndicesWebSocketService
+          this.indicesWebSocketSubscription = this.webSocketService
             .subscribeToIndex(webSocketIndexName)
             .subscribe({
               next: (indicesData: IndicesDto) => {
@@ -2319,7 +2297,6 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
           
           // Mark this topic as subscribed
           this.subscribedTopics.add(topicName);
-          console.log('Successfully subscribed to topic:', topicName);
           
         } catch (error) {
           console.warn(`Specific index subscription failed for ${webSocketIndexName}, falling back to all indices:`, error);
@@ -2347,7 +2324,7 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
    */
   private subscribeToAllIndicesAsFallback(targetIndexName: string): void {
     try {
-      this.indicesWebSocketSubscription = this.modernIndicesWebSocketService
+      this.indicesWebSocketSubscription = this.webSocketService
         .subscribeToAllIndices()
         .subscribe({
           next: (indicesData: IndicesDto) => {
@@ -2363,7 +2340,7 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
               });
               
               if (targetIndex) {
-                this.handleWebSocketData({ ...indicesData, indices: [targetIndex] }, targetIndexName);
+                this.handleWebSocketData(targetIndex, targetIndexName);
               }
             }
           },
@@ -2382,30 +2359,26 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
 
   /**
    * Handle WebSocket data updates for the selected index
-   * @param indicesData - Data received from WebSocket
+   * @param indexData - Raw index data received from WebSocket
    * @param indexName - The name of the index being monitored
    */
-  private handleWebSocketData(indicesData: IndicesDto, indexName: string): void {
+  private handleWebSocketData(indexData: any, indexName: string): void {
     try {
-      if (this.enableDebugLogging) {
-        console.log(`handleWebSocketData called for ${indexName}:`, indicesData);
-      }
+
       
-      if (indicesData && indicesData.indices && indicesData.indices.length > 0) {
-        // Update current selected index data with real-time information
-        const realTimeIndexData = indicesData.indices[0];
-        if (this.enableDebugLogging) {
-          console.log(`Real-time index data for ${indexName}:`, realTimeIndexData);
-        }
+      // The WebSocket now returns raw index data directly, not wrapped in IndicesDto
+      if (indexData && (indexData.indexName || indexData.indexSymbol)) {
         
-        this.currentSelectedIndexData = realTimeIndexData;
+        
+        // Update current selected index data with real-time information
+        this.currentSelectedIndexData = indexData;
         
         // Check if dashboard is ready before updating
         if (!this.dashboardConfig?.widgets || this.dashboardConfig.widgets.length === 0) {
           console.warn('Dashboard not ready yet, deferring first tile update');
           // Schedule the update for later
           setTimeout(() => {
-            this.updateFirstTileWithRealTimeData(realTimeIndexData);
+            this.updateFirstTileWithRealTimeData(indexData);
           }, 1000);
           return;
         }
@@ -2417,7 +2390,7 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
         this.chartUpdateTimer = setTimeout(() => {
           try {
             // Update the first tile (index price tile) with real-time data
-            this.updateFirstTileWithRealTimeData(realTimeIndexData);
+            this.updateFirstTileWithRealTimeData(indexData);
             // Update metric tiles in-place with new data (non-destructive)
             this.recreateMetricTiles();
             // Trigger change detection
@@ -2427,9 +2400,9 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
           }
         }, 250);
       } else {
-        console.warn('WebSocket received data but no valid indices found:', indicesData);
+        console.warn('WebSocket received data but no valid index data found:', indexData);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error processing received index data:', error);
     }
   }
@@ -2443,15 +2416,10 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
     }
 
     try {
-      if (this.enableDebugLogging) {
-        console.log('Attempting WebSocket reconnection...');
-      }
-      await this.modernIndicesWebSocketService.connect();
+
+      await this.webSocketService.connect();
       
-      if (this.modernIndicesWebSocketService.isConnected) {
-        if (this.enableDebugLogging) {
-          console.log('WebSocket reconnected successfully, resubscribing to', this.currentSubscribedIndex);
-        }
+              if (this.webSocketService.connected) {
         this.subscribeToIndexWebSocket(this.currentSubscribedIndex);
       }
     } catch (error) {
@@ -2468,359 +2436,115 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
    * @param realTimeIndexData - Real-time index data from WebSocket
    */
   private updateFirstTileWithRealTimeData(realTimeIndexData: IndexDataDto): void {
-      // Wait for dashboard to be ready
-      if (!this.dashboardConfig?.widgets || this.dashboardConfig.widgets.length === 0) {
-          // console.warn('Dashboard config not available for first tile update, waiting...');
-          // console.log('Dashboard config state:', {
-          //   hasConfig: !!this.dashboardConfig,
-          //   hasWidgets: !!this.dashboardConfig?.widgets,
-          //   widgetCount: this.dashboardConfig?.widgets?.length || 0
-          // });
+    // Wait for dashboard to be ready
+    if (!this.dashboardConfig?.widgets || this.dashboardConfig.widgets.length === 0) {
+      // Wait for dashboard to be ready and retry
+      setTimeout(() => {
+        this.updateFirstTileWithRealTimeData(realTimeIndexData);
+      }, 500);
+      return;
+    }
 
-          // Wait for dashboard to be ready and retry
-          setTimeout(() => {
-              this.updateFirstTileWithRealTimeData(realTimeIndexData);
-          }, 500);
-          return;
-      }
+    // Find the first tile (index price tile) - try multiple strategies
+    let firstTile = this.dashboardConfig.widgets.find(widget =>
+      widget.position?.x === 0 && widget.position?.y === 0 &&
+      (widget.config?.component === 'stock-tile' || widget.config?.component === 'tile')
+    );
 
-      // Find the first tile (index price tile) - try multiple strategies
-      let firstTile = this.dashboardConfig.widgets.find(widget =>
-          widget.position?.x === 0 && widget.position?.y === 0 &&
-          (widget.config?.component === 'stock-tile' || widget.config?.component === 'tile')
+    // If not found at (0,0), try to find any stock-tile or tile
+    if (!firstTile) {
+      firstTile = this.dashboardConfig.widgets.find(widget =>
+        widget.config?.component === 'stock-tile' || widget.config?.component === 'tile'
       );
+    }
 
-      // If not found at (0,0), try to find any stock-tile or tile
-      if (!firstTile) {
-          firstTile = this.dashboardConfig.widgets.find(widget =>
-              widget.config?.component === 'stock-tile' || widget.config?.component === 'tile'
-          );
+    // If still not found, try to find by title
+    if (!firstTile) {
+      firstTile = this.dashboardConfig.widgets.find(widget =>
+        widget.config?.header?.title?.toLowerCase().includes('nifty') ||
+        widget.config?.header?.title?.toLowerCase().includes('index') ||
+        widget.config?.header?.title?.toLowerCase().includes('price')
+      );
+    }
+
+    if (!firstTile) {
+      console.warn('No suitable tile found for real-time updates');
+      return;
+    }
+
+
+
+    if (!realTimeIndexData) {
+      console.warn('No real-time index data available for first tile update');
+      return;
+    }
+
+    try {
+      // Extract real-time data using WebSocket field names
+      const indexName = realTimeIndexData.indexName || realTimeIndexData.indexSymbol || 'Index';
+      const lastPrice = realTimeIndexData.lastPrice || 0;
+      const percentChange = realTimeIndexData.percentChange || 0;
+      const dayHigh = realTimeIndexData.dayHigh || 0;
+      const dayLow = realTimeIndexData.dayLow || 0;
+      const variation = realTimeIndexData.variation || 0;
+
+
+
+      if (firstTile.config?.component === 'stock-tile') {
+        // Update stock tile with real-time data using exact WebSocket fields
+        const stockTileData = {
+          value: lastPrice.toFixed(2),
+          change: variation.toFixed(2), // Use variation field from WebSocket
+          changeType: (percentChange >= 0 ? 'positive' : 'negative') as 'positive' | 'negative' | 'neutral',
+          description: indexName, // Use indexName from WebSocket
+          icon: 'fas fa-chart-line',
+          color: percentChange >= 0 ? '#16a34a' : '#dc2626',
+          backgroundColor: percentChange >= 0 ? '#bbf7d0' : '#fecaca',
+          highValue: dayHigh.toFixed(2), // Use dayHigh from WebSocket
+          lowValue: dayLow.toFixed(2), // Use dayLow from WebSocket
+          currency: '₹'
+        };
+
+
+
+        // Use StockTileBuilder to properly update the stock tile data
+        StockTileBuilder.updateData(firstTile, stockTileData);
+
+        // Also update the widget data property directly
+        firstTile.data = { ...firstTile.data, ...stockTileData };
+
+
+      } else {
+        // Update regular tile with real-time data
+        const tileData = {
+          value: lastPrice.toFixed(2),
+          change: variation.toFixed(2),
+          changeType: (percentChange >= 0 ? 'positive' : 'negative') as 'positive' | 'negative' | 'neutral',
+          description: indexName,
+          icon: 'fas fa-chart-line',
+          color: percentChange >= 0 ? '#16a34a' : '#dc2626',
+          backgroundColor: percentChange >= 0 ? '#bbf7d0' : '#fecaca',
+          title: indexName,
+          subtitle: `Change: ${percentChange.toFixed(2)}%`
+        };
+
+        // Use TileBuilder to properly update the tile data
+        TileBuilder.updateData(firstTile, tileData);
+
+        // Also update the widget data property directly
+        firstTile.data = { ...firstTile.data, ...tileData };
+
+
       }
 
-      // If still not found, try to find by title
-      if (!firstTile) {
-          firstTile = this.dashboardConfig.widgets.find(widget =>
-              widget.config?.header?.title?.toLowerCase().includes('nifty') ||
-              widget.config?.header?.title?.toLowerCase().includes('index') ||
-              widget.config?.header?.title?.toLowerCase().includes('price')
-          );
-      }
+      // Force change detection for OnPush strategy
+      this.cdr.markForCheck();
+      this.cdr.detectChanges();
 
-      if (!firstTile) {
-          console.warn('No suitable tile found for real-time updates');
-          console.log('Available widgets:', this.dashboardConfig.widgets.map(w => ({
-              component: w.config?.component,
-              position: w.position,
-              title: w.config?.header?.title
-          })));
-          return;
-      }
-
-      if (this.enableDebugLogging) {
-          console.log('Found first tile:', {
-              component: firstTile.config?.component,
-              position: firstTile.position,
-              title: firstTile.config?.header?.title,
-              currentData: firstTile.data
-          });
-      }
-
-      if (!realTimeIndexData) {
-          console.warn('No real-time index data available for first tile update');
-          return;
-      }
-
-      try {
-          // Extract real-time data using both expected and actual WebSocket field names
-          const indexName = realTimeIndexData.indexName || realTimeIndexData.indexSymbol || realTimeIndexData.index || 'Index';
-          const lastPrice = realTimeIndexData.lastPrice || realTimeIndexData.last || 0;
-          const percentChange = realTimeIndexData.percentChange || realTimeIndexData.perChange || 0;
-          const dayHigh = realTimeIndexData.dayHigh || realTimeIndexData.high || 0;
-          const dayLow = realTimeIndexData.dayLow || realTimeIndexData.low || 0;
-          const variation = realTimeIndexData.variation || realTimeIndexData.change || 0;
-
-          if (this.enableDebugLogging) {
-              console.log(`Updating first tile with real-time data for ${indexName}:`, {
-                  lastPrice,
-                  percentChange,
-                  variation,
-                  dayHigh,
-                  dayLow,
-                  timestamp: new Date().toLocaleTimeString()
-              });
-
-              // Additional debugging to see the exact data structure
-              console.log('Raw realTimeIndexData:', realTimeIndexData);
-              console.log('Extracted values:', {indexName, lastPrice, percentChange, variation, dayHigh, dayLow});
-          }
-
-          if (firstTile.config?.component === 'stock-tile') {
-              // Update stock tile with real-time data
-              const stockTileData = {
-                  value: lastPrice.toFixed(2),
-                  change: variation.toFixed(2),
-                  changeType: (percentChange >= 0 ? 'positive' : 'negative') as 'positive' | 'negative' | 'neutral',
-                  description: indexName,
-                  icon: 'fas fa-chart-line',
-                  color: percentChange >= 0 ? '#16a34a' : '#dc2626',
-                  backgroundColor: percentChange >= 0 ? '#bbf7d0' : '#fecaca',
-                  highValue: dayHigh.toFixed(2),
-                  lowValue: dayLow.toFixed(2),
-                  currency: '₹'
-              };
-
-              // Use StockTileBuilder to properly update the stock tile data
-              StockTileBuilder.updateData(firstTile, stockTileData);
-
-              // Also update the widget data property directly
-              firstTile.data = {...firstTile.data, ...stockTileData};
-
-              // Create a completely new widget reference to trigger ngOnChanges in the tile component
-              const updatedWidget = {
-                  ...firstTile,
-                  config: {
-                      ...firstTile.config,
-                      options: {...firstTile.config.options, ...stockTileData}
-                  },
-                  data: {...firstTile.data, ...stockTileData}
-              };
-
-              // Find and replace the widget in the dashboard config
-              const widgetIndex = this.dashboardConfig.widgets.findIndex(w => w === firstTile);
-              if (widgetIndex !== -1) {
-                  this.dashboardConfig.widgets[widgetIndex] = updatedWidget;
-                  if (this.enableDebugLogging) {
-                      console.log(`Replaced widget at index ${widgetIndex} with updated widget`);
-                  }
-
-                  // Update the firstTile reference to point to the new widget
-                  firstTile = updatedWidget;
-              } else {
-                  console.warn('Could not find widget to replace in dashboard config');
-              }
-
-              // Force the dashboard config to be treated as a new reference to trigger OnPush detection
-              this.dashboardConfig = {...this.dashboardConfig};
-
-              // Force the widgets array to be a new reference to trigger vis-dashboard-container change detection
-              this.dashboardConfig.widgets = [...this.dashboardConfig.widgets];
-
-              if (this.enableDebugLogging) {
-                  console.log('First tile (stock-tile) updated successfully');
-                  console.log('Updated tile data:', firstTile.data);
-                  console.log('Updated tile options:', firstTile.config?.options);
-              }
-
-              // Force change detection for OnPush strategy
-              this.cdr.markForCheck();
-              this.cdr.detectChanges();
-
-              // Additional change detection triggers
-              setTimeout(() => {
-                  this.cdr.markForCheck();
-                  this.cdr.detectChanges();
-              }, 100);
-
-              // Force a complete dashboard refresh
-              setTimeout(() => {
-                  this.forceDashboardRefresh();
-              }, 200);
-
-              // Additional comprehensive refresh to ensure tile updates
-              setTimeout(() => {
-                  // Force complete immutability at all levels
-                  this.dashboardConfig = {
-                      ...this.dashboardConfig,
-                      widgets: this.dashboardConfig.widgets.map((widget, index) =>
-                          index === widgetIndex ? {...updatedWidget} : widget
-                      )
-                  };
-                  this.cdr.markForCheck();
-                  this.cdr.detectChanges();
-                  if (this.enableDebugLogging) {
-                      console.log('Comprehensive dashboard refresh completed');
-                  }
-              }, 300);
-
-              if (this.enableNuclearDebug) {
-                  // NUCLEAR OPTION: Force complete dashboard rebuild
-                  setTimeout(() => {
-                      console.log('🚀 NUCLEAR OPTION: Force complete dashboard rebuild');
-
-                      // Store current widgets
-                      const currentWidgets = [...this.dashboardConfig.widgets];
-
-                      // Clear widgets temporarily
-                      this.dashboardConfig.widgets = [];
-                      this.cdr.markForCheck();
-                      this.cdr.detectChanges();
-
-                      // Restore widgets with new references
-                      setTimeout(() => {
-                          this.dashboardConfig.widgets = currentWidgets.map((widget, index) =>
-                              index === widgetIndex ? {...updatedWidget} : {...widget}
-                          );
-                          this.dashboardConfig = {...this.dashboardConfig};
-                          this.cdr.markForCheck();
-                          this.cdr.detectChanges();
-                          console.log('🚀 NUCLEAR OPTION: Dashboard rebuild completed');
-                      }, 50);
-                  }, 400);
-              }
-
-              if (this.enableNuclearDebug) {
-                  // DIRECT DOM MANIPULATION: Last resort to force tile update
-                  setTimeout(() => {
-                      console.log('🔥 DIRECT DOM MANIPULATION: Force tile update');
-
-                      try {
-                          // Find the first tile element in the DOM
-                          const firstTileElement = document.querySelector('[data-widget-id]') as HTMLElement;
-                          if (firstTileElement) {
-                              console.log('🔥 Found tile element:', firstTileElement);
-
-                              // Force a re-render by temporarily hiding and showing
-                              firstTileElement.style.opacity = '0.5';
-                              setTimeout(() => {
-                                  firstTileElement.style.opacity = '1';
-                                  console.log('🔥 DOM manipulation completed');
-                              }, 100);
-                          } else {
-                              console.log('🔥 No tile element found in DOM');
-                          }
-                      } catch (error) {
-                          console.error('🔥 DOM manipulation error:', error);
-                      }
-                  }, 500);
-
-                  // FINAL NUCLEAR OPTION: Complete dashboard destruction and recreation
-                  setTimeout(() => {
-                      console.log('☢️ FINAL NUCLEAR OPTION: Triggering complete dashboard destruction');
-                      this.nuclearDashboardRefresh();
-                  }, 600);
-              }
-
-              // Log the final state for debugging
-              if (this.enableDebugLogging) {
-                  console.log('Final tile state after update:', {
-                      data: firstTile.data,
-                      options: firstTile.config?.options,
-                      component: firstTile.config?.component
-                  });
-
-                  // Log the updated widget reference
-                  console.log('Updated widget reference:', {
-                      originalWidget: firstTile,
-                      updatedWidget: updatedWidget,
-                      widgetIndex: widgetIndex,
-                      dashboardWidgetsCount: this.dashboardConfig.widgets.length
-                  });
-              }
-          } else {
-              // Update regular tile with real-time data
-              const tileData = {
-                  value: lastPrice.toFixed(2),
-                  change: variation.toFixed(2),
-                  changeType: (percentChange >= 0 ? 'positive' : 'negative') as 'positive' | 'negative' | 'neutral',
-                  description: indexName,
-                  icon: 'fas fa-chart-line',
-                  color: percentChange >= 0 ? '#16a34a' : '#dc2626',
-                  backgroundColor: percentChange >= 0 ? '#bbf7d0' : '#fecaca',
-                  title: indexName,
-                  subtitle: `Change: ${percentChange.toFixed(2)}%`
-              };
-
-              // Use TileBuilder to properly update the tile data
-              TileBuilder.updateData(firstTile, tileData);
-
-              // Also update the widget data property directly
-              firstTile.data = {...firstTile.data, ...tileData};
-
-              // Create a completely new widget reference to trigger ngOnChanges in the tile component
-              const updatedWidget = {
-                  ...firstTile,
-                  config: {
-                      ...firstTile.config,
-                      options: {...firstTile.config.options, ...tileData}
-                  },
-                  data: {...firstTile.data, ...tileData}
-              };
-
-              // Find and replace the widget in the dashboard config
-              const widgetIndex = this.dashboardConfig.widgets.findIndex(w => w === firstTile);
-              if (widgetIndex !== -1) {
-                  this.dashboardConfig.widgets[widgetIndex] = updatedWidget;
-                  if (this.enableDebugLogging) {
-                      console.log(`Replaced widget at index ${widgetIndex} with updated widget`);
-                  }
-
-                  // Update the firstTile reference to point to the new widget
-                  firstTile = updatedWidget;
-              } else {
-                  console.warn('Could not find widget to replace in dashboard config');
-              }
-
-              // Force the dashboard config to be treated as a new reference to trigger OnPush detection
-              this.dashboardConfig = {...this.dashboardConfig};
-
-              // Force the widgets array to be a new reference to trigger vis-dashboard-container change detection
-              this.dashboardConfig.widgets = [...this.dashboardConfig.widgets];
-
-              if (this.enableDebugLogging) {
-                  console.log('First tile (regular tile) updated successfully');
-                  console.log('Updated tile data:', firstTile.data);
-                  console.log('Updated tile options:', firstTile.config?.options);
-              }
-
-              // Force change detection for OnPush strategy
-              this.cdr.markForCheck();
-              this.cdr.detectChanges();
-
-              // Additional change detection triggers
-              setTimeout(() => {
-                  this.cdr.markForCheck();
-                  this.cdr.detectChanges();
-              }, 100);
-
-              // Force a complete dashboard refresh
-              setTimeout(() => {
-                  this.forceDashboardRefresh();
-              }, 200);
-
-              // Log the final state for debugging
-              if (this.enableDebugLogging) {
-                  console.log('Final tile state after update:', {
-                      data: firstTile.data,
-                      options: firstTile.config?.options,
-                      component: firstTile.config?.component
-                  });
-
-                  // Log the updated widget reference
-                  console.log('Updated widget reference:', {
-                      originalWidget: firstTile,
-                      updatedWidget: updatedWidget,
-                      widgetIndex: widgetIndex,
-                      dashboardWidgetsCount: this.dashboardConfig.widgets.length
-                  });
-              }
-
-              // Log real-time update for debugging
-              if (this.enableDebugLogging) {
-                  console.log(`Real-time update for ${indexName}:`, {
-                      lastPrice,
-                      percentChange,
-                      variation,
-                      dayHigh,
-                      dayLow,
-                      timestamp: new Date().toLocaleTimeString()
-                  });
-              }
-          }
-      } catch (error)
-          {
-              console.error('Error updating first tile with real-time data:', error);
-          }
-      }
+    } catch (error) {
+      console.error('Error updating first tile with real-time data:', error);
+    }
+  }
 
   /**
    * Force refresh the dashboard to update all widgets
@@ -2831,56 +2555,6 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
     
     // Trigger change detection
     this.cdr.detectChanges();
-    
-    // Force another change detection after a short delay
-    setTimeout(() => {
-      this.cdr.detectChanges();
-      this.cdr.markForCheck();
-    }, 100);
-  }
-  
-  /**
-   * NUCLEAR REFRESH: Complete dashboard destruction and recreation
-   */
-  private nuclearDashboardRefresh(): void {
-    if (!this.enableNuclearDebug) {
-      // In non-debug mode, avoid destructive refresh; do a safe refresh instead
-      this.updateMetricTilesWithFilters([]);
-      this.cdr.markForCheck();
-      this.cdr.detectChanges();
-      return;
-    }
-    console.log('☢️ NUCLEAR REFRESH: Complete dashboard destruction and recreation');
-    
-    try {
-      // Store current configuration
-      const currentConfig = { ...this.dashboardConfig };
-      
-      // Completely clear the dashboard
-      this.dashboardConfig = {} as any;
-      this.cdr.markForCheck();
-      this.cdr.detectChanges();
-      
-      // Force garbage collection hint (if available in development)
-      if (window.gc) {
-        try {
-          window.gc();
-        } catch (error) {
-          console.log('Garbage collection not available');
-        }
-      }
-      
-      // Recreate dashboard from scratch
-      setTimeout(() => {
-        this.dashboardConfig = currentConfig;
-        this.cdr.markForCheck();
-        this.cdr.detectChanges();
-        console.log('☢️ NUCLEAR REFRESH: Dashboard recreation completed');
-      }, 200);
-      
-    } catch (error) {
-      console.error('☢️ NUCLEAR REFRESH error:', error);
-    }
   }
   
   /**
@@ -2889,26 +2563,15 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
   public forceTileRefresh(): void {
     console.log('🔄 Manual tile refresh triggered from dashboard header');
     
-    if (this.enableNuclearDebug) {
-      // Trigger the nuclear refresh (debug only)
-      this.nuclearDashboardRefresh();
-      
-      // Also force a complete change detection cycle
-      setTimeout(() => {
-        this.cdr.markForCheck();
-        this.cdr.detectChanges();
-        console.log('🔄 Manual tile refresh completed (nuclear)');
-      }, 300);
-    } else {
-      // Safe refresh: update tiles and trigger change detection without destructive rebuild
-      this.updateMetricTilesWithFilters([]);
-      this.cdr.markForCheck();
+    // Safe refresh: update tiles and trigger change detection
+    this.updateMetricTilesWithFilters([]);
+    this.cdr.markForCheck();
+    this.cdr.detectChanges();
+    
+    setTimeout(() => {
       this.cdr.detectChanges();
-      setTimeout(() => {
-        this.cdr.detectChanges();
-        console.log('🔄 Manual tile refresh completed');
-      }, 100);
-    }
+      console.log('🔄 Manual tile refresh completed');
+    }, 100);
   }
 
   private recreateMetricTiles(): void {
@@ -2973,43 +2636,31 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
    * Monitor WebSocket connection state changes
    */
   private monitorWebSocketConnectionState(): void {
-    this.webSocketConnectionStateSubscription = this.modernIndicesWebSocketService.connectionState
+    this.webSocketConnectionStateSubscription = this.webSocketService.connectionState
       .subscribe({
         next: (state: any) => {
           this.isWebSocketConnected = state === 'CONNECTED';
           
           if (this.isWebSocketConnected) {
-            if (this.enableDebugLogging) {
-              console.log('WebSocket connected - ready for real-time data');
-            }
             // Only resubscribe if we have a current subscribed index AND we're not already subscribed
             if (this.currentSubscribedIndex && !this.isSubscribing) {
               const webSocketIndexName = this.currentSubscribedIndex.replace(/\s+/g, '-').toLowerCase();
               const topicName = `/topic/nse-indices/${webSocketIndexName}`;
               
               if (!this.subscribedTopics.has(topicName)) {
-                if (this.enableDebugLogging) {
-                  console.log('WebSocket reconnected, resubscribing to index:', this.currentSubscribedIndex);
-                }
+                
                 this.subscribeToIndexWebSocket(this.currentSubscribedIndex);
-              } else {
-                if (this.enableDebugLogging) {
-                  console.log('Already subscribed to topic:', topicName, 'no need to resubscribe');
+                              } else {
+                  // Already subscribed to topic, no need to resubscribe
                 }
-              }
             }
           } else if (state === 'DISCONNECTED' || state === 'ERROR') {
-            if (this.enableDebugLogging) {
-              console.log('WebSocket disconnected or error state:', state);
-            }
             // Clear subscribed topics when disconnected
             this.subscribedTopics.clear();
             // Attempt reconnection if we have a subscribed index
             if (this.currentSubscribedIndex) {
               this.attemptWebSocketReconnection();
             }
-          } else {
-            console.log('WebSocket state changed:', state);
           }
         },
         error: (error) => {

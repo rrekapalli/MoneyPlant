@@ -1,6 +1,7 @@
 package com.moneyplant.engines.ingestion.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.moneyplant.engines.common.dto.NseIndicesTickDto;
 
 import lombok.RequiredArgsConstructor;
@@ -11,6 +12,8 @@ import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Service;
 import jakarta.annotation.PostConstruct;
+
+import java.time.Instant;
 
 /**
  * Kafka consumer service for consuming NSE indices data in the engines project.
@@ -33,6 +36,10 @@ public class NseIndicesKafkaConsumer {
         this.objectMapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         this.objectMapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT, true);
         this.objectMapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.ACCEPT_FLOAT_AS_INT, true);
+        // Allow permissive formats often seen from NSE/raw producers
+        this.objectMapper.configure(com.fasterxml.jackson.core.JsonParser.Feature.ALLOW_UNQUOTED_FIELD_NAMES, true);
+        this.objectMapper.configure(com.fasterxml.jackson.core.JsonParser.Feature.ALLOW_SINGLE_QUOTES, true);
+        this.objectMapper.configure(com.fasterxml.jackson.core.JsonParser.Feature.ALLOW_COMMENTS, true);
     }
 
     /**
@@ -61,8 +68,24 @@ public class NseIndicesKafkaConsumer {
             // Log the raw message for debugging
             log.debug("Raw Kafka message: {}", message);
             
-            // Parse the JSON message using the engines DTO
-            NseIndicesTickDto tickData = objectMapper.readValue(message, NseIndicesTickDto.class);
+            NseIndicesTickDto tickData = null;
+            try {
+                // First try parsing as our DTO (backward compatible)
+                tickData = objectMapper.readValue(message, NseIndicesTickDto.class);
+                // If parsed but no indices, try to map from raw format
+                if (tickData == null || tickData.getIndices() == null || tickData.getIndices().length == 0) {
+                    tickData = parseRawKafkaMessage(message);
+                }
+            } catch (com.fasterxml.jackson.core.JsonProcessingException ex) {
+                // Fallback to raw parsing if DTO parse fails
+                log.warn("Standard DTO parsing failed, attempting raw NSE single-index mapping: {}", ex.getMessage());
+                tickData = parseRawKafkaMessage(message);
+            }
+
+            if (tickData == null) {
+                log.error("Unable to parse Kafka message into tick data. Skipping. Message: {}", message);
+                return;
+            }
             
             log.info("Processed NSE indices data - Timestamp: {}, Indices count: {}, Source: {}", 
                     tickData.getTimestamp(), 
@@ -74,10 +97,6 @@ public class NseIndicesKafkaConsumer {
             
             log.debug("Successfully processed NSE indices data from Kafka");
             
-        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
-            log.error("JSON parsing error in Kafka message: {}", e.getMessage());
-            log.error("Failed message content: {}", message);
-            log.error("JSON error details: {}", e.getOriginalMessage());
         } catch (Exception e) {
             log.error("Error processing NSE indices data from Kafka: {}", e.getMessage(), e);
             log.error("Failed message content: {}", message);
@@ -133,4 +152,82 @@ public class NseIndicesKafkaConsumer {
      * Note: This method is not needed as errors are handled by the main consumer method
      * and the global error handler in KafkaConfig
      */
+
+    /**
+     * Fallback parser to handle raw NSE single-index or array formats coming on Kafka.
+     */
+    private NseIndicesTickDto parseRawKafkaMessage(String message) {
+        try {
+            JsonNode root = objectMapper.readTree(message);
+
+            NseIndicesTickDto dto = new NseIndicesTickDto();
+            dto.setTimestamp(Instant.now().toString());
+            dto.setSource("Kafka Raw NSE");
+            dto.setIngestionTimestamp(Instant.now());
+
+            java.util.List<NseIndicesTickDto.IndexTickDataDto> list = new java.util.ArrayList<>();
+
+            if (root.has("data") && root.get("data").isArray()) {
+                for (JsonNode idx : root.get("data")) {
+                    NseIndicesTickDto.IndexTickDataDto one = mapIndexNode(idx);
+                    if (one != null) list.add(one);
+                }
+            } else if (root.isArray()) {
+                for (JsonNode idx : root) {
+                    NseIndicesTickDto.IndexTickDataDto one = mapIndexNode(idx);
+                    if (one != null) list.add(one);
+                }
+            } else {
+                NseIndicesTickDto.IndexTickDataDto one = mapIndexNode(root);
+                if (one != null) list.add(one);
+            }
+
+            if (!list.isEmpty()) {
+                dto.setIndices(list.toArray(new NseIndicesTickDto.IndexTickDataDto[0]));
+            }
+
+            NseIndicesTickDto.MarketStatusTickDto status = mapMarketStatusFromRoot(root);
+            if (status != null) dto.setMarketStatus(status);
+
+            return dto;
+        } catch (Exception ex) {
+            log.error("Raw Kafka message parsing failed: {}", ex.getMessage(), ex);
+            return null;
+        }
+    }
+
+    private NseIndicesTickDto.IndexTickDataDto mapIndexNode(JsonNode node) {
+        try {
+            NseIndicesTickDto.IndexTickDataDto index = new NseIndicesTickDto.IndexTickDataDto();
+            if (node.has("indexName")) index.setIndexName(node.get("indexName").asText());
+            if (node.has("brdCstIndexName")) index.setIndexSymbol(node.get("brdCstIndexName").asText());
+            if (node.has("currentPrice")) index.setLastPrice(node.get("currentPrice").decimalValue());
+            if (node.has("change")) index.setVariation(node.get("change").decimalValue());
+            if (node.has("perChange")) index.setPercentChange(node.get("perChange").decimalValue());
+            if (node.has("open")) index.setOpenPrice(node.get("open").decimalValue());
+            if (node.has("high")) index.setDayHigh(node.get("high").decimalValue());
+            if (node.has("low")) index.setDayLow(node.get("low").decimalValue());
+            if (node.has("previousClose")) index.setPreviousClose(node.get("previousClose").decimalValue());
+            index.setTickTimestamp(Instant.now());
+            return index;
+        } catch (Exception e) {
+            log.warn("Failed to map index node: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    private NseIndicesTickDto.MarketStatusTickDto mapMarketStatusFromRoot(JsonNode root) {
+        try {
+            NseIndicesTickDto.MarketStatusTickDto status = new NseIndicesTickDto.MarketStatusTickDto();
+            if (root.has("mktStatus")) {
+                status.setStatus(root.get("mktStatus").asText());
+            } else if (root.has("indStatus")) {
+                status.setStatus(root.get("indStatus").asText());
+            }
+            if (status.getStatus() == null) return null;
+            return status;
+        } catch (Exception e) {
+            return null;
+        }
+    }
 }

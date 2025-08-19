@@ -125,7 +125,7 @@ nse:
     alternative-urls:
       - wss://www.nseindia.com/streams/indices/high/drdMkt
       - wss://www.nseindia.com/streams/indices/low/drdMkt
-      - wss://www.nseindia.com/streams/indices/medium/drdMkt
+      - wss://www.nseindia.com/streams/indices/open/drdMkt
     reconnect:
       interval: 30
       max-attempts: 5
