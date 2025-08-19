@@ -137,7 +137,7 @@ public class IndicesService {
                     low,
                     close,
                     volume
-                FROM nse_indices_historical_data 
+                FROM nse_idx_ohlcv_historic 
                 WHERE index_name = ? 
                 AND date <= ?
                 ORDER BY date DESC

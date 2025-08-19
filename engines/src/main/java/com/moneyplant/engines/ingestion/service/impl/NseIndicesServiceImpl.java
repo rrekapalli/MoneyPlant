@@ -915,6 +915,9 @@ public class NseIndicesServiceImpl extends TextWebSocketHandler implements NseIn
      */
     private void broadcastToWebSocketSubscribers(NseIndicesTickDto tickData) {
         try {
+            // Normalize payload for frontend expectations
+            normalizeForFrontend(tickData);
+
             // Broadcast to all indices subscribers
             messagingTemplate.convertAndSend("/topic/nse-indices", tickData);
             
@@ -934,6 +937,27 @@ public class NseIndicesServiceImpl extends TextWebSocketHandler implements NseIn
             
         } catch (Exception e) {
             log.error("Error broadcasting to WebSocket subscribers: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Ensure outgoing WebSocket payload matches frontend expectations.
+     * - source should be 'Engines STOMP WebSocket'
+     * - marketStatus should not be null (default to status 'ACTIVE')
+     */
+    private void normalizeForFrontend(NseIndicesTickDto dto) {
+        try {
+            // Standardize source label for frontend logs/feature toggles
+            dto.setSource("Engines STOMP WebSocket");
+
+            // Ensure marketStatus is always present
+            if (dto.getMarketStatus() == null) {
+                NseIndicesTickDto.MarketStatusTickDto status = new NseIndicesTickDto.MarketStatusTickDto();
+                status.setStatus("ACTIVE");
+                dto.setMarketStatus(status);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to normalize indices payload for frontend: {}", e.getMessage());
         }
     }
 
@@ -987,7 +1011,8 @@ public class NseIndicesServiceImpl extends TextWebSocketHandler implements NseIn
                     }
                 }
                 
-                // Publish to all indices topic
+                // Normalize payload for frontend and publish to all indices topic
+                normalizeForFrontend(indicesData);
                 messagingTemplate.convertAndSend("/topic/nse-indices", indicesData);
                 log.debug("Published to /topic/nse-indices");
                 

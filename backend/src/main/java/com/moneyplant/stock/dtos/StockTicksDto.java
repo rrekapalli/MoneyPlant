@@ -1,6 +1,7 @@
 package com.moneyplant.stock.dtos;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.persistence.Column;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
@@ -11,7 +12,22 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class StockTicksDto {
-    
+
+    private String symbol;
+    private String timestamp;
+    private Float open;
+
+    private Float high;
+
+    private Float low;
+
+    private Float close;
+
+    private Float volume;
+}
+
+/*
+
     private String name;
     private AdvanceDto advance;
     private String timestamp;

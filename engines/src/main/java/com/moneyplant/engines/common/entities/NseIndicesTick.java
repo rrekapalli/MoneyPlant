@@ -14,7 +14,7 @@ import java.time.Instant;
  * This table stores real-time data received from NSE WebSocket streams.
  */
 @Entity
-@Table(name = "nse_indices_ticks", schema = "public", 
+@Table(name = "nse_idx_ticks", schema = "public",
        uniqueConstraints = @UniqueConstraint(columnNames = {"index_name", "tick_timestamp"}))
 @Data
 @NoArgsConstructor

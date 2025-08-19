@@ -13,7 +13,7 @@ import java.io.Serializable;
 @Getter
 @Setter
 @Entity
-@Table(name = "nse_equity_master", schema = "public")
+@Table(name = "nse_eq_master", schema = "public")
 public class NseEquityMaster implements Serializable {
     @Id
     @Size(max = 255)

@@ -33,24 +33,62 @@ import { ModernIndicesWebSocketService } from '../../../../services/websockets/m
  * 4. Update tiles with appropriate data source indicators
  */
 
+// Minimal debug logging toggle for this module
+const DEBUG_LOGGING = false;
+// Dedup set to avoid repeated previous-day fetch attempts per index
+const previousDayFetchAttempted = new Set<string>();
+
 // Helper function to check WebSocket health and get fallback data
 const getFallbackIndexData = async (
   indexName: string, 
-  indicesService?: IndicesService
+  indicesService?: IndicesService,
+  webSocketService?: ModernIndicesWebSocketService
 ): Promise<IndexHistoricalData | null> => {
   if (!indicesService) return null;
   
+  // Only fetch previous-day if WebSocket is not healthy
+  if (isWebSocketHealthy(webSocketService)) {
+    return null;
+  }
+
+  // Avoid duplicates per index
+  if (previousDayFetchAttempted.has(indexName)) {
+    return null;
+  }
+
+  // Skip if offline
   try {
-    console.log(`Attempting to get fallback data for index: ${indexName}`);
+    if (typeof navigator !== 'undefined' && 'onLine' in navigator && navigator.onLine === false) {
+      if (DEBUG_LOGGING) {
+        // eslint-disable-next-line no-console
+        console.warn('Offline detected, skipping previous-day fallback for', indexName);
+      }
+      return null;
+    }
+  } catch { /* no-op */ }
+
+  try {
+    if (DEBUG_LOGGING) {
+      // eslint-disable-next-line no-console
+      console.log(`Attempting to get fallback data for index: ${indexName}`);
+    }
+
+    previousDayFetchAttempted.add(indexName);
     
     // First try to get previous day's data from the new endpoint
     const previousDayData = await indicesService.getPreviousDayIndexData(indexName).toPromise();
-    console.log('Previous day data received:', previousDayData);
+    if (DEBUG_LOGGING) {
+      // eslint-disable-next-line no-console
+      console.log('Previous day data received:', previousDayData);
+    }
     
     if (previousDayData && previousDayData.indices && previousDayData.indices.length > 0) {
       // Convert IndicesDto to IndexHistoricalData format for compatibility
       const indexData = previousDayData.indices[0];
-      console.log('Index data from previous day:', indexData);
+      if (DEBUG_LOGGING) {
+        // eslint-disable-next-line no-console
+        console.log('Index data from previous day:', indexData);
+      }
       
       // Handle both field name variations (lastPrice/last, dayHigh/high, dayLow/low)
       const lastPrice = indexData.lastPrice || indexData.last || 0;
@@ -70,13 +108,18 @@ const getFallbackIndexData = async (
     }
     
     // Fallback to historical data if previous day data is not available
-    console.log('No previous day data, trying historical data API');
+    if (DEBUG_LOGGING) {
+      // eslint-disable-next-line no-console
+      console.log('No previous day data, trying historical data API');
+    }
     const historicalData = await indicesService.getIndexHistoricalData(indexName).toPromise();
     if (historicalData && historicalData.length > 0) {
       // Return the most recent data (first item since it's ordered by date DESC)
       return historicalData[0];
     }
   } catch (error) {
+    // Keep warning minimal
+    // eslint-disable-next-line no-console
     console.warn(`Failed to get fallback data for index ${indexName}:`, error);
   }
   return null;
@@ -170,28 +213,29 @@ export function createMetricTiles(
             }
           } else if (!isWebSocketHealthy(webSocketService)) {
             // WebSocket is not working - try to get fallback data from historical API
-            console.log(`WebSocket not healthy, attempting to get fallback data for index: ${indexName}`);
-            
+            if (DEBUG_LOGGING) {
+              // eslint-disable-next-line no-console
+              console.log(`WebSocket not healthy, attempting to get fallback data for index: ${indexName}`);
+            }
             try {
-              const fallbackData = await getFallbackIndexData(indexName, indicesService);
-              if (fallbackData) {
+              const fallbackData = await getFallbackIndexData(indexName, indicesService, webSocketService);
+              if (fallbackData && widget.config?.options) {
                 // Update widget with historical data
-                if (widget.config?.options) {
-                  widget.config.options.value = fallbackData.close.toLocaleString();
-                  widget.config.options.change = 'Historical Data';
-                  widget.config.options.changeType = 'neutral';
-                  widget.config.options.highValue = fallbackData.high.toLocaleString();
-                  widget.config.options.lowValue = fallbackData.low.toLocaleString();
-                  
-                  // Add a note that this is historical data
-                  widget.config.options.subtitle = `Last updated: ${fallbackData.date}`;
+                widget.config.options.value = fallbackData.close.toLocaleString();
+                widget.config.options.change = 'Historical Data';
+                widget.config.options.changeType = 'neutral';
+                widget.config.options.highValue = fallbackData.high.toLocaleString();
+                widget.config.options.lowValue = fallbackData.low.toLocaleString();
+                // Add a note that this is historical data
+                widget.config.options.subtitle = `Last updated: ${fallbackData.date}`;
+                if (DEBUG_LOGGING) {
+                  // eslint-disable-next-line no-console
+                  console.log(`Updated stock tile with fallback data for ${indexName}:`, fallbackData);
                 }
-                console.log(`Updated stock tile with fallback data for ${indexName}:`, fallbackData);
-              } else {
-                console.warn(`No fallback data available for index: ${indexName}`);
               }
             } catch (error) {
-              console.error(`Failed to get fallback data for index ${indexName}:`, error);
+              // eslint-disable-next-line no-console
+              console.warn(`Failed to get fallback data for index ${indexName}:`, error);
             }
           }
         })
@@ -224,43 +268,36 @@ export function createMetricTiles(
               widget.config.options.lowValue = data.totalTradedVolume || '0';
             }
           } else {
-            // Try to get fallback data immediately
-            console.log(`No valid index data, attempting to get fallback data for index: ${fallbackIndexName}`);
-            
+            // Try to get fallback data immediately when WebSocket is not healthy and online
             try {
-              const fallbackData = await getFallbackIndexData(fallbackIndexName, indicesService);
-              if (fallbackData) {
-                // Update widget with fallback data
-                if (widget.config?.options) {
-                  widget.config.options.value = fallbackData.close.toLocaleString();
-                  widget.config.options.change = 'Historical Data';
-                  widget.config.options.changeType = 'neutral';
-                  widget.config.options.highValue = fallbackData.high.toLocaleString();
-                  widget.config.options.lowValue = fallbackData.low.toLocaleString();
-                  widget.config.options.subtitle = `Last updated: ${fallbackData.date}`;
+              const fallbackData = await getFallbackIndexData(fallbackIndexName, indicesService, webSocketService);
+              if (fallbackData && widget.config?.options) {
+                widget.config.options.value = fallbackData.close.toLocaleString();
+                widget.config.options.change = 'Historical Data';
+                widget.config.options.changeType = 'neutral';
+                widget.config.options.highValue = fallbackData.high.toLocaleString();
+                widget.config.options.lowValue = fallbackData.low.toLocaleString();
+                widget.config.options.subtitle = `Last updated: ${fallbackData.date}`;
+                if (DEBUG_LOGGING) {
+                  // eslint-disable-next-line no-console
+                  console.log(`Updated stock tile with fallback data for ${fallbackIndexName}:`, fallbackData);
                 }
-                console.log(`Updated stock tile with fallback data for ${fallbackIndexName}:`, fallbackData);
-              } else {
-                console.warn(`No fallback data available for index: ${fallbackIndexName}`);
               }
             } catch (error) {
-              console.error(`Failed to get fallback data for index ${fallbackIndexName}:`, error);
+              // eslint-disable-next-line no-console
+              console.warn(`Failed to get fallback data for index ${fallbackIndexName}:`, error);
             }
           }
         })
         .build()
     );
     
-    // CRITICAL FIX: Immediately trigger fallback data fetch for this tile
+    // Only attempt immediate fallback when online and WebSocket is not healthy, and do it once per index
     if (indicesService) {
-      console.log(`Immediately triggering fallback data fetch for ${fallbackIndexName}`);
-      getFallbackIndexData(fallbackIndexName, indicesService).then(fallbackData => {
-        if (fallbackData) {
-          console.log(`Immediate fallback data fetch successful for ${fallbackIndexName}:`, fallbackData);
-          // The tile will be updated via the data event when it's rendered
-        }
-      }).catch(error => {
-        console.error(`Immediate fallback data fetch failed for ${fallbackIndexName}:`, error);
+      getFallbackIndexData(fallbackIndexName, indicesService, webSocketService).then(() => {
+        // No-op: widget will update via data event if needed
+      }).catch(() => {
+        // Swallow errors silently here to avoid console noise
       });
     }
   }
@@ -373,27 +410,24 @@ function createEmptyMetricTiles(
             widget.config.options.lowValue = data.totalTradedVolume || '0';
           }
         } else {
-          // Try to get fallback data immediately
-          console.log('No valid index data, attempting to get fallback data for NIFTY 50');
-          
+          // Try to get fallback data immediately when WebSocket is not healthy and online
           try {
-            const fallbackData = await getFallbackIndexData('NIFTY 50', indicesService);
-            if (fallbackData) {
-              // Update widget with fallback data
-              if (widget.config?.options) {
-                widget.config.options.value = fallbackData.close.toLocaleString();
-                widget.config.options.change = 'Historical Data';
-                widget.config.options.changeType = 'neutral';
-                widget.config.options.highValue = fallbackData.high.toLocaleString();
-                widget.config.options.lowValue = fallbackData.low.toLocaleString();
-                widget.config.options.subtitle = `Last updated: ${fallbackData.date}`;
+            const fallbackData = await getFallbackIndexData('NIFTY 50', indicesService, webSocketService);
+            if (fallbackData && widget.config?.options) {
+              widget.config.options.value = fallbackData.close.toLocaleString();
+              widget.config.options.change = 'Historical Data';
+              widget.config.options.changeType = 'neutral';
+              widget.config.options.highValue = fallbackData.high.toLocaleString();
+              widget.config.options.lowValue = fallbackData.low.toLocaleString();
+              widget.config.options.subtitle = `Last updated: ${fallbackData.date}`;
+              if (DEBUG_LOGGING) {
+                // eslint-disable-next-line no-console
+                console.log('Updated stock tile with fallback data for NIFTY 50:', fallbackData);
               }
-              console.log('Updated stock tile with fallback data for NIFTY 50:', fallbackData);
-            } else {
-              console.warn('No fallback data available for NIFTY 50');
             }
           } catch (error) {
-            console.error('Failed to get fallback data for NIFTY 50:', error);
+            // eslint-disable-next-line no-console
+            console.warn('Failed to get fallback data for NIFTY 50:', error);
           }
         }
       })
@@ -471,16 +505,12 @@ function createEmptyMetricTiles(
       .build()
   ];
 
-  // CRITICAL FIX: Immediately trigger fallback data fetch for this tile
+  // Only attempt immediate fallback when online and WebSocket is not healthy, and do it once per index
   if (indicesService) {
-    console.log('Immediately triggering fallback data fetch for NIFTY 50 in empty tiles');
-    getFallbackIndexData('NIFTY 50', indicesService).then(fallbackData => {
-      if (fallbackData) {
-        console.log('Immediate fallback data fetch successful for NIFTY 50 in empty tiles:', fallbackData);
-        // The tile will be updated via the data event when it's rendered
-      }
-    }).catch(error => {
-      console.error('Immediate fallback data fetch failed for NIFTY 50 in empty tiles:', error);
+    getFallbackIndexData('NIFTY 50', indicesService, webSocketService).then(() => {
+      // No-op: widget will update via data event if needed
+    }).catch(() => {
+      // Swallow errors silently here to avoid console noise
     });
   }
 
