@@ -1112,9 +1112,14 @@ public class NseIndicesServiceImpl extends TextWebSocketHandler implements NseIn
                     log.error("Error during DB upsert of flattened index ticks: {}", dbEx.getMessage(), dbEx);
                 }
                 
-                // Publish flattened list to all-indices topic
-                messagingTemplate.convertAndSend("/topic/nse-indices", flattenedForBroadcast);
-                log.debug("Published flattened list ({} items) to /topic/nse-indices", flattenedForBroadcast.size());
+                // Publish formatted object with indices array to all-indices topic
+                Map<String, Object> payload = new HashMap<>();
+                payload.put("timestamp", indicesData.getTimestamp() != null ? indicesData.getTimestamp() : Instant.now().toString());
+                payload.put("source", "Engines STOMP WebSocket");
+                payload.put("marketStatus", indicesData.getMarketStatus());
+                payload.put("indices", flattenedForBroadcast);
+                messagingTemplate.convertAndSend("/topic/nse-indices", payload);
+                log.debug("Published formatted object with {} indices to /topic/nse-indices", flattenedForBroadcast.size());
                 
                 // Publish to specific index topics with compact DTO
                 for (NseIndexTickDto single : flattenedForBroadcast) {

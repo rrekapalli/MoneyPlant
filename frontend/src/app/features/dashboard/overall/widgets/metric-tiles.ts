@@ -3,6 +3,7 @@ import { StockDataDto } from '../../../../services/entities/stock-ticks';
 import { IndexDataDto } from '../../../../services/entities/indices-websocket';
 import { IndicesService } from '../../../../services/apis/indices.api';
 import { WebSocketService } from '../../../../services/websockets/websocket.service';
+import { WebSocketConnectionState } from '../../../../services/entities/indices-websocket';
 
 /**
  * Create metric tiles that display key statistics from stock ticks data and indices data
@@ -112,10 +113,10 @@ function buildIndexStockTile(params: {
     .setPosition({ x: 0, y: 0, cols: 2, rows: 2 })
     .build();
 
-  // Subscribe to WebSocket data using the WebSocketService directly
-  if (webSocketService) {
+  // Helper to perform actual subscription and updates
+  const subscribeToLive = () => {
     try {
-      webSocketService.subscribeToIndex(targetToMatch).subscribe({
+      webSocketService!.subscribeToIndex(targetToMatch).subscribe({
         next: (data) => {
           if (data && (data.indexName || data.indexSymbol)) {
             // Verify this is the correct index by comparing symbols
@@ -146,68 +147,47 @@ function buildIndexStockTile(params: {
             }
           }
         },
-        error: (error) => {
-          // Silent error handling - WebSocket subscription failed
-          // The tile will show initial values or fallback data
-        },
-        complete: () => {
-          // WebSocket subscription completed - try fallback data if available
-          if (indicesService) {
-            getFallbackIndexData(indexName, indicesService, webSocketService).then(fallbackData => {
-              if (fallbackData && stockTile?.config?.options) {
-                const lastPrice = fallbackData.lastPrice || fallbackData.last || 0;
-                const options = stockTile.config.options as any;
-                options.value = Number(lastPrice).toLocaleString();
-                options.change = 'Historical Data';
-                options.changeType = 'neutral';
-                options.highValue = Number(fallbackData.dayHigh || fallbackData.high || 0).toLocaleString();
-                options.lowValue = Number(fallbackData.dayLow || fallbackData.low || 0).toLocaleString();
-                refreshWidgetReferences(stockTile);
-              }
-            }).catch(() => {
-              // Silent error handling for fallback data
-            });
-          }
+        error: () => {
+          // Silent error handling
         }
       });
-    } catch (error) {
-      // Silent error handling - WebSocket service failed
-      // Try fallback data if available
+    } catch {
+      // Silent error handling
+    }
+  };
+
+  // Subscribe to WebSocket data when connected; otherwise, wait for connection
+  if (webSocketService) {
+    if ((webSocketService as any).connected === true) {
+      subscribeToLive();
+    } else {
+      // Fetch fallback immediately while offline
       if (indicesService) {
         getFallbackIndexData(indexName, indicesService, webSocketService).then(fallbackData => {
           if (fallbackData && stockTile?.config?.options) {
-            const lastPrice = fallbackData.lastPrice || fallbackData.last || 0;
+            const lastPrice = fallbackData.lastPrice || (fallbackData as any).last || 0;
             const options = stockTile.config.options as any;
             options.value = Number(lastPrice).toLocaleString();
             options.change = 'Historical Data';
             options.changeType = 'neutral';
-            options.highValue = Number(fallbackData.dayHigh || fallbackData.high || 0).toLocaleString();
-            options.lowValue = Number(fallbackData.dayLow || fallbackData.low || 0).toLocaleString();
+            options.highValue = Number(fallbackData.dayHigh || (fallbackData as any).high || 0).toLocaleString();
+            options.lowValue = Number(fallbackData.dayLow || (fallbackData as any).low || 0).toLocaleString();
             refreshWidgetReferences(stockTile);
           }
-        }).catch(() => {
-          // Silent error handling for fallback data
+        }).catch(() => {/* no-op */});
+      }
+
+      // Defer subscribing until the WebSocket connects
+      try {
+        (webSocketService as any).connectionState?.subscribe?.((state: any) => {
+          if (state === WebSocketConnectionState.CONNECTED) {
+            subscribeToLive();
+          }
         });
+      } catch {
+        // no-op
       }
     }
-  } else if (webSocketService && !(webSocketService as any).connected) {
-    // WebSocket not healthy - get fallback data
-    getFallbackIndexData(indexName, indicesService, webSocketService).then(fallbackData => {
-      if (fallbackData && stockTile?.config?.options) {
-        const lastPrice = fallbackData.lastPrice || fallbackData.last || 0;
-        const options = stockTile.config.options as any;
-        options.value = Number(lastPrice).toLocaleString();
-        options.change = 'Historical Data';
-        options.changeType = 'neutral';
-        options.highValue = Number(fallbackData.dayHigh || fallbackData.high || 0).toLocaleString();
-        options.lowValue = Number(fallbackData.dayLow || fallbackData.low || 0).toLocaleString();
-        refreshWidgetReferences(stockTile);
-      }
-    }).catch(error => {
-      if (DEBUG_LOGGING) {
-        console.warn(`Failed to get fallback data for index ${indexName}:`, error);
-      }
-    });
   }
 
   return stockTile;

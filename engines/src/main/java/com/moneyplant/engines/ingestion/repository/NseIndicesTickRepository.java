@@ -18,13 +18,18 @@ import java.util.Optional;
  * NOTE: This repository is temporarily disabled to avoid PostgreSQL ingestion failures.
  * Database operations have been removed from the Kafka subscription flow.
  */
-// @Repository  // Temporarily disabled
+@Repository
 public interface NseIndicesTickRepository extends JpaRepository<NseIndicesTick, Long> {
     
     /**
      * Find the latest tick data for a specific index by index name
      */
     Optional<NseIndicesTick> findFirstByIndexNameOrderByTickTimestampDesc(String indexName);
+
+    /**
+     * Find the latest tick data by index symbol
+     */
+    Optional<NseIndicesTick> findFirstByIndexSymbolOrderByTickTimestampDesc(String indexSymbol);
     
     /**
      * Find all tick data for a specific index within a time range
@@ -49,7 +54,7 @@ public interface NseIndicesTickRepository extends JpaRepository<NseIndicesTick, 
      * Uses native SQL for better performance on large datasets
      */
     @Modifying
-    @Query(value = "INSERT INTO nse_indices_ticks (" +
+    @Query(value = "INSERT INTO nse_idx_ticks (" +
            "index_name, index_symbol, last_price, variation, percent_change, " +
            "open_price, day_high, day_low, previous_close, year_high, year_low, " +
            "indicative_close, pe_ratio, pb_ratio, dividend_yield, declines, advances, " +

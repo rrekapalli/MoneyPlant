@@ -4,6 +4,7 @@ import { filter, distinctUntilChanged } from 'rxjs/operators';
 import { Client, IMessage, StompConfig, IFrame } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { IndexDataDto, IndicesDto, WebSocketConnectionState } from '../entities/indices-websocket';
+import { parseStompMessageToJson } from '../utils/stomp-message.parser';
 import { environment } from '../../../environments/environment';
 
 /**
@@ -154,7 +155,8 @@ export class WebSocketService {
 
     const subscription = this.client.subscribe('/topic/nse-indices', (message: IMessage) => {
       try {
-        const data = JSON.parse(message.body);
+        const data = parseStompMessageToJson(message.body);
+        if (!data) { return; }
         const indicesData = this.parseIndicesData(data);
         this.allIndicesData$.next(indicesData);
       } catch (error) {
@@ -171,11 +173,12 @@ export class WebSocketService {
 
   /**
    * Subscribe to specific index data
+   * Normalizes incoming payloads (including flattened payloads) to IndexDataDto.
    */
-  subscribeToIndex(indexName: string): Observable<any> {
+  subscribeToIndex(indexName: string): Observable<IndexDataDto> {
     if (!this.isConnected) {
       // Return empty observable that never emits when WebSocket is not connected
-      return new Observable(subscriber => {
+      return new Observable<IndexDataDto>(subscriber => {
         // This observable will never emit and will complete immediately
         subscriber.complete();
       });
@@ -188,7 +191,7 @@ export class WebSocketService {
         this.specificIndicesData.set(indexName, new BehaviorSubject<any>(null));
       }
       return this.specificIndicesData.get(indexName)!.pipe(
-        filter((data): data is any => data !== null)
+        filter((data): data is IndexDataDto => data !== null)
       );
     }
 
@@ -198,13 +201,15 @@ export class WebSocketService {
     try {
       const subscription = this.client.subscribe(topic, (message: IMessage) => {
         try {
-          const data = JSON.parse(message.body);
+          const parsed = parseStompMessageToJson(message.body);
+          if (!parsed) { return; }
+          const normalized: IndexDataDto = this.parseIndexData(parsed);
           
           // Update the specific index data
           if (!this.specificIndicesData.has(indexName)) {
             this.specificIndicesData.set(indexName, new BehaviorSubject<any>(null));
           }
-          this.specificIndicesData.get(indexName)?.next(data);
+          this.specificIndicesData.get(indexName)?.next(normalized);
         } catch (error) {
           // Silent error handling
         }
@@ -218,7 +223,7 @@ export class WebSocketService {
       }
 
       return this.specificIndicesData.get(indexName)!.pipe(
-        filter((data): data is any => data !== null)
+        filter((data): data is IndexDataDto => data !== null)
       );
     } catch (error) {
       throw error;
@@ -353,6 +358,9 @@ export class WebSocketService {
       chart365dPath: indexData.chart365dPath || '',
       chart30dPath: indexData.chart30dPath || '',
       chartTodayPath: indexData.chartTodayPath || '',
+      // Additional timestamps commonly present in engine ticks
+      ingestionTimestamp: indexData.ingestionTimestamp || indexData.ingestion_time || '',
+      tickTimestamp: indexData.tickTimestamp || indexData.tick_time || ''
     };
   }
 

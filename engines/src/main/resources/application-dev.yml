@@ -98,11 +98,12 @@ nse:
 # Logging configuration for development
 logging:
   level:
-    com.moneyplant.engines: DEBUG
-    org.springframework.kafka: INFO
-    org.apache.kafka: INFO
-    org.springframework.web.socket: DEBUG
-    org.springframework.boot.autoconfigure.kafka: INFO
+    root: WARN
+    com.moneyplant.engines: WARN
+    org.springframework.kafka: WARN
+    org.apache.kafka: WARN
+    org.springframework.web.socket: WARN
+    org.springframework.boot.autoconfigure.kafka: WARN
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
 

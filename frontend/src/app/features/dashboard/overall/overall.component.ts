@@ -2282,7 +2282,7 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
           this.indicesWebSocketSubscription = this.webSocketService
             .subscribeToIndex(webSocketIndexName)
             .subscribe({
-              next: (indicesData: IndicesDto) => {
+              next: (indicesData) => {
                 this.handleWebSocketData(indicesData, indexName);
               },
               error: (error) => {
