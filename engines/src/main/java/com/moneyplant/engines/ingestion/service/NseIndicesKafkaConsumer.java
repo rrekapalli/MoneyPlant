@@ -2,7 +2,7 @@ package com.moneyplant.engines.ingestion.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.moneyplant.engines.common.dto.NseIndicesTickDto;
+import com.moneyplant.engines.common.NseIndicesTickDto;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

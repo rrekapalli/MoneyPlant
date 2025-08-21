@@ -214,7 +214,7 @@ public class IndexService {
                     volume
                 FROM nse_idx_ohlcv_historic 
                 WHERE index_name = ? 
-                ORDER BY date DESC
+                ORDER BY date ASC
                 """;
 
             return jdbcTemplate.query(sql, 

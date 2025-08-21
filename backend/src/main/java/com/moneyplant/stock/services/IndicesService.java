@@ -72,7 +72,7 @@ public class IndicesService {
     }
 
     /**
-     * Get all indices data.
+     * Get all indices' data.
      * 
      * @return IndicesDto containing all indices data
      * @throws ServiceException if there is an error fetching the data

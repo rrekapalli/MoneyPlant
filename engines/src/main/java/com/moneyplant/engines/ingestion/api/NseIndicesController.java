@@ -1,6 +1,6 @@
 package com.moneyplant.engines.ingestion.api;
 
-import com.moneyplant.engines.common.dto.NseIndicesTickDto;
+import com.moneyplant.engines.common.NseIndicesTickDto;
 import com.moneyplant.engines.ingestion.service.NseIndicesService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

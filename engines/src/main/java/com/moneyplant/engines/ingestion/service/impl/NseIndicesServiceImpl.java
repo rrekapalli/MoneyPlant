@@ -3,10 +3,12 @@ package com.moneyplant.engines.ingestion.service.impl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.moneyplant.engines.common.dto.NseIndicesTickDto;
+import com.moneyplant.engines.common.NseIndicesTickDto;
 import com.moneyplant.engines.common.dto.NseIndexTickDto;
 
 import com.moneyplant.engines.ingestion.service.NseIndicesService;
+import com.moneyplant.engines.ingestion.service.NseIndicesTickService;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -49,6 +51,10 @@ import org.springframework.http.ResponseEntity;
 @RequiredArgsConstructor
 @Slf4j
 public class NseIndicesServiceImpl extends TextWebSocketHandler implements NseIndicesService {
+
+    // Optional DB service for upserting flattened ticks; may be null when DB is disabled
+    @Autowired(required = false)
+    private NseIndicesTickService nseIndicesTickService;
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final ObjectMapper objectMapper;
@@ -1066,39 +1072,64 @@ public class NseIndicesServiceImpl extends TextWebSocketHandler implements NseIn
             }
 
             if (indicesData != null && indicesData.getIndices() != null && indicesData.getIndices().length > 0) {
-                log.info("Processing {} indices from Kafka for WebSocket distribution", indicesData.getIndices().length);
+                log.info("Processing {} indices from Kafka for DB upsert and WebSocket distribution", indicesData.getIndices().length);
                 
-                // Update local cache
+                // Update local cache (keep full DTO for symbol key)
                 for (NseIndicesTickDto.IndexTickDataDto index : indicesData.getIndices()) {
                     if (index.getIndexSymbol() != null) {
                         latestIndexDataMap.put(index.getIndexSymbol(), indicesData);
                     }
                 }
                 
-                // Normalize payload for frontend and publish to all indices topic
-                normalizeForFrontend(indicesData);
-                messagingTemplate.convertAndSend("/topic/nse-indices", indicesData);
-                log.debug("Published to /topic/nse-indices");
+                // Flatten to per-index DTOs for broadcasting
+                List<NseIndexTickDto> flattenedForBroadcast = new ArrayList<>();
+                for (NseIndicesTickDto.IndexTickDataDto index : indicesData.getIndices()) {
+                    NseIndexTickDto single = mapToSingleIndexDto(index, indicesData);
+                    // Normalize for frontend expectations
+                    single.setSource("Engines STOMP WebSocket");
+                    flattenedForBroadcast.add(single);
+                }
+                
+                // Upsert flattened data into DB if service is available
+                try {
+                    if (nseIndicesTickService != null) {
+                        List<NseIndicesTickDto> forUpsert = new ArrayList<>();
+                        for (NseIndicesTickDto.IndexTickDataDto index : indicesData.getIndices()) {
+                            NseIndicesTickDto singleDto = new NseIndicesTickDto();
+                            singleDto.setTimestamp(indicesData.getTimestamp());
+                            singleDto.setSource(indicesData.getSource());
+                            singleDto.setIngestionTimestamp(indicesData.getIngestionTimestamp() != null ? indicesData.getIngestionTimestamp() : Instant.now());
+                            singleDto.setMarketStatus(indicesData.getMarketStatus());
+                            singleDto.setIndices(new NseIndicesTickDto.IndexTickDataDto[]{index});
+                            forUpsert.add(singleDto);
+                        }
+                        nseIndicesTickService.upsertMultipleTickData(forUpsert);
+                        log.debug("Upserted {} flattened index ticks into nse_idx_ticks (if DB enabled)", forUpsert.size());
+                    } else {
+                        log.debug("NseIndicesTickService bean not available - skipping DB upsert");
+                    }
+                } catch (Exception dbEx) {
+                    log.error("Error during DB upsert of flattened index ticks: {}", dbEx.getMessage(), dbEx);
+                }
+                
+                // Publish flattened list to all-indices topic
+                messagingTemplate.convertAndSend("/topic/nse-indices", flattenedForBroadcast);
+                log.debug("Published flattened list ({} items) to /topic/nse-indices", flattenedForBroadcast.size());
                 
                 // Publish to specific index topics with compact DTO
-                for (NseIndicesTickDto.IndexTickDataDto index : indicesData.getIndices()) {
-                    if (index.getIndexSymbol() != null || index.getIndexName() != null) {
-                        String indexName = index.getIndexName() != null ? index.getIndexName() : index.getIndexSymbol();
-                        String topicName = "/topic/nse-indices/" + indexName.replaceAll("\\s+", "-").toLowerCase();
-
-                        NseIndexTickDto single = mapToSingleIndexDto(index, indicesData);
-                        single.setSource("Engines STOMP WebSocket");
-
+                for (NseIndexTickDto single : flattenedForBroadcast) {
+                    String idxName = single.getIndexName() != null ? single.getIndexName() : single.getIndexSymbol();
+                    if (idxName != null) {
+                        String topicName = "/topic/nse-indices/" + idxName.replaceAll("\\s+", "-").toLowerCase();
                         messagingTemplate.convertAndSend(topicName, single);
-                        log.debug("Published compact dto to specific topic: {} for index: {}", topicName, indexName);
+                        log.debug("Published compact dto to specific topic: {} for index: {}", topicName, idxName);
                     }
                 }
                 
-                // Update subscription status
+                // Update subscription status logs
                 if (allIndicesSubscribed) {
-                    log.debug("All indices subscription active - data published");
+                    log.debug("All indices subscription active - flattened data published");
                 }
-                
                 specificIndexSubscriptions.forEach((indexName, isSubscribed) -> {
                     if (isSubscribed) {
                         log.debug("Specific index subscription active for: {}", indexName);

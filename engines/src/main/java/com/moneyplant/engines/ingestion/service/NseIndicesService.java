@@ -1,6 +1,6 @@
 package com.moneyplant.engines.ingestion.service;
 
-import com.moneyplant.engines.common.dto.NseIndicesTickDto;
+import com.moneyplant.engines.common.NseIndicesTickDto;
 
 import java.util.List;
 

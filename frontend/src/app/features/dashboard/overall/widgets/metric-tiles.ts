@@ -132,7 +132,7 @@ function buildIndexStockTile(params: {
               const newHigh = data.dayHigh || 0;
               const newLow = data.dayLow || 0;
 
-              // Update stock tile with WebSocket data using the specified fields
+              // Update the stock tile with WebSocket data using the specified fields
               const options = stockTile.config.options as any;
               options.value = Number(newPrice).toLocaleString();
               options.change = `${(newVariation >= 0 ? '+' : '')}${Number(newVariation).toFixed(2)}`;

@@ -110,7 +110,7 @@ public class KafkaConfig {
         
         // Add additional deserializer configuration for better error handling
         configProps.put(JsonDeserializer.TRUSTED_PACKAGES, "*");
-        configProps.put(JsonDeserializer.VALUE_DEFAULT_TYPE, "com.moneyplant.engines.common.dto.NseIndicesTickDto");
+        configProps.put(JsonDeserializer.VALUE_DEFAULT_TYPE, "com.moneyplant.engines.common.NseIndicesTickDto");
         
         return new DefaultKafkaConsumerFactory<>(configProps);
     }

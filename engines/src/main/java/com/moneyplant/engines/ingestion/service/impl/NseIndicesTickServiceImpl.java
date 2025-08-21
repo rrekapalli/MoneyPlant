@@ -1,18 +1,13 @@
 package com.moneyplant.engines.ingestion.service.impl;
 
 import com.moneyplant.engines.common.entities.NseIndicesTick;
-import com.moneyplant.engines.common.dto.NseIndicesTickDto;
-import com.moneyplant.engines.ingestion.repository.NseIndicesTickRepository;
+import com.moneyplant.engines.common.NseIndicesTickDto;
 import com.moneyplant.engines.ingestion.service.NseIndicesTickService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Implementation of NseIndicesTickService for managing NSE indices tick data.
