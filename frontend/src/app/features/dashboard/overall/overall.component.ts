@@ -192,7 +192,7 @@ export interface DashboardDataRow {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 /**
- * Financial Dashboard with centralized filtering system for consistent
+ * Financial Dashboard with a centralized filtering system for consistent
  * filtering behavior across all widgets and charts.
  */
 export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
@@ -206,7 +206,7 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
   // Central applied filters array for cumulative filtering
   protected appliedFilters: FilterCriteria[] = [];
   
-  // Dashboard title - dynamic based on selected index
+  // Dashboard title - dynamic based on a selected index
   public dashboardTitle: string = 'Financial Dashboard';
   
   // Subscription management
@@ -231,7 +231,7 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
 
   // Debug flag to control verbose console logging
   private readonly enableDebugLogging: boolean = false;
-  // Track last index for which previous-day data was fetched (to avoid repeated calls)
+  // Track the last index for which previous-day data was fetched (to avoid repeated calls)
   private lastPrevDayFetchIndex: string | null = null;
 
 
@@ -458,7 +458,7 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
   }
 
   /**
-   * Unsubscribe from current WebSocket topic before switching to a new index
+   * Unsubscribe from the current WebSocket topic before switching to a new index
    */
   private unsubscribeFromCurrentWebSocketTopic(): void {
     if (this.indicesWebSocketSubscription) {
@@ -480,7 +480,7 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
 
   /**
    * Update dashboard data with selected index information
-   * @param selectedIndex The selected index data object from indices component
+   * @param selectedIndex The selected index data object from an indices component
    */
   private updateDashboardWithSelectedIndex(selectedIndex: SelectedIndexData): void {
     // Unsubscribe from previous WebSocket topic if any

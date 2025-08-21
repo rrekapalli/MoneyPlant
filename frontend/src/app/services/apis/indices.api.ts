@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
+import { finalize, shareReplay, tap } from 'rxjs/operators';
 import { ApiService } from './api.base';
 import { Index, IndexCreateDto, IndexResponseDto } from '../entities/indices';
 import { IndexHistoricalData } from '../entities/index-historical-data';
@@ -12,6 +13,12 @@ export class IndicesService {
   private readonly endpoint = '/api/v1/index';
   private readonly publicEndpoint = '/api/public/indices';
   private readonly stockEndpoint = '/api/v1/indices';
+
+  // In-flight request de-duplication and short-term cache for previous-day API
+  private previousDayRequests = new Map<string, Observable<IndicesDto>>();
+  private previousDayCache = new Map<string, { timestamp: number; data: IndicesDto }>();
+  // TTL for cached previous-day responses (in ms). Adjust as needed.
+  private readonly previousDayTTL = 60_000; // 1 minute
 
   constructor(private apiService: ApiService) {}
 
@@ -74,9 +81,45 @@ export class IndicesService {
    * @returns An Observable of the indices data for the previous day
    */
   getPreviousDayIndexData(indexName: string): Observable<IndicesDto> {
+    const key = (indexName || '').trim().toLowerCase();
+    if (!key) {
+      // Invalid indexName; return an empty observable without network call
+      return of({} as IndicesDto);
+    }
+
+    // Serve from short-term cache if fresh
+    const cached = this.previousDayCache.get(key);
+    const now = Date.now();
+    if (cached && (now - cached.timestamp) < this.previousDayTTL) {
+      return of(cached.data);
+    }
+
+    // De-duplicate in-flight requests
+    const existing = this.previousDayRequests.get(key);
+    if (existing) {
+      return existing;
+    }
+
     // Convert index name to URL-friendly format (replace spaces with hyphens)
     const urlFriendlyIndexName = indexName.replace(/\s+/g, '-').toLowerCase();
-    return this.apiService.get<IndicesDto>(`${this.stockEndpoint}/${urlFriendlyIndexName}/previous-day`);
+    const request$ = this.apiService
+      .get<IndicesDto>(`${this.stockEndpoint}/${urlFriendlyIndexName}/previous-day`)
+      .pipe(
+        tap((data) => {
+          // Cache successful responses
+          this.previousDayCache.set(key, { timestamp: Date.now(), data });
+        }),
+        shareReplay(1),
+        finalize(() => {
+          // Remove from in-flight map when completed
+          this.previousDayRequests.delete(key);
+        })
+      );
+
+    // Store in-flight observable
+    this.previousDayRequests.set(key, request$);
+
+    return request$;
   }
 
   /**

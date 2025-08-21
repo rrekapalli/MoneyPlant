@@ -178,14 +178,14 @@ public class StockTicksService {
             log.info("Fetching enriched stock ticks for index: {} from database", selectedIndex);
             
             // Use the repository method to fetch enriched stock ticks data
-            List<Object[]> results = nseStockTickRepository.getStockTicksByIndex(selectedIndex);
+            List<java.util.Map<String, Object>> results = nseStockTickRepository.getStockTicksByIndex(selectedIndex);
             
             if (results.isEmpty()) {
                 log.warn("No enriched stock ticks found in database for index: {}", selectedIndex);
                 return List.of();
             }
             
-            // Convert Object[] results to EnrichedStockTickDto
+            // Convert Map<String,Object> results to EnrichedStockTickDto using column names
             List<EnrichedStockTickDto> enrichedStockTicks = results.stream()
                 .map(this::mapToEnrichedStockTickDto)
                 .toList();
@@ -203,96 +203,112 @@ public class StockTicksService {
     }
 
     /**
-     * Maps Object[] result from native query to EnrichedStockTickDto.
-     * 
-     * @param row The Object[] row from the database query
-     * @return EnrichedStockTickDto mapped from the row data
+     * Maps a result row (as Map of column name to value) from native query to EnrichedStockTickDto.
+     * Mapping is by column names (case-insensitive), not by index.
      */
-    private EnrichedStockTickDto mapToEnrichedStockTickDto(Object[] row) {
+    private EnrichedStockTickDto mapToEnrichedStockTickDto(java.util.Map<String, Object> row) {
         EnrichedStockTickDto dto = new EnrichedStockTickDto();
-        
-        // Note: Avoid direct index-casts due to evolving schema; use safe converters below.
-        
-        // Defensive: ensure row is not null or too short
-        if (row == null || row.length == 0) {
+        if (row == null || row.isEmpty()) {
             return dto;
         }
 
-        // The repository query selects:
-        //   t.*,
-        //   qe.basic_industry, qe.pd_sector_ind, qe.macro, qe.sector
-        // So the last 4 elements are always the qe.* fields regardless of t.* width.
-        int n = row.length;
-        int qeStart = Math.max(0, n - 4);
+        // Helper lambdas for lookup and conversion
+        java.util.function.Function<String[], Object> get = (keys) -> getValue(row, keys);
 
-        // Map appended fields from nse_eq_master (basic_industry, pd_sector_ind, macro, sector)
-        // These are at the tail of the result set
-        if (n >= 4) {
-            dto.setBasicIndustry(convertToString(row[qeStart]));
-            dto.setPdSectorInd(convertToString(row[qeStart + 1]));
-            dto.setMacro(convertToString(row[qeStart + 2]));
-            dto.setSector(convertToString(row[qeStart + 3]));
-        }
+        // qe.* appended fields (explicit aliases in query)
+        dto.setBasicIndustry(convertToString(get.apply(new String[]{"basic_industry"})));
+        dto.setPdSectorInd(convertToString(get.apply(new String[]{"pd_sector_ind"})));
+        dto.setMacro(convertToString(get.apply(new String[]{"macro"})));
+        dto.setSector(convertToString(get.apply(new String[]{"sector"})));
 
-        // Map fields from t.* (historic OHLCV table)
-        // NOTE: Column order in nse_eq_ohlcv_historic may differ from the old nse_stock_tick.
-        // Use safe converters to avoid ClassCastException if types/positions differ.
-        // Commonly, index 0 is symbol in both schemas.
-        dto.setSymbol(convertToString(safeGet(row, 0)));
+        // t.* fields. Try multiple likely aliases for resilience (case-insensitive match)
+        dto.setSymbol(convertToString(get.apply(new String[]{"symbol"})));
+        dto.setPriority(convertToInteger(get.apply(new String[]{"priority"})));
+        dto.setIdentifier(convertToString(get.apply(new String[]{"identifier", "index_name", "index"})));
+        dto.setSeries(convertToString(get.apply(new String[]{"series"})));
+        dto.setOpenPrice(convertToFloat(get.apply(new String[]{"open_price", "open"})));
+        dto.setDayHigh(convertToFloat(get.apply(new String[]{"day_high", "high"})));
+        dto.setDayLow(convertToFloat(get.apply(new String[]{"day_low", "low"})));
+        dto.setLastPrice(convertToFloat(get.apply(new String[]{"last_price", "ltp", "price", "close"})));
+        dto.setPreviousClose(convertToFloat(get.apply(new String[]{"previous_close", "prev_close", "prevclose"})));
+        dto.setPriceChange(convertToFloat(get.apply(new String[]{"price_change", "price_change"})));
+        dto.setPercentChange(convertToFloat(get.apply(new String[]{"percent_change", "percent_change"})));
+        dto.setTotalTradedVolume(convertToLong(get.apply(new String[]{"total_traded_volume", "volume", "traded_volume"})));
+        dto.setStockIndClosePrice(convertToFloat(get.apply(new String[]{"stock_ind_close_price", "close_price"})));
+        dto.setTotalTradedValue(convertToFloat(get.apply(new String[]{"total_traded_value", "value"})));
+        dto.setYearHigh(convertToFloat(get.apply(new String[]{"year_high", "high_52", "week_52_high"})));
+        dto.setFfmc(convertToFloat(get.apply(new String[]{"ffmc"})));
+        dto.setYearLow(convertToFloat(get.apply(new String[]{"year_low", "low_52", "week_52_low"})));
+        dto.setNearWeekHigh(convertToFloat(get.apply(new String[]{"near_week_high", "near_wk_high"})));
+        dto.setNearWeekLow(convertToFloat(get.apply(new String[]{"near_week_low", "near_wk_low"})));
+        dto.setPercentChange365d(convertToFloat(get.apply(new String[]{"percent_change_365d", "per_change_365d"})));
+        dto.setDate365dAgo(convertToString(get.apply(new String[]{"date_365d_ago"})));
+        dto.setChart365dPath(convertToString(get.apply(new String[]{"chart_365d_path"})));
+        dto.setDate30dAgo(convertToString(get.apply(new String[]{"date_30d_ago"})));
+        dto.setPercentChange30d(convertToFloat(get.apply(new String[]{"percent_change_30d", "per_change_30d"})));
+        dto.setChart30dPath(convertToString(get.apply(new String[]{"chart_30d_path"})));
+        dto.setChartTodayPath(convertToString(get.apply(new String[]{"chart_today_path"})));
+        dto.setCompanyName(convertToString(get.apply(new String[]{"company_name", "name"})));
+        dto.setIndustry(convertToString(get.apply(new String[]{"industry"})));
+        dto.setIsFnoSec(convertToBoolean(get.apply(new String[]{"is_fno_sec", "fno"})));
+        dto.setIsCaSec(convertToBoolean(get.apply(new String[]{"is_ca_sec"})));
+        dto.setIsSlbSec(convertToBoolean(get.apply(new String[]{"is_slb_sec"})));
+        dto.setIsDebtSec(convertToBoolean(get.apply(new String[]{"is_debt_sec"})));
+        dto.setIsSuspended(convertToBoolean(get.apply(new String[]{"is_suspended", "suspended"})));
+        dto.setIsEtfSec(convertToBoolean(get.apply(new String[]{"is_etf_sec", "etf"})));
+        dto.setIsDelisted(convertToBoolean(get.apply(new String[]{"is_delisted", "delisted"})));
+        dto.setIsin(convertToString(get.apply(new String[]{"isin"})));
+        dto.setSlbIsin(convertToString(get.apply(new String[]{"slb_isin"})));
+        dto.setListingDate(convertToString(get.apply(new String[]{"listing_date"})));
+        dto.setIsMunicipalBond(convertToBoolean(get.apply(new String[]{"is_municipal_bond"})));
+        dto.setIsHybridSymbol(convertToBoolean(get.apply(new String[]{"is_hybrid_symbol"})));
+        dto.setEquityTime(convertToString(get.apply(new String[]{"equity_time"})));
+        dto.setPreOpenTime(convertToString(get.apply(new String[]{"pre_open_time"})));
+        dto.setQuotePreOpenFlag(convertToBoolean(get.apply(new String[]{"quote_pre_open_flag"})));
 
-        // Old mapping had "priority" at index 1, but new schema likely has a DATE column here.
-        // We'll attempt a numeric conversion; if it's a Date/Timestamp, this returns null.
-        dto.setPriority(convertToInteger(safeGet(row, 1)));
-
-        // Attempt to map typical price/volume fields using previous positions with safe conversion.
-        // If the schema differs, these will become null instead of throwing.
-        dto.setIdentifier(convertToString(safeGet(row, 2)));
-        dto.setSeries(convertToString(safeGet(row, 3)));
-        dto.setOpenPrice(convertToFloat(safeGet(row, 4)));
-        dto.setDayHigh(convertToFloat(safeGet(row, 5)));
-        dto.setDayLow(convertToFloat(safeGet(row, 6)));
-        dto.setLastPrice(convertToFloat(safeGet(row, 7)));
-        dto.setPreviousClose(convertToFloat(safeGet(row, 8)));
-        dto.setPriceChange(convertToFloat(safeGet(row, 9)));
-        dto.setPercentChange(convertToFloat(safeGet(row, 10)));
-        dto.setTotalTradedVolume(convertToLong(safeGet(row, 11)));
-        dto.setStockIndClosePrice(convertToFloat(safeGet(row, 12)));
-        dto.setTotalTradedValue(convertToFloat(safeGet(row, 13)));
-        dto.setYearHigh(convertToFloat(safeGet(row, 14)));
-        dto.setFfmc(convertToFloat(safeGet(row, 15)));
-        dto.setYearLow(convertToFloat(safeGet(row, 16)));
-        dto.setNearWeekHigh(convertToFloat(safeGet(row, 17)));
-        dto.setNearWeekLow(convertToFloat(safeGet(row, 18)));
-        dto.setPercentChange365d(convertToFloat(safeGet(row, 19)));
-        dto.setDate365dAgo(convertToString(safeGet(row, 20)));
-        dto.setChart365dPath(convertToString(safeGet(row, 21)));
-        dto.setDate30dAgo(convertToString(safeGet(row, 22)));
-        dto.setPercentChange30d(convertToFloat(safeGet(row, 23)));
-        dto.setChart30dPath(convertToString(safeGet(row, 24)));
-        dto.setChartTodayPath(convertToString(safeGet(row, 25)));
-        dto.setCompanyName(convertToString(safeGet(row, 26)));
-        dto.setIndustry(convertToString(safeGet(row, 27)));
-        dto.setIsFnoSec(convertToBoolean(safeGet(row, 28)));
-        dto.setIsCaSec(convertToBoolean(safeGet(row, 29)));
-        dto.setIsSlbSec(convertToBoolean(safeGet(row, 30)));
-        dto.setIsDebtSec(convertToBoolean(safeGet(row, 31)));
-        dto.setIsSuspended(convertToBoolean(safeGet(row, 32)));
-        dto.setIsEtfSec(convertToBoolean(safeGet(row, 33)));
-        dto.setIsDelisted(convertToBoolean(safeGet(row, 34)));
-        dto.setIsin(convertToString(safeGet(row, 35)));
-        dto.setSlbIsin(convertToString(safeGet(row, 36)));
-        dto.setListingDate(convertToString(safeGet(row, 37)));
-        dto.setIsMunicipalBond(convertToBoolean(safeGet(row, 38)));
-        dto.setIsHybridSymbol(convertToBoolean(safeGet(row, 39)));
-        dto.setEquityTime(convertToString(safeGet(row, 40)));
-        dto.setPreOpenTime(convertToString(safeGet(row, 41)));
-        dto.setQuotePreOpenFlag(convertToBoolean(safeGet(row, 42)));
-
-        // Created/Updated timestamps might not exist in the historic table; convert if present
-        dto.setCreatedAt(convertToInstant(safeGet(row, 43)));
-        dto.setUpdatedAt(convertToInstant(safeGet(row, 44)));
+        dto.setCreatedAt(convertToInstant(get.apply(new String[]{"created_at"})));
+        dto.setUpdatedAt(convertToInstant(get.apply(new String[]{"updated_at"})));
 
         return dto;
+    }
+
+    // Case-insensitive retrieval of a value by any of the provided keys
+    private Object getValue(java.util.Map<String, Object> row, String... candidateKeys) {
+        if (row == null || row.isEmpty() || candidateKeys == null) return null;
+        // Build a case-insensitive index once per call
+        java.util.Map<String, Object> ci = new java.util.HashMap<>();
+        for (java.util.Map.Entry<String, Object> e : row.entrySet()) {
+            if (e.getKey() != null) ci.put(e.getKey().toLowerCase(), e.getValue());
+        }
+        for (String key : candidateKeys) {
+            if (key == null) continue;
+            Object v = ci.get(key.toLowerCase());
+            if (v != null) return v;
+            // Also try simple normalized variants
+            String snake = toSnakeCase(key).toLowerCase();
+            v = ci.get(snake);
+            if (v != null) return v;
+            String camel = toCamelCase(key).toLowerCase();
+            v = ci.get(camel);
+            if (v != null) return v;
+        }
+        return null;
+    }
+
+    private String toSnakeCase(String s) {
+        if (s == null) return null;
+        return s.replaceAll("([a-z])([A-Z])", "$1_$2").replace('-', '_');
+    }
+
+    private String toCamelCase(String s) {
+        if (s == null) return null;
+        String[] parts = s.toLowerCase().split("[_-]");
+        if (parts.length == 0) return s;
+        StringBuilder sb = new StringBuilder(parts[0]);
+        for (int i = 1; i < parts.length; i++) {
+            if (parts[i].length() > 0) sb.append(Character.toUpperCase(parts[i].charAt(0))).append(parts[i].substring(1));
+        }
+        return sb.toString();
     }
 
     /**

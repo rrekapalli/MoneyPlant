@@ -17,12 +17,13 @@ import java.util.List;
 public interface NseStockTickRepository extends JpaRepository<NseStockTick, String> {
 
     /**
-     * Find all stock ticks by identifier (index name) using Trino query with joins, ordered by symbol ascending.
+     * Find all stock ticks by identifier (index name) using a Trino query with joins, ordered by symbol ascending.
      *
      * @param selectedIndexName the identifier (index name) to search for
      * @return a list of stock ticks matching the given identifier, ordered by symbol ascending
      */
-    @Query(value = "SELECT t.* FROM nse_eq_ohlcv_historic t " +
+    @Query(value = "SELECT t.* " +
+            "FROM nse_eq_ohlcv_historic t " +
             "LEFT JOIN nse_eq_sector_index si ON t.symbol = si.symbol " +
             "LEFT JOIN nse_eq_master qe ON t.symbol = qe.symbol " +
             "WHERE si.pd_sector_index = :selectedIndexName " +
@@ -37,8 +38,8 @@ public interface NseStockTickRepository extends JpaRepository<NseStockTick, Stri
      * @param selectedIndex the sector index to search for
      * @return a list of enriched stock tick data matching the given index
      */
-    @Query(value = "SELECT " +
-            "t.*, qe.basic_industry, qe.pd_sector_ind, qe.macro, qe.sector " +
+    @Query(value = "SELECT t.*, (t.close - t.open) as price_change, ((t.close - t.open) / t.open) * 100.0 as percent_change" +
+            ", qe.basic_industry, qe.pd_sector_ind, qe.macro, qe.sector " +
             "FROM nse_eq_ohlcv_historic t " +
             "LEFT JOIN nse_eq_sector_index si ON t.symbol = si.symbol " +
             "LEFT JOIN nse_eq_master qe ON t.symbol = qe.symbol " +
@@ -47,6 +48,6 @@ public interface NseStockTickRepository extends JpaRepository<NseStockTick, Stri
             "WHERE si.pd_sector_index = :selectedIndex " +
             "ORDER BY t.symbol ASC", 
             nativeQuery = true)
-    List<Object[]> getStockTicksByIndex(@Param("selectedIndex") String selectedIndex);
+    List<java.util.Map<String, Object>> getStockTicksByIndex(@Param("selectedIndex") String selectedIndex);
 
 }
