@@ -42,6 +42,10 @@ export interface IndexDataDto {
   low?: number;
   perChange?: number;
   change?: number;
+  
+  // Additional fields from actual WebSocket response
+  ingestionTimestamp?: string;
+  tickTimestamp?: string;
 }
 
 /**

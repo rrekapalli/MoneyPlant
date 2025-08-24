@@ -114,7 +114,7 @@ public class StockTicksController {
                 throw new IllegalArgumentException("Selected index cannot be null or empty");
             }
             
-            // Convert URL-friendly index name back to original format if needed
+            // Convert URL-friendly index name back to the original format if needed
             String originalIndexName = selectedIndex.replace("-", " ").toUpperCase();
             
             List<EnrichedStockTickDto> enrichedStockTicks = stockTicksService.getEnrichedStockTicksByIndex(originalIndexName);

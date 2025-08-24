@@ -19,7 +19,7 @@ import { TreeNode } from 'primeng/api';
 import { IndicesService } from '../../services/apis/indices.api';
 import { IndexResponseDto } from '../../services/entities/indices';
 import { ComponentCommunicationService, SelectedIndexData } from '../../services/component-communication.service';
-import { ModernIndicesWebSocketService, IndexDataDto, IndicesDto } from '../../services/websockets';
+import { WebSocketService, IndexDataDto, IndicesDto } from '../../services/websockets';
 
 @Component({
   selector: 'app-indices',
@@ -111,7 +111,7 @@ export class IndicesComponent implements OnInit, OnDestroy {
     private router: Router,
     private indicesService: IndicesService,
     private componentCommunicationService: ComponentCommunicationService,
-    private modernIndicesWebSocketService: ModernIndicesWebSocketService,
+    private webSocketService: WebSocketService,
     private cdr: ChangeDetectorRef
   ) {
     // Removed effects to prevent infinite loops
@@ -158,7 +158,7 @@ export class IndicesComponent implements OnInit, OnDestroy {
     }
     
     // Disconnect WebSockets
-    this.modernIndicesWebSocketService.disconnect();
+    this.webSocketService.disconnect();
   }
 
   /**
@@ -166,12 +166,13 @@ export class IndicesComponent implements OnInit, OnDestroy {
    */
   private async initializeWebSocket(): Promise<void> {
     try {
-      await this.modernIndicesWebSocketService.connect();
+      await this.webSocketService.connect();
       
       // Subscribe to all indices updates
       this.subscribeToAllIndicesWebSocket();
     } catch (error) {
-      console.warn('WebSocket initialization failed - continuing without real-time data:', (error as Error).message || error);
+      // Silent warning - the application should continue to work without WebSocket
+      // Indices will show static data from the initial API call
     }
   }
 
@@ -187,9 +188,9 @@ export class IndicesComponent implements OnInit, OnDestroy {
 
     try {
       // Only subscribe if WebSocket is actually connected
-      if (this.modernIndicesWebSocketService.isConnected) {
+      if (this.webSocketService.connected) {
         // Subscribe to all indices data using modern service
-        this.allIndicesWebSocketSubscription = this.modernIndicesWebSocketService
+        this.allIndicesWebSocketSubscription = this.webSocketService
           .subscribeToAllIndices()
           .subscribe({
             next: (indicesData: IndicesDto) => {
@@ -219,7 +220,7 @@ export class IndicesComponent implements OnInit, OnDestroy {
                 console.error('Error processing received indices data:', error);
               }
             },
-            error: (error) => {
+            error: (error: any) => {
               console.warn('WebSocket subscription error for all indices:', error.message || error);
             },
             complete: () => {

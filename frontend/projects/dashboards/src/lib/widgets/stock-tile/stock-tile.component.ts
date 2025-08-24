@@ -20,8 +20,7 @@ export class StockTileComponent implements OnChanges {
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['widget'] && this.widget) {
-      console.log('StockTileComponent: Widget changed, triggering update');
-      console.log('New widget options:', this.widget.config?.options);
+      
       
       // Force change detection when widget data changes
       this.cdr.markForCheck();

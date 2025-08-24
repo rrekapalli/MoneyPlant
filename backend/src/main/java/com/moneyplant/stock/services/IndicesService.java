@@ -72,7 +72,7 @@ public class IndicesService {
     }
 
     /**
-     * Get all indices data.
+     * Get all indices' data.
      * 
      * @return IndicesDto containing all indices data
      * @throws ServiceException if there is an error fetching the data
@@ -137,7 +137,7 @@ public class IndicesService {
                     low,
                     close,
                     volume
-                FROM nse_indices_historical_data 
+                FROM nse_idx_ohlcv_historic 
                 WHERE index_name = ? 
                 AND date <= ?
                 ORDER BY date DESC

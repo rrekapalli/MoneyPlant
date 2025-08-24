@@ -125,7 +125,7 @@ nse:
     alternative-urls:
       - wss://www.nseindia.com/streams/indices/high/drdMkt
       - wss://www.nseindia.com/streams/indices/low/drdMkt
-      - wss://www.nseindia.com/streams/indices/medium/drdMkt
+      - wss://www.nseindia.com/streams/indices/open/drdMkt
     reconnect:
       interval: 30
       max-attempts: 5
@@ -227,10 +227,11 @@ iceberg:
 # Logging configuration
 logging:
   level:
-    com.moneyplant.engines: INFO
-    org.springframework.kafka: INFO
+    root: WARN
+    com.moneyplant.engines: WARN
+    org.springframework.kafka: WARN
     org.apache.kafka: WARN
-    org.springframework.web.socket: DEBUG
+    org.springframework.web.socket: WARN
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
 

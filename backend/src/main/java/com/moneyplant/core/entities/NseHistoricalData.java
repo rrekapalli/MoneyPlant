@@ -10,7 +10,7 @@ import java.sql.Timestamp;
 @Getter
 @Setter
 @Entity
-@Table(name = "nse_historical_data", schema = "public")
+@Table(name = "nse_eq_ohlcv_historic", schema = "public")
 public class NseHistoricalData implements Serializable {
     @EmbeddedId
     private NseHistoricalDataId id;

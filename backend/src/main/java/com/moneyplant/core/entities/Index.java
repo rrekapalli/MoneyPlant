@@ -13,7 +13,7 @@ import java.time.Instant;
 @Getter
 @Setter
 @Entity
-@Table(name = "indices", schema = "public")
+@Table(name = "nse_idx_master", schema = "public")
 public class Index implements Serializable  {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

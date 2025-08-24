@@ -212,9 +212,9 @@ public class IndexService {
                     low,
                     close,
                     volume
-                FROM nse_indices_historical_data 
+                FROM nse_idx_ohlcv_historic 
                 WHERE index_name = ? 
-                ORDER BY date DESC
+                ORDER BY date ASC
                 """;
 
             return jdbcTemplate.query(sql, 
