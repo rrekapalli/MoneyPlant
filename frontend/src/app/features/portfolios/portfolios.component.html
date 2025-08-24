@@ -73,53 +73,51 @@
 
   <!-- Filters and Search Section -->
   <div class="filters-section">
-    <div class="search-filters">
+    <div class="filters-row">
       <div class="search-box">
-        <span class="p-input-icon-left">
-          <i class="pi pi-search"></i>
+        <div class="search-input-wrapper">
+          <i class="pi pi-search search-icon"></i>
           <input pInputText 
                  type="text" 
                  placeholder="Search portfolios..." 
                  [(ngModel)]="searchText"
                  (input)="onSearchChange()"
                  class="search-input" />
-        </span>
+        </div>
       </div>
       
-      <div class="filter-controls">
-        <p-select 
-          [options]="riskProfileOptions" 
-          [(ngModel)]="selectedRiskProfile"
-          (onChange)="onRiskProfileChange()"
-          placeholder="Risk Profile"
-          optionLabel="label"
-          optionValue="value"
-          [showClear]="true"
-          class="filter-dropdown">
-        </p-select>
-        
+      <p-select 
+        [options]="riskProfileOptions" 
+        [(ngModel)]="selectedRiskProfile"
+        (onChange)="onRiskProfileChange()"
+        placeholder="Risk Profile"
+        optionLabel="label"
+        optionValue="value"
+        [showClear]="true"
+        class="filter-dropdown">
+      </p-select>
+      
+      <button pButton 
+              label="Clear" 
+              icon="pi pi-filter" 
+              class="p-button-outlined clear-btn"
+              (click)="clearFilters()">
+      </button>
+      
+      <div class="view-toggle">
         <button pButton 
-                label="Clear" 
-                icon="pi pi-filter" 
-                class="p-button-outlined clear-btn"
-                (click)="clearFilters()">
+                icon="pi pi-th-large" 
+                [class]="layout === 'grid' ? 'p-button-primary' : 'p-button-outlined'"
+                (click)="layout = 'grid'"
+                pTooltip="Grid View">
+        </button>
+        <button pButton 
+                icon="pi pi-list" 
+                [class]="layout === 'list' ? 'p-button-primary' : 'p-button-outlined'"
+                (click)="layout = 'list'"
+                pTooltip="List View">
         </button>
       </div>
-    </div>
-    
-    <div class="view-toggle">
-      <button pButton 
-              icon="pi pi-th-large" 
-              [class]="layout === 'grid' ? 'p-button-primary' : 'p-button-outlined'"
-              (click)="layout = 'grid'"
-              pTooltip="Grid View">
-      </button>
-      <button pButton 
-              icon="pi pi-list" 
-              [class]="layout === 'list' ? 'p-button-primary' : 'p-button-outlined'"
-              (click)="layout = 'list'"
-              pTooltip="List View">
-      </button>
     </div>
   </div>
 
@@ -222,19 +220,19 @@
                 <button pButton 
                         label="DATA" 
                         icon="pi pi-database" 
-                        class="p-button-primary action-btn data-btn"
+                        class="p-button-primary action-btn"
                         (click)="viewPortfolioData(portfolio)">
                 </button>
                 <button pButton 
                         label="INSIGHTS" 
                         icon="pi pi-lightbulb" 
-                        class="p-button-secondary action-btn insights-btn"
+                        class="p-button-secondary action-btn"
                         (click)="viewPortfolioInsights(portfolio)">
                 </button>
                 <button pButton 
                         label="CONFIGURE" 
                         icon="pi pi-cog" 
-                        class="p-button-warning action-btn configure-btn"
+                        class="p-button-warning action-btn"
                         (click)="configurePortfolio(portfolio)">
                 </button>
               </div>
