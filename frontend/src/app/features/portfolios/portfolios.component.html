@@ -1,69 +1,371 @@
 <div class="portfolios-container">
-  <div class="header">
-    <h1>Portfolios</h1>
-    <button pButton label="Create Portfolio" icon="pi pi-plus" (click)="createPortfolio()"></button>
+  <!-- Header Section -->
+  <div class="header-section">
+    <div class="header-content">
+      <div class="title-section">
+        <i class="pi pi-briefcase header-icon"></i>
+        <div>
+          <h1 class="main-title">Portfolios</h1>
+          <p class="subtitle">Configure and manage your investment portfolios</p>
+        </div>
+      </div>
+      <button pButton 
+              label="Create Portfolio" 
+              icon="pi pi-plus" 
+              class="p-button-primary create-btn"
+              (click)="createPortfolio()">
+      </button>
+    </div>
   </div>
 
-  <div class="content">
-    @if (loading) {
-      <p-card styleClass="loading-card">
-        <div class="loading-message">
-          <i class="pi pi-spin pi-spinner" style="font-size: 2rem"></i>
-          <p>Loading portfolios...</p>
-        </div>
-      </p-card>
-    }
+  <!-- Summary Cards Section -->
+  <div class="summary-cards">
+    <div class="summary-card">
+      <div class="card-icon">
+        <i class="pi pi-chart-line"></i>
+      </div>
+      <div class="card-content">
+        <div class="card-value">{{ totalPortfolios }}</div>
+        <div class="card-label">Total Portfolios</div>
+      </div>
+    </div>
+    
+    <div class="summary-card">
+      <div class="card-icon">
+        <i class="pi pi-check-circle"></i>
+      </div>
+      <div class="card-content">
+        <div class="card-value">{{ activePortfolios }}</div>
+        <div class="card-label">Active Portfolios</div>
+      </div>
+    </div>
+    
+    <div class="summary-card">
+      <div class="card-icon">
+        <i class="pi pi-shield"></i>
+      </div>
+      <div class="card-content">
+        <div class="card-value">{{ conservativePortfolios }}</div>
+        <div class="card-label">Conservative</div>
+      </div>
+    </div>
+    
+    <div class="summary-card">
+      <div class="card-icon">
+        <i class="pi pi-balance-scale"></i>
+      </div>
+      <div class="card-content">
+        <div class="card-value">{{ moderatePortfolios }}</div>
+        <div class="card-label">Moderate</div>
+      </div>
+    </div>
+    
+    <div class="summary-card">
+      <div class="card-icon">
+        <i class="pi pi-rocket"></i>
+      </div>
+      <div class="card-content">
+        <div class="card-value">{{ aggressivePortfolios }}</div>
+        <div class="card-label">Aggressive</div>
+      </div>
+    </div>
+  </div>
 
-    @if (!loading) {
-      <div class="portfolios-grid">
-        @for (portfolio of portfolios; track portfolio.id) {
-          <p-card styleClass="portfolio-card">
-            <ng-template pTemplate="header">
-              <div class="portfolio-header">
-                <h2>{{ portfolio.name }}</h2>
-              </div>
-            </ng-template>
+  <!-- Filters and Search Section -->
+  <div class="filters-section">
+    <div class="search-filters">
+      <div class="search-box">
+        <span class="p-input-icon-left">
+          <i class="pi pi-search"></i>
+          <input pInputText 
+                 type="text" 
+                 placeholder="Search portfolios..." 
+                 [(ngModel)]="searchText"
+                 (input)="onSearchChange()"
+                 class="search-input" />
+        </span>
+      </div>
+      
+      <div class="filter-controls">
+        <p-select 
+          [options]="riskProfileOptions" 
+          [(ngModel)]="selectedRiskProfile"
+          (onChange)="onRiskProfileChange()"
+          placeholder="Risk Profile"
+          optionLabel="label"
+          optionValue="value"
+          [showClear]="true"
+          class="filter-dropdown">
+        </p-select>
+        
+        <button pButton 
+                label="Clear" 
+                icon="pi pi-filter" 
+                class="p-button-outlined clear-btn"
+                (click)="clearFilters()">
+        </button>
+      </div>
+    </div>
+    
+    <div class="view-toggle">
+      <button pButton 
+              icon="pi pi-th-large" 
+              [class]="layout === 'grid' ? 'p-button-primary' : 'p-button-outlined'"
+              (click)="layout = 'grid'"
+              pTooltip="Grid View">
+      </button>
+      <button pButton 
+              icon="pi pi-list" 
+              [class]="layout === 'list' ? 'p-button-primary' : 'p-button-outlined'"
+              (click)="layout = 'list'"
+              pTooltip="List View">
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Content - DataView -->
+  <div class="content-section">
+    @if (loading) {
+      <div class="loading-container">
+        <i class="pi pi-spin pi-spinner loading-spinner"></i>
+        <p class="loading-text">Loading portfolios...</p>
+      </div>
+    } @else if (error) {
+      <div class="error-container">
+        <i class="pi pi-exclamation-triangle error-icon"></i>
+        <h3>Authentication Required</h3>
+        <p class="error-message">{{ error }}</p>
+        <p class="demo-note">Please log in to access portfolio data.</p>
+        <button pButton 
+                label="Go to Login" 
+                icon="pi pi-sign-in" 
+                class="p-button-primary"
+                (click)="goToLogin()">
+        </button>
+      </div>
+    }
+    
+    @if (!loading && portfolios.length > 0) {
+      <p-dataview 
+        [value]="filteredPortfolios" 
+        [layout]="layout"
+        [paginator]="true" 
+        [rows]="10"
+        [showPageLinks]="true"
+        [showFirstLastIcon]="true"
+        [showJumpToPageDropdown]="true"
+        [showPageLinks]="true"
+        [showCurrentPageReport]="true"
+        currentPageReportTemplate="Showing {first} to {last} of {totalRecords} portfolios"
+        class="portfolios-dataview">
+        
+        <!-- Header Template -->
+        <ng-template pTemplate="header">
+          <div class="dataview-header">
+            <div class="sort-controls">
+              <span class="sort-label">Sort by:</span>
+              <button pButton 
+                      label="Name" 
+                      [class]="sortField === 'name' ? 'p-button-text p-button-sm' : 'p-button-link p-button-sm'"
+                      (click)="onSortChange('name')"
+                      [icon]="sortField === 'name' ? (sortOrder === 1 ? 'pi pi-sort-up' : 'pi pi-sort-down') : 'pi pi-sort'">
+              </button>
+              <button pButton 
+                      label="Risk Profile" 
+                      [class]="sortField === 'riskProfile' ? 'p-button-text p-button-sm' : 'p-button-link p-button-sm'"
+                      (click)="onSortChange('riskProfile')"
+                      [icon]="sortField === 'riskProfile' ? (sortOrder === 1 ? 'pi pi-sort-up' : 'pi pi-sort-down') : 'pi pi-sort'">
+              </button>
+              <button pButton 
+                      label="Inception Date" 
+                      [class]="sortField === 'inceptionDate' ? 'p-button-text p-button-sm' : 'p-button-link p-button-sm'"
+                      (click)="onSortChange('inceptionDate')"
+                      [icon]="sortField === 'inceptionDate' ? (sortOrder === 1 ? 'pi pi-sort-up' : 'pi pi-sort-down') : 'pi pi-sort'">
+              </button>
+            </div>
+          </div>
+        </ng-template>
+
+        <!-- List Template -->
+        <ng-template pTemplate="list" let-portfolio>
+          <div class="portfolio-item">
+            <div class="portfolio-checkbox">
+              <input type="checkbox" [id]="'portfolio-' + portfolio.id" />
+            </div>
             
-            <div class="portfolio-details">
-              <p>{{ portfolio.description }}</p>
-              <div class="portfolio-stats">
-                <div class="stat">
-                  <span class="label">Value</span>
-                  <span class="value">{{ portfolio.value | currency }}</span>
+            <div class="portfolio-content">
+              <div class="portfolio-header">
+                <div class="portfolio-title-section">
+                  <h3 class="portfolio-title">{{ portfolio.name }}</h3>
+                  <div class="portfolio-meta">
+                    <span class="portfolio-sequence">#{{ portfolio.id.toString().padStart(4, '0') }}</span>
+                    <span class="portfolio-module">Portfolio Management</span>
+                    <span class="portfolio-process">Investment Strategy</span>
+                    <span class="portfolio-subprocess">{{ portfolio.riskProfile }}</span>
+                  </div>
                 </div>
-                <div class="stat">
-                  <span class="label">Return</span>
-                  <span class="value" [ngClass]="{'positive': portfolio.returnRate > 0, 'negative': portfolio.returnRate < 0}">
-                    {{ portfolio.returnRate }}%
+                
+                <div class="portfolio-status">
+                  <p-tag 
+                    [value]="portfolio.isActive ? 'ACTIVE' : 'INACTIVE'"
+                    [severity]="portfolio.isActive ? 'success' : 'danger'"
+                    class="status-tag">
+                  </p-tag>
+                </div>
+              </div>
+              
+              <div class="portfolio-description">
+                {{ portfolio.description }}
+              </div>
+              
+              <div class="portfolio-actions">
+                <button pButton 
+                        label="DATA" 
+                        icon="pi pi-database" 
+                        class="p-button-primary action-btn data-btn"
+                        (click)="viewPortfolioData(portfolio)">
+                </button>
+                <button pButton 
+                        label="INSIGHTS" 
+                        icon="pi pi-lightbulb" 
+                        class="p-button-secondary action-btn insights-btn"
+                        (click)="viewPortfolioInsights(portfolio)">
+                </button>
+                <button pButton 
+                        label="CONFIGURE" 
+                        icon="pi pi-cog" 
+                        class="p-button-warning action-btn configure-btn"
+                        (click)="configurePortfolio(portfolio)">
+                </button>
+              </div>
+              
+              <div class="portfolio-footer">
+                <div class="portfolio-info">
+                  <span class="info-item">
+                    <i class="pi pi-calendar"></i>
+                    Inception: {{ formatDate(portfolio.inceptionDate) }}
+                  </span>
+                  <span class="info-item">
+                    <i class="pi pi-dollar"></i>
+                    Currency: {{ portfolio.baseCurrency }}
                   </span>
                 </div>
-                <div class="stat">
-                  <span class="label">Last Updated</span>
-                  <span class="value">{{ portfolio.lastUpdated | date:'short' }}</span>
+                
+                <div class="portfolio-scores">
+                  <span class="score-item">
+                    <i class="pi pi-star"></i>
+                    Risk Score: {{ getRiskProfileLabel(portfolio.riskProfile) }}
+                  </span>
+                  <span class="score-item">
+                    <i class="pi pi-chart-bar"></i>
+                    Status: {{ portfolio.isActive ? 'Active' : 'Inactive' }}
+                  </span>
+                </div>
+                
+                <div class="portfolio-summary">
+                  <span class="summary-item">
+                    <i class="pi pi-list"></i>
+                    Holdings: N/A
+                  </span>
+                  <span class="summary-item">
+                    <i class="pi pi-chart-line"></i>
+                    Value: N/A
+                  </span>
                 </div>
               </div>
             </div>
+          </div>
+        </ng-template>
 
-            <ng-template pTemplate="footer">
-              <div class="portfolio-actions">
-                <button pButton label="View" icon="pi pi-eye" class="p-button-outlined" (click)="selectPortfolio(portfolio)"></button>
-                <button pButton label="Edit" icon="pi pi-pencil" class="p-button-outlined p-button-secondary" (click)="editPortfolio(portfolio)"></button>
-                <button pButton label="Delete" icon="pi pi-trash" class="p-button-outlined p-button-danger" (click)="deletePortfolio(portfolio)"></button>
+        <!-- Grid Template -->
+        <ng-template pTemplate="grid" let-portfolio>
+          <div class="portfolio-grid-item">
+            <p-card styleClass="portfolio-card">
+              <ng-template pTemplate="header">
+                <div class="portfolio-card-header">
+                  <h3 class="portfolio-card-title">{{ portfolio.name }}</h3>
+                  <p-tag 
+                    [value]="portfolio.isActive ? 'ACTIVE' : 'INACTIVE'"
+                    [severity]="portfolio.isActive ? 'success' : 'danger'"
+                    class="status-tag">
+                  </p-tag>
+                </div>
+              </ng-template>
+              
+              <div class="portfolio-card-content">
+                <p class="portfolio-card-description">{{ portfolio.description }}</p>
+                
+                <div class="portfolio-card-meta">
+                  <div class="meta-item">
+                    <i class="pi pi-calendar"></i>
+                    <span>{{ formatDate(portfolio.inceptionDate) }}</span>
+                  </div>
+                  <div class="meta-item">
+                    <i class="pi pi-shield"></i>
+                    <span>{{ getRiskProfileLabel(portfolio.riskProfile) }}</span>
+                  </div>
+                  <div class="meta-item">
+                    <i class="pi pi-dollar"></i>
+                    <span>{{ portfolio.baseCurrency }}</span>
+                  </div>
+                </div>
               </div>
-            </ng-template>
-          </p-card>
-        }
-      </div>
-    }
+              
+              <ng-template pTemplate="footer">
+                <div class="portfolio-card-actions">
+                  <button pButton 
+                          icon="pi pi-eye" 
+                          class="p-button-outlined p-button-sm"
+                          (click)="selectPortfolio(portfolio)"
+                          pTooltip="View Details">
+                  </button>
+                  <button pButton 
+                          icon="pi pi-pencil" 
+                          class="p-button-outlined p-button-sm p-button-secondary"
+                          (click)="editPortfolio(portfolio)"
+                          pTooltip="Edit">
+                  </button>
+                  <button pButton 
+                          icon="pi pi-cog" 
+                          class="p-button-outlined p-button-sm p-button-warning"
+                          (click)="configurePortfolio(portfolio)"
+                          pTooltip="Configure">
+                  </button>
+                </div>
+              </ng-template>
+            </p-card>
+          </div>
+        </ng-template>
 
-    @if (!loading && portfolios.length === 0) {
-      <p-card styleClass="empty-card">
-        <div class="empty-message">
-          <i class="pi pi-info-circle" style="font-size: 2rem"></i>
-          <p>No portfolios found. Create your first portfolio to get started.</p>
-          <button pButton label="Create Portfolio" icon="pi pi-plus" (click)="createPortfolio()"></button>
-        </div>
-      </p-card>
+        <!-- Empty Message Template -->
+        <ng-template pTemplate="emptymessage">
+          <div class="empty-message">
+            <i class="pi pi-info-circle empty-icon"></i>
+            <h3>No portfolios found</h3>
+            <p>No portfolios match your current search criteria.</p>
+            <button pButton 
+                    label="Clear Filters" 
+                    icon="pi pi-filter" 
+                    class="p-button-outlined"
+                    (click)="clearFilters()">
+            </button>
+          </div>
+                 </ng-template>
+       </p-dataview>
+    }
+    
+    @if (!loading && portfolios.length === 0 && !error) {
+      <div class="empty-message">
+        <i class="pi pi-info-circle empty-icon"></i>
+        <h3>No portfolios found</h3>
+        <p>No portfolios have been created yet. Create your first portfolio to get started.</p>
+        <button pButton 
+                label="Create Portfolio" 
+                icon="pi pi-plus" 
+                class="p-button-primary"
+                (click)="createPortfolio()">
+        </button>
+      </div>
     }
   </div>
 </div>
