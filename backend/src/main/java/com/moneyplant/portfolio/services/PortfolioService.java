@@ -1,141 +1,229 @@
 package com.moneyplant.portfolio.services;
 
-import com.moneyplant.portfolio.dtos.PortfolioDto;
-import com.moneyplant.portfolio.dtos.PortfolioResponseDto;
-import com.moneyplant.portfolio.entities.Portfolio;
+import com.moneyplant.core.entities.*;
 import com.moneyplant.core.exceptions.ResourceNotFoundException;
-import com.moneyplant.core.exceptions.ServiceException;
-import com.moneyplant.portfolio.repositories.PortfolioRepository;
-import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import com.moneyplant.portfolio.dtos.*;
+import com.moneyplant.portfolio.repositories.*;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
 import java.util.List;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PortfolioService {
     private final PortfolioRepository portfolioRepository;
+    private final PortfolioTransactionRepository transactionRepository;
+    private final PortfolioHoldingRepository holdingRepository;
+    private final PortfolioValuationDailyRepository valuationDailyRepository;
+    private final PortfolioHoldingValuationDailyRepository holdingValuationDailyRepository;
+    private final PortfolioCashFlowRepository cashFlowRepository;
+    private final PortfolioMetricsDailyRepository metricsDailyRepository;
+    private final PortfolioBenchmarkRepository benchmarkRepository;
 
-    private static final String PORTFOLIO_SERVICE = "portfolioService";
-
-    /**
-     * Creates a new portfolio using the annotation-based circuit breaker approach.
-     * 
-     * @param portfolioDto The portfolio data to create
-     * @return The created portfolio response
-     * @throws ServiceException if there is an error creating the portfolio
-     */
-    @CircuitBreaker(name = PORTFOLIO_SERVICE, fallbackMethod = "createPortfolioFallback")
-    public PortfolioResponseDto createPortfolio(PortfolioDto portfolioDto) {
-        try {
-            // Convert DTO to entity manually
-            Portfolio newPortfolio = new Portfolio();
-            newPortfolio.setName(portfolioDto.getName());
-            newPortfolio.setDescription(portfolioDto.getDescription());
-
-            // Save the entity
-            portfolioRepository.save(newPortfolio);
-
-            log.info("Portfolio created successfully!");
-
-            // Convert entity to response DTO manually
-            return new PortfolioResponseDto(
-                newPortfolio.getId(),
-                newPortfolio.getName(),
-                newPortfolio.getDescription()
-            );
-        } catch (Exception e) {
-            log.error("Error creating portfolio: {}", e.getMessage());
-            throw new ServiceException("Error creating portfolio: " + e.getMessage(), e);
-        }
+    public List<PortfolioDto> getPortfolios() {
+        return portfolioRepository.findAll().stream().map(this::toDto).toList();
     }
 
-    /**
-     * Fallback method for createPortfolio when the circuit is open.
-     * 
-     * @param portfolioDto The portfolio data that was being created
-     * @param e The exception that triggered the fallback
-     * @return null
-     */
-    public PortfolioResponseDto createPortfolioFallback(PortfolioDto portfolioDto, Exception e) {
-        log.error("Circuit breaker triggered for createPortfolio: {}", e.getMessage());
-        throw new ServiceException("Service unavailable", e);
+    public PortfolioDto getPortfolio(Long id) {
+        return toDto(portfolioRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Portfolio not found: " + id)));
     }
 
-    /**
-     * Gets all portfolios using the annotation-based circuit breaker approach.
-     * 
-     * @return List of portfolio responses
-     * @throws ServiceException if there is an error retrieving portfolios
-     */
-    @CircuitBreaker(name = PORTFOLIO_SERVICE, fallbackMethod = "getAllPortfoliosFallback")
-    public List<PortfolioResponseDto> getAllPortfolios() {
-        try {
-            return portfolioRepository.findAll()
-                    .stream()
-                    .map(portfolio -> new PortfolioResponseDto(
-                        portfolio.getId(),
-                        portfolio.getName(),
-                        portfolio.getDescription()
-                    ))
-                    .toList();
-        } catch (Exception e) {
-            log.error("Error retrieving portfolios: {}", e.getMessage());
-            throw new ServiceException("Error retrieving portfolios: " + e.getMessage(), e);
-        }
+    public List<PortfolioTransactionDto> getTransactions(Long portfolioId) {
+        return transactionRepository.findByPortfolio_Id(portfolioId).stream().map(this::toDto).toList();
     }
 
-    /**
-     * Gets a portfolio by ID.
-     * 
-     * @param id The ID of the portfolio to retrieve
-     * @return The portfolio response
-     * @throws ResourceNotFoundException if the portfolio is not found
-     * @throws ServiceException if there is an error retrieving the portfolio
-     */
-    @CircuitBreaker(name = PORTFOLIO_SERVICE, fallbackMethod = "getPortfolioByIdFallback")
-    public PortfolioResponseDto getPortfolioById(String id) {
-        try {
-            Portfolio portfolio = portfolioRepository.findById(id)
-                    .orElseThrow(() -> new ResourceNotFoundException("Portfolio not found with id: " + id));
-
-            return new PortfolioResponseDto(
-                portfolio.getId(),
-                portfolio.getName(),
-                portfolio.getDescription()
-            );
-        } catch (ResourceNotFoundException e) {
-            throw e;
-        } catch (Exception e) {
-            log.error("Error retrieving portfolio with id {}: {}", id, e.getMessage());
-            throw new ServiceException("Error retrieving portfolio: " + e.getMessage(), e);
-        }
+    public List<PortfolioTransactionDto> getTransactionsByDate(Long portfolioId, java.time.LocalDate start, java.time.LocalDate end) {
+        return transactionRepository.findByPortfolio_IdAndTradeDateBetween(portfolioId, start, end).stream().map(this::toDto).toList();
     }
 
-    /**
-     * Fallback method for getAllPortfolios when the circuit is open.
-     * 
-     * @param e The exception that triggered the fallback
-     * @return An empty list of portfolios
-     */
-    public List<PortfolioResponseDto> getAllPortfoliosFallback(Exception e) {
-        log.error("Circuit breaker triggered for getAllPortfolios: {}", e.getMessage());
-        throw new ServiceException("Service unavailable", e);
+    public List<PortfolioTransactionDto> getTransactionsBySymbol(Long portfolioId, String symbol) {
+        return transactionRepository.findByPortfolio_IdAndSymbol_Symbol(portfolioId, symbol).stream().map(this::toDto).toList();
     }
 
-    /**
-     * Fallback method for getPortfolioById when the circuit is open.
-     * 
-     * @param id The ID of the portfolio that was being retrieved
-     * @param e The exception that triggered the fallback
-     * @return null
-     */
-    public PortfolioResponseDto getPortfolioByIdFallback(String id, Exception e) {
-        log.error("Circuit breaker triggered for getPortfolioById with id {}: {}", id, e.getMessage());
-        throw new ServiceException("Service unavailable", e);
+    public List<PortfolioHoldingDto> getHoldings(Long portfolioId) {
+        return holdingRepository.findByPortfolio_Id(portfolioId).stream().map(this::toDto).toList();
+    }
+
+    public List<PortfolioHoldingDto> getHoldingsBySymbol(Long portfolioId, String symbol) {
+        return holdingRepository.findByPortfolio_IdAndSymbol_Symbol(portfolioId, symbol).stream().map(this::toDto).toList();
+    }
+
+    public List<PortfolioValuationDailyDto> getValuations(Long portfolioId) {
+        return valuationDailyRepository.findByPortfolio_Id(portfolioId).stream().map(this::toDto).toList();
+    }
+
+    public List<PortfolioValuationDailyDto> getValuationsByDate(Long portfolioId, java.time.LocalDate start, java.time.LocalDate end) {
+        return valuationDailyRepository.findByPortfolio_IdAndDateBetween(portfolioId, start, end).stream().map(this::toDto).toList();
+    }
+
+    public List<PortfolioHoldingValuationDailyDto> getHoldingValuations(Long portfolioId) {
+        return holdingValuationDailyRepository.findByPortfolio_Id(portfolioId).stream().map(this::toDto).toList();
+    }
+
+    public List<PortfolioHoldingValuationDailyDto> getHoldingValuationsByDate(Long portfolioId, java.time.LocalDate start, java.time.LocalDate end) {
+        return holdingValuationDailyRepository.findByPortfolio_IdAndDateBetween(portfolioId, start, end).stream().map(this::toDto).toList();
+    }
+
+    public List<PortfolioHoldingValuationDailyDto> getHoldingValuationsBySymbol(Long portfolioId, String symbol) {
+        return holdingValuationDailyRepository.findByPortfolio_IdAndSymbol_Symbol(portfolioId, symbol).stream().map(this::toDto).toList();
+    }
+
+    public List<PortfolioCashFlowDto> getCashFlows(Long portfolioId) {
+        return cashFlowRepository.findByPortfolio_Id(portfolioId).stream().map(this::toDto).toList();
+    }
+
+    public List<PortfolioCashFlowDto> getCashFlowsByDate(Long portfolioId, java.time.LocalDate start, java.time.LocalDate end) {
+        return cashFlowRepository.findByPortfolio_IdAndFlowDateBetween(portfolioId, start, end).stream().map(this::toDto).toList();
+    }
+
+    public List<PortfolioMetricsDailyDto> getMetrics(Long portfolioId) {
+        return metricsDailyRepository.findByPortfolio_Id(portfolioId).stream().map(this::toDto).toList();
+    }
+
+    public List<PortfolioMetricsDailyDto> getMetricsByDate(Long portfolioId, java.time.LocalDate start, java.time.LocalDate end) {
+        return metricsDailyRepository.findByPortfolio_IdAndDateBetween(portfolioId, start, end).stream().map(this::toDto).toList();
+    }
+
+    public List<PortfolioBenchmarkDto> getBenchmarks(Long portfolioId) {
+        return benchmarkRepository.findByPortfolio_Id(portfolioId).stream().map(this::toDto).toList();
+    }
+
+    private PortfolioDto toDto(Portfolio p) {
+        return new PortfolioDto(
+                p.getId(),
+                p.getName(),
+                p.getDescription(),
+                p.getBaseCurrency(),
+                p.getInceptionDate(),
+                p.getRiskProfile(),
+                p.getIsActive()
+        );
+    }
+
+    private PortfolioTransactionDto toDto(PortfolioTransaction t) {
+        return new PortfolioTransactionDto(
+                t.getId(),
+                t.getPortfolio() != null ? t.getPortfolio().getId() : null,
+                t.getSymbol() != null ? t.getSymbol().getSymbol() : null,
+                t.getTradeDate(),
+                t.getTradeTime(),
+                t.getTxnType(),
+                t.getQuantity(),
+                t.getPrice(),
+                t.getFees(),
+                t.getTaxes(),
+                t.getNotes()
+        );
+    }
+
+    private PortfolioHoldingDto toDto(PortfolioHolding h) {
+        return new PortfolioHoldingDto(
+                h.getId(),
+                h.getPortfolio() != null ? h.getPortfolio().getId() : null,
+                h.getSymbol() != null ? h.getSymbol().getSymbol() : null,
+                h.getQuantity(),
+                h.getAvgCost(),
+                h.getRealizedPnl(),
+                h.getLastUpdated()
+        );
+    }
+
+    private PortfolioValuationDailyDto toDto(PortfolioValuationDaily v) {
+        return new PortfolioValuationDailyDto(
+                v.getId(),
+                v.getPortfolio() != null ? v.getPortfolio().getId() : null,
+                v.getDate(),
+                v.getTotalMarketValue(),
+                v.getTotalCostBasis(),
+                v.getCashBalance(),
+                v.getNetInvested(),
+                v.getPnlDaily(),
+                v.getPnlTotal(),
+                v.getReturnDailyPct(),
+                v.getReturnCumulativePct(),
+                v.getTwrDailyPct(),
+                v.getTwrCumulativePct(),
+                v.getMwrCumulativePct()
+        );
+    }
+
+    private PortfolioHoldingValuationDailyDto toDto(PortfolioHoldingValuationDaily hv) {
+        return new PortfolioHoldingValuationDailyDto(
+                hv.getId(),
+                hv.getPortfolio() != null ? hv.getPortfolio().getId() : null,
+                hv.getSymbol() != null ? hv.getSymbol().getSymbol() : null,
+                hv.getDate(),
+                hv.getQuantity(),
+                hv.getMarketPrice(),
+                hv.getMarketValue(),
+                hv.getCostBasis(),
+                hv.getPnlDaily(),
+                hv.getPnlTotal(),
+                hv.getWeightPct()
+        );
+    }
+
+    private PortfolioCashFlowDto toDto(PortfolioCashFlow c) {
+        return new PortfolioCashFlowDto(
+                c.getId(),
+                c.getPortfolio() != null ? c.getPortfolio().getId() : null,
+                c.getFlowDate(),
+                c.getAmount(),
+                c.getFlowType(),
+                c.getReferenceTxn() != null ? c.getReferenceTxn().getId() : null
+        );
+    }
+
+    private PortfolioMetricsDailyDto toDto(PortfolioMetricsDaily m) {
+        PortfolioMetricsDailyDto dto = new PortfolioMetricsDailyDto(
+                m.getId(),
+                m.getPortfolio() != null ? m.getPortfolio().getId() : null,
+                m.getDate(),
+                m.getNav(),
+                m.getTwrDailyPct(),
+                m.getTwrCumulativePct(),
+                m.getMwrCumulativePct(),
+                m.getIrrToDatePct(),
+                m.getIrrAnnualizedPct(),
+                m.getXirrToDatePct(),
+                m.getXirrAnnualizedPct(),
+                m.getCagrPct(),
+                m.getYtdReturnPct(),
+                m.getReturn1mPct(),
+                m.getReturn3mPct(),
+                m.getReturn6mPct(),
+                m.getReturn1yPct(),
+                m.getReturn3yAnnualizedPct(),
+                m.getReturn5yAnnualizedPct(),
+                m.getDrawdownPct(),
+                m.getMaxDrawdownPct(),
+                m.getVolatility30dPct(),
+                m.getVolatility90dPct(),
+                m.getDownsideDeviation30dPct(),
+                m.getSharpe30d(),
+                m.getSortino30d(),
+                m.getCalmar1y(),
+                m.getTreynor30d(),
+                m.getBeta30d(),
+                m.getAlpha30d(),
+                m.getTrackingError30d(),
+                m.getInformationRatio30d(),
+                m.getVar9530d(),
+                m.getCvar9530d(),
+                m.getUpsideCapture1y(),
+                m.getDownsideCapture1y(),
+                m.getActiveReturn30dPct()
+        );
+        return dto;
+    }
+
+    private PortfolioBenchmarkDto toDto(PortfolioBenchmark b) {
+        return new PortfolioBenchmarkDto(
+                b.getPortfolio() != null ? b.getPortfolio().getId() : null,
+                b.getIndexName() != null ? b.getIndexName().getIndexName() : null,
+                b.getWeightPct()
+        );
     }
 }
