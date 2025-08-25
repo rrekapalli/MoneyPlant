@@ -3,40 +3,35 @@
   background-color: #f8f9fa;
   min-height: 100vh;
 
+  .header-divider {
+    width: 100%;
+    height: 1px;
+    background-color: var(--surface-border, #e9ecef);
+    margin: 0;
+    padding: 0;
+  }
+
   .header-section {
-    background: var(--surface-card, white);
-    border-radius: 12px;
-    padding: 2rem;
     margin-bottom: 2rem;
-    color: var(--text-color, #495057);
-    box-shadow: var(--card-shadow, 0 4px 20px rgba(0, 0, 0, 0.1));
-    border: 1px solid var(--surface-border, #e9ecef);
 
     .header-content {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
 
       .title-section {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-
-        .header-icon {
-          font-size: 2.5rem;
-          color: var(--primary-color, #667eea);
-        }
-
         .main-title {
-          font-size: 2.5rem;
+          font-size: 2rem;
           font-weight: 700;
-          margin: 0;
-          color: var(--text-color, #495057);
+          margin: 0 0 0.5rem 0;
+          color: var(--text-color, #2c3e50);
         }
 
         .subtitle {
           font-size: 1.1rem;
-          margin: 0.5rem 0 0 0;
+          margin: 0;
           color: var(--text-color-secondary, #6c757d);
           font-weight: 400;
         }
