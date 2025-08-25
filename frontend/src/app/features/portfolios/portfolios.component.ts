@@ -562,6 +562,9 @@ export class PortfoliosComponent implements OnInit, OnDestroy {
       };
       this.portfolios.push(newPortfolio);
       console.log('New portfolio added:', newPortfolio);
+      
+      // For new portfolios, navigate to Overview to see the created portfolio
+      this.resetToOverview();
     } else {
       // This is an existing portfolio update
       console.log('Updating existing portfolio:', portfolio.name);
@@ -571,21 +574,31 @@ export class PortfoliosComponent implements OnInit, OnDestroy {
         this.portfolios[index] = { ...portfolio };
         console.log('Portfolio updated:', this.portfolios[index]);
       }
+      
+      // For existing portfolio updates, stay on Configure tab to see the changes
+      // Don't call resetToOverview() - let user stay on current tab
     }
-    
-    // Reset and return to Overview tab
-    this.resetToOverview();
   }
 
   onCancel(): void {
     console.log('Cancel configuration');
     // TODO: Implement cancel logic
-    this.resetToOverview(); // Return to Overview tab after canceling
+    // Don't automatically navigate to Overview - let user decide where to go
+    // Just clear the selected portfolio to exit edit mode
+    this.selectedPortfolio = null;
   }
 
   onApplyOptimization(portfolio: PortfolioWithMetrics): void {
     console.log('Apply optimization for portfolio:', portfolio);
     // TODO: Implement optimization logic
-    this.resetToOverview(); // Return to Overview tab after optimization
+    // Don't automatically navigate to Overview - let user decide where to go
+    // Just clear the selected portfolio to exit optimization mode
+    this.selectedPortfolio = null;
+  }
+
+  goToOverview(): void {
+    console.log('Navigating to Overview tab');
+    this.activeTab = "0";
+    this.selectedPortfolio = null;
   }
 }

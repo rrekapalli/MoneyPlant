@@ -1,78 +1,252 @@
 .configure-tab-content {
   background: var(--surface-card, white);
   border-radius: 12px;
-  padding: 2rem;
+  padding: 1.5rem;
   box-shadow: var(--card-shadow, 0 2px 12px rgba(0, 0, 0, 0.08));
   border: 1px solid var(--surface-border, #e9ecef);
+  position: relative;
 
-  .portfolio-detail-header {
-    margin-bottom: 2rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid var(--surface-border, #e9ecef);
+  .portfolio-header {
+    margin-bottom: 1rem;
 
-    h2 {
-      color: var(--text-color, #495057);
-      margin: 0 0 0.5rem 0;
-      font-size: 1.75rem;
-    }
+    .header-content {
+      position: relative;
 
-    .portfolio-description {
-      color: var(--text-color-secondary, #6c757d);
-      margin: 0;
-      font-size: 1rem;
-    }
-  }
+                      .edit-controls {
+          position: absolute;
+          top: 0;
+          right: 0;
+          z-index: 10;
+          display: flex;
+          align-items: center;
 
-  .portfolio-config-form {
-    .form-section {
-      margin-bottom: 2rem;
+          .edit-all-btn,
+          .save-all-btn,
+          .cancel-btn {
+            background: none;
+            border: 1px solid var(--surface-border, #dee2e6);
+            cursor: pointer;
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            height: 48px; // Match textarea height
+            min-height: 48px;
+            box-sizing: border-box;
+          }
 
-      h3 {
-        color: var(--text-color, #495057);
-        margin: 0 0 1rem 0;
-        font-size: 1.25rem;
-      }
+          .edit-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+          }
 
-      .grid {
-        gap: 1rem;
-      }
+          .edit-all-btn {
+            color: var(--text-color-secondary, #6c757d);
+            background-color: var(--surface-100, #f8f9fa);
 
-      label {
-        display: block;
-        margin-bottom: 0.5rem;
-        color: var(--text-color, #495057);
-        font-weight: 500;
-      }
+            &:hover {
+              color: var(--primary-color, #667eea);
+              background-color: var(--primary-color-alpha-10, rgba(102, 126, 234, 0.1));
+              border-color: var(--primary-color, #667eea);
+            }
+          }
 
-      .form-input,
-      .form-select,
-      .form-textarea {
-        width: 100%;
-        padding: 0.75rem;
-        border: 1px solid var(--surface-border, #dee2e6);
-        border-radius: 8px;
-        font-size: 1rem;
-        transition: border-color 0.3s ease;
+          .save-all-btn {
+            color: var(--success-color, #28a745);
+            background-color: var(--success-color-alpha-10, rgba(40, 167, 69, 0.1));
+            border-color: var(--success-color, #667eea);
 
-        &:focus {
-          outline: none;
-          border-color: var(--primary-color, #667eea);
-          box-shadow: 0 0 0 3px var(--primary-color-alpha-20, rgba(102, 126, 234, 0.1));
+            &:hover {
+              background-color: var(--success-color-alpha-20, rgba(40, 167, 69, 0.2));
+            }
+
+            &:disabled {
+              opacity: 0.6;
+              cursor: not-allowed;
+              background-color: var(--surface-200, #e9ecef);
+              color: var(--text-color-secondary, #6c757d);
+              border-color: var(--surface-border, #dee2e6);
+            }
+          }
+
+          .cancel-btn {
+            color: var(--text-color, #495057);
+            background-color: white;
+            border-color: var(--text-color, #495057);
+
+            &:hover {
+              background-color: var(--surface-100, #f8f9fa);
+              border-color: var(--text-color, #495057);
+            }
+
+            &:disabled {
+              opacity: 0.6;
+              cursor: not-allowed;
+              background-color: var(--surface-200, #e9ecef);
+              color: var(--text-color-secondary, #6c757d);
+              border-color: var(--surface-border, #dee2e6);
+            }
+          }
+        }
+
+        .portfolio-title-section {
+          padding-right: 140px; // Make space for the edit buttons (Save + Cancel)
+
+        .title-row {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          margin-bottom: 1rem;
+          min-height: 3rem;
+
+          .portfolio-name {
+            display: flex;
+            align-items: center;
+            flex: 1;
+            justify-content: flex-start;
+
+            .name-text {
+              color: var(--text-color, #495057);
+              font-size: 2rem;
+              font-weight: 700;
+              line-height: 1.2;
+            }
+
+            .inline-edit-textarea {
+              flex: 1;
+              border: 2px solid var(--primary-color, #667eea);
+              border-radius: 8px;
+              padding: 0.75rem;
+              font-size: 1.75rem;
+              font-weight: 600;
+              resize: none;
+              outline: none;
+              background: white;
+              height: 48px; // Fixed height for consistency
+              min-height: 48px;
+              max-height: 48px;
+              box-sizing: border-box;
+              line-height: 1.2;
+              display: block;
+
+              &:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+                background-color: var(--surface-100, #f8f9fa);
+                border-color: var(--surface-border, #dee2e6);
+              }
+            }
+          }
+
+          .risk-profile-inline {
+            display: flex;
+            align-items: center;
+            flex-shrink: 0;
+
+            .risk-text {
+              color: var(--text-color-secondary, #6c757d);
+              font-size: 1rem;
+              font-weight: 500;
+              white-space: nowrap;
+            }
+
+            .inline-edit-select {
+              min-width: 120px;
+              border: 2px solid var(--primary-color, #667eea);
+              border-radius: 6px;
+              outline: none;
+              height: 48px; // Match textarea height
+              min-height: 48px;
+              box-sizing: border-box;
+
+              // Override PrimeNG select default styles to match our design
+              ::ng-deep .p-select {
+                height: 48px;
+                min-height: 48px;
+                border: none;
+                background: transparent;
+                display: flex;
+                align-items: center;
+                
+                .p-select-trigger {
+                  height: 48px;
+                  width: 48px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  border-left: 1px solid var(--surface-border, #dee2e6);
+                }
+                
+                .p-select-label {
+                  height: 48px;
+                  line-height: 48px;
+                  padding: 0 0.75rem;
+                  font-size: 1rem;
+                  font-weight: 500;
+                  flex: 1;
+                  display: flex;
+                  align-items: center;
+                }
+
+                .p-select-trigger-icon {
+                  font-size: 0.875rem;
+                  color: var(--text-color-secondary, #6c757d);
+                }
+              }
+
+              &:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+                background-color: var(--surface-100, #f8f9fa);
+                border-color: var(--surface-border, #dee2e6);
+              }
+            }
+          }
+        }
+
+        .description-row {
+          display: flex;
+          align-items: flex-start;
+          min-height: 3rem;
+
+          .description-text {
+            color: var(--text-color-secondary, #6c757d);
+            font-size: 1.125rem;
+            line-height: 1.4;
+            flex: 1;
+            margin-top: 0.25rem;
+          }
+
+          .inline-edit-textarea {
+            flex: 1;
+            border: 2px solid var(--primary-color, #667eea);
+            border-radius: 8px;
+            padding: 0.75rem;
+            font-size: 1.125rem;
+            resize: none;
+            outline: none;
+            background: white;
+            height: 48px; // Fixed height for consistency
+            min-height: 48px;
+            max-height: 48px;
+            box-sizing: border-box;
+            line-height: 1.4;
+            display: block;
+
+            &:disabled {
+              opacity: 0.6;
+              cursor: not-allowed;
+              background-color: var(--surface-100, #f8f9fa);
+              border-color: var(--surface-border, #dee2e6);
+            }
+          }
         }
       }
-
-      .form-textarea {
-        resize: vertical;
-        min-height: 80px;
-      }
-    }
-
-    .form-actions {
-      display: flex;
-      gap: 1rem;
-      justify-content: flex-end;
-      padding-top: 1rem;
-      border-top: 1px solid var(--surface-border, #e9ecef);
     }
   }
 
@@ -82,7 +256,7 @@
 
     i {
       font-size: 4rem;
-      color: var(--surface-border, #dee2e6);
+      color: var(--surface-border, #e9ecef);
       margin-bottom: 1rem;
     }
 
@@ -95,21 +269,56 @@
       color: var(--text-color-secondary, #6c757d);
       margin-bottom: 1.5rem;
     }
+
+    button {
+      margin-top: 1rem;
+      min-width: 160px;
+    }
   }
 }
 
 // Responsive design
 @media (max-width: 768px) {
   .configure-tab-content {
-    padding: 1.5rem;
+    padding: 1rem;
 
-    .portfolio-config-form {
-      .form-actions {
-        flex-direction: column;
-        align-items: stretch;
+    .portfolio-header {
+      .header-content {
+        .edit-controls {
+          position: static;
+          margin-bottom: 1rem;
+          display: flex;
+          justify-content: flex-end;
 
-        button {
-          width: 100%;
+          .edit-buttons {
+            flex-direction: row;
+            gap: 0.5rem;
+          }
+        }
+
+        .portfolio-title-section {
+          padding-right: 0;
+
+          .title-row {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.75rem;
+
+            .portfolio-name {
+              width: 100%;
+            }
+
+            .risk-profile-inline {
+              width: 100%;
+              justify-content: flex-start;
+            }
+          }
+
+          .description-row {
+            .inline-edit-textarea {
+              min-height: 60px;
+            }
+          }
         }
       }
     }

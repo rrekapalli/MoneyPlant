@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS public.portfolios (
     user_id         bigint NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
     name            varchar(200) NOT NULL,
     description     text NULL,
-    base_currency   varchar(10) NOT NULL DEFAULT 'INR',
+    base_currency   varchar(10) NULL DEFAULT 'INR',
     inception_date  date NULL,
     risk_profile    varchar(50) NULL, -- e.g., CONSERVATIVE, MODERATE, AGGRESSIVE (free text with app-level validation)
     is_active       boolean NOT NULL DEFAULT true,

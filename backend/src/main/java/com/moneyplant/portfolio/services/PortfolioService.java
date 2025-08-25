@@ -101,15 +101,28 @@ public class PortfolioService {
 
     // Create a new portfolio, optionally seeding holdings by symbols
     public PortfolioDto createPortfolio(PortfolioCreateRequest req) {
-        if (req.getUserId() == null || req.getName() == null || req.getBaseCurrency() == null) {
-            throw new IllegalArgumentException("userId, name and baseCurrency are required");
+        System.out.println("=== PORTFOLIO CREATION DEBUG ===");
+        System.out.println("Create Request: " + req);
+        System.out.println("Request userId: " + req.getUserId());
+        System.out.println("Request name: " + req.getName());
+        System.out.println("Request baseCurrency: " + req.getBaseCurrency());
+        System.out.println("Request description: " + req.getDescription());
+        System.out.println("Request riskProfile: " + req.getRiskProfile());
+        System.out.println("Request isActive: " + req.getIsActive());
+        System.out.println("=================================");
+        
+        if (req.getUserId() == null || req.getName() == null) {
+            throw new IllegalArgumentException("userId and name are required");
         }
         var user = userRepository.findById(req.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + req.getUserId()));
+        
+        System.out.println("Found user: " + user.getEmail());
+        
         var p = new Portfolio();
         p.setUser(user);
         p.setName(req.getName());
-        p.setBaseCurrency(req.getBaseCurrency());
+        p.setBaseCurrency(req.getBaseCurrency()); // Now optional - can be null
         p.setDescription(req.getDescription());
         p.setInceptionDate(req.getInceptionDate());
         p.setRiskProfile(req.getRiskProfile());
@@ -118,34 +131,59 @@ public class PortfolioService {
         }
         p.setCreatedAt(OffsetDateTime.now());
         p.setUpdatedAt(OffsetDateTime.now());
-        var saved = portfolioRepository.save(p);
-
-        if (req.getSymbols() != null && !req.getSymbols().isEmpty()) {
-            var qty = reqQuantityOrZero(null);
-            var cost = reqCostOrZero(null);
-            // use defaults 0/0 for seeding
-            for (String sym : req.getSymbols()) {
-                var sem = stockRepository.findBySymbolIgnoreCase(sym)
-                        .orElseThrow(() -> new ResourceNotFoundException("Symbol not found: " + sym));
-                var h = new PortfolioHolding();
-                h.setPortfolio(saved);
-                h.setSymbol(sem);
-                h.setQuantity(qty);
-                h.setAvgCost(cost);
-                h.setRealizedPnl(BigDecimal.ZERO);
-                h.setLastUpdated(OffsetDateTime.now());
-                holdingRepository.save(h);
+        
+        System.out.println("About to save portfolio with baseCurrency: " + p.getBaseCurrency());
+        
+        try {
+            var saved = portfolioRepository.save(p);
+            System.out.println("Portfolio created successfully with ID: " + saved.getId());
+            
+            // Handle optional symbols for seeding holdings
+            if (req.getSymbols() != null && !req.getSymbols().isEmpty()) {
+                var qty = reqQuantityOrZero(null);
+                var cost = reqCostOrZero(null);
+                // use defaults 0/0 for seeding
+                for (String sym : req.getSymbols()) {
+                    var sem = stockRepository.findBySymbolIgnoreCase(sym)
+                            .orElseThrow(() -> new ResourceNotFoundException("Symbol not found: " + sym));
+                    var h = new PortfolioHolding();
+                    h.setPortfolio(saved);
+                    h.setSymbol(sem);
+                    h.setQuantity(qty);
+                    h.setAvgCost(cost);
+                    h.setRealizedPnl(BigDecimal.ZERO);
+                    h.setLastUpdated(OffsetDateTime.now());
+                    holdingRepository.save(h);
+                }
             }
+            
+            return toDto(saved);
+        } catch (Exception e) {
+            System.err.println("Error creating portfolio: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
         }
-        return toDto(saved);
     }
 
     public PortfolioDto updatePortfolio(Long id, PortfolioUpdateRequest req) {
-        if (req.getName() == null || req.getBaseCurrency() == null) {
-            throw new IllegalArgumentException("name and baseCurrency are required for PUT");
+        System.out.println("=== PORTFOLIO UPDATE DEBUG ===");
+        System.out.println("Portfolio ID: " + id);
+        System.out.println("Update Request: " + req);
+        System.out.println("Request name: " + req.getName());
+        System.out.println("Request description: " + req.getDescription());
+        System.out.println("Request riskProfile: " + req.getRiskProfile());
+        System.out.println("Request baseCurrency: " + req.getBaseCurrency());
+        System.out.println("=================================");
+        
+        if (req.getName() == null) {
+            throw new IllegalArgumentException("name is required for PUT");
         }
         var p = portfolioRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Portfolio not found: " + id));
+        
+        System.out.println("Found portfolio: " + p.getName());
+        System.out.println("Current baseCurrency: " + p.getBaseCurrency());
+        
         p.setName(req.getName());
         p.setBaseCurrency(req.getBaseCurrency());
         p.setDescription(req.getDescription());
@@ -153,7 +191,18 @@ public class PortfolioService {
         p.setRiskProfile(req.getRiskProfile());
         if (req.getIsActive() != null) p.setIsActive(req.getIsActive());
         p.setUpdatedAt(OffsetDateTime.now());
-        return toDto(portfolioRepository.save(p));
+        
+        System.out.println("About to save portfolio with baseCurrency: " + p.getBaseCurrency());
+        
+        try {
+            var saved = portfolioRepository.save(p);
+            System.out.println("Portfolio saved successfully with ID: " + saved.getId());
+            return toDto(saved);
+        } catch (Exception e) {
+            System.err.println("Error saving portfolio: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     public PortfolioDto patchPortfolio(Long id, PortfolioPatchRequest req) {

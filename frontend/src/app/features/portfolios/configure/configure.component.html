@@ -1,60 +1,89 @@
 <div class="configure-tab-content">
   @if (editingPortfolio) {
-    <div class="portfolio-detail-header">
-      <h2>{{ isCreationMode ? 'Create New Portfolio' : 'Configure Portfolio: ' + editingPortfolio.name }}</h2>
-      <p class="portfolio-description" *ngIf="!isCreationMode">{{ editingPortfolio.description }}</p>
-      <p class="portfolio-description" *ngIf="isCreationMode">Fill in the details below to create your new portfolio.</p>
-    </div>
-    
-    <div class="portfolio-config-form">
-      <div class="form-section">
-        <h3>Basic Information</h3>
-        <div class="grid">
-          <div class="col-12 md:col-6">
-            <label>Portfolio Name *</label>
-            <input pInputText 
-                   [ngModel]="editingPortfolio.name" 
-                   (ngModelChange)="onPortfolioNameChange($event)"
-                   placeholder="Enter portfolio name"
-                   class="form-input" />
+    <div class="portfolio-header">
+      <div class="header-content">
+        <!-- Edit Button at Top Right -->
+        <div class="edit-controls">
+          @if (!isEditing) {
+            <button class="edit-all-btn" (click)="startEditAll()" title="Edit portfolio">
+              <i class="pi pi-pencil"></i>
+              Edit
+            </button>
+          } @else {
+            <div class="edit-buttons">
+              <button class="save-all-btn" 
+                      (click)="saveEditAll()" 
+                      title="Save all changes"
+                      [disabled]="isSaving">
+                @if (isSaving) {
+                  <i class="pi pi-spin pi-spinner"></i>
+                  Saving...
+                } @else {
+                  <i class="pi pi-check"></i>
+                  Save
+                }
+              </button>
+              <button class="cancel-btn" 
+                      (click)="cancelEdit()" 
+                      title="Cancel editing"
+                      [disabled]="isSaving">
+                <i class="pi pi-times"></i>
+                Cancel
+              </button>
+            </div>
+          }
+        </div>
+
+        <div class="portfolio-title-section">
+          <!-- First row: Portfolio Name + Risk Profile -->
+          <div class="title-row">
+            <div class="portfolio-name">
+              @if (!isEditing) {
+                <span class="name-text">{{ editingPortfolio.name || 'Untitled Portfolio' }}</span>
+              } @else {
+                <textarea pInputTextarea 
+                          [(ngModel)]="editingPortfolio.name"
+                          placeholder="Enter portfolio name"
+                          class="inline-edit-textarea"
+                          rows="1"
+                          autoResize="true"
+                          [disabled]="isSaving">
+                </textarea>
+              }
+            </div>
+            
+            <div class="risk-profile-inline">
+              @if (!isEditing) {
+                <span class="risk-text">[{{ editingPortfolio.riskProfile || 'Not set' }}]</span>
+              } @else {
+                <p-select [options]="riskProfileOptions" 
+                         [(ngModel)]="editingPortfolio.riskProfile"
+                         optionLabel="label"
+                         optionValue="value"
+                         placeholder="Select risk profile"
+                         class="inline-edit-select"
+                         [disabled]="isSaving">
+                </p-select>
+              }
+            </div>
           </div>
-          <div class="col-12 md:col-6">
-            <label>Risk Profile *</label>
-            <p-select [options]="riskProfileOptions" 
-                     [ngModel]="editingPortfolio.riskProfile"
-                     (onChange)="onRiskProfileChange($event)"
-                     optionLabel="label"
-                     optionValue="value"
-                     placeholder="Select risk profile"
-                     class="form-select">
-            </p-select>
-          </div>
-          <div class="col-12">
-            <label>Description</label>
-            <textarea pInputTextarea 
-                      [ngModel]="editingPortfolio.description" 
-                      (ngModelChange)="onDescriptionChange($event)"
-                      placeholder="Enter portfolio description (optional)"
-                      rows="3" 
-                      class="form-textarea">
-            </textarea>
+          
+          <!-- Second row: Description -->
+          <div class="description-row">
+            @if (!isEditing) {
+              <span class="description-text">{{ editingPortfolio.description || 'No description provided' }}</span>
+            } @else {
+              <textarea pInputTextarea 
+                        [(ngModel)]="editingPortfolio.description"
+                        placeholder="Enter portfolio description (optional)"
+                        class="inline-edit-textarea"
+                        rows="2"
+                        autoResize="true"
+                        [disabled]="isSaving">
+              </textarea>
+            }
           </div>
         </div>
-      </div>
-      
-      <div class="form-actions">
-        <button pButton 
-                [label]="isCreationMode ? 'Create Portfolio' : 'Save Changes'" 
-                [icon]="isCreationMode ? 'pi pi-plus' : 'pi pi-check'"
-                class="p-button-primary"
-                (click)="onSaveChanges()">
-        </button>
-        <button pButton 
-                label="Cancel" 
-                icon="pi pi-times" 
-                class="p-button-outlined"
-                (click)="onCancel()">
-        </button>
       </div>
     </div>
   } @else {
@@ -62,6 +91,12 @@
       <i class="pi pi-info-circle"></i>
       <h3>No Portfolio Selected</h3>
       <p>Please select a portfolio from the Overview tab to configure it, or click "Create Portfolio" to create a new one.</p>
+      <button pButton 
+              label="Back to Overview" 
+              icon="pi pi-arrow-left" 
+              class="p-button-outlined"
+              (click)="navigateToOverview()">
+      </button>
     </div>
   }
 </div>

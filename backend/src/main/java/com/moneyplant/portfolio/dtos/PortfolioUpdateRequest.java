@@ -7,7 +7,7 @@ import java.time.LocalDate;
 @Data
 public class PortfolioUpdateRequest {
     private String name; // required for PUT
-    private String baseCurrency; // required for PUT
+    private String baseCurrency; // optional for PUT
 
     private String description; // optional
     private LocalDate inceptionDate; // optional

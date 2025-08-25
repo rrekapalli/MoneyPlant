@@ -117,7 +117,8 @@
           [selectedPortfolio]="selectedPortfolio"
           [riskProfileOptions]="riskProfileOptions"
           (saveChanges)="onSaveChanges($event)"
-          (cancel)="onCancel()">
+          (cancel)="onCancel()"
+          (goToOverview)="goToOverview()">
         </app-portfolio-configure>
       </p-tabpanel>
 

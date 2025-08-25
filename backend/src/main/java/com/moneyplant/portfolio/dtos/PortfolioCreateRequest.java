@@ -9,7 +9,7 @@ import java.util.List;
 public class PortfolioCreateRequest {
     private Long userId; // required
     private String name; // required
-    private String baseCurrency; // required
+    private String baseCurrency; // optional
 
     private String description; // optional
     private LocalDate inceptionDate; // optional

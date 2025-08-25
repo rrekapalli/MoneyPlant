@@ -2,7 +2,7 @@ export interface PortfolioDto {
   id: number;
   name: string;
   description: string;
-  baseCurrency: string;
+  baseCurrency?: string;
   inceptionDate: string;
   riskProfile: string;
   isActive: boolean;
@@ -12,7 +12,7 @@ export interface PortfolioCreateRequest {
   userId?: number; // required in backend
   name: string;
   description?: string;
-  baseCurrency: string;
+  baseCurrency?: string;
   inceptionDate?: string;
   riskProfile?: string;
   isActive?: boolean;

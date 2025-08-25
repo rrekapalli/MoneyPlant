@@ -41,9 +41,8 @@ public class Portfolio {
     private String description;
 
     @Size(max = 10)
-    @NotNull
     @ColumnDefault("'INR'")
-    @Column(name = "base_currency", nullable = false, length = 10)
+    @Column(name = "base_currency", nullable = true, length = 10)
     private String baseCurrency;
 
     @Column(name = "inception_date")
