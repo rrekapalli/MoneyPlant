@@ -1,0 +1,117 @@
+.configure-tab-content {
+  background: var(--surface-card, white);
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: var(--card-shadow, 0 2px 12px rgba(0, 0, 0, 0.08));
+  border: 1px solid var(--surface-border, #e9ecef);
+
+  .portfolio-detail-header {
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--surface-border, #e9ecef);
+
+    h2 {
+      color: var(--text-color, #495057);
+      margin: 0 0 0.5rem 0;
+      font-size: 1.75rem;
+    }
+
+    .portfolio-description {
+      color: var(--text-color-secondary, #6c757d);
+      margin: 0;
+      font-size: 1rem;
+    }
+  }
+
+  .portfolio-config-form {
+    .form-section {
+      margin-bottom: 2rem;
+
+      h3 {
+        color: var(--text-color, #495057);
+        margin: 0 0 1rem 0;
+        font-size: 1.25rem;
+      }
+
+      .grid {
+        gap: 1rem;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 0.5rem;
+        color: var(--text-color, #495057);
+        font-weight: 500;
+      }
+
+      .form-input,
+      .form-select,
+      .form-textarea {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid var(--surface-border, #dee2e6);
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: border-color 0.3s ease;
+
+        &:focus {
+          outline: none;
+          border-color: var(--primary-color, #667eea);
+          box-shadow: 0 0 0 3px var(--primary-color-alpha-20, rgba(102, 126, 234, 0.1));
+        }
+      }
+
+      .form-textarea {
+        resize: vertical;
+        min-height: 80px;
+      }
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 1rem;
+      justify-content: flex-end;
+      padding-top: 1rem;
+      border-top: 1px solid var(--surface-border, #e9ecef);
+    }
+  }
+
+  .no-selection-message {
+    text-align: center;
+    padding: 4rem 2rem;
+
+    i {
+      font-size: 4rem;
+      color: var(--surface-border, #dee2e6);
+      margin-bottom: 1rem;
+    }
+
+    h3 {
+      color: var(--text-color, #495057);
+      margin-bottom: 0.5rem;
+    }
+
+    p {
+      color: var(--text-color-secondary, #6c757d);
+      margin-bottom: 1.5rem;
+    }
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .configure-tab-content {
+    padding: 1.5rem;
+
+    .portfolio-config-form {
+      .form-actions {
+        flex-direction: column;
+        align-items: stretch;
+
+        button {
+          width: 100%;
+        }
+      }
+    }
+  }
+}
