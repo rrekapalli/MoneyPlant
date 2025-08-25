@@ -33,18 +33,36 @@ export class PortfolioConfigureComponent {
 
   // Local copy for editing
   editingPortfolio: PortfolioWithMetrics | null = null;
+  
+  // Flag to distinguish between creation and editing modes
+  isCreationMode = false;
 
   ngOnChanges(): void {
     if (this.selectedPortfolio) {
+      // Check if this is a new portfolio (creation mode)
+      this.isCreationMode = this.selectedPortfolio.id === 0;
       // Create a deep copy for editing
       this.editingPortfolio = { ...this.selectedPortfolio };
     } else {
       this.editingPortfolio = null;
+      this.isCreationMode = false;
     }
   }
 
   onSaveChanges(): void {
     if (this.editingPortfolio) {
+      // Validate required fields
+      if (!this.editingPortfolio.name || this.editingPortfolio.name.trim() === '') {
+        alert('Portfolio name is required');
+        return;
+      }
+      
+      if (!this.editingPortfolio.riskProfile) {
+        alert('Risk profile is required');
+        return;
+      }
+      
+      // Emit the portfolio data
       this.saveChanges.emit(this.editingPortfolio);
     }
   }
@@ -59,8 +77,10 @@ export class PortfolioConfigureComponent {
     }
   }
 
-  onRiskProfileChange(value: string): void {
+  onRiskProfileChange(event: any): void {
     if (this.editingPortfolio) {
+      // Handle both direct value and event object from PrimeNG select
+      const value = event?.value !== undefined ? event.value : event;
       this.editingPortfolio.riskProfile = value;
     }
   }

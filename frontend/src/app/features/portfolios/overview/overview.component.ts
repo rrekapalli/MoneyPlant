@@ -6,6 +6,8 @@ import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { TooltipModule } from 'primeng/tooltip';
 import { CheckboxModule } from 'primeng/checkbox';
+import { PanelModule } from 'primeng/panel';
+import { ScrollPanelModule } from 'primeng/scrollpanel';
 import { FormsModule } from '@angular/forms';
 
 import { PortfolioWithMetrics } from '../portfolio.types';
@@ -21,6 +23,8 @@ import { PortfolioWithMetrics } from '../portfolio.types';
     SelectModule,
     TooltipModule,
     CheckboxModule,
+    PanelModule,
+    ScrollPanelModule,
     FormsModule
   ],
   templateUrl: './overview.component.html',
@@ -33,7 +37,7 @@ export class PortfolioOverviewComponent {
   @Input() error: string | null = null;
   @Input() searchText = '';
   @Input() selectedRiskProfile: string | null = null;
-  @Input() layout: 'list' | 'grid' = 'list';
+  @Input() layout: 'list' | 'grid' = 'grid';
   @Input() sortField = 'name';
   @Input() sortOrder = 1;
   @Input() riskProfileOptions: any[] = [];

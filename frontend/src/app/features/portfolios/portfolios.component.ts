@@ -56,7 +56,7 @@ export class PortfoliosComponent implements OnInit, OnDestroy {
   // Search and filter properties
   searchText = '';
   selectedRiskProfile: string | null = null;
-  layout: 'list' | 'grid' = 'list';
+  layout: 'list' | 'grid' = 'grid';
   
   // Sorting properties
   sortField: string = 'name';
@@ -339,8 +339,31 @@ export class PortfoliosComponent implements OnInit, OnDestroy {
   // Action methods
   createPortfolio(): void {
     console.log('Create portfolio clicked');
-    // TODO: Implement portfolio creation
-    this.activeTab = "0"; // Stay on Overview tab
+    // Create a new empty portfolio for creation mode
+    this.selectedPortfolio = {
+      id: 0, // Temporary ID for new portfolio
+      name: '',
+      description: '',
+      baseCurrency: 'INR',
+      inceptionDate: new Date().toISOString().split('T')[0], // Today's date
+      riskProfile: 'MODERATE',
+      isActive: true,
+      // Add default metrics for new portfolio
+      totalReturn: 0,
+      benchmarkReturn: 0,
+      outperformance: 0,
+      stockCount: 0,
+      rebalanceEvents: 0,
+      lastRebalance: 'N/A',
+      performanceData: {
+        portfolio: [100],
+        benchmark: [100],
+        labels: ['Now']
+      }
+    };
+    // Switch to Configure tab for new portfolio creation
+    this.activeTab = "1";
+    console.log('Switched to Configure tab for new portfolio creation');
   }
 
   selectPortfolio(portfolio: PortfolioWithMetrics): void {
@@ -526,8 +549,32 @@ export class PortfoliosComponent implements OnInit, OnDestroy {
   // Methods for child component communication
   onSaveChanges(portfolio: PortfolioWithMetrics): void {
     console.log('Save changes for portfolio:', portfolio);
-    // TODO: Implement save logic
-    this.resetToOverview(); // Return to Overview tab after saving
+    
+    if (portfolio.id === 0) {
+      // This is a new portfolio creation
+      console.log('Creating new portfolio:', portfolio.name);
+      // TODO: Implement API call to create portfolio
+      // For now, simulate creation by adding to local array
+      const newPortfolio = {
+        ...portfolio,
+        id: Date.now(), // Generate a unique ID
+        inceptionDate: new Date().toISOString().split('T')[0]
+      };
+      this.portfolios.push(newPortfolio);
+      console.log('New portfolio added:', newPortfolio);
+    } else {
+      // This is an existing portfolio update
+      console.log('Updating existing portfolio:', portfolio.name);
+      // TODO: Implement API call to update portfolio
+      const index = this.portfolios.findIndex(p => p.id === portfolio.id);
+      if (index !== -1) {
+        this.portfolios[index] = { ...portfolio };
+        console.log('Portfolio updated:', this.portfolios[index]);
+      }
+    }
+    
+    // Reset and return to Overview tab
+    this.resetToOverview();
   }
 
   onCancel(): void {

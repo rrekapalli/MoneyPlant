@@ -160,6 +160,7 @@
     }
 
     .p-tabpanels {
+      height: 70vh !important;
       background: var(--surface-card, white);
       border-radius: 0 0 12px 12px;
       border: 1px solid var(--surface-border, #e9ecef);
