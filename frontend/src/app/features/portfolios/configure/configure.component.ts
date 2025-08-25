@@ -1,15 +1,16 @@
-import { Component, Input, Output, EventEmitter, inject } from '@angular/core';
+import { Component, Input, Output, EventEmitter, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { InputTextModule } from 'primeng/inputtext';
 import { TextareaModule } from 'primeng/textarea';
 import { SelectModule } from 'primeng/select';
+import { TableModule } from 'primeng/table';
 import { FormsModule } from '@angular/forms';
 
 import { PortfolioWithMetrics } from '../portfolio.types';
 import { PortfolioApiService } from '../../../services/apis/portfolio.api';
-import { PortfolioCreateRequest, PortfolioUpdateRequest } from '../../../services/entities/portfolio.entities';
+import { PortfolioCreateRequest, PortfolioUpdateRequest, PortfolioHoldingDto } from '../../../services/entities/portfolio.entities';
 import { AuthService } from '../../../services/security/auth.service';
 
 @Component({
@@ -22,12 +23,13 @@ import { AuthService } from '../../../services/security/auth.service';
     InputTextModule,
     TextareaModule,
     SelectModule,
+    TableModule,
     FormsModule
   ],
   templateUrl: './configure.component.html',
   styleUrls: ['./configure.component.scss']
 })
-export class PortfolioConfigureComponent {
+export class PortfolioConfigureComponent implements OnInit {
   @Input() selectedPortfolio: PortfolioWithMetrics | null = null;
   @Input() riskProfileOptions: any[] = [];
 
@@ -53,6 +55,17 @@ export class PortfolioConfigureComponent {
   // Loading state for save operation
   isSaving = false;
 
+  // Holdings data
+  portfolioHoldings: PortfolioHoldingDto[] = [];
+  isLoadingHoldings = false;
+  
+  // Table filter
+  globalFilterValue = '';
+
+  ngOnInit(): void {
+    // Component initialization logic can go here
+  }
+
   ngOnChanges(): void {
     if (this.selectedPortfolio) {
       // Check if this is a new portfolio (creation mode)
@@ -64,11 +77,183 @@ export class PortfolioConfigureComponent {
       if (this.isCreationMode) {
         this.isEditing = true;
       }
+
+      // Load holdings for existing portfolios
+      if (!this.isCreationMode && this.selectedPortfolio.id > 0) {
+        this.loadPortfolioHoldings(this.selectedPortfolio.id);
+      }
     } else {
       this.editingPortfolio = null;
       this.isCreationMode = false;
       this.isEditing = false;
+      this.portfolioHoldings = [];
     }
+  }
+
+  // Load portfolio holdings
+  loadPortfolioHoldings(portfolioId: number): void {
+    this.isLoadingHoldings = true;
+    this.portfolioApiService.getHoldings(portfolioId).subscribe({
+      next: (holdings) => {
+        this.portfolioHoldings = holdings;
+        this.isLoadingHoldings = false;
+      },
+      error: (error) => {
+        console.error('Error loading portfolio holdings:', error);
+        this.isLoadingHoldings = false;
+        // For now, use mock data if API fails
+        this.loadMockHoldings();
+      }
+    });
+  }
+
+  // Load mock holdings data for demonstration
+  loadMockHoldings(): void {
+    this.portfolioHoldings = [
+      {
+        id: 1,
+        portfolioId: this.selectedPortfolio?.id || 0,
+        symbol: 'TCS',
+        quantity: 100,
+        avgCost: 3812.4,
+        realizedPnl: 0,
+        lastUpdated: new Date().toISOString()
+      },
+      {
+        id: 2,
+        portfolioId: this.selectedPortfolio?.id || 0,
+        symbol: 'INFY',
+        quantity: 150,
+        avgCost: 1567.3,
+        realizedPnl: 0,
+        lastUpdated: new Date().toISOString()
+      },
+      {
+        id: 3,
+        portfolioId: this.selectedPortfolio?.id || 0,
+        symbol: 'HCLTECH',
+        quantity: 200,
+        avgCost: 1234.75,
+        realizedPnl: 0,
+        lastUpdated: new Date().toISOString()
+      },
+      {
+        id: 4,
+        portfolioId: this.selectedPortfolio?.id || 0,
+        symbol: 'WIPRO',
+        quantity: 300,
+        avgCost: 456.8,
+        realizedPnl: 0,
+        lastUpdated: new Date().toISOString()
+      }
+    ];
+  }
+
+  // Get mock market data for holdings (in real app, this would come from market data API)
+  getMockMarketData(symbol: string): any {
+    const mockData: { [key: string]: any } = {
+      'TCS': {
+        name: 'Tata Consultancy Services',
+        currentPrice: 3812.4,
+        change: -15.6,
+        changePercent: -0.41,
+        sector: 'Information Technology',
+        stageAnalysis: 'Stage 2',
+        stageLabel: 'Markup',
+        uptrend: true,
+        sectorTrend: 'Bullish',
+        sectorRank: 3,
+        totalSectorStocks: 10
+      },
+      'INFY': {
+        name: 'Infosys Limited',
+        currentPrice: 1567.3,
+        change: 21.5,
+        changePercent: 1.39,
+        sector: 'Information Technology',
+        stageAnalysis: 'Stage 2',
+        stageLabel: 'Markup',
+        uptrend: true,
+        sectorTrend: 'Bullish',
+        sectorRank: 2,
+        totalSectorStocks: 10
+      },
+      'HCLTECH': {
+        name: 'HCL Technologies',
+        currentPrice: 1234.75,
+        change: 12.4,
+        changePercent: 1.01,
+        sector: 'Information Technology',
+        stageAnalysis: 'Stage 2',
+        stageLabel: 'Markup',
+        uptrend: true,
+        sectorTrend: 'Bullish',
+        sectorRank: 1,
+        totalSectorStocks: 10
+      },
+      'WIPRO': {
+        name: 'Wipro Limited',
+        currentPrice: 456.8,
+        change: -8.2,
+        changePercent: -1.76,
+        sector: 'Information Technology',
+        stageAnalysis: 'Stage 3',
+        stageLabel: 'Distribution',
+        uptrend: false,
+        sectorTrend: 'Bullish',
+        sectorRank: 6,
+        totalSectorStocks: 10
+      }
+    };
+    return mockData[symbol] || {};
+  }
+
+  // Calculate current value for a holding
+  getCurrentValue(holding: PortfolioHoldingDto): number {
+    const marketData = this.getMockMarketData(holding.symbol);
+    return marketData.currentPrice ? holding.quantity * marketData.currentPrice : 0;
+  }
+
+  // Calculate unrealized P&L
+  getUnrealizedPnl(holding: PortfolioHoldingDto): number {
+    const currentValue = this.getCurrentValue(holding);
+    const costBasis = holding.quantity * holding.avgCost;
+    return currentValue - costBasis;
+  }
+
+  // Calculate unrealized P&L percentage
+  getUnrealizedPnlPercent(holding: PortfolioHoldingDto): number {
+    const costBasis = holding.quantity * holding.avgCost;
+    if (costBasis === 0) return 0;
+    return (this.getUnrealizedPnl(holding) / costBasis) * 100;
+  }
+
+  // Add holdings method
+  addHoldings(): void {
+    // TODO: Implement add holdings functionality
+    console.log('Add holdings clicked');
+  }
+
+  // Remove holding method
+  removeHolding(holding: PortfolioHoldingDto): void {
+    if (confirm(`Are you sure you want to remove ${holding.symbol} from this portfolio?`)) {
+      // TODO: Implement remove holding functionality
+      console.log('Remove holding:', holding.symbol);
+      // For now, just remove from local array
+      this.portfolioHoldings = this.portfolioHoldings.filter(h => h.id !== holding.id);
+    }
+  }
+
+  // Refresh holdings data
+  refreshHoldings(): void {
+    if (this.editingPortfolio && this.editingPortfolio.id > 0) {
+      this.loadPortfolioHoldings(this.editingPortfolio.id);
+    }
+  }
+
+  // Global filter change handler
+  onGlobalFilterChange(event: any): void {
+    this.globalFilterValue = event.target.value;
   }
 
   // Start editing all fields
