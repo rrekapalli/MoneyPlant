@@ -109,8 +109,7 @@
         <div class="portfolio-cards">
           <div class="grid" [class]="layout === 'grid' ? 'grid-layout' : 'list-layout'">
             <div *ngFor="let portfolio of filteredPortfolios; trackBy: trackPortfolioById" 
-                 class="col-12"
-                 [class]="layout === 'list' ? 'list-layout' : 'md:col-6 lg:col-4 xl:col-3'">
+                 class="portfolio-item">
               
               <!-- Grid View Card -->
               <p-card *ngIf="layout === 'grid'" class="portfolio-card">

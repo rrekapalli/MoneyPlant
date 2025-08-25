@@ -12,7 +12,7 @@
     background: var(--surface-card, white);
     border: 1px solid var(--surface-border, #e9ecef);
     border-radius: 8px;
-    padding: 1rem;
+    padding: 0.5rem;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     
     .controls-row {
@@ -182,7 +182,8 @@
   // Portfolio Scroll Panel
   .portfolio-scroll-panel {
     flex: 1;
-    height: 60vh; // Fixed height for vertical scrolling
+    height: calc(90vh - 200px); // 90% of viewport height minus controls height
+    // margin: 1rem;
     
     ::ng-deep .p-scrollpanel {
       height: 100%;
@@ -217,17 +218,41 @@
   // Portfolio Cards
   .portfolio-cards {
     .grid {
+      display: grid !important; // Force grid display
       gap: 1.5rem;
+      width: 100%;
       
       &.grid-layout {
-        .col-12 {
-          margin-bottom: 0;
+        grid-template-columns: repeat(4, 1fr) !important; // Force 4 columns
+        grid-auto-rows: minmax(320px, auto); // Reduced height for compactness (was 400px)
+        
+        // Responsive breakpoints
+        @media (max-width: 1400px) {
+          grid-template-columns: repeat(3, 1fr) !important; // 3 cards per row on medium screens
+        }
+        
+        @media (max-width: 1100px) {
+          grid-template-columns: repeat(2, 1fr) !important; // 2 cards per row on small screens
+        }
+        
+        @media (max-width: 768px) {
+          grid-template-columns: 1fr !important; // 1 card per row on mobile
+        }
+        
+        .portfolio-item {
+          margin: 1rem;
+          // margin-bottom: 0;
+          min-height: 320px; // Reduced height for compactness (was 400px)
+          width: 100%; // Ensure full width
         }
       }
       
       &.list-layout {
-        .col-12 {
+        grid-template-columns: 1fr !important; // Single column for list view
+        
+        .portfolio-item {
           margin-bottom: 0;
+          width: 100%; // Ensure full width
         }
       }
     }
@@ -249,7 +274,7 @@
         }
         
         .p-card-body {
-          padding: 1.5rem;
+          padding: 1.5rem !important; // Force internal padding
           height: 100%;
           display: flex;
           flex-direction: column;
@@ -268,15 +293,18 @@
       display: flex;
       flex-direction: column;
       height: 100%;
-      gap: 1rem;
+      gap: 1rem; // Reduced gap for compactness
+      padding: 1.5rem; // Additional internal padding
       
       // Card Header
       .card-header {
+        padding: 0.5rem 0; // Added padding
+        
         .title-row {
           display: flex;
           align-items: center;
           gap: 0.75rem;
-          margin-bottom: 0.5rem;
+          margin-bottom: 0.5rem; // Reduced margin for compactness
           
           .chart-icon {
             font-size: 1.25rem;
@@ -306,6 +334,7 @@
         justify-content: space-between;
         align-items: flex-start;
         gap: 1rem;
+        padding: 0.75rem 0; // Added padding
         
         .left-metrics, .right-metrics {
           display: flex;
@@ -328,12 +357,18 @@
       
       // Chart Section
       .chart-section {
+        padding: 0.5rem 0; // Added padding
+        background-color: rgba(33, 150, 243, 0.08); // Light blue background with 0.08 opacity (not grey)
+        border-radius: 8px; // Rounded corners for the background
+        margin: 0.5rem 0; // Add some margin around the chart section
+        
         .chart-container {
           position: relative;
+          padding: 0.5rem; // Add padding inside the chart container
           
           .chart-svg {
             width: 100%;
-            height: 120px;
+            height: 80px; // Reduced chart height for compactness (was 120px)
           }
           
           .chart-time-labels {
@@ -351,10 +386,12 @@
       
       // Chart Legend
       .chart-legend {
+        padding: 0.5rem 0; // Added padding
+        
         .legend-row {
           display: flex;
           gap: 1rem;
-          margin-bottom: 0.5rem;
+          margin-bottom: 0.5rem; // Reduced margin for compactness
           
           .legend-item {
             display: flex;
@@ -372,6 +409,10 @@
               
               &.benchmark-legend {
                 background: #999;
+              }
+              
+              &.rebalance-dot {
+                background: #ff9500;
               }
             }
             
@@ -404,6 +445,7 @@
         display: flex;
         gap: 0.75rem;
         margin-top: auto;
+        padding: 0.75rem 0; // Added padding
         
         button {
           flex: 1;
@@ -419,6 +461,17 @@
           
           &:hover {
             transform: translateY(-1px);
+          }
+          
+          // Configure button with orange outline
+          &.configure-btn {
+            border-color: var(--orange-500, #ff9500) !important;
+            color: var(--orange-500, #ff9500) !important;
+            
+            &:hover {
+              background-color: var(--orange-500, #ff9500) !important;
+              color: white !important;
+            }
           }
         }
       }
@@ -485,6 +538,17 @@
             
             &:hover {
               transform: translateY(-1px);
+            }
+            
+            // Configure button with orange outline
+            &.configure-btn {
+              border-color: var(--orange-500, #ff9500) !important;
+              color: var(--orange-500, #ff9500) !important;
+              
+              &:hover {
+                background-color: var(--orange-500, #ff9500) !important;
+                color: white !important;
+              }
             }
           }
         }
@@ -553,6 +617,7 @@
       padding: 1rem 0;
       margin-top: 1rem;
       border-top: 1px solid var(--surface-border, #e9ecef);
+      height: 10%; // 10% of container height for pagination
       
       span {
         font-size: 0.875rem;
