@@ -9,21 +9,23 @@ export interface PortfolioDto {
 }
 
 export interface PortfolioCreateRequest {
+  userId?: number; // required in backend
   name: string;
-  description: string;
+  description?: string;
   baseCurrency: string;
-  inceptionDate: string;
-  riskProfile: string;
-  isActive: boolean;
+  inceptionDate?: string;
+  riskProfile?: string;
+  isActive?: boolean;
+  symbols?: string[]; // optional: symbols to seed holdings
 }
 
 export interface PortfolioUpdateRequest {
-  name: string;
-  description: string;
-  baseCurrency: string;
-  inceptionDate: string;
-  riskProfile: string;
-  isActive: boolean;
+  name?: string;
+  description?: string;
+  baseCurrency?: string;
+  inceptionDate?: string;
+  riskProfile?: string;
+  isActive?: boolean;
 }
 
 export interface PortfolioPatchRequest {
@@ -35,6 +37,93 @@ export interface PortfolioPatchRequest {
   isActive?: boolean;
 }
 
+// Transaction-related DTOs
+export interface TransactionCreateRequest {
+  symbol: string;
+  tradeDate: string;
+  txnType: string;
+  quantity: number;
+  price: number;
+  fees?: number;
+  taxes?: number;
+  notes?: string;
+}
+
+export interface PortfolioTransactionDto {
+  id: number;
+  portfolioId: number;
+  symbol: string;
+  tradeDate: string;
+  tradeTime: string; // OffsetDateTime in backend
+  txnType: string;
+  quantity: number;
+  price: number;
+  fees?: number;
+  taxes?: number;
+  notes?: string;
+}
+
+// Holdings-related DTOs
+export interface HoldingsCreateRequest {
+  symbols: string[];
+}
+
+export interface HoldingUpdateRequest {
+  quantity?: number;
+  avgCost?: number;
+  realizedPnl?: number;
+}
+
+export interface PortfolioHoldingDto {
+  id: number;
+  portfolioId: number;
+  symbol: string;
+  quantity: number;
+  avgCost: number;
+  realizedPnl: number;
+  lastUpdated: string; // OffsetDateTime in backend
+}
+
+// Cash Flow DTOs
+export interface PortfolioCashFlowDto {
+  id: number;
+  portfolioId: number;
+  date: string;
+  type: string;
+  amount: number;
+  description: string;
+}
+
+// Valuation DTOs
+export interface PortfolioValuationDailyDto {
+  id: number;
+  portfolioId: number;
+  date: string;
+  totalValue: number;
+  cashValue: number;
+  investmentValue: number;
+  totalReturn: number;
+  totalReturnPct: number;
+  dailyReturn: number;
+  dailyReturnPct: number;
+  lastUpdated: string;
+}
+
+export interface PortfolioHoldingValuationDailyDto {
+  id: number;
+  portfolioId: number;
+  symbol: string;
+  date: string;
+  quantity: number;
+  price: number;
+  marketValue: number;
+  costBasis: number;
+  unrealizedPnl: number;
+  unrealizedPnlPct: number;
+  lastUpdated: string;
+}
+
+// Metrics DTOs
 export interface PortfolioMetricsDailyDto {
   id: number;
   portfolioId: number;
@@ -75,54 +164,7 @@ export interface PortfolioMetricsDailyDto {
   activeReturn30dPct: number;
 }
 
-export interface PortfolioHoldingDto {
-  id: number;
-  portfolioId: number;
-  symbol: string;
-  quantity: number;
-  averagePrice: number;
-  lastPrice: number;
-  marketValue: number;
-  unrealizedPnL: number;
-  unrealizedPnLPct: number;
-  lastUpdated: string;
-}
-
-export interface PortfolioTransactionDto {
-  id: number;
-  portfolioId: number;
-  symbol: string;
-  transactionType: string;
-  quantity: number;
-  price: number;
-  transactionDate: string;
-  fees: number;
-  notes: string;
-}
-
-export interface PortfolioCashFlowDto {
-  id: number;
-  portfolioId: number;
-  date: string;
-  type: string;
-  amount: number;
-  description: string;
-}
-
-export interface PortfolioValuationDailyDto {
-  id: number;
-  portfolioId: number;
-  date: string;
-  totalValue: number;
-  cashValue: number;
-  investmentValue: number;
-  totalReturn: number;
-  totalReturnPct: number;
-  dailyReturn: number;
-  dailyReturnPct: number;
-  lastUpdated: string;
-}
-
+// Benchmark DTOs
 export interface PortfolioBenchmarkDto {
   id: number;
   portfolioId: number;
@@ -131,4 +173,19 @@ export interface PortfolioBenchmarkDto {
   correlation: number;
   trackingError: number;
   informationRatio: number;
+}
+
+// Extended Portfolio with metrics for frontend display
+export interface PortfolioWithMetrics extends PortfolioDto {
+  totalReturn?: number;
+  benchmarkReturn?: number;
+  outperformance?: number;
+  stockCount?: number;
+  rebalanceEvents?: number;
+  lastRebalance?: string;
+  performanceData?: {
+    portfolio: number[];
+    benchmark: number[];
+    labels: string[];
+  };
 }
