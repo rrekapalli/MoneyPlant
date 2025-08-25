@@ -65,6 +65,9 @@ export class PortfoliosComponent implements OnInit, OnDestroy {
   // Selected portfolio for configuration/optimization
   selectedPortfolio: PortfolioWithMetrics | null = null;
   
+  // Active tab index for switching between tabs
+  activeTab: string = "0";
+
 
   
   // Risk profile options for filter
@@ -77,6 +80,7 @@ export class PortfoliosComponent implements OnInit, OnDestroy {
   constructor(private portfolioApiService: PortfolioApiService) {}
 
   ngOnInit(): void {
+    console.log('PortfoliosComponent initialized with activeTab:', this.activeTab);
     // Check if user has a valid token
     if (!this.hasValidToken()) {
       this.goToLogin();
@@ -336,6 +340,7 @@ export class PortfoliosComponent implements OnInit, OnDestroy {
   createPortfolio(): void {
     console.log('Create portfolio clicked');
     // TODO: Implement portfolio creation
+    this.activeTab = "0"; // Stay on Overview tab
   }
 
   selectPortfolio(portfolio: PortfolioWithMetrics): void {
@@ -350,12 +355,30 @@ export class PortfoliosComponent implements OnInit, OnDestroy {
 
   configurePortfolio(portfolio: PortfolioWithMetrics): void {
     console.log('Configure portfolio:', portfolio);
+    console.log('Current activeTab before switch:', this.activeTab);
     this.selectedPortfolio = portfolio;
+    this.activeTab = "1"; // Switch to Configure tab
+    console.log('ActiveTab after switch to Configure:', this.activeTab);
   }
 
   optimizePortfolio(portfolio: PortfolioWithMetrics): void {
     console.log('Optimize portfolio:', portfolio);
+    console.log('Current activeTab before switch:', this.activeTab);
     this.selectedPortfolio = portfolio;
+    this.activeTab = "2"; // Switch to Optimize tab
+    console.log('ActiveTab after switch to Optimize:', this.activeTab);
+  }
+
+  // Method to reset to Overview tab
+  resetToOverview(): void {
+    this.activeTab = "0";
+    this.selectedPortfolio = null;
+  }
+
+  // Method to handle tab changes
+  onTabChange(index: string | number): void {
+    console.log('Tab changed to:', index);
+    this.activeTab = typeof index === 'string' ? index : index.toString();
   }
 
   viewPortfolioData(portfolio: PortfolioWithMetrics): void {
@@ -504,15 +527,18 @@ export class PortfoliosComponent implements OnInit, OnDestroy {
   onSaveChanges(portfolio: PortfolioWithMetrics): void {
     console.log('Save changes for portfolio:', portfolio);
     // TODO: Implement save logic
+    this.resetToOverview(); // Return to Overview tab after saving
   }
 
   onCancel(): void {
     console.log('Cancel configuration');
     // TODO: Implement cancel logic
+    this.resetToOverview(); // Return to Overview tab after canceling
   }
 
   onApplyOptimization(portfolio: PortfolioWithMetrics): void {
     console.log('Apply optimization for portfolio:', portfolio);
     // TODO: Implement optimization logic
+    this.resetToOverview(); // Return to Overview tab after optimization
   }
 }

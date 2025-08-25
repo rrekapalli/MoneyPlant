@@ -235,20 +235,16 @@
                 <!-- Action Buttons -->
                 <div class="list-action-buttons">
                   <button pButton 
-                          label="DATA" 
-                          icon="pi pi-table" 
-                          class="p-button-primary p-button-sm">
-                  </button>
-                  <button pButton 
-                          label="INSIGHTS" 
-                          icon="pi pi-chart-line" 
-                          class="p-button-secondary p-button-sm">
-                  </button>
-                  <button pButton 
-                          label="CONFIGURE" 
+                          label="Configure" 
                           icon="pi pi-cog" 
-                          class="p-button-warning p-button-sm"
+                          class="p-button-outlined configure-btn"
                           (click)="onConfigurePortfolio(portfolio)">
+                  </button>
+                  <button pButton 
+                          label="Optimize" 
+                          icon="pi pi-chart-bar" 
+                          class="p-button-outlined optimize-btn"
+                          (click)="onOptimizePortfolio(portfolio)">
                   </button>
                 </div>
 
