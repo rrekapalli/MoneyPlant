@@ -128,6 +128,36 @@ export class ApiService {
   }
 
   /**
+   * Performs a PATCH request to the API
+   * @param path The API endpoint path
+   * @param body The request body
+   * @returns An Observable of the response
+   */
+  patch<T>(path: string, body: any): Observable<T> {
+    return this.http.patch<T>(`${this.apiUrl}${path}`, body, {
+      headers: this.getHeaders()
+    })
+      .pipe(
+        retryWhen(errors => 
+          errors.pipe(
+            // Retry up to 3 times
+            mergeMap((error, i) => {
+              const retryAttempt = i + 1;
+              // If we've tried 3 times and still failing, throw the error
+              if (retryAttempt > 3) {
+                return throwError(() => error);
+              }
+              console.log(`PATCH Attempt ${retryAttempt}: retrying in ${retryAttempt * 1000}ms`);
+              // Retry after 1s, 2s, then 3s
+              return timer(retryAttempt * 1000);
+            })
+          )
+        ),
+        catchError(this.handleError)
+      );
+  }
+
+  /**
    * Performs a DELETE request to the API
    * @param path The API endpoint path
    * @returns An Observable of the response
@@ -146,7 +176,7 @@ export class ApiService {
               if (retryAttempt > 3) {
                 return throwError(() => error);
               }
-              console.log(`Attempt ${retryAttempt}: retrying in ${retryAttempt * 1000}ms`);
+              console.log(`DELETE Attempt ${retryAttempt}: retrying in ${retryAttempt * 1000}ms`);
               // Retry after 1s, 2s, then 3s
               return timer(retryAttempt * 1000);
             })

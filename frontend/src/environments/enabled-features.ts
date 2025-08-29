@@ -5,6 +5,7 @@
 export const enabledFeatures = [
   'dashboard',
   'dashboard-overall',
+  'dashboard-stock-insights',
   'dashboard-today',
   'dashboard-week',
   'dashboard-month',

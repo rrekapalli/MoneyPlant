@@ -91,6 +91,13 @@
     "group": "dashboard"
   },
   {
+    "id": "feature-18",
+    "name": "dashboard-stock-insights",
+    "description": "Dashboard stock insights view",
+    "enabled": true,
+    "group": "dashboard"
+  },
+  {
     "id": "feature-14",
     "name": "portfolios",
     "description": "Portfolios feature",

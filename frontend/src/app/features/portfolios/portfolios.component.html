@@ -1,69 +1,134 @@
 <div class="portfolios-container">
-  <div class="header">
-    <h1>Portfolios</h1>
-    <button pButton label="Create Portfolio" icon="pi pi-plus" (click)="createPortfolio()"></button>
-  </div>
-
-  <div class="content">
-    @if (loading) {
-      <p-card styleClass="loading-card">
-        <div class="loading-message">
-          <i class="pi pi-spin pi-spinner" style="font-size: 2rem"></i>
-          <p>Loading portfolios...</p>
-        </div>
-      </p-card>
-    }
-
-    @if (!loading) {
-      <div class="portfolios-grid">
-        @for (portfolio of portfolios; track portfolio.id) {
-          <p-card styleClass="portfolio-card">
-            <ng-template pTemplate="header">
-              <div class="portfolio-header">
-                <h2>{{ portfolio.name }}</h2>
-              </div>
-            </ng-template>
-            
-            <div class="portfolio-details">
-              <p>{{ portfolio.description }}</p>
-              <div class="portfolio-stats">
-                <div class="stat">
-                  <span class="label">Value</span>
-                  <span class="value">{{ portfolio.value | currency }}</span>
-                </div>
-                <div class="stat">
-                  <span class="label">Return</span>
-                  <span class="value" [ngClass]="{'positive': portfolio.returnRate > 0, 'negative': portfolio.returnRate < 0}">
-                    {{ portfolio.returnRate }}%
-                  </span>
-                </div>
-                <div class="stat">
-                  <span class="label">Last Updated</span>
-                  <span class="value">{{ portfolio.lastUpdated | date:'short' }}</span>
-                </div>
-              </div>
-            </div>
-
-            <ng-template pTemplate="footer">
-              <div class="portfolio-actions">
-                <button pButton label="View" icon="pi pi-eye" class="p-button-outlined" (click)="selectPortfolio(portfolio)"></button>
-                <button pButton label="Edit" icon="pi pi-pencil" class="p-button-outlined p-button-secondary" (click)="editPortfolio(portfolio)"></button>
-                <button pButton label="Delete" icon="pi pi-trash" class="p-button-outlined p-button-danger" (click)="deletePortfolio(portfolio)"></button>
-              </div>
-            </ng-template>
-          </p-card>
-        }
+  <!-- Header Section -->
+  <div class="header-section">
+    <div class="header-content">
+      <div class="title-section">
+        <h1 class="main-title">Portfolios</h1>
+        <p class="subtitle">Configure and manage your investment portfolios</p>
       </div>
-    }
-
-    @if (!loading && portfolios.length === 0) {
-      <p-card styleClass="empty-card">
-        <div class="empty-message">
-          <i class="pi pi-info-circle" style="font-size: 2rem"></i>
-          <p>No portfolios found. Create your first portfolio to get started.</p>
-          <button pButton label="Create Portfolio" icon="pi pi-plus" (click)="createPortfolio()"></button>
-        </div>
-      </p-card>
-    }
+      <button pButton 
+              label="Create Portfolio" 
+              icon="pi pi-plus" 
+              class="p-button-primary create-btn"
+              (click)="createPortfolio()">
+      </button>
+    </div>
+    <div class="header-divider"></div>
   </div>
+
+  <!-- Summary Cards Section -->
+  <div class="summary-cards">
+    <div class="summary-card">
+      <div class="card-content">
+        <div class="card-value">{{ totalPortfolios }}</div>
+        <div class="card-label">Total Portfolios</div>
+      </div>
+      <div class="card-icon">
+        <i class="pi pi-chart-line"></i>
+      </div>
+    </div>
+    
+    <div class="summary-card">
+      <div class="card-content">
+        <div class="card-value">{{ activePortfolios }}</div>
+        <div class="card-label">Active Portfolios</div>
+      </div>
+      <div class="card-icon">
+        <i class="pi pi-check-circle"></i>
+      </div>
+    </div>
+    
+    <div class="summary-card">
+      <div class="card-content">
+        <div class="card-value">{{ conservativePortfolios }}</div>
+        <div class="card-label">Conservative</div>
+      </div>
+      <div class="card-icon">
+        <i class="pi pi-shield"></i>
+      </div>
+    </div>
+    
+    <div class="summary-card">
+      <div class="card-content">
+        <div class="card-value">{{ moderatePortfolios }}</div>
+        <div class="card-label">Moderate</div>
+      </div>
+      <div class="card-icon">
+        <i class="pi pi-balance-scale"></i>
+      </div>
+    </div>
+    
+    <div class="summary-card">
+      <div class="card-content">
+        <div class="card-value">{{ aggressivePortfolios }}</div>
+        <div class="card-label">Aggressive</div>
+      </div>
+      <div class="card-icon">
+        <i class="pi pi-rocket"></i>
+      </div>
+    </div>
+  </div>
+
+  <!-- Portfolio Tabs -->
+  <p-tabs [(value)]="activeTab" class="portfolio-tabs" (valueChange)="onTabChange($event)">
+    <p-tablist>
+      <p-tab value="0">
+        <i class="pi pi-chart-line"></i>
+        Overview
+      </p-tab>
+      <p-tab value="1">
+        <i class="pi pi-cog"></i>
+        Configure
+      </p-tab>
+      <p-tab value="2">
+        <i class="pi pi-chart-bar"></i>
+        Optimize
+      </p-tab>
+    </p-tablist>
+    <p-tabpanels>
+      <!-- Overview Tab Panel -->
+      <p-tabpanel value="0">
+        <app-portfolio-overview
+          [portfolios]="portfolios"
+          [filteredPortfolios]="filteredPortfolios"
+          [loading]="loading"
+          [error]="error"
+          [searchText]="searchText"
+          [selectedRiskProfile]="selectedRiskProfile"
+          [layout]="layout"
+          [sortField]="sortField"
+          [sortOrder]="sortOrder"
+          [riskProfileOptions]="riskProfileOptions"
+          (searchChange)="onSearchChange()"
+          (riskProfileChange)="onRiskProfileChange()"
+          (clearFilters)="clearFilters()"
+          (sortChange)="onSortChange($event)"
+          (layoutChange)="layout = $event"
+          (configurePortfolio)="configurePortfolio($event)"
+          (optimizePortfolio)="optimizePortfolio($event)"
+          (createPortfolio)="createPortfolio()"
+          (goToLogin)="goToLogin()">
+        </app-portfolio-overview>
+      </p-tabpanel>
+
+      <!-- Configure Tab Panel -->
+      <p-tabpanel value="1">
+        <app-portfolio-configure
+          [selectedPortfolio]="selectedPortfolio"
+          [riskProfileOptions]="riskProfileOptions"
+          (saveChanges)="onSaveChanges($event)"
+          (cancel)="onCancel()"
+          (goToOverview)="goToOverview()">
+        </app-portfolio-configure>
+      </p-tabpanel>
+
+      <!-- Optimize Tab Panel -->
+      <p-tabpanel value="2">
+        <app-portfolio-optimize
+          [selectedPortfolio]="selectedPortfolio"
+          (applyOptimization)="onApplyOptimization($event)">
+        </app-portfolio-optimize>
+      </p-tabpanel>
+    </p-tabpanels>
+  </p-tabs>
 </div>
