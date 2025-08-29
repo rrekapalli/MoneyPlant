@@ -110,5 +110,19 @@
     "description": "Strategies feature",
     "enabled": true,
     "group": "core"
+  },
+  {
+    "id": "feature-17",
+    "name": "indices",
+    "description": "Indices feature",
+    "enabled": true,
+    "group": "core"
+  },
+  {
+    "id": "feature-18",
+    "name": "dashboard-stock-insights",
+    "description": "Dashboard stock insights view",
+    "enabled": true,
+    "group": "dashboard"
   }
 ]

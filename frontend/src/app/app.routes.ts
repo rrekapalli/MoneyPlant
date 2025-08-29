@@ -109,6 +109,13 @@ export const routes: Routes = [
             canActivate: [featureFlagGuard('dashboard-overall')]
           },
           {
+            path: 'stock-insights',
+            loadComponent: () => import('./features/dashboard/stock-insights/stock-insights.component')
+              .then(m => m.StockInsightsComponent),
+            title: 'Stock Insights Dashboard - MoneyPlant',
+            canActivate: [featureFlagGuard('dashboard-stock-insights')]
+          },
+          {
             path: 'today',
             loadComponent: () => import('./features/dashboard/today/today.component')
               .then(m => m.TodayComponent),
