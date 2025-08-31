@@ -142,6 +142,10 @@ import { ComponentCommunicationService, SelectedIndexData } from '../../../servi
 import { StockTicksService } from '../../../services/apis/stock-ticks.api';
 import {StockDataDto, StockTicksDto} from '../../../services/entities/stock-ticks';
 
+// Import stock service and historical data entities
+import { StockService } from '../../../services/apis/stock.api';
+import { StockHistoricalData } from '../../../services/entities/stock-historical-data';
+
 // Import indices service and historical data entities
 import { IndicesService } from '../../../services/apis/indices.api';
 import { IndexHistoricalData } from '../../../services/entities/index-historical-data';
@@ -206,33 +210,33 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
   // Central applied filters array for cumulative filtering
   protected appliedFilters: FilterCriteria[] = [];
   
-  // Dashboard title - dynamic based on a selected index
-  public dashboardTitle: string = 'Financial Dashboard';
+  // Dashboard title - dynamic based on a selected stock
+  public dashboardTitle: string = 'Stock Insights Dashboard';
   
   // Subscription management
-  private selectedIndexSubscription: Subscription | null = null;
+  private selectedStockSubscription: Subscription | null = null;
   
   // Chart update control to prevent rapid reinitialization
   private chartUpdateTimer: any = null;
-  private indicesWebSocketSubscription: Subscription | null = null;
+  private stockWebSocketSubscription: Subscription | null = null;
   private webSocketConnectionStateSubscription: Subscription | null = null;
   
-  // Current selected index data from WebSocket
-  private currentSelectedIndexData: IndexDataDto | null = null;
+  // Current selected stock data
+  private currentSelectedStockData: StockDataDto | null = null;
   
   // Historical data for candlestick chart
-  private historicalData: IndexHistoricalData[] = [];
+  private historicalData: StockHistoricalData[] = [];
 
   // WebSocket connection state tracking
   private isWebSocketConnected: boolean = false;
-  private currentSubscribedIndex: string | null = null;
+  private currentSubscribedStock: string | null = null;
   private isSubscribing: boolean = false; // Track if we're currently in the process of subscribing
   private subscribedTopics: Set<string> = new Set(); // Track which topics we're already subscribed to
 
   // Debug flag to control verbose console logging
   private readonly enableDebugLogging: boolean = false;
-  // Track the last index for which previous-day data was fetched (to avoid repeated calls)
-  private lastPrevDayFetchIndex: string | null = null;
+  // Track the last stock for which previous-day data was fetched (to avoid repeated calls)
+  private lastPrevDayFetchStock: string | null = null;
 
 
   constructor(
@@ -241,6 +245,7 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
     filterService: FilterService,
     private componentCommunicationService: ComponentCommunicationService,
     private stockTicksService: StockTicksService,
+    private stockService: StockService,
     private indicesService: IndicesService,
     private webSocketService: WebSocketService
 
@@ -274,39 +279,42 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
       this.monitorWebSocketConnectionState();
 
       // Clear any existing subscription
-      if (this.selectedIndexSubscription) {
-        this.selectedIndexSubscription.unsubscribe();
-        this.selectedIndexSubscription = null;
+      if (this.selectedStockSubscription) {
+        this.selectedStockSubscription.unsubscribe();
+        this.selectedStockSubscription = null;
       }
 
       // Reset filters and title
       this.appliedFilters = [];
-      this.dashboardTitle = 'Financial Dashboard';
-      this.componentCommunicationService.clearSelectedIndex();
+      this.dashboardTitle = 'Stock Insights Dashboard';
+      // Note: We'll need to implement stock selection communication
+      // this.componentCommunicationService.clearSelectedStock();
 
-      // Subscribe to selected index changes (dedupe same index emissions)
-      this.selectedIndexSubscription = this.componentCommunicationService.getSelectedIndex()
-        .pipe(
-          distinctUntilChanged((a: any, b: any) => {
-            const keyA = (a && (a.name || a.symbol)) || a;
-            const keyB = (b && (b.name || b.symbol)) || b;
-            return keyA === keyB;
-          })
-        )
-        .subscribe((selectedIndex: any) => {
-          if (selectedIndex) {
-            this.updateDashboardWithSelectedIndex(selectedIndex);
-          } else {
-            this.loadDefaultNifty50Data();
-          }
-        });
+      // Subscribe to selected stock changes (dedupe same stock emissions)
+      // Note: We'll need to implement stock selection communication
+      // this.selectedStockSubscription = this.componentCommunicationService.getSelectedStock()
+      //   .pipe(
+      //     distinctUntilChanged((a: any, b: any) => {
+      //       const keyA = (a && (a.name || a.symbol)) || a;
+      //       const keyB = (b && (b.name || b.symbol)) || b;
+      //       return keyA === keyB;
+      //     })
+      //   )
+      //   .subscribe((selectedStock: any) => {
+      //     if (selectedStock) {
+      //       this.updateDashboardWithSelectedStock(selectedStock);
+      //     } else {
+      //       this.loadDefaultStockData();
+      //     }
+      //   });
 
-      // Load default data if no index selected
+      // Load default data if no stock selected
       setTimeout(() => {
-        const currentSelectedIndex = this.componentCommunicationService.getSelectedIndex();
-        if (!currentSelectedIndex) {
-          this.loadDefaultNifty50Data();
-        }
+        // Note: We'll need to implement stock selection communication
+        // const currentSelectedStock = this.componentCommunicationService.getSelectedStock();
+        // if (!currentSelectedStock) {
+          this.loadDefaultStockData();
+        // }
       }, 100);
       
       console.log('StockInsightsComponent onChildInit completed');
@@ -322,16 +330,16 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
       this.chartUpdateTimer = null;
     }
     
-    // Unsubscribe from selected index subscription to prevent memory leaks
-    if (this.selectedIndexSubscription) {
-      this.selectedIndexSubscription.unsubscribe();
-      this.selectedIndexSubscription = null;
+    // Unsubscribe from selected stock subscription to prevent memory leaks
+    if (this.selectedStockSubscription) {
+      this.selectedStockSubscription.unsubscribe();
+      this.selectedStockSubscription = null;
     }
     
     // Unsubscribe from WebSocket subscription
-    if (this.indicesWebSocketSubscription) {
-      this.indicesWebSocketSubscription.unsubscribe();
-      this.indicesWebSocketSubscription = null;
+    if (this.stockWebSocketSubscription) {
+      this.stockWebSocketSubscription.unsubscribe();
+      this.stockWebSocketSubscription = null;
     }
 
     // Unsubscribe from WebSocket connection state monitoring
@@ -347,66 +355,56 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
     this.dashboardData = [];
     this.filteredDashboardData = null;
     this.appliedFilters = [];
-    this.currentSelectedIndexData = null;
+    this.currentSelectedStockData = null;
     this.historicalData = [];
     
     // Reset WebSocket state
     this.isWebSocketConnected = false;
-    this.currentSubscribedIndex = null;
+    this.currentSubscribedStock = null;
     this.isSubscribing = false;
     this.subscribedTopics.clear();
   }
 
-  private loadDefaultNifty50Data(): void {
-    this.dashboardTitle = 'NIFTY 50 - Financial Dashboard';
+  /**
+   * Load default stock data for INFY
+   * Note: Currently using NIFTY 50 index data as a workaround since we don't have
+   * stock-specific endpoints in the backend yet. In the future, we should implement:
+   * 1. /api/v1/stock-ticks/by-symbol/{symbol} for individual stock data
+   * 2. /api/v1/stock/{symbol}/history for historical data (already implemented)
+   */
+  private loadDefaultStockData(): void {
+    this.dashboardTitle = 'Stock Insights Dashboard - INFY (Infosys)';
     
-    // Try to get actual NIFTY 50 data from the indices service
-    this.indicesService.getIndexByName('NIFTY 50').subscribe({
-      next: (indexResponse) => {
-        if (indexResponse && indexResponse.lastPrice !== undefined && indexResponse.lastPrice !== null) {
-          // Use actual data from the service
-          const defaultNifty50Data: SelectedIndexData = {
-            id: 'NIFTY50',
-            symbol: 'NIFTY 50',
-            name: 'NIFTY 50',
-            lastPrice: indexResponse.lastPrice || 0,
-            variation: indexResponse.variation || 0,
-            percentChange: indexResponse.percentChange || 0,
-            keyCategory: 'Index'
-          };
-          
-          this.updateDashboardWithSelectedIndex(defaultNifty50Data);
-        } else {
-          // Fallback to hardcoded data if service doesn't return valid data
-          this.loadDefaultNifty50DataFallback();
-        }
-      },
-      error: (error) => {
-        console.warn('Failed to get NIFTY 50 data from service, using fallback:', error);
-        // Fallback to hardcoded data if service fails
-        this.loadDefaultNifty50DataFallback();
-      }
-    });
+    // Load INFY as the default stock
+    const defaultStockSymbol = 'INFY';
+    console.log('Loading default stock data for:', defaultStockSymbol);
+    
+    // Fetch stock ticks data for INFY
+    this.loadStockTicksData(defaultStockSymbol);
+    
+    // Load historical data for INFY using the date-range endpoint /stock/INFY/history
+    this.loadHistoricalData(defaultStockSymbol);
+    
+    // Set current selected stock data
+    this.currentSelectedStockData = {
+      symbol: defaultStockSymbol,
+      lastPrice: 0, // Will be updated when data loads
+      priceChange: 0,
+      percentChange: 0
+    } as StockDataDto;
+    
+    // Update dashboard title with stock info
+    this.dashboardTitle = `${defaultStockSymbol} - Stock Insights Dashboard`;
   }
 
-  private loadDefaultNifty50DataFallback(): void {
-    // Fallback method with hardcoded data
-    const defaultNifty50Data: SelectedIndexData = {
-      id: 'NIFTY50',
-      symbol: 'NIFTY 50',
-      name: 'NIFTY 50',
-      lastPrice: 0,
-      variation: 0,
-      percentChange: 0,
-      keyCategory: 'Index'
-    };
-    
-    this.updateDashboardWithSelectedIndex(defaultNifty50Data);
-  }
-
-  private loadStockTicksData(indexSymbol: string): void {
-    if (indexSymbol && indexSymbol.trim()) {
-      this.stockTicksService.getStockTicksByIndex(indexSymbol).subscribe({
+  private loadStockTicksData(stockSymbol: string): void {
+    if (stockSymbol && stockSymbol.trim()) {
+      // For now, use NIFTY 50 as the index since we need an index, not a stock symbol
+      // TODO: Implement a proper stock-specific endpoint in the backend
+      const indexName = 'NIFTY 50';
+      console.log(`Loading stock ticks data for index: ${indexName} (stock symbol: ${stockSymbol})`);
+      
+      this.stockTicksService.getStockTicksByIndex(indexName).subscribe({
         next: (stockTicksData: StockDataDto[]) => {
           this.dashboardData = stockTicksData || [];
           this.appliedFilters = [];
@@ -417,7 +415,8 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
           this.updateAllChartsWithFilteredData();
           this.cdr.detectChanges();
         },
-        error: () => {
+        error: (error: any) => {
+          console.warn('Failed to load stock ticks data for index:', indexName, ':', error);
           this.dashboardData = [];
           this.filteredDashboardData = [];
           this.appliedFilters = [];
@@ -431,19 +430,31 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
   }
 
   /**
-   * Load historical data for the selected index
-   * @param indexName The name of the index to load historical data for
+   * Load historical data for the selected stock using the /stock/{symbol}/history endpoint
+   * @param stockSymbol The symbol of the stock to load historical data for
    */
-  private loadHistoricalData(indexName: string): void {
-    if (indexName && indexName.trim()) {
-      this.indicesService.getIndexHistoricalData(indexName).subscribe({
-        next: (historicalData: IndexHistoricalData[]) => {
+  private loadHistoricalData(stockSymbol: string): void {
+    if (stockSymbol && stockSymbol.trim()) {
+      // Use the date-range endpoint: /stock/{symbol}/history (POST with date range)
+      // Backend now accepts dates in yyyy-MM-dd format
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setFullYear(endDate.getFullYear() - 1);
+      
+      // Format dates as yyyy-MM-dd strings (backend expected format)
+      const startDateStr = startDate.toISOString().split('T')[0]; // yyyy-MM-dd
+      const endDateStr = endDate.toISOString().split('T')[0];     // yyyy-MM-dd
+      
+      console.log(`Loading historical data for ${stockSymbol} from ${startDateStr} to ${endDateStr}`);
+      
+      this.stockService.getStockHistory(stockSymbol, startDateStr, endDateStr).subscribe({
+        next: (historicalData: StockHistoricalData[]) => {
           this.historicalData = historicalData || [];
           this.updateCandlestickChartWithHistoricalData();
           this.cdr.detectChanges();
         },
-        error: (error) => {
-          console.warn('Failed to load historical data for', indexName, ':', error);
+        error: (error: any) => {
+          console.warn('Failed to load historical data for', stockSymbol, ':', error);
           this.historicalData = [];
           this.updateCandlestickChartWithHistoricalData();
           this.cdr.detectChanges();
@@ -472,39 +483,39 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
   }
 
   /**
-   * Unsubscribe from the current WebSocket topic before switching to a new index
+   * Unsubscribe from the current WebSocket topic before switching to a new stock
    */
   private unsubscribeFromCurrentWebSocketTopic(): void {
-    if (this.indicesWebSocketSubscription) {
-      this.indicesWebSocketSubscription.unsubscribe();
-      this.indicesWebSocketSubscription = null;
+    if (this.stockWebSocketSubscription) {
+      this.stockWebSocketSubscription.unsubscribe();
+      this.stockWebSocketSubscription = null;
     }
     
     // Clear current subscription tracking
-    if (this.currentSubscribedIndex) {
-      const webSocketIndexName = this.currentSubscribedIndex.replace(/\s+/g, '-').toLowerCase();
-      const topicName = `/topic/nse-indices/${webSocketIndexName}`;
+    if (this.currentSubscribedStock) {
+      const webSocketStockName = this.currentSubscribedStock.replace(/\s+/g, '-').toLowerCase();
+      const topicName = `/topic/nse-stocks/${webSocketStockName}`;
       this.subscribedTopics.delete(topicName);
 
     }
     
-    this.currentSubscribedIndex = null;
+    this.currentSubscribedStock = null;
     this.isSubscribing = false;
   }
 
   /**
-   * Update dashboard data with selected index information
-   * @param selectedIndex The selected index data object from an indices component
+   * Update dashboard data with selected stock information
+   * @param selectedStock The selected stock data object from an stocks component
    */
-  private updateDashboardWithSelectedIndex(selectedIndex: SelectedIndexData): void {
+  private updateDashboardWithSelectedStock(selectedStock: SelectedIndexData): void {
     // Unsubscribe from previous WebSocket topic if any
     this.unsubscribeFromCurrentWebSocketTopic();
     
-    // Update dashboard title with selected index name or symbol
-    this.dashboardTitle = selectedIndex.name || selectedIndex.symbol || 'Financial Dashboard';
+    // Update dashboard title with selected stock name or symbol
+    this.dashboardTitle = selectedStock.name || selectedStock.symbol || 'Stock Insights Dashboard';
 
-    // Transform the selected index data to dashboard data format
-    const dashboardDataRow = this.componentCommunicationService.transformToDashboardData(selectedIndex);
+    // Transform the selected stock data to dashboard data format
+    const dashboardDataRow = this.componentCommunicationService.transformToDashboardData(selectedStock);
     
     // Add the new data to the existing dashboard data
     // First, remove any existing data for the same symbol to avoid duplicates
@@ -513,39 +524,38 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
     // Add the new data row
     this.dashboardData = [dashboardDataRow, ...this.dashboardData];
     
-    // Set initial selected index data for immediate display
-    this.currentSelectedIndexData = {
-      indexName: selectedIndex.name || selectedIndex.symbol,
-      indexSymbol: selectedIndex.symbol,
-      lastPrice: selectedIndex.lastPrice || 0,
-      variation: selectedIndex.variation || 0,
-      percentChange: selectedIndex.percentChange || 0
-    };
+    // Set initial selected stock data for immediate display
+    this.currentSelectedStockData = {
+      symbol: selectedStock.symbol,
+      lastPrice: selectedStock.lastPrice || 0,
+      variation: selectedStock.variation || 0,
+      percentChange: selectedStock.percentChange || 0
+    } as StockDataDto;
     
-    // Fetch stock ticks data for the selected index
-    // Extract symbol from selectedIndex object
-    const indexSymbol = selectedIndex.symbol;
-    this.loadStockTicksData(indexSymbol);
+    // Fetch stock ticks data for the selected stock
+    // Extract symbol from selectedStock object
+    const stockSymbol = selectedStock.symbol;
+    this.loadStockTicksData(stockSymbol);
     
-    // Load historical data for the selected index
-    const indexName = selectedIndex.name || selectedIndex.symbol;
-    if (indexName) {
-      this.loadHistoricalData(indexName);
+    // Load historical data for the selected stock
+    const stockName = selectedStock.name || selectedStock.symbol;
+    if (stockName) {
+      this.loadHistoricalData(stockName);
       
-      // Subscribe to WebSocket updates for the selected index
-      this.subscribeToIndexWebSocket(indexName).catch(error => {
+      // Subscribe to WebSocket updates for the selected stock
+      this.subscribeToStockWebSocket(stockName).catch(error => {
         console.error('Failed to subscribe to WebSocket:', error);
       });
     }
     
-    // CRITICAL FIX: Force metric tiles to refresh with new index data
+    // CRITICAL FIX: Force metric tiles to refresh with new stock data
     this.forceMetricTilesRefresh();
 
     // Conditionally fetch previous-day data only when WebSocket is not connected
-    if (indexName) {
-      // Reset last previous-day fetch when index changes
-      this.lastPrevDayFetchIndex = null;
-      this.maybeFetchPreviousDay(indexName);
+    if (stockName) {
+      // Reset last previous-day fetch when stock changes
+      this.lastPrevDayFetchStock = null;
+      this.maybeFetchPreviousDay(stockName);
     }
     
     // Trigger change detection and update widgets
@@ -554,7 +564,7 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
   }
 
   /**
-   * Force metric tiles to refresh with current index data
+   * Force metric tiles to refresh with current stock data
    */
   private forceMetricTilesRefresh(): void {
 
@@ -597,57 +607,37 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
   }
 
   /**
-   * Fetch previous-day data for the current index and update the metric tiles
+   * Fetch previous-day data for the current stock and update the metric tiles
    */
-  private fetchAndUpdateCurrentIndexData(): void {
-    // Note: This method will be invoked only when selected index changes and WebSocket is not connected
-    if (!this.currentSelectedIndexData?.indexName) {
+  private fetchAndUpdateCurrentStockData(): void {
+    // Note: This method will be invoked only when selected stock changes and WebSocket is not connected
+    if (!this.currentSelectedStockData?.symbol) {
       return;
     }
     
-    const indexName = this.currentSelectedIndexData.indexName;
+    const stockSymbol = this.currentSelectedStockData.symbol;
 
     
-    // Fetch previous-day data for the current index
-    this.indicesService.getPreviousDayIndexData(indexName).subscribe({
-      next: (fallbackData) => {
-        if (fallbackData && fallbackData.indices && fallbackData.indices.length > 0) {
-          const indexData = fallbackData.indices[0];
-
-          
-          // Update the current selected index data with fallback data
-          this.currentSelectedIndexData = {
-            indexName: indexData.indexName || indexData.index || indexName,
-            indexSymbol: indexData.indexSymbol || indexName,
-            lastPrice: indexData.lastPrice || indexData.last || 0,
-            variation: indexData.variation || 0,
-            percentChange: indexData.percentChange || 0
-          };
-          
-          
-          
-          // Force metric tiles to refresh with new data
-          this.updateMetricTilesWithFilters([]);
-          this.cdr.detectChanges();
-        }
-      },
-      error: (error) => {
-        console.warn(`Failed to fetch previous-day data for ${indexName}:`, error);
-      }
-    });
+    // For now, we'll skip this functionality since we don't have a previous-day stock data service
+    // In the future, this could be implemented using StockService or a similar service
+    console.log(`Previous-day data fetch not implemented for stock: ${stockSymbol}`);
+    
+    // Update metric tiles with current data
+    this.updateMetricTilesWithFilters([]);
+    this.cdr.detectChanges();
   }
 
   /**
    * Conditionally fetch previous-day data only when the WebSocket is not connected
    */
-  private maybeFetchPreviousDay(indexName: string): void {
-    if (!indexName) {
+  private maybeFetchPreviousDay(stockName: string): void {
+    if (!stockName) {
       return;
     }
-    // Only fetch if WebSocket is not connected and we haven't fetched for this index yet
-    if (!this.isWebSocketConnected && this.lastPrevDayFetchIndex !== indexName) {
-      this.lastPrevDayFetchIndex = indexName;
-      this.fetchAndUpdateCurrentIndexData();
+    // Only fetch if WebSocket is not connected and we haven't fetched for this stock yet
+    if (!this.isWebSocketConnected && this.lastPrevDayFetchStock !== stockName) {
+      this.lastPrevDayFetchStock = stockName;
+      this.fetchAndUpdateCurrentStockData();
     }
   }
 
@@ -658,7 +648,7 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
   protected createMetricTiles(data: StockDataDto[]): IWidget[] {
     return createMetricTilesFunction(
       this.filteredDashboardData || this.dashboardData, 
-      this.currentSelectedIndexData,
+      this.currentSelectedStockData,
       this.webSocketService,
       this.indicesService
     );
@@ -812,10 +802,10 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
 
       console.log('Sector pie chart created successfully');
       
-      // Stock Price Candlestick Chart - Now shows historical data
+      // Stock Price Candlestick Chart - Now shows historical stock data
       const candlestickChart = CandlestickChartBuilder.create()
         .setData(this.filteredDashboardData || [])
-        .setHeader('Index Historical Price Movement')
+        .setHeader('INFY - Stock Historical Price Movement')
         .setCurrencyFormatter('INR', 'en-IN')
         .setPredefinedPalette('finance')
         .setAccessor('symbol')
@@ -832,7 +822,7 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
             chart.off('click');
             chart.on('click', (params: any) => {
               params.event?.stop?.();
-              // For historical data, we don't filter by symbol since it's all the same index
+              // For historical data, we don't filter by symbol since it's all the same stock
               // Just log the click for debugging
               console.log('Candlestick chart clicked:', params);
               return false;
@@ -987,20 +977,20 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
    * Trigger immediate fallback data fetch for metric tiles if no valid data is available
    */
   private triggerImmediateFallbackDataFetch(): void {
-    // Check if we have valid index data
-    if (!this.currentSelectedIndexData || 
-        !this.currentSelectedIndexData.lastPrice || 
-        this.currentSelectedIndexData.lastPrice === 0) {
+    // Check if we have valid stock data
+    if (!this.currentSelectedStockData || 
+        !this.currentSelectedStockData.lastPrice || 
+        this.currentSelectedStockData.lastPrice === 0) {
       // Only attempt previous-day fetch when WebSocket is not connected
       if (this.isWebSocketConnected) {
         return;
       }
 
-      // Determine target index name (default to NIFTY 50)
-      const indexName = this.currentSelectedIndexData?.indexName || 'NIFTY 50';
+      // Determine target stock name (default to NIFTY 50)
+      const stockName = this.currentSelectedStockData?.symbol || 'NIFTY 50';
 
-      // Avoid repeated fetches for the same index
-      if (this.lastPrevDayFetchIndex === indexName) {
+      // Avoid repeated fetches for the same stock
+      if (this.lastPrevDayFetchStock === stockName) {
         return;
       }
 
@@ -1016,34 +1006,17 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
 
 
 
-      // Mark as fetched for this index to prevent duplicates
-      this.lastPrevDayFetchIndex = indexName;
+      // Mark as fetched for this stock to prevent duplicates
+      this.lastPrevDayFetchStock = stockName;
 
       // Fetch previous-day data
-      this.indicesService.getPreviousDayIndexData(indexName).subscribe({
-        next: (fallbackData) => {
-          if (fallbackData && fallbackData.indices && fallbackData.indices.length > 0) {
-            const indexData = fallbackData.indices[0];
-            
-            
-            // Update the current selected index data with fallback data
-            this.currentSelectedIndexData = {
-              indexName: indexData.indexName || indexName,
-              indexSymbol: indexData.indexSymbol || indexName,
-              lastPrice: indexData.lastPrice || 0,
-              variation: indexData.variation || 0,
-              percentChange: indexData.percentChange || 0
-            };
-            
-            // Refresh tiles
-            this.updateMetricTilesWithFilters([]);
-            this.cdr.detectChanges();
-          }
-        },
-        error: (error) => {
-          console.warn(`Failed to fetch previous-day data for ${indexName}:`, error);
-        }
-      });
+      // For now, we'll skip this functionality since we don't have a previous-day stock data service
+      // In the future, this could be implemented using StockService or a similar service
+      console.log(`Previous-day data fetch not implemented for stock: ${stockName}`);
+      
+      // Update metric tiles with current data
+      this.updateMetricTilesWithFilters([]);
+      this.cdr.detectChanges();
     }
   }
 
@@ -1077,7 +1050,7 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
       case 'Portfolio Distribution':
         // This is a pie chart - provide asset allocation data
         return this.groupByAndSum(this.filteredDashboardData || this.dashboardData, 'industry', 'totalTradedValue');
-      case 'Index Historical Price Movement':
+      case 'INFY - Stock Historical Price Movement':
         // This is a candlestick chart - provide OHLC data from historical data if available
         if (this.historicalData.length > 0) {
           // Use historical data for candlestick chart
@@ -1239,7 +1212,7 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
           };
         }).sort((a, b) => b.value - a.value);
 
-      case 'Index Historical Price Movement':
+      case 'INFY - Stock Historical Price Movement':
         // Use historical data for candlestick chart if available, otherwise use stock data
         if (this.historicalData.length > 0) {
           // Transform historical data to candlestick format: [open, close, low, high]
@@ -1891,7 +1864,7 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
     if (!this.dashboardConfig?.widgets) return;
 
     const candlestickWidget = this.dashboardConfig.widgets.find(widget => 
-      widget.config?.header?.title === 'Index Historical Price Movement'
+      widget.config?.header?.title === 'INFY - Stock Historical Price Movement'
     );
 
     if (candlestickWidget && this.historicalData.length > 0) {
@@ -1958,7 +1931,7 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
     if (!this.dashboardConfig?.widgets || !this.filteredDashboardData) return;
 
     const candlestickWidget = this.dashboardConfig.widgets.find(widget => 
-      widget.config?.header?.title === 'Index Historical Price Movement'
+      widget.config?.header?.title === 'INFY - Stock Historical Price Movement'
     );
 
     if (candlestickWidget) {
@@ -2098,31 +2071,31 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
   }
 
   /**
-   * Subscribe to WebSocket updates for the selected index
-   * @param indexName - The name of the index to subscribe to
+   * Subscribe to WebSocket updates for the selected stock
+   * @param stockName - The name of the stock to subscribe to
    */
-  private async subscribeToIndexWebSocket(indexName: string): Promise<void> {
+  private async subscribeToStockWebSocket(stockName: string): Promise<void> {
     // Prevent duplicate subscriptions
     if (this.isSubscribing) {
       return;
     }
 
-    // Check if we're already subscribed to this index
-    const webSocketIndexName = indexName.replace(/\s+/g, '-').toLowerCase();
-    const topicName = `/topic/nse-indices/${webSocketIndexName}`;
+    // Check if we're already subscribed to this stock
+    const webSocketStockName = stockName.replace(/\s+/g, '-').toLowerCase();
+    const topicName = `/topic/nse-stocks/${webSocketStockName}`;
     
     if (this.subscribedTopics.has(topicName)) {
       return;
     }
 
     // Unsubscribe from previous subscription if any
-    if (this.indicesWebSocketSubscription) {
-      this.indicesWebSocketSubscription.unsubscribe();
-      this.indicesWebSocketSubscription = null;
+    if (this.stockWebSocketSubscription) {
+      this.stockWebSocketSubscription.unsubscribe();
+      this.stockWebSocketSubscription = null;
     }
 
-    // Track the current subscribed index
-    this.currentSubscribedIndex = indexName;
+    // Track the current subscribed stock
+    this.currentSubscribedStock = stockName;
     this.isSubscribing = true;
 
     try {
@@ -2154,40 +2127,27 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
       // Now WebSocket should be connected, verify and subscribe
               if (this.webSocketService.connected) {
         
-        // First try to subscribe to specific index data
+        // First try to subscribe to specific stock data
         try {
-          this.indicesWebSocketSubscription = this.webSocketService
-            .subscribeToIndex(webSocketIndexName)
-            .subscribe({
-              next: (indicesData) => {
-                this.handleWebSocketData(indicesData, indexName);
-              },
-              error: (error) => {
-                console.warn(`Specific index subscription failed for ${webSocketIndexName}, falling back to all indices:`, error.message || error);
-                // Fallback to all indices subscription
-                this.subscribeToAllIndicesAsFallback(indexName);
-              },
-              complete: () => {
-                // WebSocket subscription completed
-              }
-            });
+          // For now, we'll skip WebSocket subscription since stock-specific methods don't exist
+          // In the future, this could be implemented when stock WebSocket services are available
+          console.log(`Stock WebSocket subscription not implemented for ${webSocketStockName}`);
           
-          // Mark this topic as subscribed
+          // Mark this topic as subscribed to prevent repeated attempts
           this.subscribedTopics.add(topicName);
           
         } catch (error) {
-          console.warn(`Specific index subscription failed for ${webSocketIndexName}, falling back to all indices:`, error);
-          // Fallback to all indices subscription
-          this.subscribeToAllIndicesAsFallback(indexName);
+          console.warn(`Stock subscription failed for ${webSocketStockName}, continuing without real-time data:`, error);
+          // Continue without WebSocket subscription
         }
           
       } else {
         // WebSocket still not connected - skipping real-time subscription
-        console.warn('WebSocket still not connected - skipping real-time subscription for', webSocketIndexName);
+        console.warn('WebSocket still not connected - skipping real-time subscription for', webSocketStockName);
       }
     } catch (error) {
-      console.warn(`WebSocket subscription failed for ${webSocketIndexName} - continuing without real-time data:`, (error as Error).message || error);
-      // Don't clear currentSelectedIndexData on WebSocket connection failures to prevent tile from reverting
+      console.warn(`WebSocket subscription failed for ${webSocketStockName} - continuing without real-time data:`, (error as Error).message || error);
+      // Don't clear currentSelectedStockData on WebSocket connection failures to prevent tile from reverting
       this.cdr.detectChanges();
     } finally {
       // Always reset the subscribing flag
@@ -2196,66 +2156,42 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
   }
 
   /**
-   * Fallback subscription to all indices data when specific index subscription fails
-   * @param targetIndexName - The name of the index we're looking for
+   * Fallback subscription to all stocks data when specific stock subscription fails
+   * @param targetStockName - The name of the stock we're looking for
    */
-  private subscribeToAllIndicesAsFallback(targetIndexName: string): void {
+  private subscribeToAllStocksAsFallback(targetStockName: string): void {
     try {
-      this.indicesWebSocketSubscription = this.webSocketService
-        .subscribeToAllIndices()
-        .subscribe({
-          next: (indicesData: IndicesDto) => {
-            // Filter for the target index from all indices data
-            if (indicesData && indicesData.indices && indicesData.indices.length > 0) {
-              const targetIndex = indicesData.indices.find(index => {
-                const indexName = index.indexName || index.index || '';
-                const indexSymbol = index.indexSymbol || index.key || '';
-                return indexName.toLowerCase().includes(targetIndexName.toLowerCase()) ||
-                       indexSymbol.toLowerCase().includes(targetIndexName.toLowerCase()) ||
-                       targetIndexName.toLowerCase().includes(indexName.toLowerCase()) ||
-                       targetIndexName.toLowerCase().includes(indexSymbol.toLowerCase());
-              });
-              
-              if (targetIndex) {
-                this.handleWebSocketData(targetIndex, targetIndexName);
-              }
-            }
-          },
-          error: (error) => {
-            console.warn('All indices subscription error:', error.message || error);
-            this.cdr.detectChanges();
-          },
-          complete: () => {
-            // WebSocket subscription completed
-          }
-        });
+      // For now, we'll skip WebSocket subscription since stock-specific methods don't exist
+      // In the future, this could be implemented when stock WebSocket services are available
+      console.log(`All stocks WebSocket subscription not implemented for ${targetStockName}`);
+      
     } catch (error) {
-      console.error('Failed to subscribe to all indices as fallback:', error);
+      console.error('Failed to subscribe to all stocks as fallback:', error);
     }
   }
 
   /**
-   * Handle WebSocket data updates for the selected index
-   * @param indexData - Raw index data received from WebSocket
-   * @param indexName - The name of the index being monitored
+   * Handle WebSocket data updates for the selected stock
+   * @param stockData - Raw stock data received from WebSocket
+   * @param stockName - The name of the stock being monitored
    */
-  private handleWebSocketData(indexData: any, indexName: string): void {
+  private handleWebSocketData(stockData: any, stockName: string): void {
     try {
 
       
-      // The WebSocket now returns raw index data directly, not wrapped in IndicesDto
-      if (indexData && (indexData.indexName || indexData.indexSymbol)) {
+      // The WebSocket now returns raw stock data directly, not wrapped in IndicesDto
+      if (stockData && (stockData.stockName || stockData.stockSymbol)) {
         
         
-        // Update current selected index data with real-time information
-        this.currentSelectedIndexData = indexData;
+        // Update current selected stock data with real-time information
+        this.currentSelectedStockData = stockData;
         
         // Check if dashboard is ready before updating
         if (!this.dashboardConfig?.widgets || this.dashboardConfig.widgets.length === 0) {
           console.warn('Dashboard not ready yet, deferring first tile update');
           // Schedule the update for later
           setTimeout(() => {
-            this.updateFirstTileWithRealTimeData(indexData);
+            this.updateFirstTileWithRealTimeData(stockData);
           }, 1000);
           return;
         }
@@ -2266,8 +2202,8 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
         }
         this.chartUpdateTimer = setTimeout(() => {
           try {
-            // Update the first tile (index price tile) with real-time data
-            this.updateFirstTileWithRealTimeData(indexData);
+            // Update the first tile (stock price tile) with real-time data
+            this.updateFirstTileWithRealTimeData(stockData);
             // Update metric tiles in-place with new data (non-destructive)
             this.recreateMetricTiles();
             // Trigger change detection
@@ -2277,18 +2213,18 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
           }
         }, 250);
       } else {
-        console.warn('WebSocket received data but no valid index data found:', indexData);
+        console.warn('WebSocket received data but no valid stock data found:', stockData);
       }
     } catch (error: any) {
-      console.error('Error processing received index data:', error);
+      console.error('Error processing received stock data:', error);
     }
   }
 
   /**
-   * Attempt to reconnect to WebSocket and resubscribe to current index
+   * Attempt to reconnect to WebSocket and resubscribe to current stock
    */
   private async attemptWebSocketReconnection(): Promise<void> {
-    if (!this.currentSubscribedIndex) {
+    if (!this.currentSubscribedStock) {
       return;
     }
 
@@ -2297,7 +2233,7 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
       await this.webSocketService.connect();
       
               if (this.webSocketService.connected) {
-        this.subscribeToIndexWebSocket(this.currentSubscribedIndex);
+        this.subscribeToStockWebSocket(this.currentSubscribedStock);
       }
     } catch (error) {
       console.warn('WebSocket reconnection failed:', error);
@@ -2309,20 +2245,20 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
   }
 
   /**
-   * Update the first tile (index price tile) with real-time WebSocket data
-   * @param realTimeIndexData - Real-time index data from WebSocket
+   * Update the first tile (stock price tile) with real-time WebSocket data
+   * @param realTimeStockData - Real-time stock data from WebSocket
    */
-  private updateFirstTileWithRealTimeData(realTimeIndexData: IndexDataDto): void {
+  private updateFirstTileWithRealTimeData(realTimeStockData: StockDataDto): void {
     // Wait for dashboard to be ready
     if (!this.dashboardConfig?.widgets || this.dashboardConfig.widgets.length === 0) {
       // Wait for dashboard to be ready and retry
       setTimeout(() => {
-        this.updateFirstTileWithRealTimeData(realTimeIndexData);
+        this.updateFirstTileWithRealTimeData(realTimeStockData);
       }, 500);
       return;
     }
 
-    // Find the first tile (index price tile) - try multiple strategies
+    // Find the first tile (stock price tile) - try multiple strategies
     let firstTile = this.dashboardConfig.widgets.find(widget =>
       widget.position?.x === 0 && widget.position?.y === 0 &&
       (widget.config?.component === 'stock-tile' || widget.config?.component === 'tile')
@@ -2351,19 +2287,19 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
 
 
 
-    if (!realTimeIndexData) {
-      console.warn('No real-time index data available for first tile update');
+    if (!realTimeStockData) {
+      console.warn('No real-time stock data available for first tile update');
       return;
     }
 
     try {
       // Extract real-time data using WebSocket field names
-      const indexName = realTimeIndexData.indexName || realTimeIndexData.indexSymbol || 'Index';
-      const lastPrice = realTimeIndexData.lastPrice || 0;
-      const percentChange = realTimeIndexData.percentChange || 0;
-      const dayHigh = realTimeIndexData.dayHigh || 0;
-      const dayLow = realTimeIndexData.dayLow || 0;
-      const variation = realTimeIndexData.variation || 0;
+      const stockName = realTimeStockData.symbol || 'Stock';
+      const lastPrice = realTimeStockData.lastPrice || 0;
+      const percentChange = realTimeStockData.percentChange || 0;
+      const dayHigh = realTimeStockData.dayHigh || 0;
+      const dayLow = realTimeStockData.dayLow || 0;
+      const priceChange = realTimeStockData.priceChange || 0;
 
 
 
@@ -2371,9 +2307,9 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
         // Update stock tile with real-time data using exact WebSocket fields
         const stockTileData = {
           value: lastPrice.toFixed(2),
-          change: variation.toFixed(2), // Use variation field from WebSocket
+          change: priceChange.toFixed(2), // Use priceChange field from WebSocket
           changeType: (percentChange >= 0 ? 'positive' : 'negative') as 'positive' | 'negative' | 'neutral',
-          description: indexName, // Use indexName from WebSocket
+          description: stockName, // Use stockName from WebSocket
           icon: 'fas fa-chart-line',
           color: percentChange >= 0 ? '#16a34a' : '#dc2626',
           backgroundColor: percentChange >= 0 ? '#bbf7d0' : '#fecaca',
@@ -2395,13 +2331,13 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
         // Update regular tile with real-time data
         const tileData = {
           value: lastPrice.toFixed(2),
-          change: variation.toFixed(2),
+          change: priceChange.toFixed(2),
           changeType: (percentChange >= 0 ? 'positive' : 'negative') as 'positive' | 'negative' | 'neutral',
-          description: indexName,
+          description: stockName,
           icon: 'fas fa-chart-line',
           color: percentChange >= 0 ? '#16a34a' : '#dc2626',
           backgroundColor: percentChange >= 0 ? '#bbf7d0' : '#fecaca',
-          title: indexName,
+          title: stockName,
           subtitle: `Change: ${percentChange.toFixed(2)}%`
         };
 
@@ -2519,14 +2455,14 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
           this.isWebSocketConnected = state === 'CONNECTED';
           
           if (this.isWebSocketConnected) {
-            // Only resubscribe if we have a current subscribed index AND we're not already subscribed
-            if (this.currentSubscribedIndex && !this.isSubscribing) {
-              const webSocketIndexName = this.currentSubscribedIndex.replace(/\s+/g, '-').toLowerCase();
-              const topicName = `/topic/nse-indices/${webSocketIndexName}`;
+            // Only resubscribe if we have a current subscribed stock AND we're not already subscribed
+            if (this.currentSubscribedStock && !this.isSubscribing) {
+              const webSocketStockName = this.currentSubscribedStock.replace(/\s+/g, '-').toLowerCase();
+              const topicName = `/topic/nse-stocks/${webSocketStockName}`;
               
               if (!this.subscribedTopics.has(topicName)) {
                 
-                this.subscribeToIndexWebSocket(this.currentSubscribedIndex);
+                this.subscribeToStockWebSocket(this.currentSubscribedStock);
                               } else {
                   // Already subscribed to topic, no need to resubscribe
                 }
@@ -2534,8 +2470,8 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
           } else if (state === 'DISCONNECTED' || state === 'ERROR') {
             // Clear subscribed topics when disconnected
             this.subscribedTopics.clear();
-            // Attempt reconnection if we have a subscribed index
-            if (this.currentSubscribedIndex) {
+            // Attempt reconnection if we have a subscribed stock
+            if (this.currentSubscribedStock) {
               this.attemptWebSocketReconnection();
             }
           }
@@ -2546,11 +2482,62 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
           // Clear subscribed topics on error
           this.subscribedTopics.clear();
           // Attempt reconnection on error
-          if (this.currentSubscribedIndex) {
+          if (this.currentSubscribedStock) {
             this.attemptWebSocketReconnection();
           }
         }
       });
+  }
+
+  /**
+   * Public method to switch to a different stock
+   * @param stockSymbol The stock symbol to switch to (e.g., 'RELIANCE', 'TCS', 'HDFC')
+   */
+  public switchToStock(stockSymbol: string): void {
+    if (!stockSymbol || stockSymbol.trim() === '') {
+      console.warn('Invalid stock symbol provided');
+      return;
+    }
+
+    console.log(`Switching to stock: ${stockSymbol}`);
+    
+    // Update dashboard title
+    this.dashboardTitle = `${stockSymbol} - Stock Insights Dashboard`;
+    
+    // Clear existing data
+    this.dashboardData = [];
+    this.filteredDashboardData = [];
+    this.historicalData = [];
+    this.appliedFilters = [];
+    
+    // Load new stock data using the date-range endpoint
+    this.loadStockTicksData(stockSymbol);
+    this.loadHistoricalData(stockSymbol); // This now uses /stock/{symbol}/history with date range
+    
+    // Update current selected stock data
+    this.currentSelectedStockData = {
+      symbol: stockSymbol,
+      lastPrice: 0, // Will be updated when data loads
+      priceChange: 0,
+      percentChange: 0
+    } as StockDataDto;
+    
+    // Force refresh of all widgets
+    this.forceDashboardRefresh();
+    
+    // Trigger change detection
+    this.cdr.detectChanges();
+  }
+
+  /**
+   * Handle stock selection change from the dropdown
+   * @param event The change event from the select element
+   */
+  public onStockSelectionChange(event: Event): void {
+    const selectElement = event.target as HTMLSelectElement;
+    if (selectElement && selectElement.value) {
+      this.switchToStock(selectElement.value);
+    }
   }
 
 }
