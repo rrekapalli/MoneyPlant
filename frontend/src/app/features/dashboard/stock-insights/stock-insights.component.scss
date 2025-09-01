@@ -240,4 +240,149 @@ vis-dashboard-container {
   }
 }
 
+/* Time Range Filters for Candlestick Chart */
+::ng-deep {
+  /* Target the candlestick chart specifically */
+  .gridster-item:has([data-widget-id*="candlestick"]) {
+    position: relative !important;
+    overflow: visible !important;
+  }
+
+  /* Ensure time range filters are visible and not overlapped */
+  .gridster-item:has([data-widget-id*="candlestick"]) .ec-graphic {
+    z-index: 1000 !important;
+    pointer-events: auto !important;
+    position: relative !important;
+  }
+
+  /* Make sure graphic elements are above the chart canvas */
+  .gridster-item:has([data-widget-id*="candlestick"]) .ec-graphic[data-range] {
+    z-index: 1001 !important;
+    pointer-events: auto !important;
+  }
+
+  /* Ensure the chart container doesn't overlap the filters */
+  .gridster-item:has([data-widget-id*="candlestick"]) .echart-container {
+    position: relative !important;
+    z-index: 1 !important;
+  }
+
+  /* Make sure the chart canvas doesn't overlap the filters */
+  .gridster-item:has([data-widget-id*="candlestick"]) canvas {
+    z-index: 1 !important;
+  }
+
+  /* Time range filters overlay */
+  .candlestick-time-range-filters {
+    position: absolute !important;
+    top: 10px !important;
+    left: 10px !important;
+    z-index: 1000 !important;
+    background: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(10px) !important;
+    border-radius: 8px !important;
+    padding: 8px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+    display: flex !important;
+    gap: 4px !important;
+    flex-wrap: wrap !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  }
+
+  .candlestick-time-range-filters .time-range-btn {
+    background: #f8f9fa !important;
+    border: 1px solid #dee2e6 !important;
+    border-radius: 4px !important;
+    padding: 4px 8px !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    color: #495057 !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    min-width: 32px !important;
+    text-align: center !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  }
+
+  .candlestick-time-range-filters .time-range-btn:hover {
+    background: #e9ecef !important;
+    border-color: #adb5bd !important;
+    transform: translateY(-1px) !important;
+  }
+
+  .candlestick-time-range-filters .time-range-btn.active {
+    background: #007bff !important;
+    border-color: #007bff !important;
+    color: white !important;
+    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.3) !important;
+  }
+
+  .candlestick-time-range-filters .time-range-btn:active {
+    transform: translateY(0) !important;
+  }
+
+  /* Ensure ECharts graphic elements are clickable */
+  .echart-container canvas {
+    cursor: default !important;
+  }
+
+  /* Make sure the chart container allows pointer events */
+  .gridster-item .echart-container {
+    pointer-events: auto !important;
+  }
+
+  /* Ensure graphic elements are properly positioned and clickable */
+  .echart-container .ec-graphic {
+    pointer-events: auto !important;
+    cursor: pointer !important;
+  }
+
+  /* Add hover effects for time range filter buttons */
+  .echart-container .ec-graphic[data-range] {
+    transition: all 0.2s ease !important;
+  }
+
+  .echart-container .ec-graphic[data-range]:hover {
+    transform: scale(1.05) !important;
+  }
+
+  /* Ensure candlestick chart uses more space */
+  .gridster-item:has([data-widget-id*="candlestick"]) .echart-container {
+    height: 100% !important;
+    min-height: 400px !important;
+  }
+
+  /* Make sure the chart itself takes up more space */
+  .gridster-item:has([data-widget-id*="candlestick"]) canvas {
+    height: 100% !important;
+  }
+
+  /* Ensure time range filters are visible and clickable */
+  .gridster-item:has([data-widget-id*="candlestick"]) .ec-graphic {
+    z-index: 1000 !important;
+    pointer-events: auto !important;
+  }
+
+  /* Add visual feedback for time range filter buttons */
+  .gridster-item:has([data-widget-id*="candlestick"]) .ec-graphic[data-range] {
+    transition: all 0.2s ease !important;
+  }
+
+  .gridster-item:has([data-widget-id*="candlestick"]) .ec-graphic[data-range]:hover {
+    transform: scale(1.05) !important;
+    filter: brightness(1.1) !important;
+  }
+
+  /* Additional styling to ensure filters are not overlapped */
+  .gridster-item:has([data-widget-id*="candlestick"]) .ec-graphic[type="rect"] {
+    z-index: 1002 !important;
+    pointer-events: auto !important;
+  }
+
+  .gridster-item:has([data-widget-id*="candlestick"]) .ec-graphic[type="text"] {
+    z-index: 1003 !important;
+    pointer-events: auto !important;
+  }
+}
+
 

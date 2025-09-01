@@ -97,18 +97,17 @@ import {
   FilterService,
   // Enhanced Chart Builders
   ApacheEchartBuilder,
-  PieChartBuilder,
   AreaChartBuilder,
   TreemapChartBuilder,
   SankeyChartBuilder,
   // Other builders and utilities
   BarChartBuilder,
-  HorizontalBarChartBuilder,
   ScatterChartBuilder,
   GaugeChartBuilder,
   HeatmapChartBuilder,
   PolarChartBuilder,
   CandlestickChartBuilder,
+  TimeRangeFilterEvent,
   SunburstChartBuilder,
   // Stock List Chart Builder
   StockListChartBuilder,
@@ -157,6 +156,8 @@ import { IndexHistoricalData } from '../../../services/entities/index-historical
 // Import consolidated WebSocket service and entities
 import { WebSocketService, IndexDataDto, IndicesDto } from '../../../services/websockets';
 
+// TimeRange type is now defined locally
+
 /**
  * Filter criteria interface for centralized filtering system
  */
@@ -179,6 +180,9 @@ export interface DashboardDataRow {
   returnValue?: number;
   description?: string;
 }
+
+// Define TimeRange type locally since we're not importing it anymore
+type TimeRange = '1D' | '5D' | '1M' | '3M' | '6M' | 'YTD' | '1Y' | '3Y' | '5Y' | 'MAX';
 
 @Component({
   selector: 'app-stock-insights',
@@ -236,6 +240,9 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
 
   // Stocks list for header search box
   public allStocks: Stock[] = [];
+
+  // Time range tracking
+  public selectedTimeRange: TimeRange = '1Y';
 
   // Debug flag to control verbose console logging
   private readonly enableDebugLogging: boolean = false;
@@ -323,6 +330,12 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
 
       // Preload stocks for search box
       this.loadAllStocksForSearch();
+
+      // Expose global function as fallback for time range filter clicks
+      (window as any).handleTimeRangeFilterClick = (range: string) => {
+        console.log('Global time range filter clicked:', range);
+        this.onTimeRangeChange(range);
+      };
       
       console.log('StockInsightsComponent onChildInit completed');
     } catch (error) {
@@ -746,70 +759,7 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
     try {
       console.log('StockInsightsComponent initializeDashboardConfig called');
       
-      // Stock Industry Horizontal Bar Chart
-      const barStockIndustry = HorizontalBarChartBuilder.create()
-          .setData(this.filteredDashboardData || []) // Start with current filtered data or empty array
-          .setHeader('Industry')
-          .setCurrencyFormatter('INR', 'en-US')
-          .setPredefinedPalette('business')
-          .setTooltip('item', (params: any) => {
-            const formatter = new Intl.NumberFormat('en-US', {
-              style: 'currency',
-              currency: 'INR'
-            });
-            return `${params.name}: ${formatter.format(params.value)}`;
-          })
-          .setAccessor('industry')
-          .setFilterColumn('industry', FilterBy.Value)
-          .setEvents((widget, chart) => {
-            if (chart) {
-              chart.off('click');
-              chart.on('click', (params: any) => {
-                params.event?.stop?.();
-                const industryName = params.name || (params.data && params.data.name);
-                if (industryName && typeof industryName === 'string' && isNaN(Number(industryName))) {
-                  this.filterChartsByIndustry(industryName);
-                }
-                return false;
-              });
-            }
-          })
-          .setId('industry-bar-chart')
-          .setSkipDefaultFiltering(true)
-          .build();
-      
-      console.log('Industry bar chart created successfully');
-      
-      // Stock Sector Allocation Pie Chart with financial display
-      const pieStockSector = PieChartBuilder.create()
-        .setData(this.filteredDashboardData) // Use filtered data for consistent filtering
-        .setHeader('Sector Allocation')
-        .setShowLegend(false)
-        .setDonutStyle('40%', '70%')
-        .setFinancialDisplay('INR', 'en-US')
-        .setPredefinedPalette('finance')
-        .setAccessor('sector')
-        .setFilterColumn('sector', FilterBy.Value)
-        .setEvents((widget, chart) => {
-            if (chart) {
-              chart.off('click');
-              chart.on('click', (params: any) => {
-                params.event?.stop?.();
-                const sectorName = params.name || (params.data && params.data.name);
-                if (sectorName && typeof sectorName === 'string' && isNaN(Number(sectorName))) {
-                  this.filterChartsBySector(sectorName);
-                }
-                return false;
-              });
-          }
-        })
-        .setId('sector-pie-chart')
-        .setSkipDefaultFiltering(true)
-        .build();
-
-      console.log('Sector pie chart created successfully');
-      
-      // Stock Price Candlestick Chart - Now shows historical stock data
+      // Stock Price Candlestick Chart - Now shows historical stock data with time range filters
       const candlestickChart = CandlestickChartBuilder.create()
         .setData(this.filteredDashboardData || [])
         .setHeader('INFY - Stock Historical Price Movement')
@@ -824,6 +774,9 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
         .enableBrush()  // Enable brush selection for technical analysis
         .setLargeMode(100)  // Enable large mode for datasets with 100+ points
         .setTooltipType('axis')  // Enable crosshair tooltip for better analysis
+        .enableTimeRangeFilters()  // Enable time range filters (1D, 5D, 1M, 3M, 6M, YTD, 1Y, 3Y, 5Y, MAX)
+        .enableAreaSeries(true, 0.2)  // Enable area series with close price data
+        .setTimeRangeChangeCallback(this.handleTimeRangeChange.bind(this))  // Set callback for time range changes
         .setEvents((widget, chart) => {
           if (chart) {
             chart.off('click');
@@ -839,6 +792,12 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
         .setId('candlestick-chart')
         .setSkipDefaultFiltering(true)
         .build();
+
+      // Add time range filters to the candlestick chart widget
+      if (candlestickChart && (candlestickChart as any).timeRangeFilters) {
+        // The time range filters are now part of the widget data
+        console.log('Time range filters added to candlestick chart:', (candlestickChart as any).timeRangeFilters);
+      }
 
       console.log('Candlestick chart created successfully');
 
@@ -862,12 +821,9 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
       // Position filter widget at row 2 (below metric tiles which occupy rows 0-1)
       filterWidget.position = { x: 0, y: 2, cols: 12, rows: 1 };
 
-      // Position charts with proper spacing - start from row 4 to avoid filter collision  
-      candlestickChart.position = { x: 0, y: 3, cols: 8, rows: 8 };
+      // Position charts with proper spacing - adjusted candlestick chart height
+      candlestickChart.position = { x: 0, y: 3, cols: 8, rows: 12 }; // Back to 12 rows
       stockListWidget.position = { x: 8, y: 3, cols: 4, rows: 16 };
-
-      barStockIndustry.position = { x: 0, y: 11, cols: 4, rows: 8 };
-      pieStockSector.position = { x: 4, y: 11, cols: 4, rows: 8 };
       
       // Use the Fluent API to build the dashboard config with filter highlighting enabled
       this.dashboardConfig = StandardDashboardBuilder.createStandard()
@@ -882,9 +838,6 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
         .setWidgets([
           ...metricTiles,
           filterWidget,
-
-          barStockIndustry,
-          pieStockSector,
           candlestickChart,
           stockListWidget,
         ])
@@ -1063,12 +1016,6 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
 
     // Detect chart type and provide appropriate data
     switch (widgetTitle) {
-      case 'Sector Allocation':
-        // This is a pie chart - provide asset allocation data
-        return this.groupByAndSum(this.filteredDashboardData || this.dashboardData, 'sector', 'totalTradedValue');
-      case 'Industry':
-        // This is a pie chart - provide asset allocation data
-        return this.groupByAndSum(this.filteredDashboardData || this.dashboardData, 'industry', 'totalTradedValue');
       case 'Portfolio Distribution':
         // This is a pie chart - provide asset allocation data
         return this.groupByAndSum(this.filteredDashboardData || this.dashboardData, 'industry', 'totalTradedValue');
@@ -1123,65 +1070,6 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
     const sourceData = data || this.filteredDashboardData || this.dashboardData;
 
     switch (widgetTitle) {
-      case 'Sector Allocation':
-        // Use stock ticks data grouped by sector with totalTradedValue
-        if (!sourceData) {
-          return [];
-        }
-        
-        // Group by sector and sum totalTradedValue
-        const sectorData = sourceData.reduce((acc, stock) => {
-          const sector = stock.sector || 'Unknown';
-          const tradedValue = stock.totalTradedValue || 0;
-          
-          if (!acc[sector]) {
-            acc[sector] = 0;
-          }
-          acc[sector] += tradedValue;
-          return acc;
-        }, {} as Record<string, number>);
-        
-        // Transform to pie chart format
-        return Object.entries(sectorData).map(([sector, value]) => ({
-          name: sector,
-          value: value
-        })).sort((a, b) => b.value - a.value);
-        
-      case 'Industry':
-        // Use stock ticks data grouped by industry with totalTradedValue
-        if (!sourceData) {
-          return [];
-        }
-        
-        // Group by industry and sum totalTradedValue
-        const industryData = sourceData.reduce((acc, stock) => {
-          const industry = stock.industry || 'Unknown';
-          const tradedValue = stock.totalTradedValue || 0;
-          
-          if (!acc[industry]) {
-            acc[industry] = 0;
-          }
-          acc[industry] += tradedValue;
-          return acc;
-        }, {} as Record<string, number>);
-        
-        // Business color palette for individual bars
-        const businessColors = ['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de', '#3ba272', '#fc8452', '#9a60b4', '#ea7ccc'];
-        
-        // Transform to bar chart format with individual colors and descending sort
-        return Object.entries(industryData)
-          .map(([industry, value]) => ({
-            name: industry,
-            value: value
-          }))
-          .sort((a, b) => b.value - a.value)
-          .map((item, index) => ({
-            ...item,
-            itemStyle: {
-              color: businessColors[index % businessColors.length]
-            }
-          }));
-        
       case 'Portfolio Distribution':
         // Use stock ticks data with macro, industry, and sector hierarchy
         if (!sourceData) {
@@ -1682,8 +1570,6 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
     }
     
     this.chartUpdateTimer = setTimeout(() => {
-      this.updateBarChartWithFilteredData();
-      this.updatePieChartWithFilteredData();
       // Use historical data for candlestick chart if available, otherwise use filtered data
       if (this.historicalData.length > 0) {
         this.updateCandlestickChartWithHistoricalData();
@@ -1698,46 +1584,6 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
       this.cdr.detectChanges();
       this.chartUpdateTimer = null;
     }, 150); // Increased delay and debounce to reduce chart reinitialization
-  }
-
-  private filterChartsByIndustry(industry: string): void {
-    if (!this.dashboardData || this.dashboardData.length === 0 || 
-        typeof industry !== 'string' || !isNaN(Number(industry))) {
-      return;
-    }
-
-    const availableIndustries = [...new Set(this.dashboardData.map(s => s.industry))];
-    if (!availableIndustries.includes(industry)) {
-      return;
-    }
-
-    this.addFilter({
-      type: 'industry',
-      field: 'industry',
-      value: industry,
-      operator: 'equals',
-      source: 'Industry Chart'
-    });
-  }
-
-  private filterChartsBySector(sector: string): void {
-    if (!this.dashboardData || this.dashboardData.length === 0 || 
-        typeof sector !== 'string' || !isNaN(Number(sector))) {
-      return;
-    }
-
-    const availableSectors = [...new Set(this.dashboardData.map(s => s.sector))];
-    if (!availableSectors.includes(sector)) {
-      return;
-    }
-
-    this.addFilter({
-      type: 'sector',
-      field: 'sector',
-      value: sector,
-      operator: 'equals',
-      source: 'Sector Chart'
-    });
   }
 
   /**
@@ -1774,109 +1620,6 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
       operator: 'equals',
       source: 'Candlestick Chart'
     });
-  }
-
-  private updatePieChartWithFilteredData(): void {
-    if (!this.dashboardConfig?.widgets || !this.filteredDashboardData) {
-      return;
-    }
-
-    const pieWidget = this.dashboardConfig.widgets.find(widget => 
-      widget.config?.header?.title === 'Sector Allocation'
-    );
-
-    if (pieWidget) {
-      const sectorData = this.filteredDashboardData.reduce((acc, stock) => {
-        const sector = stock.sector || 'Unknown';
-        if (!acc[sector]) {
-          acc[sector] = 0;
-        }
-        acc[sector] += stock.totalTradedValue || 0;
-        return acc;
-      }, {} as Record<string, number>);
-
-      const pieData = Object.entries(sectorData)
-        .map(([name, value]) => ({ name, value }))
-        .sort((a, b) => b.value - a.value);
-      
-      try {
-        PieChartBuilder.updateData(pieWidget, pieData);
-        
-        if (pieWidget.chartInstance && typeof pieWidget.chartInstance.setOption === 'function') {
-          const newOptions = {
-            ...pieWidget.config?.options,
-            series: [{
-              ...((pieWidget.config?.options as any)?.series?.[0] || {}),
-              data: pieData
-            }]
-          };
-          pieWidget.chartInstance.setOption(newOptions, true);
-        }
-        
-        this.updateEchartWidget(pieWidget, pieData);
-      } catch (error) {
-        // Silent error handling
-      }
-    }
-  }
-
-  private updateBarChartWithFilteredData(): void {
-    if (!this.dashboardConfig?.widgets || !this.filteredDashboardData) {
-      return;
-    }
-
-    const barWidget = this.dashboardConfig.widgets.find(widget => 
-      widget.config?.header?.title === 'Industry'
-    );
-
-    if (barWidget) {
-      const industryData = this.filteredDashboardData.reduce((acc, stock) => {
-        const industry = stock.industry || 'Unknown';
-        if (!acc[industry]) {
-          acc[industry] = 0;
-        }
-        acc[industry] += stock.totalTradedValue || 0;
-        return acc;
-      }, {} as Record<string, number>);
-
-      const businessColors = ['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de', '#3ba272', '#fc8452', '#9a60b4', '#ea7ccc'];
-      
-      const barData = Object.entries(industryData)
-        .map(([industry, value]) => ({
-          name: industry,
-          value: value
-        }))
-        .sort((a, b) => b.value - a.value)
-        .map((item, index) => ({
-          ...item,
-          itemStyle: {
-            color: businessColors[index % businessColors.length]
-          }
-        }));
-      
-      try {
-        HorizontalBarChartBuilder.updateData(barWidget, barData);
-        
-        if (barWidget.chartInstance && typeof barWidget.chartInstance.setOption === 'function') {
-          const newOptions = {
-            ...barWidget.config?.options,
-            series: [{
-              ...((barWidget.config?.options as any)?.series?.[0] || {}),
-              data: barData
-            }],
-            yAxis: {
-              ...((barWidget.config?.options as any)?.yAxis || {}),
-              data: barData.map(item => item.name)
-            }
-          };
-          barWidget.chartInstance.setOption(newOptions, true);
-        }
-        
-        this.updateEchartWidget(barWidget, barData);
-      } catch (error) {
-        // Silent error handling
-      }
-    }
   }
 
   /**
@@ -2574,5 +2317,154 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
       }
     });
   }
+
+  /**
+   * Get the maximum available date for historical data
+   * Uses listing_date from selected stock or falls back to 1996-01-01
+   */
+  private getMaxAvailableDate(): Date {
+    const fallbackDate = new Date('1996-01-01');
+    
+    if (!this.currentSelectedStockData?.listingDate) {
+      return fallbackDate;
+    }
+    
+    try {
+      const listingDate = new Date(this.currentSelectedStockData.listingDate);
+      if (isNaN(listingDate.getTime())) {
+        return fallbackDate;
+      }
+      
+      // Return the later date between listing_date and 1996-01-01
+      return listingDate > fallbackDate ? listingDate : fallbackDate;
+    } catch (error) {
+      console.warn('Error parsing listing date, using fallback:', error);
+      return fallbackDate;
+    }
+  }
+
+  /**
+   * Handle time range change from candlestick chart filters
+   * @param timeRange The selected time range (1D, 5D, 1M, 3M, 6M, YTD, 1Y, 3Y, 5Y, MAX)
+   */
+  public onTimeRangeChange(timeRange: string): void {
+    if (!this.currentSelectedStockData?.symbol) {
+      return;
+    }
+
+    console.log(`Time range changed to: ${timeRange}`);
+    
+    // Update the selected time range
+    this.selectedTimeRange = timeRange as TimeRange;
+    
+    // Update the time range filters in the candlestick chart widget
+    if (this.dashboardConfig?.widgets) {
+      const candlestickWidget = this.dashboardConfig.widgets.find(widget => 
+        widget.config?.header?.title === 'INFY - Stock Historical Price Movement'
+      );
+      
+      if (candlestickWidget) {
+        CandlestickChartBuilder.updateTimeRangeFilters(candlestickWidget, timeRange as TimeRange, this.handleTimeRangeChange.bind(this));
+      }
+    }
+    
+    // Calculate date range based on selected time range
+    const endDate = new Date();
+    const maxAvailableDate = this.getMaxAvailableDate();
+    let startDate = new Date();
+    
+    switch (timeRange) {
+      case '1D':
+        // For 1D, we'll use intraday data if available, otherwise show last trading day
+        startDate.setDate(endDate.getDate() - 1);
+        break;
+      case '5D':
+        startDate.setDate(endDate.getDate() - 5);
+        break;
+      case '1M':
+        startDate.setMonth(endDate.getMonth() - 1);
+        break;
+      case '3M':
+        startDate.setMonth(endDate.getMonth() - 3);
+        break;
+      case '6M':
+        startDate.setMonth(endDate.getMonth() - 6);
+        break;
+      case 'YTD':
+        startDate.setFullYear(endDate.getFullYear(), 0, 1); // January 1st of current year
+        break;
+      case '1Y':
+        startDate.setFullYear(endDate.getFullYear() - 1);
+        break;
+      case '3Y':
+        startDate.setFullYear(endDate.getFullYear() - 3);
+        break;
+      case '5Y':
+        startDate.setFullYear(endDate.getFullYear() - 5);
+        break;
+      case 'MAX':
+        // Use the maximum available date (listing_date or 1996-01-01, whichever is later)
+        startDate = maxAvailableDate;
+        break;
+      default:
+        startDate.setFullYear(endDate.getFullYear() - 1); // Default to 1Y
+    }
+    
+    // Ensure start date is not before the maximum available date
+    if (startDate < maxAvailableDate) {
+      startDate = maxAvailableDate;
+      console.log(`Adjusted start date to maximum available date: ${maxAvailableDate.toISOString().split('T')[0]}`);
+    }
+    
+    // Format dates as yyyy-MM-dd strings (backend expected format)
+    const startDateStr = startDate.toISOString().split('T')[0];
+    const endDateStr = endDate.toISOString().split('T')[0];
+    
+    console.log(`Loading historical data for ${this.currentSelectedStockData.symbol} from ${startDateStr} to ${endDateStr} (${timeRange})`);
+    console.log(`Maximum available date: ${maxAvailableDate.toISOString().split('T')[0]}`);
+    
+    // Load historical data for the new time range
+    this.stockService.getStockHistory(this.currentSelectedStockData.symbol, startDateStr, endDateStr).subscribe({
+      next: (historicalData: StockHistoricalData[]) => {
+        this.historicalData = historicalData || [];
+        this.updateCandlestickChartWithHistoricalData();
+        this.cdr.detectChanges();
+      },
+      error: (error: any) => {
+        console.warn('Failed to load historical data for time range', timeRange, ':', error);
+        this.historicalData = [];
+        this.updateCandlestickChartWithHistoricalData();
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  /**
+   * Handle time range change events from the candlestick chart builder
+   * @param event The time range filter event
+   */
+  private handleTimeRangeChange(event: TimeRangeFilterEvent): void {
+    console.log('=== TIME RANGE FILTER EVENT RECEIVED ===');
+    console.log('Event type:', event.type);
+    console.log('Selected range:', event.range);
+    console.log('Widget ID:', event.widgetId);
+    console.log('Current selected stock:', this.currentSelectedStockData?.symbol);
+    console.log('========================================');
+    
+    if (event.type === 'timeRangeChange') {
+      console.log('Calling onTimeRangeChange with range:', event.range);
+      this.onTimeRangeChange(event.range);
+    } else {
+      console.warn('Unknown event type:', event.type);
+    }
+  }
+
+  /**
+   * Make onTimeRangeChange available globally for widget templates
+   */
+  public get onTimeRangeChangeGlobal() {
+    return this.onTimeRangeChange.bind(this);
+  }
+
 
 }

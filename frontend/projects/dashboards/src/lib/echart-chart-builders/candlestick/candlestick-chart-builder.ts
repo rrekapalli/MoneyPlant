@@ -38,6 +38,21 @@ export interface CandlestickChartOptions extends EChartsOption {
     scale?: boolean;
   };
   series?: CandlestickSeriesOptions[];
+  // Add time range filter options
+  timeRangeFilters?: {
+    selectedRange: string;
+    ranges: string[];
+  };
+}
+
+// Time range filter options
+export type TimeRange = '1D' | '5D' | '1M' | '3M' | '6M' | 'YTD' | '1Y' | '3Y' | '5Y' | 'MAX';
+
+// Custom event interface for time range filter changes
+export interface TimeRangeFilterEvent {
+  type: 'timeRangeChange';
+  range: TimeRange;
+  widgetId: string;
 }
 
 /**
@@ -51,11 +66,19 @@ export interface CandlestickChartOptions extends EChartsOption {
  * - Sample data generation
  * - Configuration presets for financial analysis
  * - Enhanced update methods with retry mechanism
+ * - Time range filters (1D, 5D, 1M, 3M, 6M, YTD, 1Y, 3Y, 5Y, MAX)
+ * - Area series overlay with close price data
+ * - Custom event system for time range filter changes
  */
 export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChartOptions, CandlestickSeriesOptions> {
   protected override seriesOptions: CandlestickSeriesOptions;
   private xAxisData: string[] = [];
   private filterColumn: string = '';
+  private timeRangeFilters: TimeRange[] = ['1D', '5D', '1M', '3M', '6M', 'YTD', '1Y', '3Y', '5Y', 'MAX'];
+  private selectedTimeRange: TimeRange = '1Y';
+  private showAreaSeries: boolean = true;
+  private areaSeriesOpacity: number = 0.3;
+  private timeRangeChangeCallback?: (event: TimeRangeFilterEvent) => void;
 
   private constructor() {
     super();
@@ -76,10 +99,11 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
     return {
       grid: {
         containLabel: true,
-        top: '15%',
-        left: '5%',   // Reduced from 10% to 5%
-        right: '5%',  // Reduced from 10% to 5%
-        bottom: '15%',
+        top: '20%',    // Increased from 10% to 15% to make room for time range filters
+        left: '5%',    // Reduced from 10% to 5%
+        right: '5%',   // Reduced from 10% to 5%
+        bottom: '5%', // Reduced from 15% to 10% to give more space to chart
+        height: '60%'
       },
       tooltip: {
         trigger: 'axis',
@@ -266,8 +290,8 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
         type: 'slider',
         start: startPercent,
         end: endPercent,
-        bottom: '1%',   // Reduced from 3% to 1% to bring it closer to x-axis
-        height: '8%',  // Increased height for better usability
+        bottom: '2%',   // Reduced from 1% to 0% to give more space to chart
+        height: '8%',   // Reduced from 8% to 6% to give more space to chart
         borderColor: '#ccc',
         fillerColor: 'rgba(167,183,204,0.4)',
         handleStyle: {
@@ -292,6 +316,65 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
     } else {
       this.seriesOptions.itemStyle = { barWidth: width };
     }
+    return this;
+  }
+
+  /**
+   * Enable time range filters above the chart
+   * @param ranges Array of time ranges to show (default: all standard ranges)
+   * @param defaultRange Default selected range (default: '1Y')
+   */
+  enableTimeRangeFilters(ranges: TimeRange[] = ['1D', '5D', '1M', '3M', '6M', 'YTD', '1Y', '3Y', '5Y', 'MAX'], defaultRange: TimeRange = '1Y'): this {
+    this.timeRangeFilters = ranges;
+    this.selectedTimeRange = defaultRange;
+    
+    // Add time range filter configuration to chart options
+    (this.chartOptions as any).timeRangeFilters = {
+      selectedRange: this.selectedTimeRange,
+      ranges: this.timeRangeFilters
+    };
+    
+    return this;
+  }
+
+  /**
+   * Set the selected time range
+   * @param range The time range to select
+   */
+  setSelectedTimeRange(range: TimeRange): this {
+    this.selectedTimeRange = range;
+    if ((this.chartOptions as any).timeRangeFilters) {
+      (this.chartOptions as any).timeRangeFilters.selectedRange = range;
+    }
+    return this;
+  }
+
+  /**
+   * Set callback for time range filter changes
+   * @param callback Function to handle time range filter changes
+   */
+  setTimeRangeChangeCallback(callback: (event: TimeRangeFilterEvent) => void): this {
+    this.timeRangeChangeCallback = callback;
+    return this;
+  }
+
+  /**
+   * Enable area series overlay with close price data
+   * @param enabled Whether to show the area series (default: true)
+   * @param opacity Opacity of the area series (default: 0.3)
+   */
+  enableAreaSeries(enabled: boolean = true, opacity: number = 0.3): this {
+    this.showAreaSeries = enabled;
+    this.areaSeriesOpacity = opacity;
+    return this;
+  }
+
+  /**
+   * Set area series opacity
+   * @param opacity Opacity value between 0 and 1
+   */
+  setAreaSeriesOpacity(opacity: number): this {
+    this.areaSeriesOpacity = Math.max(0, Math.min(1, opacity));
     return this;
   }
 
@@ -513,17 +596,258 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
    * Override build method to merge series options
    */
   override build(): IWidget {
+    const series: any[] = [{
+      ...this.seriesOptions,
+      type: 'candlestick',
+    }];
+
+    // Add area series if enabled
+    if (this.showAreaSeries && this.seriesOptions.data && this.seriesOptions.data.length > 0) {
+      // Extract close prices for area series
+      const closePrices = this.seriesOptions.data.map(candle => candle[2]); // Close is at index 2
+      
+      series.push({
+        name: 'Close Price Area',
+        type: 'line',
+        data: closePrices,
+        smooth: true,
+        symbol: 'none',
+        lineStyle: {
+          width: 0
+        },
+        areaStyle: {
+          color: this.getAreaSeriesColor(),
+          opacity: this.areaSeriesOpacity
+        },
+        z: 1 // Ensure area is behind candlesticks
+      });
+    }
+
+    // If time range filters are enabled, add them as graphic elements to the chart
+    if (this.timeRangeFilters.length > 0) {
+      // Create a global function for time range changes if it doesn't exist
+      if (typeof window !== 'undefined' && !(window as any).handleTimeRangeFilterClick) {
+        (window as any).handleTimeRangeFilterClick = (range: string) => {
+          console.log('Global time range filter clicked:', range);
+          if (this.timeRangeChangeCallback) {
+            const event: TimeRangeFilterEvent = {
+              type: 'timeRangeChange',
+              range: range as TimeRange,
+              widgetId: 'candlestick-chart'
+            };
+            this.timeRangeChangeCallback(event);
+          }
+        };
+      }
+
+      // Add time range filters as graphic elements positioned in top left corner
+      const timeRangeButtons = this.timeRangeFilters.map((range, index) => ({
+        type: 'rect',
+        left: 10 + (index * 45),
+        top: 5,  // Moved up slightly to ensure visibility
+        width: 40,
+        height: 25,  // Reduced height slightly
+        style: {
+          fill: range === this.selectedTimeRange ? '#007bff' : '#f8f9fa',
+          stroke: range === this.selectedTimeRange ? '#007bff' : '#dee2e6',
+          lineWidth: 1,
+          borderRadius: 4
+        },
+        // Store the range as a custom property for event handling
+        range: range,
+        // Add cursor style for better UX
+        cursor: 'pointer',
+        // Add event handling properties
+        onclick: (params: any) => {
+          console.log('Button clicked directly:', range);
+          if (this.timeRangeChangeCallback) {
+            const event: TimeRangeFilterEvent = {
+              type: 'timeRangeChange',
+              range: range as TimeRange,
+              widgetId: 'candlestick-chart'
+            };
+            this.timeRangeChangeCallback(event);
+          }
+          // Also call the global function as fallback
+          if (typeof window !== 'undefined' && (window as any).handleTimeRangeFilterClick) {
+            (window as any).handleTimeRangeFilterClick(range);
+          }
+        }
+      }));
+
+      // Add text labels for the buttons
+      const timeRangeTexts = this.timeRangeFilters.map((range, index) => ({
+        type: 'text',
+        left: 10 + (index * 45) + 20, // Center text in button
+        top: 5 + 12, // Center text vertically in the smaller button
+        style: {
+          text: range,
+          fill: range === this.selectedTimeRange ? '#ffffff' : '#495057',
+          fontSize: 10,  // Slightly smaller font
+          fontWeight: 'bold',
+          textAlign: 'center',
+          textVerticalAlign: 'middle'
+        },
+        // Store the range as a custom property for event handling
+        range: range,
+        // Add cursor style for better UX
+        cursor: 'pointer',
+        // Add event handling properties
+        onclick: (params: any) => {
+          console.log('Text clicked directly:', range);
+          if (this.timeRangeChangeCallback) {
+            const event: TimeRangeFilterEvent = {
+              type: 'timeRangeChange',
+              range: range as TimeRange,
+              widgetId: 'candlestick-chart'
+            };
+            this.timeRangeChangeCallback(event);
+          }
+          // Also call the global function as fallback
+          if (typeof window !== 'undefined' && (window as any).handleTimeRangeFilterClick) {
+            (window as any).handleTimeRangeFilterClick(range);
+          }
+        }
+      }));
+
+      // Add graphics to chart options
+      (this.chartOptions as any).graphic = [...timeRangeButtons, ...timeRangeTexts];
+    }
+
     const finalOptions: CandlestickChartOptions = {
       ...this.chartOptions,
-      series: [{
-        ...this.seriesOptions,
-        type: 'candlestick',
-      }],
+      series: series,
     };
 
-    return this.widgetBuilder
+    // Create the base widget
+    const baseWidget = this.widgetBuilder
       .setEChartsOptions(finalOptions)
       .build();
+
+    // Add time range filters data to the widget for external access
+    if (this.timeRangeFilters.length > 0) {
+      (baseWidget as any).timeRangeFilters = {
+        ranges: this.timeRangeFilters,
+        selectedRange: this.selectedTimeRange
+      };
+    }
+
+    return baseWidget;
+  }
+
+
+
+  /**
+   * Static method to update time range filters in an existing candlestick chart widget
+   */
+  static updateTimeRangeFilters(widget: IWidget, selectedRange: TimeRange, callback?: (event: TimeRangeFilterEvent) => void): void {
+    if (!widget.chartInstance) {
+      return;
+    }
+
+    try {
+      const currentOptions = widget.chartInstance.getOption();
+      const timeRangeFilters = (widget as any).timeRangeFilters;
+      
+      if (!timeRangeFilters || !timeRangeFilters.ranges) {
+        return;
+      }
+
+      // Update the selected range
+      (widget as any).timeRangeFilters.selectedRange = selectedRange;
+
+      // Update graphic elements to reflect the new selected range
+      const timeRangeButtons = timeRangeFilters.ranges.map((range: TimeRange, index: number) => ({
+        type: 'rect',
+        left: 10 + (index * 45),
+        top: 5,  // Moved up slightly to ensure visibility
+        width: 40,
+        height: 25,  // Reduced height slightly
+        style: {
+          fill: range === selectedRange ? '#007bff' : '#f8f9fa',
+          stroke: range === selectedRange ? '#007bff' : '#dee2e6',
+          lineWidth: 1,
+          borderRadius: 4
+        },
+        // Store the range as a custom property for event handling
+        range: range,
+        // Add cursor style for better UX
+        cursor: 'pointer',
+        // Add event handling properties
+        onclick: (params: any) => {
+          console.log('Button clicked directly:', range);
+          if (callback) {
+            const event: TimeRangeFilterEvent = {
+              type: 'timeRangeChange',
+              range: range as TimeRange,
+              widgetId: 'candlestick-chart'
+            };
+            callback(event);
+          }
+        }
+      }));
+
+      const timeRangeTexts = timeRangeFilters.ranges.map((range: TimeRange, index: number) => ({
+        type: 'text',
+        left: 10 + (index * 45) + 20, // Center text in button
+        top: 5 + 12, // Center text vertically in the smaller button
+        style: {
+          text: range,
+          fill: range === selectedRange ? '#ffffff' : '#495057',
+          fontSize: 10,  // Slightly smaller font
+          fontWeight: 'bold',
+          textAlign: 'center',
+          textVerticalAlign: 'middle'
+        },
+        // Store the range as a custom property for event handling
+        range: range,
+        // Add cursor style for better UX
+        cursor: 'pointer',
+        // Add event handling properties
+        onclick: (params: any) => {
+          console.log('Text clicked directly:', range);
+          if (callback) {
+            const event: TimeRangeFilterEvent = {
+              type: 'timeRangeChange',
+              range: range as TimeRange,
+              widgetId: 'candlestick-chart'
+            };
+            callback(event);
+          }
+        }
+      }));
+
+      const newOptions = {
+        ...currentOptions,
+        graphic: [...timeRangeButtons, ...timeRangeTexts]
+      };
+
+      widget.chartInstance.setOption(newOptions, true);
+    } catch (error) {
+      console.error('Error updating time range filters:', error);
+    }
+  }
+
+  /**
+   * Get the current time range filters configuration
+   */
+  getTimeRangeFiltersConfig(): { selectedRange: TimeRange; ranges: TimeRange[] } {
+    return {
+      selectedRange: this.selectedTimeRange,
+      ranges: this.timeRangeFilters
+    };
+  }
+
+  /**
+   * Get area series color based on current palette
+   */
+  private getAreaSeriesColor(): string {
+    // Use a light version of the current color palette
+    if (this.seriesOptions.itemStyle?.color) {
+      return this.seriesOptions.itemStyle.color;
+    }
+    // Default light blue for area series
+    return '#91cc75';
   }
 
   /**
@@ -616,5 +940,138 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
    */
   static override getExportSheetName(widget: IWidget): string {
     return 'Candlestick Chart Data';
+  }
+
+  /**
+   * Set chart events
+   */
+  override setEvents(callback: (widget: IWidget, chart: any) => void): this {
+    this.widgetBuilder.setEvents((widget: IWidget, chart: any) => {
+      if (chart) {
+        // Handle time range filter clicks
+        chart.off('click');
+        chart.on('click', (params: any) => {
+          console.log('Chart click event:', params);
+          console.log('Component type:', params.componentType);
+          console.log('Data:', params.data);
+          
+          // Check if the click is on a time range filter graphic element
+          if (params.componentType === 'graphic' && params.data && params.data.range) {
+            const clickedRange = params.data.range;
+            console.log('Time range filter clicked:', clickedRange);
+            console.log('Callback available:', !!this.timeRangeChangeCallback);
+            
+            // Use the callback if available
+            if (this.timeRangeChangeCallback) {
+              const event: TimeRangeFilterEvent = {
+                type: 'timeRangeChange',
+                range: clickedRange as TimeRange,
+                widgetId: widget.id || 'candlestick-chart'
+              };
+              console.log('Calling time range change callback with event:', event);
+              this.timeRangeChangeCallback(event);
+            } else {
+              console.warn('Time range change callback not set');
+            }
+            
+            // Prevent event propagation
+            params.event?.stop?.();
+            return false;
+          }
+          
+          // Also check for clicks on text elements (labels)
+          if (params.componentType === 'graphic' && params.data && params.data.range && params.data.type === 'text') {
+            const clickedRange = params.data.range;
+            console.log('Time range filter text clicked:', clickedRange);
+            console.log('Callback available:', !!this.timeRangeChangeCallback);
+            
+            // Use the callback if available
+            if (this.timeRangeChangeCallback) {
+              const event: TimeRangeFilterEvent = {
+                type: 'timeRangeChange',
+                range: clickedRange as TimeRange,
+                widgetId: widget.id || 'candlestick-chart'
+              };
+              console.log('Calling time range change callback with event:', event);
+              this.timeRangeChangeCallback(event);
+            } else {
+              console.warn('Time range change callback not set');
+            }
+            
+            // Prevent event propagation
+            params.event?.stop?.();
+            return false;
+          }
+          
+          // Handle other chart clicks (existing functionality)
+          if (callback) {
+            callback(widget, chart);
+          }
+          
+          return true; // Allow default behavior for non-filter clicks
+        });
+        
+        // Also add mousedown event for better click detection
+        chart.off('mousedown');
+        chart.on('mousedown', (params: any) => {
+          console.log('Chart mousedown event:', params);
+          
+          // Check if the mousedown is on a time range filter graphic element
+          if (params.componentType === 'graphic' && params.data && params.data.range) {
+            const clickedRange = params.data.range;
+            console.log('Time range filter mousedown:', clickedRange);
+            
+            // Use the callback if available
+            if (this.timeRangeChangeCallback) {
+              const event: TimeRangeFilterEvent = {
+                type: 'timeRangeChange',
+                range: clickedRange as TimeRange,
+                widgetId: widget.id || 'candlestick-chart'
+              };
+              this.timeRangeChangeCallback(event);
+            } else {
+              console.warn('Time range change callback not set');
+            }
+            
+            // Prevent event propagation
+            params.event?.stop?.();
+            return false;
+          }
+          
+          return true; // Allow default behavior for non-filter clicks
+        });
+
+        // Add mouseup event for additional click detection
+        chart.off('mouseup');
+        chart.on('mouseup', (params: any) => {
+          console.log('Chart mouseup event:', params);
+          
+          // Check if the mouseup is on a time range filter graphic element
+          if (params.componentType === 'graphic' && params.data && params.data.range) {
+            const clickedRange = params.data.range;
+            console.log('Time range filter mouseup:', clickedRange);
+            
+            // Use the callback if available
+            if (this.timeRangeChangeCallback) {
+              const event: TimeRangeFilterEvent = {
+                type: 'timeRangeChange',
+                range: clickedRange as TimeRange,
+                widgetId: widget.id || 'candlestick-chart'
+              };
+              this.timeRangeChangeCallback(event);
+            } else {
+              console.warn('Time range change callback not set');
+            }
+            
+            // Prevent event propagation
+            params.event?.stop?.();
+            return false;
+          }
+          
+          return true; // Allow default behavior for non-filter clicks
+        });
+      }
+    });
+    return this;
   }
 } 
