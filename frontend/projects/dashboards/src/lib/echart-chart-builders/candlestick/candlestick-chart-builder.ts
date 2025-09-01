@@ -76,7 +76,7 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
   private xAxisData: string[] = [];
   private filterColumn: string = '';
   private timeRangeFilters: TimeRange[] = ['1D', '5D', '1M', '3M', '6M', 'YTD', '1Y', '3Y', '5Y', 'MAX'];
-  private selectedTimeRange: TimeRange = '1Y'; // Default to 1Y
+  private selectedTimeRange: TimeRange = '1Y'; // Default to Y
   private showAreaSeries: boolean = true;
   private areaSeriesOpacity: number = 0.3;
   private timeRangeChangeCallback?: (event: TimeRangeFilterEvent) => void;
@@ -100,9 +100,9 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
     return {
       grid: {
         containLabel: true,
-        top: '25%',    // Increased to 25% to make more room for time range filters
-        left: '5%',    // Reduced from 10% to 5%
-        right: '5%',   // Reduced from 10% to 5%
+        top: '25%',    // Increased to 35% to make more room for time range filters
+        left: '3%',    // Reduced from 5% to 3%
+        right: '3%',   // Reduced from 5% to 3%
         bottom: '5%', // Reduced from 15% to 10% to give more space to chart
         height: '60%'
       },
@@ -579,10 +579,10 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
       type: 'candlestick',
     }];
 
-    // Add area series if enabled
-    if (this.showAreaSeries && this.seriesOptions.data && this.seriesOptions.data.length > 0) {
+    // Add area series if enabled (always create it even with empty data)
+    if (this.showAreaSeries) {
       // Extract close prices for area series
-      const closePrices = this.seriesOptions.data.map(candle => candle[1]); // Close is at index 1 in [open, close, low, high]
+      const closePrices = this.seriesOptions.data?.map(candle => candle[1]) || []; // Close is at index 1 in [open, close, low, high]
       
       series.push({
         name: 'Close Price Area',
@@ -618,19 +618,19 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
       // Add time range filters as graphic elements positioned in top left corner
       const timeRangeButtons = this.timeRangeFilters.map((range, index) => ({
         type: 'rect',
-        left: 10 + (index * 55), // Increased spacing to 55px to accommodate all filters
-        top: 5,  // Moved up slightly to ensure visibility
-        width: 50, // Increased width to accommodate "1Y" text
+        left: 10 + (index * 40), // Even more compact spacing to 40px to fit all filters
+        top: 10,  // Moved down slightly to ensure visibility
+        width: 35, // Even more compact width to fit all filters
         height: 28, // Increased height for better visibility
         style: {
-          fill: range === this.selectedTimeRange ? '#1565c0' : '#f5f5f5', // Darker blue for selected, light gray for unselected
-          stroke: range === this.selectedTimeRange ? '#1565c0' : '#e0e0e0',
-          lineWidth: 1.5,
-          borderRadius: 6,
-          shadowBlur: range === this.selectedTimeRange ? 4 : 1,
-          shadowColor: range === this.selectedTimeRange ? 'rgba(21, 101, 192, 0.3)' : 'rgba(0, 0, 0, 0.1)',
-          shadowOffsetX: range === this.selectedTimeRange ? 0 : 0,
-          shadowOffsetY: range === this.selectedTimeRange ? 2 : 1
+          fill: range === this.selectedTimeRange ? '#2196f3' : '#ffffff', // Bright blue background for selected, white for unselected
+          stroke: range === this.selectedTimeRange ? '#1976d2' : '#e0e0e0',
+                      lineWidth: range === this.selectedTimeRange ? 2.5 : 1.5,
+            borderRadius: 4,
+            shadowBlur: range === this.selectedTimeRange ? 8 : 2,
+            shadowColor: range === this.selectedTimeRange ? 'rgba(33, 150, 243, 0.5)' : 'rgba(0, 0, 0, 0.15)',
+            shadowOffsetX: range === this.selectedTimeRange ? 0 : 0,
+            shadowOffsetY: range === this.selectedTimeRange ? 4 : 1
         },
         // Store the range as a custom property for event handling
         range: range,
@@ -658,18 +658,18 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
 
       // Add text labels for the buttons
       const timeRangeTexts = this.timeRangeFilters.map((range, index) => {
-        // Debug logging for "1Y" specifically
+        // Debug logging for "Y" specifically
         if (range === '1Y') {
-          console.log('Creating 1Y text element at index:', index, 'position:', 10 + (index * 55) + 25);
+          console.log('Creating Y text element at index:', index, 'position:', 10 + (index * 40) + 17.5, 'top:', 10 + 14);
         }
         return {
           type: 'text',
-          left: 10 + (index * 55) + 25, // Center text in button with adjusted spacing
-          top: 5 + 14, // Center text vertically in the taller button
+          left: 10 + (index * 40) + 17.5, // Center text in button with adjusted spacing
+          top: 10 + 14, // Center text vertically in the taller button
           style: {
             text: range,
-            fill: range === this.selectedTimeRange ? '#ffffff' : '#37474f',
-            fontSize: 12,  // Increased font size for better visibility
+            fill: range === this.selectedTimeRange ? '#ffffff' : '#333333',
+            fontSize: 10,  // Even smaller font to fit in smaller buttons
             fontWeight: range === this.selectedTimeRange ? 'bold' : '600',
             textAlign: 'center',
             textVerticalAlign: 'middle',
@@ -705,9 +705,9 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
       const selectedIndex = this.timeRangeFilters.indexOf(this.selectedTimeRange);
       const underlineElements = selectedIndex >= 0 ? [{
         type: 'rect',
-        left: 10 + (selectedIndex * 55) + 5, // Position under the selected button
-        top: 5 + 28 + 2, // Position below the button with small gap
-        width: 40, // Width of the underline
+        left: 10 + (selectedIndex * 40) + 5, // Position under the selected button
+        top: 10 + 28 + 2, // Position below the button with small gap
+        width: 25, // Width of the underline
         height: 2, // Height of the underline
         style: {
           fill: '#1565c0', // Same color as selected button
@@ -717,12 +717,18 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
 
       // Add graphics to chart options
       (this.chartOptions as any).graphic = [...timeRangeButtons, ...timeRangeTexts, ...underlineElements];
+      
+      // Debug: Log the chart container width
+      console.log('Chart grid configuration:', (this.chartOptions as any).grid);
+      console.log('Chart container width should accommodate:', this.timeRangeFilters.length * 45 + 10, 'px');
       console.log('Time range filters created:', this.timeRangeFilters.length, 'filters');
-      console.log('Time range filter positions:', timeRangeButtons.map((btn, i) => `${this.timeRangeFilters[i]}: left=${btn.left}`));
+      console.log('Time range filter positions:', timeRangeButtons.map((btn, i) => `${this.timeRangeFilters[i]}: left=${btn.left}, width=${btn.width}`));
       console.log('All time range filters:', this.timeRangeFilters);
       console.log('1Y filter index:', this.timeRangeFilters.indexOf('1Y'));
       console.log('Selected time range:', this.selectedTimeRange);
-      console.log('Total width needed:', this.timeRangeFilters.length * 55 + 10, 'px');
+      console.log('Total width needed:', this.timeRangeFilters.length * 40 + 10, 'px');
+      console.log('1Y button position:', timeRangeButtons.find((btn, i) => this.timeRangeFilters[i] === '1Y'));
+      console.log('1Y text position:', timeRangeTexts.find((txt, i) => this.timeRangeFilters[i] === '1Y'));
     }
 
     const finalOptions: CandlestickChartOptions = {

@@ -208,9 +208,11 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
   // Shared dashboard data - Flat structure (implements abstract property)
   protected dashboardData: StockDataDto[] = [];
   protected readonly initialDashboardData: StockDataDto[] = [];
+  
+
 
   // Filtered stock data for cross-chart filtering
-  protected filteredDashboardData: StockDataDto[] | null = this.dashboardData || [];
+  protected filteredDashboardData: StockDataDto[] | null = [];
 
   // Central applied filters array for cumulative filtering
   protected appliedFilters: FilterCriteria[] = [];
@@ -761,8 +763,17 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
       
       // Stock Price Candlestick Chart - Now shows historical stock data with time range filters
       const candlestickChart = CandlestickChartBuilder.create()
-        .setData(this.filteredDashboardData || [])
-        .setHeader('INFY - Stock Historical Price Movement')
+        .setData([]) // Use empty array
+        .transformData({
+          dateField: 'lastUpdateTime',
+          openField: 'openPrice',
+          closeField: 'lastPrice',
+          lowField: 'dayLow',
+          highField: 'dayHigh',
+          sortBy: 'date',
+          sortOrder: 'asc'
+        })
+        .setHeader('Stock Historical Price Movement')
         .setCurrencyFormatter('INR', 'en-IN')
         .setPredefinedPalette('finance')
         .setAccessor('symbol')
@@ -774,8 +785,9 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
         .enableBrush()  // Enable brush selection for technical analysis
         .setLargeMode(100)  // Enable large mode for datasets with 100+ points
         .setTooltipType('axis')  // Enable crosshair tooltip for better analysis
-        .enableTimeRangeFilters(['1D', '5D', '1M', '3M', '6M', 'YTD', '1Y', '3Y', '5Y', 'MAX'], '1Y')  // Enable time range filters with 1Y as default
-        .enableAreaSeries(true, 0.2)  // Enable area series with close price data
+        .enableTimeRangeFilters(['1D', '5D', '1M', '3M', '6M', 'YTD', '1Y', '3Y', '5Y', 'MAX'], '1Y')  // Enable time range filters with Y as default
+        .enableAreaSeries(true, 0.4)  // Enable area series with close price data and higher opacity
+        .setAreaSeriesOpacity(0.5)  // Set area series opacity to 50% for better visibility
         .setTimeRangeChangeCallback(this.handleTimeRangeChange.bind(this))  // Set callback for time range changes
         .setEvents((widget, chart) => {
           if (chart) {
@@ -797,13 +809,17 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
       if (candlestickChart && (candlestickChart as any).timeRangeFilters) {
         // The time range filters are now part of the widget data
         console.log('Time range filters added to candlestick chart:', (candlestickChart as any).timeRangeFilters);
+        console.log('Time range filters ranges:', (candlestickChart as any).timeRangeFilters.ranges);
+        console.log('Selected time range:', (candlestickChart as any).timeRangeFilters.selectedRange);
+        console.log('Y in ranges:', (candlestickChart as any).timeRangeFilters.ranges.includes('Y'));
       }
 
-      console.log('Candlestick chart created successfully');
+      console.log('Candlestick chart created successfully with area series enabled');
+      console.log('Filtered dashboard data:', this.filteredDashboardData?.length || 0, 'items');
 
       // Stock List Widget - Initialize with empty data, will be populated later
       const stockListWidget = StockListChartBuilder.create()
-        .setData(this.filteredDashboardData)
+        .setData([])
         .setStockPerformanceConfiguration()
         .setHeader('Stock List')
         .setCurrencyFormatter('INR', 'en-IN')
@@ -823,7 +839,7 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
 
       // Position charts with proper spacing - adjusted candlestick chart height
       candlestickChart.position = { x: 0, y: 3, cols: 8, rows: 8 }; // Full width for time range filters
-      stockListWidget.position = { x: 8, y: 3, cols: 4, rows: 16 }; // Move stock list below candlestick chart
+      stockListWidget.position = { x: 8, y: 3, cols: 4, rows: 16 }; // Move stock list below candlestick cha8
       
       // Use the Fluent API to build the dashboard config with filter highlighting enabled
       this.dashboardConfig = StandardDashboardBuilder.createStandard()
@@ -884,6 +900,13 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
       
       if (initialData) {
         this.updateEchartWidget(widget, initialData);
+      }
+      
+      // Add line series to candlestick chart if this is the candlestick widget
+      if (widgetTitle === 'Stock Historical Price Movement') {
+        setTimeout(() => {
+          this.addLineSeriesToCandlestickChart();
+        }, 500); // Delay to ensure chart is rendered
       }
     });
 
@@ -1019,7 +1042,7 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
       case 'Portfolio Distribution':
         // This is a pie chart - provide asset allocation data
         return this.groupByAndSum(this.filteredDashboardData || this.dashboardData, 'industry', 'totalTradedValue');
-      case 'INFY - Stock Historical Price Movement':
+      case 'Stock Historical Price Movement':
         // This is a candlestick chart - provide OHLC data from historical data if available
         if (this.historicalData.length > 0) {
           // Use historical data for candlestick chart
@@ -1122,7 +1145,7 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
           };
         }).sort((a, b) => b.value - a.value);
 
-      case 'INFY - Stock Historical Price Movement':
+      case 'Stock Historical Price Movement':
         // Use historical data for candlestick chart if available, otherwise use stock data
         if (this.historicalData.length > 0) {
           // Transform historical data to candlestick format: [open, close, low, high]
@@ -1629,7 +1652,7 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
     if (!this.dashboardConfig?.widgets) return;
 
     const candlestickWidget = this.dashboardConfig.widgets.find(widget => 
-      widget.config?.header?.title === 'INFY - Stock Historical Price Movement'
+      widget.config?.header?.title === 'Stock Historical Price Movement'
     );
 
     if (candlestickWidget && this.historicalData.length > 0) {
@@ -1715,7 +1738,7 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
     if (!this.dashboardConfig?.widgets || !this.filteredDashboardData) return;
 
     const candlestickWidget = this.dashboardConfig.widgets.find(widget => 
-      widget.config?.header?.title === 'INFY - Stock Historical Price Movement'
+      widget.config?.header?.title === 'Stock Historical Price Movement'
     );
 
     if (candlestickWidget) {
@@ -1726,6 +1749,9 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
         stock.dayLow || 0,
         stock.dayHigh || 0
       ]);
+      
+      console.log('Created candlestick data:', candlestickData.length, 'items');
+      console.log('Sample candlestick data:', candlestickData.slice(0, 3));
       
       // Create X-axis labels (symbols or dates if available)
       const xAxisLabels = this.filteredDashboardData.map(stock => {
@@ -1801,6 +1827,54 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
           options.series[1].data = closePrices;
         }
       }
+    }
+  }
+
+  /**
+   * Add line series to candlestick chart
+   */
+  private addLineSeriesToCandlestickChart(): void {
+    if (!this.dashboardConfig?.widgets) return;
+
+    const candlestickWidget = this.dashboardConfig.widgets.find(widget => 
+      widget.config?.header?.title === 'Stock Historical Price Movement'
+    );
+
+    if (candlestickWidget && candlestickWidget.chartInstance) {
+      const currentOptions = candlestickWidget.chartInstance.getOption();
+      
+      // Extract close prices from candlestick data
+      const candlestickData = (currentOptions as any)?.series?.[0]?.data || [];
+      const closePrices = candlestickData.map((candle: number[]) => candle[1]); // Close is at index 1
+      
+      // Add line series
+      const newSeries = [...((currentOptions as any)?.series || [])];
+      newSeries.push({
+        name: 'Close Price Line',
+        type: 'line',
+        data: closePrices,
+        smooth: false,
+        symbol: 'circle',
+        symbolSize: 4,
+        lineStyle: {
+          width: 2,
+          color: '#ff6b6b'
+        },
+        itemStyle: {
+          color: '#ff6b6b'
+        },
+        z: 2, // Ensure line is above area
+        yAxisIndex: 0,
+        xAxisIndex: 0
+      });
+      
+      const newOptions = {
+        ...currentOptions,
+        series: newSeries
+      };
+      
+      candlestickWidget.chartInstance.setOption(newOptions, true);
+      console.log('Added line series to candlestick chart');
     }
   }
 
@@ -2398,7 +2472,7 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
     // Update the time range filters in the candlestick chart widget
     if (this.dashboardConfig?.widgets) {
       const candlestickWidget = this.dashboardConfig.widgets.find(widget => 
-        widget.config?.header?.title === 'INFY - Stock Historical Price Movement'
+        widget.config?.header?.title === 'Stock Historical Price Movement'
       );
       
       if (candlestickWidget) {
@@ -2445,7 +2519,7 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
         startDate = maxAvailableDate;
         break;
       default:
-        startDate.setFullYear(endDate.getFullYear() - 1); // Default to 1Y
+        startDate.setFullYear(endDate.getFullYear() - 1); // Default to Y
     }
     
     // Ensure start date is not before the maximum available date
