@@ -5,6 +5,8 @@ import { MenuModule } from 'primeng/menu';
 import { MenuItem } from 'primeng/api';
 import { SplitButtonModule } from 'primeng/splitbutton';
 import { SelectModule } from 'primeng/select';
+import { InputTextModule } from 'primeng/inputtext';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'vis-dashboard-header',
@@ -15,6 +17,8 @@ import { SelectModule } from 'primeng/select';
     MenuModule,
     SplitButtonModule,
     SelectModule,
+    InputTextModule,
+    FormsModule,
   ],
   templateUrl: './dashboard-header.component.html',
   styleUrls: ['./dashboard-header.component.css'],
@@ -23,17 +27,26 @@ export class DashboardHeaderComponent implements OnInit, OnChanges {
   @Input() title: string = 'Dashboard';
   @Input() isHighlightingEnabled: boolean = true;
   @Input() isExportingExcel: boolean = false;
+  // Enable/disable stock search box and provide options
+  @Input() enableStockSearch: boolean = false;
+  @Input() stockSearchList: Array<{ symbol: string; name?: string }> = [];
 
   @Output() onExportToExcel = new EventEmitter<void>();
   @Output() onToggleHighlighting = new EventEmitter<void>();
   @Output() onSetHighlightingPreset = new EventEmitter<'subtle' | 'medium' | 'strong'>();
   @Output() onForceTileRefresh = new EventEmitter<void>();
+  @Output() onSearchStock = new EventEmitter<string>();
 
   // Convert getter to property for better change detection
   menuItems: MenuItem[] = [];
 
   // Custom menu state
   showCustomMenu = false;
+
+  // Search functionality
+  searchQuery: string = '';
+  filteredStocks: Array<{ symbol: string; name?: string }> = [];
+  showSearchResults: boolean = false;
 
   ngOnChanges(changes: SimpleChanges): void {
     // Update menu items when inputs change
@@ -205,12 +218,58 @@ export class DashboardHeaderComponent implements OnInit, OnChanges {
     }
   }
 
+  // Search functionality methods
+  onSearchInput(event: any) {
+    const query = event.target.value.toLowerCase();
+    this.searchQuery = query;
+    
+    if (query.length === 0) {
+      this.filteredStocks = [];
+      this.showSearchResults = false;
+      return;
+    }
+
+    // Filter stocks by symbol or name
+    this.filteredStocks = this.stockSearchList.filter(stock => 
+      stock.symbol.toLowerCase().includes(query) || 
+      (stock.name && stock.name.toLowerCase().includes(query))
+    ).slice(0, 10); // Limit to 10 results
+
+    this.showSearchResults = this.filteredStocks.length > 0;
+  }
+
+  // Select a stock from search results
+  selectStock(stock: { symbol: string; name?: string }) {
+    this.onSearchStock.emit(stock.symbol);
+    this.searchQuery = '';
+    this.showSearchResults = false;
+  }
+
+  // Emit search request when user presses enter
+  onSubmitSearch(value: string) {
+    const symbol = (value || '').trim();
+    if (!symbol) {
+      return;
+    }
+    this.onSearchStock.emit(symbol.toUpperCase());
+    this.searchQuery = '';
+    this.showSearchResults = false;
+  }
+
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent) {
     if (this.showCustomMenu) {
       const targetElement = event.target as HTMLElement;
       if (targetElement && !targetElement.closest('.custom-menu-container')) {
         this.showCustomMenu = false;
+      }
+    }
+    
+    // Close search results when clicking outside
+    if (this.showSearchResults) {
+      const targetElement = event.target as HTMLElement;
+      if (targetElement && !targetElement.closest('.header-search')) {
+        this.showSearchResults = false;
       }
     }
   }

@@ -145,6 +145,7 @@ import {StockDataDto, StockTicksDto} from '../../../services/entities/stock-tick
 // Import stock service and historical data entities
 import { StockService } from '../../../services/apis/stock.api';
 import { StockHistoricalData } from '../../../services/entities/stock-historical-data';
+import { Stock } from '../../../services/entities/stock';
 
 // Import indices service and historical data entities
 import { IndicesService } from '../../../services/apis/indices.api';
@@ -233,6 +234,9 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
   private isSubscribing: boolean = false; // Track if we're currently in the process of subscribing
   private subscribedTopics: Set<string> = new Set(); // Track which topics we're already subscribed to
 
+  // Stocks list for header search box
+  public allStocks: Stock[] = [];
+
   // Debug flag to control verbose console logging
   private readonly enableDebugLogging: boolean = false;
   // Track the last stock for which previous-day data was fetched (to avoid repeated calls)
@@ -316,6 +320,9 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
           this.loadDefaultStockData();
         // }
       }, 100);
+
+      // Preload stocks for search box
+      this.loadAllStocksForSearch();
       
       console.log('StockInsightsComponent onChildInit completed');
     } catch (error) {
@@ -1018,6 +1025,21 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
       this.updateMetricTilesWithFilters([]);
       this.cdr.detectChanges();
     }
+  }
+
+  /**
+   * Load all stocks to serve as datasource for header search box
+   */
+  private loadAllStocksForSearch(): void {
+    this.stockService.getAllStocks().subscribe({
+      next: (stocks: Stock[]) => {
+        this.allStocks = stocks || [];
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.allStocks = [];
+      }
+    });
   }
 
   /**
@@ -2530,14 +2552,27 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
   }
 
   /**
-   * Handle stock selection change from the dropdown
-   * @param event The change event from the select element
+   * Handle search from header search box
    */
-  public onStockSelectionChange(event: Event): void {
-    const selectElement = event.target as HTMLSelectElement;
-    if (selectElement && selectElement.value) {
-      this.switchToStock(selectElement.value);
+  public onHeaderSearchStock(symbol: string): void {
+    if (!symbol) {
+      return;
     }
+
+    // Validate symbol against allStocks if available; otherwise proceed
+    const matched = this.allStocks.find(s => s.symbol?.toUpperCase() === symbol.toUpperCase());
+    const targetSymbol = matched ? matched.symbol : symbol.toUpperCase();
+
+    // Verify via API and then update dashboard
+    this.stockService.getStockBySymbol(targetSymbol).subscribe({
+      next: () => {
+        this.switchToStock(targetSymbol);
+      },
+      error: () => {
+        // If lookup fails, still try to switch to symbol to trigger data flow
+        this.switchToStock(targetSymbol);
+      }
+    });
   }
 
 }

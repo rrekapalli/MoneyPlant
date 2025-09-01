@@ -1,30 +1,14 @@
-<!-- Stock Selector -->
-<div class="stock-selector-container">
-  <div class="stock-selector">
-    <label for="stockSelect">Select Stock:</label>
-    <select id="stockSelect" (change)="onStockSelectionChange($event)" class="stock-dropdown">
-      <option value="INFY" selected>INFY - Infosys</option>
-      <option value="RELIANCE">RELIANCE - Reliance Industries</option>
-      <option value="TCS">TCS - Tata Consultancy Services</option>
-      <option value="HDFC">HDFC - HDFC Bank</option>
-      <option value="ICICIBANK">ICICIBANK - ICICI Bank</option>
-      <option value="SBIN">SBIN - State Bank of India</option>
-      <option value="WIPRO">WIPRO - Wipro</option>
-      <option value="HINDUNILVR">HINDUNILVR - Hindustan Unilever</option>
-      <option value="ITC">ITC - ITC Limited</option>
-      <option value="AXISBANK">AXISBANK - Axis Bank</option>
-    </select>
-  </div>
-</div>
-
 <!-- Dashboard Header -->
 <vis-dashboard-header 
   [title]="dashboardTitle"
   [isHighlightingEnabled]="isHighlightingEnabled"
   [isExportingExcel]="isExportingExcel"
+  [enableStockSearch]="true"
+  [stockSearchList]="allStocks"
   (onExportToExcel)="exportDashboardToExcel()"
   (onToggleHighlighting)="toggleHighlightingMode()"
   (onSetHighlightingPreset)="setHighlightingPreset($event)"
+  (onSearchStock)="onHeaderSearchStock($event)"
   (onForceTileRefresh)="forceTileRefresh()">
 </vis-dashboard-header>
 
