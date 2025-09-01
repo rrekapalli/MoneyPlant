@@ -782,6 +782,7 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
         .setYAxisName('Price (₹)')
         // Data zoom removed - using time range filters instead
         .setBarWidth('60%')  // Set candlestick bar width for better visibility
+        .setCandlestickColors('#00da3c', '#ec0000', '#808080')  // Green for positive, red for negative, grey for neutral
         .enableBrush()  // Enable brush selection for technical analysis
         .setLargeMode(100)  // Enable large mode for datasets with 100+ points
         .setTooltipType('axis')  // Enable crosshair tooltip for better analysis
@@ -811,7 +812,7 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
         console.log('Time range filters added to candlestick chart:', (candlestickChart as any).timeRangeFilters);
         console.log('Time range filters ranges:', (candlestickChart as any).timeRangeFilters.ranges);
         console.log('Selected time range:', (candlestickChart as any).timeRangeFilters.selectedRange);
-        console.log('Y in ranges:', (candlestickChart as any).timeRangeFilters.ranges.includes('Y'));
+        console.log('1Y in ranges:', (candlestickChart as any).timeRangeFilters.ranges.includes('1Y'));
       }
 
       console.log('Candlestick chart created successfully with area series enabled');

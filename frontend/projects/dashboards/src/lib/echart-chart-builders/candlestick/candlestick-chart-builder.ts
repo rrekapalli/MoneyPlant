@@ -145,10 +145,10 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
       type: 'candlestick',
       data: [],
       itemStyle: {
-        color: '#ec0000',        // up/bull color
-        color0: '#00da3c',       // down/bear color
-        borderColor: '#8A0000',  // up border color
-        borderColor0: '#008F28', // down border color
+        color: '#00da3c',        // green for positive (close > open)
+        color0: '#ec0000',       // red for negative (close < open)
+        borderColor: '#008F28',  // green border for positive
+        borderColor0: '#8A0000', // red border for negative
         borderWidth: 1,
       },
     };
@@ -273,6 +273,30 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
   }
 
 
+
+  /**
+   * Set candlestick colors based on price movement
+   * @param upColor Color for positive movement (close > open) - default green
+   * @param downColor Color for negative movement (close < open) - default red
+   * @param neutralColor Color for no movement (close = open) - default grey
+   */
+  setCandlestickColors(upColor: string = '#00da3c', downColor: string = '#ec0000', neutralColor: string = '#808080'): this {
+    if (this.seriesOptions.itemStyle) {
+      this.seriesOptions.itemStyle.color = upColor;
+      this.seriesOptions.itemStyle.color0 = downColor;
+      this.seriesOptions.itemStyle.borderColor = upColor;
+      this.seriesOptions.itemStyle.borderColor0 = downColor;
+    } else {
+      this.seriesOptions.itemStyle = {
+        color: upColor,
+        color0: downColor,
+        borderColor: upColor,
+        borderColor0: downColor,
+        borderWidth: 1
+      };
+    }
+    return this;
+  }
 
   /**
    * Set the width of candlestick bars
