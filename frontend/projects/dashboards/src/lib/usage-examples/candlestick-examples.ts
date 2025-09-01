@@ -62,7 +62,7 @@ export function advancedCandlestickExample() {
     .setBorderColors('#9d2933', '#449d44') // Custom border colors
     .setBarWidth('80%')
     .setBorderWidth(2)
-    .enableDataZoom(50, 100)              // Show last 50% by default
+    // Data zoom removed - using time range filters instead
     .enableBrush()                        // Enable data selection
     .setLargeMode(600)                    // Optimize for large datasets
     .setTooltip('axis')                   // Enhanced tooltip
@@ -125,7 +125,7 @@ export function realtimeCandlestickExample() {
     .setYAxisName('Price ($)')
     .setColors(['#ff4757', '#2ed573'])     // Bright colors for real-time
     .setBorderColors('#ff3838', '#20bf6b')
-    .enableDataZoom(80, 100)               // Show last 20% for recent activity
+    // Data zoom removed - using time range filters instead
     .setLargeMode(200)                     // Optimize for many data points
     .setTooltip('axis')
     .setHeader('Real-time Candlestick Chart')
@@ -175,7 +175,7 @@ export function cryptoCandlestickExample() {
     .setBorderColors('#d68910', '#1e8449')
     .setBarWidth('70%')
     .setBorderWidth(1)
-    .enableDataZoom(70, 100)               // Show last 30% for recent trends
+    // Data zoom removed - using time range filters instead
     .enableBrush()                         // Enable technical analysis selection
     .setTooltip('axis')
     .setHeader('Cryptocurrency Candlestick Chart')

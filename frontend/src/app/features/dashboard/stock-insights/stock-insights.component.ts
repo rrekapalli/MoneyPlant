@@ -769,12 +769,12 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
         .setFilterColumn('symbol')
         .setXAxisName('Trading Date')
         .setYAxisName('Price (₹)')
-        .enableDataZoom(70, 100)  // Show last 30% by default with zoom functionality
+        // Data zoom removed - using time range filters instead
         .setBarWidth('60%')  // Set candlestick bar width for better visibility
         .enableBrush()  // Enable brush selection for technical analysis
         .setLargeMode(100)  // Enable large mode for datasets with 100+ points
         .setTooltipType('axis')  // Enable crosshair tooltip for better analysis
-        .enableTimeRangeFilters()  // Enable time range filters (1D, 5D, 1M, 3M, 6M, YTD, 1Y, 3Y, 5Y, MAX)
+        .enableTimeRangeFilters(['1D', '5D', '1M', '3M', '6M', 'YTD', '1Y', '3Y', '5Y', 'MAX'], '1Y')  // Enable time range filters with 1Y as default
         .enableAreaSeries(true, 0.2)  // Enable area series with close price data
         .setTimeRangeChangeCallback(this.handleTimeRangeChange.bind(this))  // Set callback for time range changes
         .setEvents((widget, chart) => {
@@ -822,8 +822,8 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
       filterWidget.position = { x: 0, y: 2, cols: 12, rows: 1 };
 
       // Position charts with proper spacing - adjusted candlestick chart height
-      candlestickChart.position = { x: 0, y: 3, cols: 8, rows: 12 }; // Back to 12 rows
-      stockListWidget.position = { x: 8, y: 3, cols: 4, rows: 16 };
+      candlestickChart.position = { x: 0, y: 3, cols: 8, rows: 8 }; // Full width for time range filters
+      stockListWidget.position = { x: 8, y: 3, cols: 4, rows: 16 }; // Move stock list below candlestick chart
       
       // Use the Fluent API to build the dashboard config with filter highlighting enabled
       this.dashboardConfig = StandardDashboardBuilder.createStandard()
@@ -1653,16 +1653,30 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
       // Update X-axis labels and chart options if chart instance exists
       if (candlestickWidget.chartInstance && typeof candlestickWidget.chartInstance.setOption === 'function') {
         const currentOptions = candlestickWidget.chartInstance.getOption();
+        
+        // Extract close prices for area series
+        const closePrices = candlestickData.map((candle: number[]) => candle[1]); // Close is at index 1
+        
+        const newSeries = [{
+          ...((currentOptions as any)?.series?.[0] || {}),
+          data: candlestickData
+        }];
+        
+        // Add area series if it exists in current options
+        if ((currentOptions as any)?.series?.[1]?.name === 'Close Price Area') {
+          newSeries.push({
+            ...((currentOptions as any)?.series?.[1] || {}),
+            data: closePrices
+          });
+        }
+        
         const newOptions = {
           ...currentOptions,
           xAxis: {
             ...((currentOptions as any)?.xAxis || {}),
             data: xAxisLabels
           },
-          series: [{
-            ...((currentOptions as any)?.series?.[0] || {}),
-            data: candlestickData
-          }]
+          series: newSeries
         };
         
         // Apply the new options
@@ -1684,6 +1698,11 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
         }
         if (options.series && options.series[0]) {
           options.series[0].data = candlestickData;
+        }
+        // Update area series if it exists
+        if (options.series && options.series[1] && options.series[1].name === 'Close Price Area') {
+          const closePrices = candlestickData.map((candle: number[]) => candle[1]);
+          options.series[1].data = closePrices;
         }
       }
     }
@@ -1730,16 +1749,30 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
       // Update X-axis labels and chart options if chart instance exists
       if (candlestickWidget.chartInstance && typeof candlestickWidget.chartInstance.setOption === 'function') {
         const currentOptions = candlestickWidget.chartInstance.getOption();
+        
+        // Extract close prices for area series
+        const closePrices = candlestickData.map((candle: number[]) => candle[1]); // Close is at index 1
+        
+        const newSeries = [{
+          ...((currentOptions as any)?.series?.[0] || {}),
+          data: candlestickData
+        }];
+        
+        // Add area series if it exists in current options
+        if ((currentOptions as any)?.series?.[1]?.name === 'Close Price Area') {
+          newSeries.push({
+            ...((currentOptions as any)?.series?.[1] || {}),
+            data: closePrices
+          });
+        }
+        
         const newOptions = {
           ...currentOptions,
           xAxis: {
             ...((currentOptions as any)?.xAxis || {}),
             data: xAxisLabels
           },
-          series: [{
-            ...((currentOptions as any)?.series?.[0] || {}),
-            data: candlestickData
-          }]
+          series: newSeries
         };
         
         // Apply the new options
@@ -1761,6 +1794,11 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
         }
         if (options.series && options.series[0]) {
           options.series[0].data = candlestickData;
+        }
+        // Update area series if it exists
+        if (options.series && options.series[1] && options.series[1].name === 'Close Price Area') {
+          const closePrices = candlestickData.map((candle: number[]) => candle[1]);
+          options.series[1].data = closePrices;
         }
       }
     }

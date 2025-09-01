@@ -278,15 +278,15 @@ vis-dashboard-container {
     top: 10px !important;
     left: 10px !important;
     z-index: 1000 !important;
-    background: rgba(255, 255, 255, 0.95) !important;
+    background: rgba(255, 255, 255, 0.98) !important;
     backdrop-filter: blur(10px) !important;
-    border-radius: 8px !important;
-    padding: 8px !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+    border-radius: 12px !important;
+    padding: 12px !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
     display: flex !important;
-    gap: 4px !important;
+    gap: 6px !important;
     flex-wrap: wrap !important;
-    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
   }
 
   .candlestick-time-range-filters .time-range-btn {
@@ -350,6 +350,15 @@ vis-dashboard-container {
   .gridster-item:has([data-widget-id*="candlestick"]) .echart-container {
     height: 100% !important;
     min-height: 400px !important;
+    min-width: 700px !important; /* Increased width to ensure all time range filters are visible */
+    width: 100% !important;
+    position: relative !important;
+  }
+
+  /* Ensure the chart grid has enough space for time range filters */
+  .gridster-item:has([data-widget-id*="candlestick"]) .echart-container canvas {
+    width: 100% !important;
+    height: 100% !important;
   }
 
   /* Make sure the chart itself takes up more space */
@@ -361,6 +370,20 @@ vis-dashboard-container {
   .gridster-item:has([data-widget-id*="candlestick"]) .ec-graphic {
     z-index: 1000 !important;
     pointer-events: auto !important;
+    position: absolute !important;
+  }
+
+  /* Ensure all time range filters are visible */
+  .gridster-item:has([data-widget-id*="candlestick"]) .ec-graphic[type="rect"] {
+    z-index: 1002 !important;
+    pointer-events: auto !important;
+    position: absolute !important;
+  }
+
+  .gridster-item:has([data-widget-id*="candlestick"]) .ec-graphic[type="text"] {
+    z-index: 1003 !important;
+    pointer-events: auto !important;
+    position: absolute !important;
   }
 
   /* Add visual feedback for time range filter buttons */
