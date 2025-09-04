@@ -24,6 +24,7 @@ public class ScreenerVersionCreateReq {
 
     @Pattern(regexp = "sql|dsl|expr", message = "Engine must be one of: sql, dsl, expr")
     @Schema(description = "Engine type for the screener", example = "sql", allowableValues = {"sql", "dsl", "expr"})
+    @Builder.Default
     private String engine = "sql";
 
     @Schema(description = "DSL JSON configuration")

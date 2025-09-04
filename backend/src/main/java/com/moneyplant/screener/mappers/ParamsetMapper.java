@@ -21,8 +21,6 @@ public interface ParamsetMapper {
     @Mapping(target = "screenerVersion", ignore = true)
     @Mapping(target = "createdByUserId", ignore = true)
     @Mapping(target = "runs", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
     ScreenerParamset toEntity(ParamsetCreateReq request);
 
     /**
@@ -38,7 +36,5 @@ public interface ParamsetMapper {
     @Mapping(target = "screenerVersion", ignore = true)
     @Mapping(target = "createdByUserId", ignore = true)
     @Mapping(target = "runs", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
     void updateEntity(ParamsetCreateReq request, @MappingTarget ScreenerParamset entity);
 }

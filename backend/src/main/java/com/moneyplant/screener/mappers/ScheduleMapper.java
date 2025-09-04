@@ -19,8 +19,6 @@ public interface ScheduleMapper {
      */
     @Mapping(target = "scheduleId", ignore = true)
     @Mapping(target = "screener", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
     ScreenerSchedule toEntity(ScheduleCreateReq request);
 
     /**
@@ -34,7 +32,5 @@ public interface ScheduleMapper {
      */
     @Mapping(target = "scheduleId", ignore = true)
     @Mapping(target = "screener", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
     void updateEntity(ScheduleCreateReq request, @MappingTarget ScreenerSchedule entity);
 }

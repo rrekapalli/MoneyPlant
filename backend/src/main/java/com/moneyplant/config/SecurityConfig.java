@@ -43,28 +43,29 @@ public class SecurityConfig {
                 .requestMatchers("/api/screeners/**", "/api/versions/**", "/api/runs/**").authenticated()
                 .anyRequest().authenticated()
             )
-            .oauth2Login(oauth2 -> oauth2
-                .userInfoEndpoint(userInfo -> userInfo
-                    .userService(customOAuth2UserService)
-                )
-                .successHandler((request, response, authentication) -> {
-                    // Handle successful OAuth2 login
-                    String token = tokenProvider.generateToken(authentication);
-                    String redirectUrl = request.getParameter("redirect_uri");
-                    if (redirectUrl == null) {
-                        redirectUrl = "http://localhost:4200/dashboard"; // Default frontend URL
-                    }
-                    response.sendRedirect(redirectUrl + "?token=" + token);
-                })
-                .failureHandler((request, response, exception) -> {
-                    // Handle OAuth2 login failure
-                    String redirectUrl = request.getParameter("redirect_uri");
-                    if (redirectUrl == null) {
-                        redirectUrl = "http://localhost:4200";
-                    }
-                    response.sendRedirect(redirectUrl + "/login?error=" + exception.getMessage());
-                })
-            )
+            // OAuth2 configuration temporarily disabled for screener API testing
+            // .oauth2Login(oauth2 -> oauth2
+            //     .userInfoEndpoint(userInfo -> userInfo
+            //         .userService(customOAuth2UserService)
+            //     )
+            //     .successHandler((request, response, authentication) -> {
+            //         // Handle successful OAuth2 login
+            //         String token = tokenProvider.generateToken(authentication);
+            //         String redirectUrl = request.getParameter("redirect_uri");
+            //         if (redirectUrl == null) {
+            //             redirectUrl = "http://localhost:4200/dashboard"; // Default frontend URL
+            //         }
+            //         response.sendRedirect(redirectUrl + "?token=" + token);
+            //     })
+            //     .failureHandler((request, response, exception) -> {
+            //         // Handle OAuth2 login failure
+            //         String redirectUrl = request.getParameter("redirect_uri");
+            //         if (redirectUrl == null) {
+            //             redirectUrl = "http://localhost:4200";
+            //         }
+            //         response.sendRedirect(redirectUrl + "/login?error=" + exception.getMessage());
+            //     })
+            // )
             .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

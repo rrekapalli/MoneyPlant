@@ -5,8 +5,10 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -20,7 +22,8 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Screener extends BaseAuditEntity {
+@EqualsAndHashCode(callSuper = false)
+public class Screener {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -67,4 +70,23 @@ public class Screener extends BaseAuditEntity {
     @OneToMany(mappedBy = "screener", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @Builder.Default
     private List<ScreenerSavedView> savedViews = new ArrayList<>();
+
+    // Audit fields (manually added since we can't extend BaseAuditEntity with single PK)
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private OffsetDateTime createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private OffsetDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        OffsetDateTime now = OffsetDateTime.now();
+        createdAt = now;
+        updatedAt = now;
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = OffsetDateTime.now();
+    }
 }

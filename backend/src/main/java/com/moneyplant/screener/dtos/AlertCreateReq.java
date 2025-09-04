@@ -24,8 +24,10 @@ public class AlertCreateReq {
     private Object conditionJson;
 
     @Schema(description = "Delivery channels for the alert", example = "[\"inapp\", \"email\"]")
+    @Builder.Default
     private List<String> deliveryChannels = List.of("inapp");
 
     @Schema(description = "Whether the alert is enabled", example = "true")
+    @Builder.Default
     private Boolean isEnabled = true;
 }

@@ -5,7 +5,10 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+
+import java.time.OffsetDateTime;
 
 /**
  * JPA entity for the screener_schedule table.
@@ -17,7 +20,8 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ScreenerSchedule extends BaseAuditEntity {
+@EqualsAndHashCode(callSuper = false)
+public class ScreenerSchedule {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -38,4 +42,13 @@ public class ScreenerSchedule extends BaseAuditEntity {
     @Column(name = "is_enabled", nullable = false)
     @Builder.Default
     private Boolean isEnabled = true;
+
+    // Audit fields (manually added since we can't extend BaseAuditEntity with single PK)
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private OffsetDateTime createdAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = OffsetDateTime.now();
+    }
 }

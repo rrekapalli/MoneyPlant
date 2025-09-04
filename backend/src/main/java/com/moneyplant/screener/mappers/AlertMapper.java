@@ -19,8 +19,6 @@ public interface AlertMapper {
      */
     @Mapping(target = "alertId", ignore = true)
     @Mapping(target = "screener", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
     ScreenerAlert toEntity(AlertCreateReq request);
 
     /**
@@ -34,7 +32,5 @@ public interface AlertMapper {
      */
     @Mapping(target = "alertId", ignore = true)
     @Mapping(target = "screener", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
     void updateEntity(AlertCreateReq request, @MappingTarget ScreenerAlert entity);
 }

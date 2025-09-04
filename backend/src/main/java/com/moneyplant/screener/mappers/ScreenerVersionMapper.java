@@ -21,8 +21,6 @@ public interface ScreenerVersionMapper {
     @Mapping(target = "screener", ignore = true)
     @Mapping(target = "paramsets", ignore = true)
     @Mapping(target = "runs", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
     ScreenerVersion toEntity(ScreenerVersionCreateReq request);
 
     /**
@@ -38,7 +36,5 @@ public interface ScreenerVersionMapper {
     @Mapping(target = "screener", ignore = true)
     @Mapping(target = "paramsets", ignore = true)
     @Mapping(target = "runs", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
     void updateEntity(ScreenerVersionCreateReq request, @MappingTarget ScreenerVersion entity);
 }

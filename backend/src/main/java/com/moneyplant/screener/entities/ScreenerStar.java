@@ -5,7 +5,10 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+
+import java.time.OffsetDateTime;
 
 /**
  * JPA entity for the screener_star table.
@@ -18,8 +21,9 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(callSuper = false)
 @IdClass(ScreenerStarId.class)
-public class ScreenerStar extends BaseAuditEntity {
+public class ScreenerStar {
 
     @Id
     @ManyToOne(fetch = FetchType.LAZY)
@@ -29,4 +33,29 @@ public class ScreenerStar extends BaseAuditEntity {
     @Id
     @Column(name = "user_id", nullable = false)
     private Long userId;
+
+    // Audit fields (manually added since we can't extend BaseAuditEntity with @IdClass)
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private OffsetDateTime createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private OffsetDateTime updatedAt;
+
+    @Column(name = "created_by")
+    private Long createdBy;
+
+    @Column(name = "modified_by")
+    private Long modifiedBy;
+
+    @PrePersist
+    protected void onCreate() {
+        OffsetDateTime now = OffsetDateTime.now();
+        createdAt = now;
+        updatedAt = now;
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = OffsetDateTime.now();
+    }
 }

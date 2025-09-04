@@ -22,8 +22,10 @@ public class ScheduleCreateReq {
     private String cronExpr;
 
     @Schema(description = "Timezone for the schedule", example = "Asia/Kolkata")
+    @Builder.Default
     private String timezone = "Asia/Kolkata";
 
     @Schema(description = "Whether the schedule is enabled", example = "true")
+    @Builder.Default
     private Boolean isEnabled = true;
 }

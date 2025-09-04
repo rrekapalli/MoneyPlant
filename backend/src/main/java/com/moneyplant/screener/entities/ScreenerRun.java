@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
@@ -24,7 +25,8 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ScreenerRun extends BaseAuditEntity {
+@EqualsAndHashCode(callSuper = false)
+public class ScreenerRun {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -85,4 +87,23 @@ public class ScreenerRun extends BaseAuditEntity {
     @OneToMany(mappedBy = "screenerRun", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @Builder.Default
     private List<ScreenerResultDiff> resultDiffs = new ArrayList<>();
+
+    // Audit fields (manually added since we can't extend BaseAuditEntity with single PK)
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private OffsetDateTime createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private OffsetDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        OffsetDateTime now = OffsetDateTime.now();
+        createdAt = now;
+        updatedAt = now;
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = OffsetDateTime.now();
+    }
 }

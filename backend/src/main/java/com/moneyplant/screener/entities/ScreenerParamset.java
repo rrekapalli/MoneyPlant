@@ -5,9 +5,14 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * JPA entity for the screener_paramset table.
@@ -20,7 +25,8 @@ import org.hibernate.type.SqlTypes;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ScreenerParamset extends BaseAuditEntity {
+@EqualsAndHashCode(callSuper = false)
+public class ScreenerParamset {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -45,4 +51,13 @@ public class ScreenerParamset extends BaseAuditEntity {
     @OneToMany(mappedBy = "paramset", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @Builder.Default
     private List<ScreenerRun> runs = new ArrayList<>();
+
+    // Audit fields (manually added since we can't extend BaseAuditEntity with single PK)
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private OffsetDateTime createdAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = OffsetDateTime.now();
+    }
 }

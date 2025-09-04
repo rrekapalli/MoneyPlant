@@ -5,10 +5,12 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
@@ -21,7 +23,8 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ScreenerAlert extends BaseAuditEntity {
+@EqualsAndHashCode(callSuper = false)
+public class ScreenerAlert {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -46,4 +49,13 @@ public class ScreenerAlert extends BaseAuditEntity {
     @Column(name = "is_enabled", nullable = false)
     @Builder.Default
     private Boolean isEnabled = true;
+
+    // Audit fields (manually added since we can't extend BaseAuditEntity with single PK)
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private OffsetDateTime createdAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = OffsetDateTime.now();
+    }
 }

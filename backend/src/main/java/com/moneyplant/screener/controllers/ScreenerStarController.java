@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -91,15 +92,17 @@ public class ScreenerStarController {
             @ApiResponse(responseCode = "200", description = "Starred screeners retrieved successfully"),
             @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
-    public ResponseEntity<List<Object>> getStarredScreeners() {
+    public ResponseEntity<List<Map<String, Object>>> getStarredScreeners() {
         log.info("Getting starred screeners for current user");
-        List<Object> response = screenerStarService.getStarredScreeners().stream()
-                .map(screener -> Map.of(
-                        "screenerId", screener.getScreenerId(),
-                        "name", screener.getName(),
-                        "description", screener.getDescription(),
-                        "isPublic", screener.getIsPublic()
-                ))
+        List<Map<String, Object>> response = screenerStarService.getStarredScreeners().stream()
+                .map(screener -> {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("screenerId", screener.getScreenerId());
+                    map.put("name", screener.getName());
+                    map.put("description", screener.getDescription());
+                    map.put("isPublic", screener.getIsPublic());
+                    return map;
+                })
                 .toList();
         return ResponseEntity.ok(response);
     }

@@ -20,8 +20,6 @@ public interface SavedViewMapper {
     @Mapping(target = "savedViewId", ignore = true)
     @Mapping(target = "screener", ignore = true)
     @Mapping(target = "userId", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
     ScreenerSavedView toEntity(SavedViewCreateReq request);
 
     /**
@@ -36,7 +34,5 @@ public interface SavedViewMapper {
     @Mapping(target = "savedViewId", ignore = true)
     @Mapping(target = "screener", ignore = true)
     @Mapping(target = "userId", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
     void updateEntity(SavedViewCreateReq request, @MappingTarget ScreenerSavedView entity);
 }

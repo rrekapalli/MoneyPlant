@@ -38,7 +38,5 @@ public interface RunMapper {
     @Mapping(target = "totalMatches", ignore = true)
     @Mapping(target = "results", ignore = true)
     @Mapping(target = "resultDiffs", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
     void updateEntity(RunCreateReq request, @MappingTarget ScreenerRun entity);
 }

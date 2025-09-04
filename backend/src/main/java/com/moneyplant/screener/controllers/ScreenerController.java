@@ -150,22 +150,6 @@ public class ScreenerController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Gets the last successful run for a screener.
-     */
-    @GetMapping("/{id}/last-run")
-    @Operation(summary = "Get last run", description = "Gets the last successful run for a screener")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Last run retrieved successfully"),
-            @ApiResponse(responseCode = "404", description = "No successful run found"),
-            @ApiResponse(responseCode = "401", description = "Unauthorized")
-    })
-    public ResponseEntity<Object> getLastRun(
-            @Parameter(description = "Screener ID") @PathVariable Long id) {
-        log.info("Getting last run for screener: {}", id);
-        // This would be implemented to return run summary
-        return ResponseEntity.ok().build();
-    }
 
     /**
      * Gets the last results for a screener.

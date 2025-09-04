@@ -25,6 +25,7 @@ public class ScreenerCreateReq {
     private String description;
 
     @Schema(description = "Whether the screener is public", example = "false")
+    @Builder.Default
     private Boolean isPublic = false;
 
     @Schema(description = "Default universe for the screener", example = "NSE_500")

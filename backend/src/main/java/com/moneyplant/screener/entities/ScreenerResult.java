@@ -5,11 +5,13 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 
 /**
  * JPA entity for the screener_result table.
@@ -22,8 +24,9 @@ import java.math.BigDecimal;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(callSuper = false)
 @IdClass(ScreenerResultId.class)
-public class ScreenerResult extends BaseAuditEntity {
+public class ScreenerResult {
 
     @Id
     @ManyToOne(fetch = FetchType.LAZY)
@@ -50,4 +53,29 @@ public class ScreenerResult extends BaseAuditEntity {
     @Column(name = "reason_json", columnDefinition = "jsonb")
     @JdbcTypeCode(SqlTypes.JSON)
     private Object reasonJson;
+
+    // Audit fields (manually added since we can't extend BaseAuditEntity with @IdClass)
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private OffsetDateTime createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private OffsetDateTime updatedAt;
+
+    @Column(name = "created_by")
+    private Long createdBy;
+
+    @Column(name = "modified_by")
+    private Long modifiedBy;
+
+    @PrePersist
+    protected void onCreate() {
+        OffsetDateTime now = OffsetDateTime.now();
+        createdAt = now;
+        updatedAt = now;
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = OffsetDateTime.now();
+    }
 }
