@@ -1,13 +1,13 @@
-package com.moneyplant.engines.scanner.service;
+package com.moneyplant.engines.screener.service;
 
 import com.moneyplant.engines.common.dto.TradingSignalDto;
 
 import java.util.List;
 
 /**
- * Service interface for pattern scanning operations
+ * Service interface for pattern screening operations
  */
-public interface ScannerService {
+public interface ScreenerService {
     
     /**
      * Scan for patterns in a specific symbol
@@ -25,19 +25,19 @@ public interface ScannerService {
     List<String> getDetectedPatterns(String symbol);
     
     /**
-     * Add a new scanner rule
+     * Add a new screener rule
      */
-    void addScannerRule(String rule);
+    void addScreenerRule(String rule);
     
     /**
-     * Get all scanner rules
+     * Get all screener rules
      */
-    List<String> getScannerRules();
+    List<String> getScreenerRules();
     
     /**
-     * Delete a scanner rule
+     * Delete a screener rule
      */
-    void deleteScannerRule(String ruleId);
+    void deleteScreenerRule(String ruleId);
     
     /**
      * Detect candlestick patterns

@@ -25,7 +25,7 @@ src/main/java/com/moneyplant/trading/
 ├── config/          # Configuration classes for all components
 ├── common/          # Shared DTOs, enums, utilities, exceptions
 ├── ingestion/       # Data ingestion and streaming
-├── scanner/         # Pattern detection and signal generation
+├── screener/         # Pattern detection and signal generation
 ├── strategy/        # Trading strategy execution
 ├── storage/         # Data storage and persistence
 ├── query/           # Analytics and querying
@@ -52,10 +52,10 @@ src/main/java/com/moneyplant/trading/
 - **Service** - Core ingestion logic and Kafka/Spark integration
 - **Model** - Ingestion request/response models
 
-### 4. Scanner Module (`scanner/`)
-- **API** - REST endpoints for pattern scanning
+### 4. Screener Module (`screener/`)
+- **API** - REST endpoints for pattern screening
 - **Service** - Pattern detection algorithms and signal generation
-- **Model** - Scanner-specific data models
+- **Model** - Screener-specific data models
 - **CandlestickPatternDetector** - Sample pattern detection implementation
 
 ### 5. Strategy Module (`strategy/`)
@@ -106,11 +106,11 @@ src/main/java/com/moneyplant/trading/
 - `GET /api/ingestion/status` - Get ingestion status
 - `POST /api/ingestion/market-data` - Ingest market data
 
-### Scanner
-- `POST /api/scanner/run` - Run pattern scanner
-- `GET /api/scanner/patterns` - Get available patterns
-- `POST /api/scanner/detect` - Detect specific pattern
-- `GET /api/scanner/signals` - Get trading signals
+### Screener
+- `POST /api/screener/run` - Run pattern screener
+- `GET /api/screener/patterns` - Get available patterns
+- `POST /api/screener/detect` - Detect specific pattern
+- `GET /api/screener/signals` - Get trading signals
 
 ### Strategy
 - `POST /api/strategy/execute` - Execute trading strategy

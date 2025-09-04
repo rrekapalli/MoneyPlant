@@ -106,8 +106,8 @@
   },
   {
     "id": "feature-15",
-    "name": "scanners",
-    "description": "Scanners feature",
+    "name": "screeners",
+    "description": "Screeners feature",
     "enabled": true,
     "group": "core"
   },

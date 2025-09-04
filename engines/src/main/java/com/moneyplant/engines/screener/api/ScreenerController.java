@@ -1,7 +1,7 @@
-package com.moneyplant.engines.scanner.api;
+package com.moneyplant.engines.screener.api;
 
 import com.moneyplant.engines.common.dto.TradingSignalDto;
-import com.moneyplant.engines.scanner.service.ScannerService;
+import com.moneyplant.engines.screener.service.ScreenerService;
 
 
 import org.springframework.http.ResponseEntity;
@@ -10,28 +10,28 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * REST controller for pattern scanning operations
+ * REST controller for pattern screening operations
  */
 @RestController
-@RequestMapping("/api/scanner")
-public class ScannerController {
+@RequestMapping("/api/screener")
+public class ScreenerController {
     
     
     
-    private final ScannerService scannerService;
+    private final ScreenerService screenerService;
     
-    public ScannerController(ScannerService scannerService) {
-        this.scannerService = scannerService;
+    public ScreenerController(ScreenerService screenerService) {
+        this.screenerService = screenerService;
     }
     
     @PostMapping("/run")
-    public ResponseEntity<List<TradingSignalDto>> runScanner(@RequestParam String symbol) {
+    public ResponseEntity<List<TradingSignalDto>> runScreener(@RequestParam String symbol) {
         // TODO: implement
         return ResponseEntity.ok(List.of());
     }
     
     @PostMapping("/run-all")
-    public ResponseEntity<List<TradingSignalDto>> runScannerForAllSymbols() {
+    public ResponseEntity<List<TradingSignalDto>> runScreenerForAllSymbols() {
         // TODO: implement
         return ResponseEntity.ok(List.of());
     }
@@ -43,19 +43,19 @@ public class ScannerController {
     }
     
     @PostMapping("/rules")
-    public ResponseEntity<String> addScannerRule(@RequestBody String rule) {
+    public ResponseEntity<String> addScreenerRule(@RequestBody String rule) {
         // TODO: implement
         return ResponseEntity.ok("Rule added successfully");
     }
     
     @GetMapping("/rules")
-    public ResponseEntity<List<String>> getScannerRules() {
+    public ResponseEntity<List<String>> getScreenerRules() {
         // TODO: implement
         return ResponseEntity.ok(List.of("RSI_OVERSOLD", "MACD_CROSSOVER"));
     }
     
     @DeleteMapping("/rules/{ruleId}")
-    public ResponseEntity<String> deleteScannerRule(@PathVariable String ruleId) {
+    public ResponseEntity<String> deleteScreenerRule(@PathVariable String ruleId) {
         // TODO: implement
         return ResponseEntity.ok("Rule deleted successfully");
     }

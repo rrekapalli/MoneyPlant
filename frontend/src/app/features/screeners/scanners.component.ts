@@ -7,7 +7,7 @@ import { CardModule } from 'primeng/card';
 import { TabsModule } from 'primeng/tabs';
 
 @Component({
-  selector: 'app-scanners',
+  selector: 'app-screeners',
   standalone: true,
   imports: [
     CommonModule,
@@ -17,21 +17,21 @@ import { TabsModule } from 'primeng/tabs';
     CardModule,
     TabsModule
   ],
-  templateUrl: './scanners.component.html',
-  styleUrl: './scanners.component.scss'
+  templateUrl: './screeners.component.html',
+  styleUrl: './screeners.component.scss'
 })
-export class ScannersComponent implements OnInit {
-  scanners: any[] = [];
-  predefinedScanners: any[] = [];
-  customScanners: any[] = [];
-  selectedScanner: any = null;
+export class ScreenersComponent implements OnInit {
+  screeners: any[] = [];
+  predefinedScreeners: any[] = [];
+  customScreeners: any[] = [];
+  selectedScreener: any = null;
   loading = false;
 
   // Define tabs for the new p-tabs component
   tabs = [
-    { label: 'All Scanners', value: 'all' },
-    { label: 'Predefined Scanners', value: 'predefined' },
-    { label: 'Custom Scanners', value: 'custom' }
+    { label: 'All Screeners', value: 'all' },
+    { label: 'Predefined Screeners', value: 'predefined' },
+    { label: 'Custom Screeners', value: 'custom' }
   ];
   activeTab = 'all';
 
@@ -39,14 +39,14 @@ export class ScannersComponent implements OnInit {
 
   ngOnInit() {
     // Initialize with mock data
-    this.loadScanners();
+    this.loadScreeners();
   }
 
-  loadScanners() {
+  loadScreeners() {
     this.loading = true;
     // Simulate API call with timeout
     setTimeout(() => {
-      this.predefinedScanners = [
+      this.predefinedScreeners = [
         {
           id: '1',
           name: 'Oversold Stocks',
@@ -73,10 +73,10 @@ export class ScannersComponent implements OnInit {
         }
       ];
 
-      this.customScanners = [
+      this.customScreeners = [
         {
           id: '4',
-          name: 'My Growth Scanner',
+          name: 'My Growth Screener',
           description: 'High growth stocks with low debt',
           category: 'Custom',
           lastRun: new Date(Date.now() - 172800000), // 2 days ago
@@ -92,35 +92,35 @@ export class ScannersComponent implements OnInit {
         }
       ];
 
-      this.scanners = [...this.predefinedScanners, ...this.customScanners];
+      this.screeners = [...this.predefinedScreeners, ...this.customScreeners];
       this.loading = false;
     }, 1000);
   }
 
-  runScanner(scanner: any) {
-    console.log('Running scanner', scanner);
-    // Implementation for running a scanner would go here
-    scanner.lastRun = new Date();
+  runScreener(screener: any) {
+    console.log('Running screener', screener);
+    // Implementation for running a screener would go here
+    screener.lastRun = new Date();
   }
 
-  viewResults(scanner: any) {
-    console.log('Viewing results for scanner', scanner);
-    this.selectedScanner = scanner;
-    // Implementation for viewing scanner results would go here
+  viewResults(screener: any) {
+    console.log('Viewing results for screener', screener);
+    this.selectedScreener = screener;
+    // Implementation for viewing screener results would go here
   }
 
-  createScanner() {
-    console.log('Create scanner');
-    // Implementation for creating a new scanner would go here
+  createScreener() {
+    console.log('Create screener');
+    // Implementation for creating a new screener would go here
   }
 
-  editScanner(scanner: any) {
-    console.log('Edit scanner', scanner);
-    // Implementation for editing a scanner would go here
+  editScreener(screener: any) {
+    console.log('Edit screener', screener);
+    // Implementation for editing a screener would go here
   }
 
-  deleteScanner(scanner: any) {
-    console.log('Delete scanner', scanner);
-    // Implementation for deleting a scanner would go here
+  deleteScreener(screener: any) {
+    console.log('Delete screener', screener);
+    // Implementation for deleting a screener would go here
   }
 }

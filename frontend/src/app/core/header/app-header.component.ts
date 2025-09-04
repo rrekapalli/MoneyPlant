@@ -275,9 +275,9 @@ export class AppHeaderComponent implements OnInit, OnDestroy {
         command: updateStylesAfterClick
       },
       {
-        label: 'Scanners',
+        label: 'Screeners',
         //icon: 'pi pi-search',
-        routerLink: ['/scanners'],
+        routerLink: ['/screeners'],
         command: updateStylesAfterClick
       },
       {
@@ -407,10 +407,10 @@ export class AppHeaderComponent implements OnInit, OnDestroy {
       type = NotificationType.SUCCESS;
       title = 'Portfolios Loaded';
       message = 'Your investment portfolios have been loaded successfully.';
-    } else if (routeName === 'scanners') {
+    } else if (routeName === 'screeners') {
       type = NotificationType.INFO;
-      title = 'Stock Scanners';
-      message = 'Stock scanners have been loaded with the latest market data.';
+      title = 'Stock Screeners';
+      message = 'Stock screeners have been loaded with the latest market data.';
     } else if (routeName === 'strategies') {
       type = NotificationType.INFO;
       title = 'Trading Strategies';

@@ -64,7 +64,7 @@
     {
       "name": "source",
       "type": "string",
-      "doc": "Source of the signal (scanner, strategy, etc.)"
+      "doc": "Source of the signal (screener, strategy, etc.)"
     },
     {
       "name": "confidence",

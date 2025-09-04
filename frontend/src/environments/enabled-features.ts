@@ -15,7 +15,7 @@ export const enabledFeatures = [
   'market',
   'positions',
   'portfolios',
-  'scanners',
+  'screeners',
   'strategies',
   'indices',
   'settings',

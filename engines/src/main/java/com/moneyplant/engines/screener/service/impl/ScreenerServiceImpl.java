@@ -1,8 +1,8 @@
-package com.moneyplant.engines.scanner.service.impl;
+package com.moneyplant.engines.screener.service.impl;
 
 import com.moneyplant.engines.common.dto.TradingSignalDto;
 import com.moneyplant.engines.common.enums.PatternType;
-import com.moneyplant.engines.scanner.service.ScannerService;
+import com.moneyplant.engines.screener.service.ScreenerService;
 
 
 import org.springframework.stereotype.Service;
@@ -10,17 +10,17 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 /**
- * Implementation of ScannerService
+ * Implementation of ScreenerService
  */
 @Service
-public class ScannerServiceImpl implements ScannerService {
+public class ScreenerServiceImpl implements ScreenerService {
     
     
     
     // Temporarily commented out to avoid dependency issues
     // private final KafkaTemplate<String, Object> kafkaTemplate;
     
-    public ScannerServiceImpl() {
+    public ScreenerServiceImpl() {
         // Constructor without dependencies for now
     }
     
@@ -52,7 +52,7 @@ public class ScannerServiceImpl implements ScannerService {
     }
     
     @Override
-    public void addScannerRule(String rule) {
+    public void addScreenerRule(String rule) {
         // TODO: implement
         // - Validate rule syntax
         // - Store rule in configuration
@@ -60,7 +60,7 @@ public class ScannerServiceImpl implements ScannerService {
     }
     
     @Override
-    public List<String> getScannerRules() {
+    public List<String> getScreenerRules() {
         // TODO: implement
         // - Retrieve from configuration
         // - Return active rules
@@ -68,7 +68,7 @@ public class ScannerServiceImpl implements ScannerService {
     }
     
     @Override
-    public void deleteScannerRule(String ruleId) {
+    public void deleteScreenerRule(String ruleId) {
         // TODO: implement
         // - Remove from configuration
         // - Update active rules

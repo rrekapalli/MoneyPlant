@@ -1,4 +1,4 @@
-package com.moneyplant.engines.scanner.model;
+package com.moneyplant.engines.screener.model;
 
 import com.moneyplant.engines.common.dto.MarketDataDto;
 import com.moneyplant.engines.common.enums.PatternType;
