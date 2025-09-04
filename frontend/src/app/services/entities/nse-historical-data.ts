@@ -1,10 +1,10 @@
 /**
  * Interface representing NSE historical data.
  */
-import { NseHistoricalDataId } from './nse-historical-data-id';
+import { NseEquityHistoricDataId } from './nse-historical-data-id';
 
-export interface NseHistoricalData {
-    id: NseHistoricalDataId;
+export interface NseEquityHistoricData {
+    id: NseEquityHistoricDataId;
     open: number | null;
     high: number | null;
     low: number | null;

@@ -1,14 +1,11 @@
 package com.moneyplant.core.entities;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.ColumnDefault;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
-import java.time.Instant;
 
 @Getter
 @Setter
@@ -17,7 +14,7 @@ import java.time.Instant;
 public class NseStockTick {
 
     @EmbeddedId
-    private NseHistoricalDataId id;
+    private NseEquityHistoricDataId id;
 
     @Column(name = "open")
     private Float open;

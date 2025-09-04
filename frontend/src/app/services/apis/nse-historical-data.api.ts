@@ -1,61 +1,61 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from './api.base';
-import { NseHistoricalData } from '../entities/nse-historical-data';
-import { NseHistoricalDataId } from '../entities/nse-historical-data-id';
+import { NseEquityHistoricData } from '../entities/nse-historical-data';
+import { NseEquityHistoricDataId } from '../entities/nse-historical-data-id';
 
 @Injectable({
   providedIn: 'root'
 })
-export class NseHistoricalDataService {
+export class NseEquityHistoricDataService {
   private readonly endpoint = '/api/v1/nse-historical-data';
 
   constructor(private apiService: ApiService) {}
 
   /**
    * Get all NSE historical data
-   * @returns An Observable of NseHistoricalData array
+   * @returns An Observable of NseEquityHistoricData array
    */
-  getAllNseHistoricalData(): Observable<NseHistoricalData[]> {
-    return this.apiService.get<NseHistoricalData[]>(this.endpoint);
+  getAllNseEquityHistoricData(): Observable<NseEquityHistoricData[]> {
+    return this.apiService.get<NseEquityHistoricData[]>(this.endpoint);
   }
 
   /**
    * Get NSE historical data by symbol
    * @param symbol The equity symbol
-   * @returns An Observable of NseHistoricalData array for the specified symbol
+   * @returns An Observable of NseEquityHistoricData array for the specified symbol
    */
-  getNseHistoricalDataBySymbol(symbol: string): Observable<NseHistoricalData[]> {
-    return this.apiService.get<NseHistoricalData[]>(`${this.endpoint}/symbol/${symbol}`);
+  getNseEquityHistoricDataBySymbol(symbol: string): Observable<NseEquityHistoricData[]> {
+    return this.apiService.get<NseEquityHistoricData[]>(`${this.endpoint}/symbol/${symbol}`);
   }
 
   /**
    * Get NSE historical data by symbol and date
    * @param symbol The equity symbol
    * @param date The date in ISO format (YYYY-MM-DD)
-   * @returns An Observable of NseHistoricalData
+   * @returns An Observable of NseEquityHistoricData
    */
-  getNseHistoricalDataBySymbolAndDate(symbol: string, date: string): Observable<NseHistoricalData> {
-    return this.apiService.get<NseHistoricalData>(`${this.endpoint}/symbol/${symbol}/date/${date}`);
+  getNseEquityHistoricDataBySymbolAndDate(symbol: string, date: string): Observable<NseEquityHistoricData> {
+    return this.apiService.get<NseEquityHistoricData>(`${this.endpoint}/symbol/${symbol}/date/${date}`);
   }
 
   /**
    * Create a new NSE historical data entry
-   * @param nseHistoricalData The NSE historical data to create
-   * @returns An Observable of the created NseHistoricalData
+   * @param NseEquityHistoricData The NSE historical data to create
+   * @returns An Observable of the created NseEquityHistoricData
    */
-  createNseHistoricalData(nseHistoricalData: NseHistoricalData): Observable<NseHistoricalData> {
-    return this.apiService.post<NseHistoricalData>(this.endpoint, nseHistoricalData);
+  createNseEquityHistoricData(NseEquityHistoricData: NseEquityHistoricData): Observable<NseEquityHistoricData> {
+    return this.apiService.post<NseEquityHistoricData>(this.endpoint, NseEquityHistoricData);
   }
 
   /**
    * Update an existing NSE historical data entry
    * @param id The composite ID (symbol and date)
-   * @param nseHistoricalData The updated NSE historical data
-   * @returns An Observable of the updated NseHistoricalData
+   * @param NseEquityHistoricData The updated NSE historical data
+   * @returns An Observable of the updated NseEquityHistoricData
    */
-  updateNseHistoricalData(id: NseHistoricalDataId, nseHistoricalData: Partial<NseHistoricalData>): Observable<NseHistoricalData> {
-    return this.apiService.put<NseHistoricalData>(`${this.endpoint}/symbol/${id.symbol}/date/${id.date}`, nseHistoricalData);
+  updateNseEquityHistoricData(id: NseEquityHistoricDataId, NseEquityHistoricData: Partial<NseEquityHistoricData>): Observable<NseEquityHistoricData> {
+    return this.apiService.put<NseEquityHistoricData>(`${this.endpoint}/symbol/${id.symbol}/date/${id.date}`, NseEquityHistoricData);
   }
 
   /**
@@ -63,7 +63,7 @@ export class NseHistoricalDataService {
    * @param id The composite ID (symbol and date)
    * @returns An Observable of the operation result
    */
-  deleteNseHistoricalData(id: NseHistoricalDataId): Observable<void> {
+  deleteNseEquityHistoricData(id: NseEquityHistoricDataId): Observable<void> {
     return this.apiService.delete<void>(`${this.endpoint}/symbol/${id.symbol}/date/${id.date}`);
   }
 }

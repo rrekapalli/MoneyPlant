@@ -12,9 +12,9 @@ import java.sql.Timestamp;
 @Setter
 @Entity
 @Table(name = "nse_eq_ohlcv_historic", schema = "public")
-public class NseHistoricalData implements Serializable {
+public class NseEquityHistoricData implements Serializable {
     @EmbeddedId
-    private NseHistoricalDataId id;
+    private NseEquityHistoricDataId id;
 
     @Column(name = "open")
     private Float open;

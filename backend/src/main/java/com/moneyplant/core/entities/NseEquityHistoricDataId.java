@@ -13,7 +13,7 @@ import java.util.Objects;
 @Getter
 @Setter
 @Embeddable
-public class NseHistoricalDataId implements Serializable {
+public class NseEquityHistoricDataId implements Serializable {
     private static final long serialVersionUID = 197751131785797256L;
     @Column(name = "symbol", length = 50)
     private String symbol;
@@ -25,7 +25,7 @@ public class NseHistoricalDataId implements Serializable {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || Hibernate.getClass(this) != Hibernate.getClass(o)) return false;
-        NseHistoricalDataId entity = (NseHistoricalDataId) o;
+        NseEquityHistoricDataId entity = (NseEquityHistoricDataId) o;
         return Objects.equals(this.date, entity.date) &&
                 Objects.equals(this.symbol, entity.symbol);
     }
