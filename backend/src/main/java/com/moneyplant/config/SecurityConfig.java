@@ -40,6 +40,7 @@ public class SecurityConfig {
                 .requestMatchers("/", "/error", "/api/public/**", "/swagger-ui/**", "/v1/api-docs/**", 
                                "/actuator/**", "/login/**", "/oauth2/**", "/api/auth/email-login").permitAll() // WebSocket endpoints moved to engines project
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                .requestMatchers("/api/screeners/**", "/api/versions/**", "/api/runs/**").authenticated()
                 .anyRequest().authenticated()
             )
             .oauth2Login(oauth2 -> oauth2
