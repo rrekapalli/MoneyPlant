@@ -13,6 +13,19 @@ export interface CandlestickChartData {
   [key: string]: any;
 }
 
+export interface VolumeSeriesOptions {
+  name?: string;
+  type?: string;
+  data?: number[][];
+  xAxisIndex?: number;
+  yAxisIndex?: number;
+  itemStyle?: {
+    color?: string;
+    color0?: string;
+    opacity?: number;
+  };
+}
+
 export interface CandlestickSeriesOptions {
   name?: string;
   type?: string;
@@ -32,13 +45,34 @@ export interface CandlestickChartOptions extends EChartsOption {
     type?: string;
     data?: string[];
     name?: string;
-  };
+    boundaryGap?: boolean;
+    axisLine?: any;
+    splitLine?: any;
+    min?: string | number;
+    max?: string | number;
+    gridIndex?: number;
+    axisLabel?: any;
+  }[];
   yAxis?: {
     type?: string;
     name?: string;
     scale?: boolean;
+    splitArea?: any;
+    splitNumber?: number;
+    axisLabel?: any;
+    axisLine?: any;
+    axisTick?: any;
+    splitLine?: any;
+    gridIndex?: number;
+  }[];
+  series?: (CandlestickSeriesOptions | VolumeSeriesOptions)[];
+  grid?: any[];
+  dataZoom?: any[];
+  legend?: {
+    data?: string[];
+    top?: string | number;
+    left?: string | number;
   };
-  series?: CandlestickSeriesOptions[];
   // Add time range filter options
   timeRangeFilters?: {
     selectedRange: string;
@@ -73,17 +107,23 @@ export interface TimeRangeFilterEvent {
  */
 export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChartOptions, CandlestickSeriesOptions> {
   protected override seriesOptions: CandlestickSeriesOptions;
+  private volumeSeriesOptions: VolumeSeriesOptions;
   private xAxisData: string[] = [];
   private filterColumn: string = '';
   private timeRangeFilters: TimeRange[] = ['1D', '5D', '1M', '3M', '6M', 'YTD', '1Y', '3Y', '5Y', 'MAX'];
   private selectedTimeRange: TimeRange = '1Y'; // Default to Y
   private showAreaSeries: boolean = true;
   private areaSeriesOpacity: number = 0.3;
+  private showVolume: boolean = true;
+  private showLegend: boolean = true;
+  private showDataZoom: boolean = true;
   private timeRangeChangeCallback?: (event: TimeRangeFilterEvent) => void;
+  private graphicElements: any[] = []; // Store graphic elements for click handling
 
   private constructor() {
     super();
     this.seriesOptions = this.getDefaultSeriesOptions();
+    this.volumeSeriesOptions = this.getDefaultVolumeSeriesOptions();
   }
 
   /**
@@ -98,34 +138,108 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
    */
   protected override getDefaultOptions(): Partial<CandlestickChartOptions> {
     return {
-      grid: {
-        containLabel: true,
-        top: '25%',    // Increased to 35% to make more room for time range filters
-        left: '3%',    // Reduced from 5% to 3%
-        right: '3%',   // Reduced from 5% to 3%
-        bottom: '5%', // Reduced from 15% to 10% to give more space to chart
-        height: '60%'
-      },
+              grid: [
+          {
+            left: '10%',
+            right: '10%',
+            top: '10%',
+            height: '60%'
+          },
+          {
+            left: '10%',
+            right: '10%',
+            top: '75%',
+            height: '12%'
+          }
+        ],
       tooltip: {
         trigger: 'axis',
+        axisPointer: {
+          type: 'cross'
+        },
         formatter: (params: any) => {
-          const param = Array.isArray(params) ? params[0] : params;
-          const data = param.data;
-          return `${param.name}<br/>
-                  Open: ${data[1]}<br/>
-                  Close: ${data[2]}<br/>
-                  Low: ${data[3]}<br/>
-                  High: ${data[4]}`;
+          if (Array.isArray(params)) {
+            let result = `${params[0].name}<br/>`;
+            params.forEach(param => {
+              if (param.seriesName === 'Candlestick') {
+                const data = param.data;
+                result += `Open: ${data[1]}<br/>Close: ${data[2]}<br/>Low: ${data[3]}<br/>High: ${data[4]}<br/>`;
+              } else if (param.seriesName === 'Volume') {
+                result += `Volume: ${param.data[1]}<br/>`;
+              }
+            });
+            return result;
+          } else {
+            const param = params;
+            const data = param.data;
+            return `${param.name}<br/>
+                    Open: ${data[1]}<br/>
+                    Close: ${data[2]}<br/>
+                    Low: ${data[3]}<br/>
+                    High: ${data[4]}`;
+          }
         }
       },
-      xAxis: {
-        type: 'category',
-        data: [],
-      },
-      yAxis: {
-        type: 'value',
-        scale: true,
-      },
+      xAxis: [
+        {
+          type: 'category',
+          data: [],
+          boundaryGap: false,
+          axisLine: { onZero: false },
+          splitLine: { show: false },
+          min: 'dataMin',
+          max: 'dataMax'
+        },
+        {
+          type: 'category',
+          gridIndex: 1,
+          data: [],
+          boundaryGap: false,
+          axisLine: { onZero: false },
+          splitLine: { show: false },
+          axisLabel: { show: false },
+          min: 'dataMin',
+          max: 'dataMax'
+        }
+      ],
+      yAxis: [
+        {
+          scale: true,
+          splitArea: {
+            show: true
+          }
+        },
+        {
+          scale: true,
+          gridIndex: 1,
+          splitNumber: 2,
+          axisLabel: { show: false },
+          axisLine: { show: false },
+          axisTick: { show: false },
+          splitLine: { show: false }
+        }
+      ],
+              dataZoom: [
+          {
+            type: 'inside',
+            xAxisIndex: [0, 1],
+            start: 0,
+            end: 100
+          },
+          {
+            show: true,
+            xAxisIndex: [0, 1],
+            type: 'slider',
+            top: '92%',
+            start: 0,
+            end: 100
+          }
+        ],
+      legend: {
+        data: ['Candlestick', 'Volume'],
+        top: '5%',
+        left: 'center'
+      }
     };
   }
 
@@ -155,6 +269,24 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
   }
 
   /**
+   * Get default volume series options
+   */
+  private getDefaultVolumeSeriesOptions(): VolumeSeriesOptions {
+    return {
+      name: 'Volume',
+      type: 'bar',
+      xAxisIndex: 1,
+      yAxisIndex: 1,
+      data: [],
+      itemStyle: {
+        color: '#7fbe9e',
+        color0: '#d87a80',
+        opacity: 0.8
+      }
+    };
+  }
+
+  /**
    * Transform generic data to candlestick format
    */
   transformData(options: { 
@@ -163,6 +295,7 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
     closeField?: string; 
     lowField?: string; 
     highField?: string; 
+    volumeField?: string;
   } & ChartDataTransformOptions = {}): this {
     if (!this.data || !Array.isArray(this.data)) {
       return this;
@@ -174,6 +307,7 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
       closeField = 'close',
       lowField = 'low',
       highField = 'high',
+      volumeField = 'volume',
       sortBy,
       sortOrder = 'asc',
       limit
@@ -181,6 +315,7 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
 
     try {
       let transformedData: number[][] = [];
+      let volumeData: number[][] = [];
       let xAxisLabels: string[] = [];
 
       // Apply filters first
@@ -189,37 +324,46 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
         filteredData = ApacheEchartBuilder.applyFilters(this.data, (options as any).filters);
       }
 
-      // Transform data to candlestick format [open, close, low, high]
+      // Transform data to candlestick format [open, close, low, high] and volume format [date, volume]
       filteredData.forEach(item => {
         const date = item[dateField];
         const open = parseFloat(item[openField]) || 0;
         const close = parseFloat(item[closeField]) || 0;
         const low = parseFloat(item[lowField]) || 0;
         const high = parseFloat(item[highField]) || 0;
+        const volume = parseFloat(item[volumeField]) || 0;
 
         xAxisLabels.push(date);
         transformedData.push([open, close, low, high]);
+        volumeData.push([date, volume]);
       });
 
       // Apply sorting
       if (sortBy === 'date') {
-        const combined = xAxisLabels.map((label, index) => ({ label, data: transformedData[index] }));
+        const combined = xAxisLabels.map((label, index) => ({ 
+          label, 
+          candlestickData: transformedData[index],
+          volumeData: volumeData[index]
+        }));
         combined.sort((a, b) => {
           const dateA = new Date(a.label).getTime();
           const dateB = new Date(b.label).getTime();
           return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
         });
         xAxisLabels = combined.map(item => item.label);
-        transformedData = combined.map(item => item.data);
+        transformedData = combined.map(item => item.candlestickData);
+        volumeData = combined.map(item => item.volumeData);
       }
 
       // Apply limit
       if (limit && limit > 0) {
         xAxisLabels = xAxisLabels.slice(0, limit);
         transformedData = transformedData.slice(0, limit);
+        volumeData = volumeData.slice(0, limit);
       }
 
       this.seriesOptions.data = transformedData;
+      this.volumeSeriesOptions.data = volumeData;
       this.setXAxisData(xAxisLabels);
 
     } catch (error) {
@@ -243,10 +387,15 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
    */
   setXAxisData(data: string[]): this {
     this.xAxisData = data;
-    (this.chartOptions as any).xAxis = {
-      ...(this.chartOptions as any).xAxis,
-      data: data,
-    };
+    if ((this.chartOptions as any).xAxis && Array.isArray((this.chartOptions as any).xAxis)) {
+      (this.chartOptions as any).xAxis[0].data = data;
+      (this.chartOptions as any).xAxis[1].data = data;
+    } else {
+      (this.chartOptions as any).xAxis = {
+        ...(this.chartOptions as any).xAxis,
+        data: data,
+      };
+    }
     return this;
   }
 
@@ -265,10 +414,41 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
    * Set Y-axis name
    */
   setYAxisName(name: string): this {
-    (this.chartOptions as any).yAxis = {
-      ...(this.chartOptions as any).yAxis,
-      name,
-    };
+    if ((this.chartOptions as any).yAxis && Array.isArray((this.chartOptions as any).yAxis)) {
+      (this.chartOptions as any).yAxis[0].name = name;
+    } else {
+      (this.chartOptions as any).yAxis = {
+        ...(this.chartOptions as any).yAxis,
+        name,
+      };
+    }
+    return this;
+  }
+
+  /**
+   * Enable or disable volume bars
+   * @param enabled Whether to show volume bars (default: true)
+   */
+  enableVolume(enabled: boolean = true): this {
+    this.showVolume = enabled;
+    return this;
+  }
+
+  /**
+   * Enable or disable legend
+   * @param enabled Whether to show legend (default: true)
+   */
+  enableLegend(enabled: boolean = true): this {
+    this.showLegend = enabled;
+    return this;
+  }
+
+  /**
+   * Enable or disable data zoom
+   * @param enabled Whether to show data zoom controls (default: true)
+   */
+  enableDataZoom(enabled: boolean = true): this {
+    this.showDataZoom = enabled;
     return this;
   }
 
@@ -346,17 +526,135 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
    * @param callback Function to handle time range filter changes
    */
   setTimeRangeChangeCallback(callback: (event: TimeRangeFilterEvent) => void): this {
-    // Use the generalized filter change callback
+    console.log('🔥 setTimeRangeChangeCallback called with callback:', !!callback);
+    
+    // Store the callback directly
+    this.timeRangeChangeCallback = callback;
+    console.log('🔥 Stored timeRangeChangeCallback:', !!this.timeRangeChangeCallback);
+    
+    // Also use the generalized filter change callback
     this.setFilterChangeCallback((event: ChartFilterEvent) => {
+      console.log('🔥 Filter change callback triggered:', event);
       if (event.type === 'customFilter' && event.filterType === 'timeRange') {
         const timeRangeEvent: TimeRangeFilterEvent = {
           type: 'timeRangeChange',
           range: event.value as TimeRange,
           widgetId: event.widgetId
         };
+        console.log('🔥 Calling time range callback with event:', timeRangeEvent);
         callback(timeRangeEvent);
       }
     });
+    
+    // Set up the event handler
+    this.setEvents((widget, chart) => {
+      console.log('🔥 Setting up event handler in setTimeRangeChangeCallback');
+      console.log('🔥 Widget:', widget);
+      console.log('🔥 Chart instance:', chart);
+      if (chart) {
+        console.log('🔥 Chart instance available, setting up click handler');
+        // Set up event handling for time range filters
+        chart.off('click');
+        chart.on('click', (params: any) => {
+          console.log('🔥 Chart click detected:', params);
+          console.log('🔥 Component type:', params.componentType);
+          console.log('🔥 Component sub type:', params.componentSubType);
+          console.log('🔥 Data:', params.data);
+          console.log('🔥 Component index:', params.componentIndex);
+          
+          // Check if the click is on a graphic element (time range filter)
+          if (params.componentType === 'graphic') {
+            console.log('🔥 Graphic element clicked:', params);
+            
+            // Get the graphic element from the chart options
+            const chartOptions = chart.getOption();
+            console.log('🔥 Chart options structure:', chartOptions);
+            
+            // Try different ways to access graphic elements
+            let graphicElements = [];
+            if (chartOptions.graphic) {
+              graphicElements = chartOptions.graphic;
+            } else if (chartOptions.elements && chartOptions.elements.graphic) {
+              graphicElements = chartOptions.elements.graphic;
+            } else if (Array.isArray(chartOptions)) {
+              // If chartOptions is an array, look for graphic in each element
+              for (const option of chartOptions) {
+                if (option.graphic) {
+                  graphicElements = option.graphic;
+                  break;
+                }
+              }
+            }
+            
+            console.log('🔥 Graphic elements found:', graphicElements);
+            console.log('🔥 Component index:', params.componentIndex);
+            console.log('🔥 Graphic elements length:', graphicElements.length);
+            
+            let clickedElement = graphicElements[params.componentIndex];
+            
+            // Fallback: use stored graphic elements if chart options don't work
+            if (!clickedElement || !clickedElement.range) {
+              console.log('🔥 Using fallback: stored graphic elements');
+              console.log('🔥 Stored graphic elements:', this.graphicElements);
+              clickedElement = this.graphicElements[params.componentIndex];
+            }
+            
+            console.log('🔥 Clicked graphic element:', clickedElement);
+            console.log('🔥 Element range:', clickedElement?.range);
+            console.log('🔥 Element filterType:', clickedElement?.filterType);
+            console.log('🔥 Element filterValue:', clickedElement?.filterValue);
+            
+            if (clickedElement && (clickedElement.range || clickedElement.filterValue)) {
+              const range = clickedElement.range || clickedElement.filterValue;
+              console.log('🔥 Time range filter graphic clicked:', range);
+              
+              // Update selected time range
+              this.selectedTimeRange = range;
+              console.log('🔥 Updated selectedTimeRange to:', this.selectedTimeRange);
+              
+              // Trigger filter change event
+              if (this.filterChangeCallback) {
+                console.log('🔥 Triggering filter change callback');
+                this.filterChangeCallback({
+                  type: 'customFilter',
+                  filterType: 'timeRange',
+                  value: range,
+                  widgetId: widget.id
+                });
+              } else {
+                console.warn('🔥 No filter change callback available!');
+              }
+              
+              if (this.timeRangeChangeCallback) {
+                console.log('🔥 Triggering time range change callback with range:', range);
+                this.timeRangeChangeCallback({
+                  type: 'timeRangeChange',
+                  range: range,
+                  widgetId: widget.id
+                });
+              } else {
+                console.warn('🔥 No time range change callback set!');
+              }
+              
+              // Also trigger global function as fallback
+              if (typeof window !== 'undefined' && (window as any).handleTimeRangeFilterClick) {
+                console.log('🔥 Triggering global fallback function');
+                (window as any).handleTimeRangeFilterClick(range);
+              } else {
+                console.warn('🔥 Global fallback function not available!');
+              }
+              
+              return false; // Prevent default behavior
+            } else {
+              console.log('🔥 Graphic element clicked but no range/filterValue found');
+            }
+          }
+          
+          return true; // Allow default behavior for non-filter clicks
+        });
+      }
+    });
+    
     return this;
   }
 
@@ -598,10 +896,25 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
    * Override build method to merge series options
    */
   override build(): IWidget {
+    console.log('🔥 build() method called');
+    console.log('🔥 timeRangeChangeCallback available:', !!this.timeRangeChangeCallback);
+    console.log('🔥 filterChangeCallback available:', !!this.filterChangeCallback);
+    
     const series: any[] = [{
       ...this.seriesOptions,
       type: 'candlestick',
     }];
+
+    // Add volume series if enabled
+    if (this.showVolume) {
+      series.push({
+        ...this.volumeSeriesOptions,
+        type: 'bar',
+        xAxisIndex: 1,
+        yAxisIndex: 1,
+        data: this.volumeSeriesOptions.data || []
+      });
+    }
 
     // Add area series if enabled (always create it even with empty data)
     if (this.showAreaSeries) {
@@ -660,24 +973,10 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
         range: range,
         // Add cursor style for better UX
         cursor: 'pointer',
-        // Use generalized filter system
+        // Enable click events
+        silent: false,
         filterType: 'timeRange',
-        filterValue: range,
-        // Add onclick handler
-        onclick: () => {
-          console.log('Time range filter clicked:', range);
-          if (this.timeRangeChangeCallback) {
-            this.timeRangeChangeCallback({
-              type: 'timeRangeChange',
-              range: range,
-              widgetId: this.widgetBuilder.build().id
-            });
-          }
-          // Also trigger global function as fallback
-          if (typeof window !== 'undefined' && (window as any).handleTimeRangeFilterClick) {
-            (window as any).handleTimeRangeFilterClick(range);
-          }
-        }
+        filterValue: range
       }));
 
       // Add text labels for the buttons
@@ -704,24 +1003,10 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
           range: range,
           // Add cursor style for better UX
           cursor: 'pointer',
-          // Use generalized filter system
+          // Enable click events
+          silent: false,
           filterType: 'timeRange',
-          filterValue: range,
-          // Add onclick handler
-          onclick: () => {
-            console.log('Time range filter text clicked:', range);
-            if (this.timeRangeChangeCallback) {
-              this.timeRangeChangeCallback({
-                type: 'timeRangeChange',
-                range: range,
-                widgetId: this.widgetBuilder.build().id
-              });
-            }
-            // Also trigger global function as fallback
-            if (typeof window !== 'undefined' && (window as any).handleTimeRangeFilterClick) {
-              (window as any).handleTimeRangeFilterClick(range);
-            }
-          }
+          filterValue: range
         };
       });
 
@@ -739,8 +1024,11 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
         }
       }] : [];
 
+      // Store graphic elements for click handling
+      this.graphicElements = [...timeRangeButtons, ...timeRangeTexts, ...underlineElements];
+      
       // Add graphics to chart options
-      (this.chartOptions as any).graphic = [...timeRangeButtons, ...timeRangeTexts, ...underlineElements];
+      (this.chartOptions as any).graphic = this.graphicElements;
       
       // Debug: Log the chart container width
       console.log('Chart grid configuration:', (this.chartOptions as any).grid);
@@ -755,15 +1043,145 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
       console.log('1Y text position:', timeRangeTexts.find((txt, i) => this.timeRangeFilters[i] === '1Y'));
     }
 
+    // Prepare final options with conditional legend and data zoom
     const finalOptions: CandlestickChartOptions = {
       ...this.chartOptions,
       series: series,
     };
+    
+    console.log('🔧 Final series data:', {
+      candlestickData: series[0]?.data?.length || 0,
+      volumeData: series[1]?.data?.length || 0,
+      areaData: series[2]?.data?.length || 0
+    });
+
+    // CRITICAL FIX: Ensure dual-axis configuration is always present when volume is enabled
+    if (this.showVolume) {
+      console.log('🔧 Building chart with volume enabled - ensuring dual-axis configuration');
+      // Ensure we have proper dual-axis configuration with more space for volume
+      finalOptions.grid = [
+        {
+          left: '10%',
+          right: '10%',
+          top: '10%',
+          height: '60%'
+        },
+        {
+          left: '10%',
+          right: '10%',
+          top: '75%',
+          height: '12%'
+        }
+      ];
+      
+      finalOptions.xAxis = [
+        {
+          type: 'category',
+          data: this.xAxisData,
+          boundaryGap: false,
+          axisLine: { onZero: false },
+          splitLine: { show: false },
+          min: 'dataMin',
+          max: 'dataMax'
+        },
+        {
+          type: 'category',
+          gridIndex: 1,
+          data: this.xAxisData,
+          boundaryGap: false,
+          axisLine: { onZero: false },
+          splitLine: { show: false },
+          axisLabel: { show: false },
+          min: 'dataMin',
+          max: 'dataMax'
+        }
+      ];
+      
+      finalOptions.yAxis = [
+        {
+          scale: true,
+          splitArea: {
+            show: true
+          }
+        },
+        {
+          scale: true,
+          gridIndex: 1,
+          splitNumber: 2,
+          axisLabel: { show: false },
+          axisLine: { show: false },
+          axisTick: { show: false },
+          splitLine: { show: false }
+        }
+      ];
+      
+      console.log('🔧 Dual-axis configuration applied:', {
+        gridCount: finalOptions.grid?.length,
+        xAxisCount: finalOptions.xAxis?.length,
+        yAxisCount: finalOptions.yAxis?.length,
+        seriesCount: finalOptions.series?.length
+      });
+    } else {
+      console.log('🔧 Building chart without volume - single-axis configuration');
+    }
+
+    // Conditionally include legend
+    if (!this.showLegend) {
+      delete finalOptions.legend;
+    } else {
+      // Update legend data based on enabled series
+      const legendData = ['Candlestick'];
+      if (this.showVolume) {
+        legendData.push('Volume');
+      }
+      if (this.showAreaSeries) {
+        legendData.push('Close Price Area');
+      }
+      finalOptions.legend = {
+        ...finalOptions.legend,
+        data: legendData
+      };
+    }
+
+    // Conditionally include data zoom
+    if (!this.showDataZoom) {
+      delete finalOptions.dataZoom;
+    } else if (this.showVolume) {
+      // Ensure data zoom is configured for dual-axis
+      finalOptions.dataZoom = [
+        {
+          type: 'inside',
+          xAxisIndex: [0, 1],
+          start: 0,
+          end: 100
+        },
+        {
+          show: true,
+          xAxisIndex: [0, 1],
+          type: 'slider',
+          top: '90%',
+          start: 0,
+          end: 100
+        }
+      ];
+    }
 
     // Create the base widget
     const baseWidget = this.widgetBuilder
       .setEChartsOptions(finalOptions)
       .build();
+    
+    // Set a reasonable height for the candlestick chart (12 rows = 600px)
+    baseWidget.height = 600;
+    
+    console.log('🔧 Candlestick chart widget height set to:', baseWidget.height);
+    console.log('🔧 Chart options being set:', {
+      seriesCount: finalOptions.series?.length || 0,
+      xAxisCount: finalOptions.xAxis?.length || 0,
+      yAxisCount: finalOptions.yAxis?.length || 0,
+      gridCount: finalOptions.grid?.length || 0,
+      hasData: finalOptions.series?.[0]?.data?.length || 0
+    });
 
     // Add time range filters data to the widget for external access
     if (this.timeRangeFilters.length > 0) {
@@ -930,48 +1348,195 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
    * Enhanced updateData with retry mechanism
    */
   static override updateData(widget: IWidget, data: any): void {
+    console.log('🔄 CandlestickChartBuilder.updateData called with:', data?.length || 0, 'records');
+    console.log('🔄 Sample data:', data?.slice(0, 2));
+    console.log('🔄 Data date range:', data?.length > 0 ? {
+      first: data[0]?.date,
+      last: data[data.length - 1]?.date
+    } : 'No data');
+    
     const maxRetries = 3;
     let retryCount = 0;
 
     const updateWithRetry = () => {
       try {
         if (widget.chartInstance) {
+          console.log('✅ Chart instance found, updating data');
+          console.log('🔄 Chart instance type:', typeof widget.chartInstance);
+          console.log('🔄 Chart instance methods:', Object.getOwnPropertyNames(widget.chartInstance));
+          
+          // Check if chart is properly initialized
+          if (!widget.chartInstance.getOption) {
+            console.warn('⚠️ Chart instance not properly initialized, retrying...');
+            if (retryCount < maxRetries) {
+              retryCount++;
+              setTimeout(updateWithRetry, 100 * retryCount);
+              return;
+            }
+          }
+          
+          console.log('🔄 Chart instance is properly initialized, proceeding with data update');
           // Transform data if needed
           let transformedData = data;
+          let volumeData: number[][] = [];
+          let xAxisLabels: string[] = [];
+          
           if (Array.isArray(data) && data.length > 0 && typeof data[0] === 'object') {
+            console.log('🔄 Transforming object data to candlestick format');
             transformedData = data.map(item => [
               parseFloat(item.open) || 0,
               parseFloat(item.close) || 0,
               parseFloat(item.low) || 0,
               parseFloat(item.high) || 0
             ]);
+            
+            // Extract volume data if available
+            if (data[0].volume !== undefined) {
+              console.log('🔄 Extracting volume data');
+              volumeData = data.map(item => [
+                item.date || item.lastUpdateTime || '',
+                parseFloat(item.volume) || 0
+              ]);
+            }
+            
+            // Extract x-axis labels
+            xAxisLabels = data.map(item => item.date || item.lastUpdateTime || '');
+            console.log('🔄 Transformed data:', transformedData.length, 'candlesticks,', volumeData.length, 'volume records');
+          } else {
+            console.log('🔄 Data is already in array format or empty');
           }
 
           const currentOptions = widget.chartInstance.getOption();
+          console.log('🔄 Current chart options:', {
+            hasXAxis: !!(currentOptions as any).xAxis,
+            xAxisCount: (currentOptions as any).xAxis?.length || 0,
+            hasYAxis: !!(currentOptions as any).yAxis,
+            yAxisCount: (currentOptions as any).yAxis?.length || 0,
+            hasGrid: !!(currentOptions as any).grid,
+            gridCount: (currentOptions as any).grid?.length || 0,
+            seriesCount: (currentOptions as any).series?.length || 0,
+            seriesNames: (currentOptions as any).series?.map((s: any) => s.name) || []
+          });
+          
+          console.log('🔄 Full current options structure:', currentOptions);
           
           // Extract close prices for area series if it exists
           const closePrices = transformedData.map((candle: number[]) => candle[1]); // Close is at index 1
           
-          // Update both candlestick and area series
+          // Update series data
           const newSeries = [{
             ...(currentOptions as any)['series'][0],
             data: transformedData
           }];
           
-          // Add area series if it exists in current options
-          if ((currentOptions as any)['series']?.[1]?.name === 'Close Price Area') {
+          // Add volume series if it exists and we have volume data
+          if ((currentOptions as any)['series']?.[1]?.name === 'Volume' && volumeData.length > 0) {
+            console.log('🔄 Adding volume series with data:', volumeData.length, 'records');
             newSeries.push({
               ...(currentOptions as any)['series'][1],
+              data: volumeData,
+              xAxisIndex: 1,
+              yAxisIndex: 1,
+              type: 'bar'
+            });
+          } else {
+            console.log('🔄 Volume series not found or no volume data:', {
+              hasVolumeSeries: (currentOptions as any)['series']?.[1]?.name === 'Volume',
+              volumeDataLength: volumeData.length,
+              seriesCount: (currentOptions as any)['series']?.length || 0
+            });
+          }
+          
+          // Add area series if it exists in current options
+          const areaSeriesIndex = (currentOptions as any)['series'].findIndex((s: any) => s.name === 'Close Price Area');
+          if (areaSeriesIndex >= 0) {
+            newSeries.push({
+              ...(currentOptions as any)['series'][areaSeriesIndex],
               data: closePrices
             });
           }
           
+          // Ensure we have proper dual-axis configuration
           const newOptions = {
             ...currentOptions,
-            series: newSeries
+            series: newSeries,
+            xAxis: [
+              {
+                ...(currentOptions as any).xAxis?.[0],
+                data: xAxisLabels,
+                type: 'category',
+                boundaryGap: false,
+                axisLine: { onZero: false },
+                splitLine: { show: false },
+                min: 'dataMin',
+                max: 'dataMax'
+              },
+              {
+                ...(currentOptions as any).xAxis?.[1],
+                data: xAxisLabels,
+                gridIndex: 1,
+                type: 'category',
+                boundaryGap: false,
+                axisLine: { onZero: false },
+                splitLine: { show: false },
+                axisLabel: { show: false },
+                min: 'dataMin',
+                max: 'dataMax'
+              }
+            ],
+            yAxis: [
+              {
+                ...(currentOptions as any).yAxis?.[0],
+                scale: true,
+                splitArea: { show: true }
+              },
+              {
+                ...(currentOptions as any).yAxis?.[1],
+                scale: true,
+                gridIndex: 1,
+                splitNumber: 2,
+                axisLabel: { show: false },
+                axisLine: { show: false },
+                axisTick: { show: false },
+                splitLine: { show: false }
+              }
+            ],
+            grid: [
+              {
+                left: '10%',
+                right: '10%',
+                top: '10%',
+                height: '65%'
+              },
+              {
+                left: '10%',
+                right: '10%',
+                top: '75%',
+                height: '12%'
+              }
+            ]
           };
 
+          console.log('🔄 Updating chart with new options:', {
+            seriesCount: newSeries.length,
+            xAxisLabelsCount: xAxisLabels.length,
+            candlestickDataCount: transformedData.length,
+            volumeDataCount: volumeData.length
+          });
+          
+          console.log('🔄 New options structure:', newOptions);
+          console.log('🔄 New series data:', newSeries);
+
           widget.chartInstance.setOption(newOptions, true);
+          console.log('✅ Chart updated successfully');
+          
+          // Verify the update worked
+          const updatedOptions = widget.chartInstance.getOption();
+          console.log('🔄 Verification - Updated chart options:', {
+            seriesCount: (updatedOptions as any).series?.length || 0,
+            seriesNames: (updatedOptions as any).series?.map((s: any) => s.name) || [],
+            xAxisDataCount: (updatedOptions as any).xAxis?.[0]?.data?.length || 0
+          });
         } else if (retryCount < maxRetries) {
           retryCount++;
           setTimeout(updateWithRetry, 100 * retryCount);
@@ -1037,42 +1602,12 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
    * Set chart events
    */
   override setEvents(callback: (widget: IWidget, chart: any) => void): this {
-    // Use the base class implementation which includes filter handling
-    super.setEvents((widget, chart) => {
-      if (chart) {
-        // Set up event handling for time range filters
-        chart.off('click');
-        chart.on('click', (params: any) => {
-          // Check if the click is on a graphic element (time range filter)
-          if (params.componentType === 'graphic') {
-            const graphic = params.componentSubType;
-            if (graphic && (params.data?.range || params.data?.filterValue)) {
-              const range = params.data.range || params.data.filterValue;
-              console.log('Time range filter graphic clicked:', range);
-              
-              if (this.timeRangeChangeCallback) {
-                this.timeRangeChangeCallback({
-                  type: 'timeRangeChange',
-                  range: range,
-                  widgetId: widget.id
-                });
-              }
-              
-              // Also trigger global function as fallback
-              if (typeof window !== 'undefined' && (window as any).handleTimeRangeFilterClick) {
-                (window as any).handleTimeRangeFilterClick(range);
-              }
-              
-              return false; // Prevent default behavior
-            }
-          }
-          
-          // Call the original callback for other chart interactions
-          callback(widget, chart);
-          return true; // Allow default behavior for non-filter clicks
-        });
-      }
-    });
+    console.log('🔥 setEvents called with callback:', !!callback);
+    console.log('🔥 Current timeRangeChangeCallback:', !!this.timeRangeChangeCallback);
+    console.log('🔥 Current filterChangeCallback:', !!this.filterChangeCallback);
+    
+    // Use the base class implementation
+    super.setEvents(callback);
     return this;
   }
 } 

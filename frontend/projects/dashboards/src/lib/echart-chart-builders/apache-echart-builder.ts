@@ -451,6 +451,16 @@ export abstract class ApacheEchartBuilder<T extends EChartsOption = EChartsOptio
   }
 
   /**
+   * Set widget height based on gridster item dimensions
+   * @param cellHeight - Height of each gridster cell (default: 30px)
+   * @param margin - Margin between cells (default: 10px)
+   */
+  setHeightFromGridster(cellHeight: number = 30, margin: number = 10): this {
+    this.widgetBuilder.setHeightFromGridster(cellHeight, margin);
+    return this;
+  }
+
+  /**
    * Build and return the final widget
    */
   build(): IWidget {

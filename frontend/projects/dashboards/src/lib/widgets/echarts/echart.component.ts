@@ -15,6 +15,8 @@ import { IFilterValues } from '../../entities/IFilterValues';
     (chartInit)="onChartInit($event)"
     (chartClick)="onClick($event)"
     (chartDblClick)="onChartDblClick($event)"
+    [style.height.px]="widget.height || 400"
+    [style.width.%]="100"
     #chart
   ></div>`,
   imports: [CommonModule, NgxEchartsDirective],
@@ -38,8 +40,29 @@ export class EchartComponent {
 
   onChartInit(instance: any) {
     this.widget.chartInstance = instance;
+    
+    // Debug logging for chart height
+    console.log('🔧 ECharts component initialized:', {
+      widgetHeight: this.widget?.height,
+      widgetId: this.widget?.id,
+      widgetPosition: this.widget?.position,
+      chartInstance: !!instance
+    });
+    
+    // Check if there are event handlers to set up
+    if (this.widget.config?.events?.onChartOptions) {
+      console.log('🔥 Setting up event handler from widget config');
+      this.widget.config.events.onChartOptions(this.widget, instance);
+    } else {
+      console.log('🔥 No event handler found in widget config');
+    }
+    
     setTimeout(() => {
       this.onDataLoad?.emit(this.widget);
+      // Force resize after a short delay to ensure chart uses full height
+      setTimeout(() => {
+        this.forceChartResize();
+      }, 100);
     });
   }
 
@@ -215,5 +238,15 @@ export class EchartComponent {
     }
     // Force change detection
     this.cdr.detectChanges();
+  }
+
+  /**
+   * Force chart resize to use full widget height
+   */
+  forceChartResize(): void {
+    if (this.widget.chartInstance) {
+      console.log('🔧 Forcing chart resize to height:', this.widget?.height);
+      this.widget.chartInstance.resize();
+    }
   }
 }
