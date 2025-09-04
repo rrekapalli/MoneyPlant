@@ -66,4 +66,13 @@ public interface ScreenerRepository extends JpaRepository<Screener, Long> {
      * Counts public screeners.
      */
     long countByIsPublicTrue();
+
+    /**
+     * Finds screeners starred by user.
+     */
+    @Query("SELECT s FROM Screener s " +
+           "JOIN ScreenerStar ss ON s.screenerId = ss.screener.screenerId " +
+           "WHERE ss.userId = :userId " +
+           "ORDER BY ss.createdAt DESC")
+    List<Screener> findStarredByUserId(@Param("userId") Long userId);
 }

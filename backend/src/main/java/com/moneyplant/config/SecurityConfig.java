@@ -1,6 +1,6 @@
 package com.moneyplant.config;
 
-import com.moneyplant.core.security.CustomOAuth2UserService;
+// import com.moneyplant.core.security.CustomOAuth2UserService;
 import com.moneyplant.core.security.CustomUserDetailsService;
 import com.moneyplant.core.security.JwtAuthenticationFilter;
 import com.moneyplant.core.security.JwtTokenProvider;
@@ -27,7 +27,7 @@ public class SecurityConfig {
 
     private final JwtTokenProvider tokenProvider;
     private final CustomUserDetailsService userDetailsService;
-    private final CustomOAuth2UserService customOAuth2UserService;
+    // private final CustomOAuth2UserService customOAuth2UserService;
     private final CorsConfigurationSource corsConfigurationSource;
 
     @Bean
@@ -35,38 +35,35 @@ public class SecurityConfig {
         http
             .csrf(AbstractHttpConfigurer::disable)
             .cors(cors -> cors.configurationSource(corsConfigurationSource))
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
             .authorizeHttpRequests(authz -> authz
-                .requestMatchers("/", "/error", "/api/public/**", "/swagger-ui/**", "/v1/api-docs/**", 
-                               "/actuator/**", "/login/**", "/oauth2/**", "/api/auth/email-login").permitAll() // WebSocket endpoints moved to engines project
-                .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                .requestMatchers("/api/screeners/**", "/api/versions/**", "/api/runs/**").authenticated()
-                .anyRequest().authenticated()
-            )
-            // OAuth2 configuration temporarily disabled for screener API testing
+                .anyRequest().permitAll() // TEMPORARY: Allow all requests for testing
+            );
+            // OAuth2 login temporarily disabled
             // .oauth2Login(oauth2 -> oauth2
             //     .userInfoEndpoint(userInfo -> userInfo
             //         .userService(customOAuth2UserService)
             //     )
             //     .successHandler((request, response, authentication) -> {
-            //         // Handle successful OAuth2 login
             //         String token = tokenProvider.generateToken(authentication);
             //         String redirectUrl = request.getParameter("redirect_uri");
-            //         if (redirectUrl == null) {
-            //             redirectUrl = "http://localhost:4200/dashboard"; // Default frontend URL
+            //         if (redirectUrl == null || redirectUrl.isBlank()) {
+            //             redirectUrl = "http://localhost:4200"; // default frontend
             //         }
-            //         response.sendRedirect(redirectUrl + "?token=" + token);
+            //         // Append token as query param; frontend should store it
+            //         String sep = redirectUrl.contains("?") ? "&" : "?";
+            //         response.sendRedirect(redirectUrl + sep + "token=" + token);
             //     })
             //     .failureHandler((request, response, exception) -> {
-            //         // Handle OAuth2 login failure
             //         String redirectUrl = request.getParameter("redirect_uri");
-            //         if (redirectUrl == null) {
-            //             redirectUrl = "http://localhost:4200";
+            //         if (redirectUrl == null || redirectUrl.isBlank()) {
+            //             redirectUrl = "http://localhost:4200/login";
             //         }
-            //         response.sendRedirect(redirectUrl + "/login?error=" + exception.getMessage());
+            //         String sep = redirectUrl.contains("?") ? "&" : "?";
+            //         response.sendRedirect(redirectUrl + sep + "error=" + java.net.URLEncoder.encode(exception.getMessage(), java.nio.charset.StandardCharsets.UTF_8));
             //     })
             // )
-            .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
+            // .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

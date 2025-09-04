@@ -162,6 +162,21 @@ public class ScreenerService {
     }
 
     /**
+     * Lists starred screeners for current user.
+     */
+    @Transactional(readOnly = true)
+    public List<ScreenerResp> listStarredScreeners() {
+        log.info("Listing starred screeners");
+        
+        Long currentUserId = currentUserService.getCurrentUserId();
+        List<Screener> screeners = screenerRepository.findStarredByUserId(currentUserId);
+        
+        return screeners.stream()
+                .map(screenerMapper::toResponse)
+                .toList();
+    }
+
+    /**
      * Checks if user has access to screener.
      */
     @Transactional(readOnly = true)

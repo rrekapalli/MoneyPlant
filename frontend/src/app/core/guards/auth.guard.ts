@@ -6,6 +6,10 @@ export const authGuard = () => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
+  // TEMPORARY: Bypass authentication for testing screeners feature
+  // TODO: Remove this bypass when authentication is properly implemented
+  return true;
+
   // Check if user is logged in
   const isLoggedIn = authService.isLoggedIn();
   

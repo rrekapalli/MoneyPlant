@@ -221,4 +221,5 @@ public class StockController {
         return stockHistoryService.getAllHistory(symbol);
     }
 
+
 }

@@ -18,7 +18,7 @@ public class ScreenerEngineServiceImpl implements ScreenerEngineService {
     private final SparkExecutor sparkExecutor;
 
     public ScreenerEngineServiceImpl(
-            @Value("${spring.datasource-trino.jdbc-url:jdbc:trino://trino:8080?catalog=MoneyPlant&schema=public}") String trinoUrl,
+            @Value("${spring.datasource-trino.jdbc-url:jdbc:trino://trino:8080/postgres/public}") String trinoUrl,
             @Value("${spring.datasource-trino.username:engines}") String trinoUser
     ) {
         this.planner = new ScreenerPlanner();

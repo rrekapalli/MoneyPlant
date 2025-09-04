@@ -150,6 +150,21 @@ public class ScreenerController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * Lists starred screeners for current user.
+     */
+    @GetMapping("/starred")
+    @Operation(summary = "List starred screeners", description = "Lists screeners starred by current user")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Starred screeners retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    public ResponseEntity<List<ScreenerResp>> listStarredScreeners() {
+        log.info("Listing starred screeners");
+        List<ScreenerResp> response = screenerService.listStarredScreeners();
+        return ResponseEntity.ok(response);
+    }
+
 
     /**
      * Gets the last results for a screener.

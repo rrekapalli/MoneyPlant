@@ -5,6 +5,7 @@ import com.moneyplant.core.repository.UserRepository;
 import com.moneyplant.core.security.JwtTokenProvider;
 import com.moneyplant.index.dtos.IndexResponseDto;
 import com.moneyplant.index.services.IndexService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -68,6 +69,28 @@ public class AuthController {
         Map<String, String> response = new HashMap<>();
         response.put("authorizationUrl", "/oauth2/authorization/" + provider);
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Fallback controller for client-side routing.
+     * This redirects frontend routes to the frontend app running on port 4200.
+     * Note: This excludes API paths (starting with /api/) to avoid interfering with API endpoints.
+     */
+    @GetMapping({"/portfolios", "/portfolios/**", 
+                 "/holdings", "/holdings/**", "/positions", "/positions/**", 
+                 "/market", "/market/**", "/strategies", "/strategies/**",
+                 "/watchlists", "/watchlists/**", "/dashboard", "/dashboard/**"})
+    public ResponseEntity<Void> handleClientSideRouting(HttpServletRequest request) {
+        // Skip API requests - let them be handled by API controllers
+        String requestUri = request.getRequestURI();
+        if (requestUri.startsWith("/api/") || requestUri.startsWith("/actuator/")) {
+            return ResponseEntity.notFound().build();
+        }
+        
+        // Redirect to frontend app running on port 4200
+        return ResponseEntity.status(302)
+                .header("Location", "http://localhost:4200" + requestUri)
+                .build();
     }
 
     @GetMapping("/auth/validate")
