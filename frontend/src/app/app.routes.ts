@@ -42,9 +42,23 @@ export const routes: Routes = [
       },
       {
         path: 'screeners/:id',
-        loadComponent: () => import('./features/screeners/screeners.component')
-          .then(m => m.ScreenersComponent),
+        loadComponent: () => import('./features/screeners/screener-detail/screener-detail.component')
+          .then(m => m.ScreenerDetailComponent),
         title: 'Screener Details - MoneyPlant',
+        canActivate: [featureFlagGuard('screeners')]
+      },
+      {
+        path: 'screeners/:id/edit',
+        loadComponent: () => import('./features/screeners/screener-form/screener-form.component')
+          .then(m => m.ScreenerFormComponent),
+        title: 'Edit Screener - MoneyPlant',
+        canActivate: [featureFlagGuard('screeners')]
+      },
+      {
+        path: 'screeners/new',
+        loadComponent: () => import('./features/screeners/screener-form/screener-form.component')
+          .then(m => m.ScreenerFormComponent),
+        title: 'Create Screener - MoneyPlant',
         canActivate: [featureFlagGuard('screeners')]
       },
       {

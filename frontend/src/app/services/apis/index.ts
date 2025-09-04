@@ -8,3 +8,4 @@ export * from './nse-historical-data.api';
 export * from './nse-quote-equity.api';
 export * from './nse-indices.api';
 export * from './portfolio.api';
+export * from './screener.api';

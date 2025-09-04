@@ -1,148 +1,494 @@
 <div class="screeners-container">
+  <!-- Header with Search and Create Button -->
   <div class="header">
-    <h1>Stock Screeners</h1>
-    <button pButton label="Create Screener" icon="pi pi-plus" (click)="createScreener()"></button>
-  </div>
-
-  <div class="content">
-    <p-card *ngIf="loading" styleClass="loading-card">
-      <div class="loading-message">
-        <i class="pi pi-spin pi-spinner" style="font-size: 2rem"></i>
-        <p>Loading screeners...</p>
+    <div class="header-left">
+      <h1>Stock Screeners</h1>
+      <div class="search-container">
+        <input 
+          type="text" 
+          pInputText 
+          placeholder="Search screeners..." 
+          [(ngModel)]="searchQuery"
+          (keyup.enter)="onSearch()"
+          class="search-input"
+        />
+        <button pButton icon="pi pi-search" (click)="onSearch()" class="p-button-outlined"></button>
       </div>
-    </p-card>
-
-    <div *ngIf="!loading">
-      <p-tabs [(value)]="activeTab">
-        <p-tablist>
-          @for(tab of tabs; track tab.value) {
-            <p-tab [value]="tab.value" class="flex items-center !gap-2 text-inherit">
-              <span>{{ tab.label }}</span>
-            </p-tab>
-          }
-        </p-tablist>
-
-        <p-tabpanel [value]="'all'">
-          <p-table [value]="screeners" styleClass="p-datatable-sm" [tableStyle]="{'min-width': '50rem'}">
-            <ng-template pTemplate="header">
-              <tr>
-                <th>Name</th>
-                <th>Description</th>
-                <th>Category</th>
-                <th>Last Run</th>
-                <th>Results</th>
-                <th>Actions</th>
-              </tr>
-            </ng-template>
-            <ng-template pTemplate="body" let-screener>
-              <tr>
-                <td>{{ screener.name }}</td>
-                <td>{{ screener.description }}</td>
-                <td>{{ screener.category }}</td>
-                <td>{{ screener.lastRun | date:'short' }}</td>
-                <td>{{ screener.results }}</td>
-                <td>
-                  <div class="screener-actions">
-                    <button pButton icon="pi pi-play" class="p-button-rounded p-button-sm p-button-success" (click)="runScreener(screener)" title="Run Screener"></button>
-                    <button pButton icon="pi pi-eye" class="p-button-rounded p-button-sm p-button-info" (click)="viewResults(screener)" title="View Results"></button>
-                    <button pButton icon="pi pi-pencil" class="p-button-rounded p-button-sm p-button-warning" (click)="editScreener(screener)" title="Edit Screener"></button>
-                    <button pButton icon="pi pi-trash" class="p-button-rounded p-button-sm p-button-danger" (click)="deleteScreener(screener)" title="Delete Screener"></button>
-                  </div>
-                </td>
-              </tr>
-            </ng-template>
-            <ng-template pTemplate="emptymessage">
-              <tr>
-                <td colspan="6">
-                  <div class="empty-message">
-                    <p>No screeners available.</p>
-                  </div>
-                </td>
-              </tr>
-            </ng-template>
-          </p-table>
-        </p-tabpanel>
-
-        <p-tabpanel [value]="'predefined'">
-          <p-table [value]="predefinedScreeners" styleClass="p-datatable-sm" [tableStyle]="{'min-width': '50rem'}">
-            <ng-template pTemplate="header">
-              <tr>
-                <th>Name</th>
-                <th>Description</th>
-                <th>Category</th>
-                <th>Last Run</th>
-                <th>Results</th>
-                <th>Actions</th>
-              </tr>
-            </ng-template>
-            <ng-template pTemplate="body" let-screener>
-              <tr>
-                <td>{{ screener.name }}</td>
-                <td>{{ screener.description }}</td>
-                <td>{{ screener.category }}</td>
-                <td>{{ screener.lastRun | date:'short' }}</td>
-                <td>{{ screener.results }}</td>
-                <td>
-                  <div class="screener-actions">
-                    <button pButton icon="pi pi-play" class="p-button-rounded p-button-sm p-button-success" (click)="runScreener(screener)" title="Run Screener"></button>
-                    <button pButton icon="pi pi-eye" class="p-button-rounded p-button-sm p-button-info" (click)="viewResults(screener)" title="View Results"></button>
-                  </div>
-                </td>
-              </tr>
-            </ng-template>
-            <ng-template pTemplate="emptymessage">
-              <tr>
-                <td colspan="6">
-                  <div class="empty-message">
-                    <p>No predefined screeners available.</p>
-                  </div>
-                </td>
-              </tr>
-            </ng-template>
-          </p-table>
-        </p-tabpanel>
-
-        <p-tabpanel [value]="'custom'">
-          <p-table [value]="customScreeners" styleClass="p-datatable-sm" [tableStyle]="{'min-width': '50rem'}">
-            <ng-template pTemplate="header">
-              <tr>
-                <th>Name</th>
-                <th>Description</th>
-                <th>Category</th>
-                <th>Last Run</th>
-                <th>Results</th>
-                <th>Actions</th>
-              </tr>
-            </ng-template>
-            <ng-template pTemplate="body" let-screener>
-              <tr>
-                <td>{{ screener.name }}</td>
-                <td>{{ screener.description }}</td>
-                <td>{{ screener.category }}</td>
-                <td>{{ screener.lastRun | date:'short' }}</td>
-                <td>{{ screener.results }}</td>
-                <td>
-                  <div class="screener-actions">
-                    <button pButton icon="pi pi-play" class="p-button-rounded p-button-sm p-button-success" (click)="runScreener(screener)" title="Run Screener"></button>
-                    <button pButton icon="pi pi-eye" class="p-button-rounded p-button-sm p-button-info" (click)="viewResults(screener)" title="View Results"></button>
-                    <button pButton icon="pi pi-pencil" class="p-button-rounded p-button-sm p-button-warning" (click)="editScreener(screener)" title="Edit Screener"></button>
-                    <button pButton icon="pi pi-trash" class="p-button-rounded p-button-sm p-button-danger" (click)="deleteScreener(screener)" title="Delete Screener"></button>
-                  </div>
-                </td>
-              </tr>
-            </ng-template>
-            <ng-template pTemplate="emptymessage">
-              <tr>
-                <td colspan="6">
-                  <div class="empty-message">
-                    <p>No custom screeners available.</p>
-                  </div>
-                </td>
-              </tr>
-            </ng-template>
-          </p-table>
-        </p-tabpanel>
-      </p-tabs>
     </div>
+    <button pButton label="Create Screener" icon="pi pi-plus" (click)="createScreener()" class="create-button"></button>
   </div>
+
+  <!-- Error Message -->
+  <div *ngIf="error" class="error-message">
+    <p-message severity="error" [text]="error"></p-message>
+  </div>
+
+  <!-- Loading State -->
+  <p-card *ngIf="loading" styleClass="loading-card">
+    <div class="loading-message">
+      <i class="pi pi-spin pi-spinner" style="font-size: 2rem"></i>
+      <p>Loading screeners...</p>
+    </div>
+  </p-card>
+
+  <!-- Main Content -->
+  <div *ngIf="!loading">
+    <p-tabs [(value)]="activeTab" (onChange)="onTabChange($event)">
+      <p-tablist>
+        @for(tab of tabs; track tab.value) {
+          <p-tab [value]="tab.value" class="flex items-center !gap-2 text-inherit">
+            <span>{{ tab.label }}</span>
+          </p-tab>
+        }
+      </p-tablist>
+
+      <!-- All Screeners Tab -->
+      <p-tabpanel [value]="'all'">
+        <p-table 
+          [value]="getCurrentScreeners()" 
+          styleClass="p-datatable-sm" 
+          [tableStyle]="{'min-width': '50rem'}"
+          [paginator]="true"
+          [rows]="pagination.size"
+          [totalRecords]="pagination.totalElements"
+          [first]="pagination.page * pagination.size"
+          (onPage)="onPageChange($event)"
+          [showCurrentPageReport]="true"
+          currentPageReportTemplate="Showing {first} to {last} of {totalRecords} screeners"
+        >
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Name</th>
+              <th>Description</th>
+              <th>Visibility</th>
+              <th>Created</th>
+              <th>Updated</th>
+              <th>Actions</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-screener>
+            <tr>
+              <td>
+                <div class="screener-name">
+                  <span>{{ screener.name }}</span>
+                  <button 
+                    pButton 
+                    icon="pi pi-star" 
+                    [class]="isStarred(screener) ? 'p-button-rounded p-button-sm p-button-warning' : 'p-button-rounded p-button-sm p-button-outlined'"
+                    (click)="toggleStar(screener)" 
+                    [title]="isStarred(screener) ? 'Remove from starred' : 'Add to starred'"
+                    class="star-button"
+                  ></button>
+                </div>
+              </td>
+              <td>{{ screener.description || 'No description' }}</td>
+              <td>
+                <p-tag 
+                  [value]="screener.isPublic ? 'Public' : 'Private'" 
+                  [severity]="screener.isPublic ? 'success' : 'info'"
+                ></p-tag>
+              </td>
+              <td>{{ formatDate(screener.createdAt) }}</td>
+              <td>{{ formatDate(screener.updatedAt) }}</td>
+              <td>
+                <div class="screener-actions">
+                  <button 
+                    pButton 
+                    icon="pi pi-play" 
+                    class="p-button-rounded p-button-sm p-button-success" 
+                    (click)="runScreener(screener)" 
+                    title="Run Screener"
+                    pTooltip="Run Screener"
+                  ></button>
+                  <button 
+                    pButton 
+                    icon="pi pi-eye" 
+                    class="p-button-rounded p-button-sm p-button-info" 
+                    (click)="viewResults(screener)" 
+                    title="View Results"
+                    pTooltip="View Results"
+                  ></button>
+                  <button 
+                    pButton 
+                    icon="pi pi-pencil" 
+                    class="p-button-rounded p-button-sm p-button-warning" 
+                    (click)="editScreener(screener)" 
+                    title="Edit Screener"
+                    pTooltip="Edit Screener"
+                  ></button>
+                  <button 
+                    pButton 
+                    icon="pi pi-trash" 
+                    class="p-button-rounded p-button-sm p-button-danger" 
+                    (click)="deleteScreener(screener)" 
+                    title="Delete Screener"
+                    pTooltip="Delete Screener"
+                  ></button>
+                </div>
+              </td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="6">
+                <div class="empty-message">
+                  <i class="pi pi-search" style="font-size: 3rem; color: #ccc;"></i>
+                  <p>No screeners found.</p>
+                </div>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </p-tabpanel>
+
+      <!-- My Screeners Tab -->
+      <p-tabpanel [value]="'my'">
+        <p-table 
+          [value]="getCurrentScreeners()" 
+          styleClass="p-datatable-sm" 
+          [tableStyle]="{'min-width': '50rem'}"
+        >
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Name</th>
+              <th>Description</th>
+              <th>Visibility</th>
+              <th>Created</th>
+              <th>Updated</th>
+              <th>Actions</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-screener>
+            <tr>
+              <td>{{ screener.name }}</td>
+              <td>{{ screener.description || 'No description' }}</td>
+              <td>
+                <p-tag 
+                  [value]="screener.isPublic ? 'Public' : 'Private'" 
+                  [severity]="screener.isPublic ? 'success' : 'info'"
+                ></p-tag>
+              </td>
+              <td>{{ formatDate(screener.createdAt) }}</td>
+              <td>{{ formatDate(screener.updatedAt) }}</td>
+              <td>
+                <div class="screener-actions">
+                  <button 
+                    pButton 
+                    icon="pi pi-play" 
+                    class="p-button-rounded p-button-sm p-button-success" 
+                    (click)="runScreener(screener)" 
+                    title="Run Screener"
+                    pTooltip="Run Screener"
+                  ></button>
+                  <button 
+                    pButton 
+                    icon="pi pi-eye" 
+                    class="p-button-rounded p-button-sm p-button-info" 
+                    (click)="viewResults(screener)" 
+                    title="View Results"
+                    pTooltip="View Results"
+                  ></button>
+                  <button 
+                    pButton 
+                    icon="pi pi-pencil" 
+                    class="p-button-rounded p-button-sm p-button-warning" 
+                    (click)="editScreener(screener)" 
+                    title="Edit Screener"
+                    pTooltip="Edit Screener"
+                  ></button>
+                  <button 
+                    pButton 
+                    icon="pi pi-trash" 
+                    class="p-button-rounded p-button-sm p-button-danger" 
+                    (click)="deleteScreener(screener)" 
+                    title="Delete Screener"
+                    pTooltip="Delete Screener"
+                  ></button>
+                </div>
+              </td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="6">
+                <div class="empty-message">
+                  <i class="pi pi-folder-open" style="font-size: 3rem; color: #ccc;"></i>
+                  <p>No screeners created yet.</p>
+                  <button pButton label="Create Your First Screener" (click)="createScreener()" class="p-button-outlined"></button>
+                </div>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </p-tabpanel>
+
+      <!-- Public Screeners Tab -->
+      <p-tabpanel [value]="'public'">
+        <p-table 
+          [value]="getCurrentScreeners()" 
+          styleClass="p-datatable-sm" 
+          [tableStyle]="{'min-width': '50rem'}"
+        >
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Name</th>
+              <th>Description</th>
+              <th>Owner</th>
+              <th>Created</th>
+              <th>Actions</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-screener>
+            <tr>
+              <td>
+                <div class="screener-name">
+                  <span>{{ screener.name }}</span>
+                  <button 
+                    pButton 
+                    icon="pi pi-star" 
+                    [class]="isStarred(screener) ? 'p-button-rounded p-button-sm p-button-warning' : 'p-button-rounded p-button-sm p-button-outlined'"
+                    (click)="toggleStar(screener)" 
+                    [title]="isStarred(screener) ? 'Remove from starred' : 'Add to starred'"
+                    class="star-button"
+                  ></button>
+                </div>
+              </td>
+              <td>{{ screener.description || 'No description' }}</td>
+              <td>User {{ screener.ownerUserId }}</td>
+              <td>{{ formatDate(screener.createdAt) }}</td>
+              <td>
+                <div class="screener-actions">
+                  <button 
+                    pButton 
+                    icon="pi pi-play" 
+                    class="p-button-rounded p-button-sm p-button-success" 
+                    (click)="runScreener(screener)" 
+                    title="Run Screener"
+                    pTooltip="Run Screener"
+                  ></button>
+                  <button 
+                    pButton 
+                    icon="pi pi-eye" 
+                    class="p-button-rounded p-button-sm p-button-info" 
+                    (click)="viewResults(screener)" 
+                    title="View Results"
+                    pTooltip="View Results"
+                  ></button>
+                </div>
+              </td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="5">
+                <div class="empty-message">
+                  <i class="pi pi-globe" style="font-size: 3rem; color: #ccc;"></i>
+                  <p>No public screeners available.</p>
+                </div>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </p-tabpanel>
+
+      <!-- Starred Screeners Tab -->
+      <p-tabpanel [value]="'starred'">
+        <p-table 
+          [value]="getCurrentScreeners()" 
+          styleClass="p-datatable-sm" 
+          [tableStyle]="{'min-width': '50rem'}"
+        >
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Name</th>
+              <th>Description</th>
+              <th>Visibility</th>
+              <th>Created</th>
+              <th>Actions</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-screener>
+            <tr>
+              <td>
+                <div class="screener-name">
+                  <span>{{ screener.name }}</span>
+                  <button 
+                    pButton 
+                    icon="pi pi-star-fill" 
+                    class="p-button-rounded p-button-sm p-button-warning"
+                    (click)="toggleStar(screener)" 
+                    title="Remove from starred"
+                    pTooltip="Remove from starred"
+                  ></button>
+                </div>
+              </td>
+              <td>{{ screener.description || 'No description' }}</td>
+              <td>
+                <p-tag 
+                  [value]="screener.isPublic ? 'Public' : 'Private'" 
+                  [severity]="screener.isPublic ? 'success' : 'info'"
+                ></p-tag>
+              </td>
+              <td>{{ formatDate(screener.createdAt) }}</td>
+              <td>
+                <div class="screener-actions">
+                  <button 
+                    pButton 
+                    icon="pi pi-play" 
+                    class="p-button-rounded p-button-sm p-button-success" 
+                    (click)="runScreener(screener)" 
+                    title="Run Screener"
+                    pTooltip="Run Screener"
+                  ></button>
+                  <button 
+                    pButton 
+                    icon="pi pi-eye" 
+                    class="p-button-rounded p-button-sm p-button-info" 
+                    (click)="viewResults(screener)" 
+                    title="View Results"
+                    pTooltip="View Results"
+                  ></button>
+                </div>
+              </td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="5">
+                <div class="empty-message">
+                  <i class="pi pi-star" style="font-size: 3rem; color: #ccc;"></i>
+                  <p>No starred screeners yet.</p>
+                  <p>Star screeners to see them here.</p>
+                </div>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </p-tabpanel>
+    </p-tabs>
+  </div>
+
+  <!-- Create Screener Dialog -->
+  <p-dialog 
+    header="Create Screener" 
+    [(visible)]="showCreateDialog" 
+    [modal]="true" 
+    [style]="{width: '500px'}"
+    [closable]="true"
+  >
+    <div class="screener-form">
+      <div class="form-group">
+        <label for="name">Name *</label>
+        <input 
+          type="text" 
+          pInputText 
+          id="name"
+          [(ngModel)]="screenerForm.name"
+          placeholder="Enter screener name"
+          class="w-full"
+        />
+      </div>
+      
+      <div class="form-group">
+        <label for="description">Description</label>
+        <textarea 
+          id="description"
+          [(ngModel)]="screenerForm.description"
+          placeholder="Enter screener description"
+          rows="3"
+          class="w-full"
+        ></textarea>
+      </div>
+      
+      <div class="form-group">
+        <label for="defaultUniverse">Default Universe</label>
+        <input 
+          type="text" 
+          pInputText 
+          id="defaultUniverse"
+          [(ngModel)]="screenerForm.defaultUniverse"
+          placeholder="Enter default universe"
+          class="w-full"
+        />
+      </div>
+      
+      <div class="form-group">
+        <p-checkbox 
+          [(ngModel)]="screenerForm.isPublic"
+          [binary]="true"
+          label="Make this screener public"
+        ></p-checkbox>
+      </div>
+    </div>
+    
+    <ng-template pTemplate="footer">
+      <button pButton label="Cancel" icon="pi pi-times" (click)="cancelDialog()" class="p-button-text"></button>
+      <button pButton label="Create" icon="pi pi-check" (click)="saveScreener()" [disabled]="!screenerForm.name"></button>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Edit Screener Dialog -->
+  <p-dialog 
+    header="Edit Screener" 
+    [(visible)]="showEditDialog" 
+    [modal]="true" 
+    [style]="{width: '500px'}"
+    [closable]="true"
+  >
+    <div class="screener-form">
+      <div class="form-group">
+        <label for="editName">Name *</label>
+        <input 
+          type="text" 
+          pInputText 
+          id="editName"
+          [(ngModel)]="screenerForm.name"
+          placeholder="Enter screener name"
+          class="w-full"
+        />
+      </div>
+      
+      <div class="form-group">
+        <label for="editDescription">Description</label>
+        <textarea 
+          id="editDescription"
+          [(ngModel)]="screenerForm.description"
+          placeholder="Enter screener description"
+          rows="3"
+          class="w-full"
+        ></textarea>
+      </div>
+      
+      <div class="form-group">
+        <label for="editDefaultUniverse">Default Universe</label>
+        <input 
+          type="text" 
+          pInputText 
+          id="editDefaultUniverse"
+          [(ngModel)]="screenerForm.defaultUniverse"
+          placeholder="Enter default universe"
+          class="w-full"
+        />
+      </div>
+      
+      <div class="form-group">
+        <p-checkbox 
+          [(ngModel)]="screenerForm.isPublic"
+          [binary]="true"
+          label="Make this screener public"
+        ></p-checkbox>
+      </div>
+    </div>
+    
+    <ng-template pTemplate="footer">
+      <button pButton label="Cancel" icon="pi pi-times" (click)="cancelDialog()" class="p-button-text"></button>
+      <button pButton label="Update" icon="pi pi-check" (click)="saveScreener()" [disabled]="!screenerForm.name"></button>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Toast Messages -->
+  <p-toast></p-toast>
+  
+  <!-- Confirmation Dialog -->
+  <p-confirmDialog></p-confirmDialog>
 </div>

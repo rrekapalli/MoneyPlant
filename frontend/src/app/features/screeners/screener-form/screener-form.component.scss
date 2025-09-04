@@ -1,0 +1,150 @@
+.screener-form-container {
+  padding: 2rem;
+  max-width: 800px;
+  margin: 0 auto;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+
+  .form-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+
+    .back-button {
+      margin-top: 0.5rem;
+    }
+
+    h1 {
+      margin: 0;
+      color: #2c3e50;
+      font-size: 2rem;
+      font-weight: 300;
+    }
+  }
+
+  .form-content {
+    flex: 1;
+
+    .form-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+
+        label {
+          font-weight: 600;
+          color: #2c3e50;
+          font-size: 0.9rem;
+        }
+
+        input, textarea {
+          width: 100%;
+          padding: 0.75rem;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          font-size: 1rem;
+          transition: border-color 0.2s;
+
+          &:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+          }
+
+          &.ng-invalid.ng-touched {
+            border-color: #e74c3c;
+          }
+        }
+
+        textarea {
+          resize: vertical;
+          min-height: 100px;
+        }
+
+        &.checkbox-group {
+          .help-text {
+            color: #7f8c8d;
+            font-size: 0.8rem;
+            margin-top: 0.25rem;
+          }
+        }
+      }
+    }
+
+    .form-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 1rem;
+      margin-top: 2rem;
+      padding-top: 2rem;
+      border-top: 1px solid #f0f0f0;
+
+      button {
+        min-width: 120px;
+      }
+    }
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .screener-form-container {
+    padding: 1rem;
+
+    .form-header {
+      h1 {
+        font-size: 1.5rem;
+      }
+    }
+
+    .form-content {
+      .form-actions {
+        flex-direction: column;
+        align-items: stretch;
+
+        button {
+          min-width: auto;
+        }
+      }
+    }
+  }
+}
+
+// PrimeNG customizations
+:host ::ng-deep {
+  .p-card {
+    .p-card-body {
+      padding: 2rem;
+    }
+  }
+
+  .p-checkbox {
+    .p-checkbox-label {
+      font-weight: 500;
+      color: #2c3e50;
+    }
+  }
+
+  .p-button {
+    &.p-button-loading {
+      .p-button-icon {
+        animation: spin 1s linear infinite;
+      }
+    }
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
