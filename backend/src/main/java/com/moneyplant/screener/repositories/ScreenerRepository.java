@@ -20,10 +20,15 @@ public interface ScreenerRepository extends JpaRepository<Screener, Long> {
     /**
      * Finds screeners by owner or public with search.
      */
-    @Query("SELECT s FROM Screener s WHERE " +
-           "(s.ownerUserId = :userId OR s.isPublic = true) AND " +
-           "(:search IS NULL OR LOWER(s.name) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-           "LOWER(s.description) LIKE LOWER(CONCAT('%', :search, '%')))")
+    @Query(value = "SELECT s.* FROM screener s WHERE " +
+           "(s.owner_user_id = :userId OR s.is_public = true) AND " +
+           "(:search IS NULL OR LOWER(CAST(s.name AS TEXT)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(CAST(s.description AS TEXT)) LIKE LOWER(CONCAT('%', :search, '%')))", 
+           countQuery = "SELECT COUNT(s.*) FROM screener s WHERE " +
+           "(s.owner_user_id = :userId OR s.is_public = true) AND " +
+           "(:search IS NULL OR LOWER(CAST(s.name AS TEXT)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(CAST(s.description AS TEXT)) LIKE LOWER(CONCAT('%', :search, '%')))", 
+           nativeQuery = true)
     Page<Screener> findByOwnerUserIdOrIsPublicTrueWithSearch(
             @Param("userId") Long userId, 
             @Param("search") String search, 
@@ -47,8 +52,8 @@ public interface ScreenerRepository extends JpaRepository<Screener, Long> {
     /**
      * Finds screener by ID (public or owned by user).
      */
-    @Query("SELECT s FROM Screener s WHERE s.screenerId = :screenerId AND " +
-           "(s.ownerUserId = :userId OR s.isPublic = true)")
+    @Query(value = "SELECT s.* FROM screener s WHERE s.screener_id = :screenerId AND " +
+           "(s.owner_user_id = :userId OR s.is_public = true)", nativeQuery = true)
     Optional<Screener> findByIdAndOwnerOrPublic(@Param("screenerId") Long screenerId, 
                                                @Param("userId") Long userId);
 
@@ -70,9 +75,9 @@ public interface ScreenerRepository extends JpaRepository<Screener, Long> {
     /**
      * Finds screeners starred by user.
      */
-    @Query("SELECT s FROM Screener s " +
-           "JOIN ScreenerStar ss ON s.screenerId = ss.screener.screenerId " +
-           "WHERE ss.userId = :userId " +
-           "ORDER BY ss.createdAt DESC")
+    @Query(value = "SELECT s.* FROM screener s " +
+           "JOIN screener_star ss ON s.screener_id = ss.screener_id " +
+           "WHERE ss.user_id = :userId " +
+           "ORDER BY ss.created_at DESC", nativeQuery = true)
     List<Screener> findStarredByUserId(@Param("userId") Long userId);
 }

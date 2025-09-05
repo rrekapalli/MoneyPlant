@@ -35,12 +35,12 @@ public class ScreenerStarService {
         Screener screener = screenerRepository.findByIdAndOwnerOrPublic(screenerId, currentUserId)
                 .orElseThrow(() -> new RuntimeException("Screener not found: " + screenerId));
         
-        Optional<ScreenerStar> existingStar = screenerStarRepository.findByScreenerScreenerIdAndUserId(screenerId, currentUserId);
+        Optional<ScreenerStar> existingStar = screenerStarRepository.findByScreenerIdAndUserId(screenerId, currentUserId);
         
         if (starred && existingStar.isEmpty()) {
             // Add star
             ScreenerStar star = ScreenerStar.builder()
-                    .screener(screener)
+                    .screenerId(screenerId)
                     .userId(currentUserId)
                     .build();
             screenerStarRepository.save(star);
@@ -62,7 +62,7 @@ public class ScreenerStarService {
     @Transactional(readOnly = true)
     public boolean isStarred(Long screenerId) {
         Long currentUserId = currentUserService.getCurrentUserId();
-        return screenerStarRepository.existsByScreenerScreenerIdAndUserId(screenerId, currentUserId);
+        return screenerStarRepository.existsByScreenerIdAndUserId(screenerId, currentUserId);
     }
 
     /**
@@ -76,7 +76,7 @@ public class ScreenerStarService {
         Screener screener = screenerRepository.findByScreenerIdAndOwnerUserId(screenerId, currentUserId)
                 .orElseThrow(() -> new RuntimeException("Screener not found or access denied: " + screenerId));
         
-        List<ScreenerStar> stars = screenerStarRepository.findByScreenerScreenerIdOrderByCreatedAtDesc(screenerId);
+        List<ScreenerStar> stars = screenerStarRepository.findByScreenerIdOrderByCreatedAtDesc(screenerId);
         
         return stars.stream()
                 .map(ScreenerStar::getUserId)
@@ -94,7 +94,8 @@ public class ScreenerStarService {
         List<ScreenerStar> stars = screenerStarRepository.findByUserIdOrderByCreatedAtDesc(currentUserId);
         
         return stars.stream()
-                .map(ScreenerStar::getScreener)
+                .map(star -> screenerRepository.findById(star.getScreenerId()).orElse(null))
+                .filter(screener -> screener != null)
                 .toList();
     }
 
@@ -103,7 +104,7 @@ public class ScreenerStarService {
      */
     @Transactional(readOnly = true)
     public long getStarCount(Long screenerId) {
-        return screenerStarRepository.countByScreenerScreenerId(screenerId);
+        return screenerStarRepository.countByScreenerId(screenerId);
     }
 
     /**

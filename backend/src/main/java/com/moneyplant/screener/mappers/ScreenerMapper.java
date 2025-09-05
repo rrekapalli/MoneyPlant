@@ -23,7 +23,6 @@ public interface ScreenerMapper {
     @Mapping(target = "schedules", ignore = true)
     @Mapping(target = "alerts", ignore = true)
     @Mapping(target = "runs", ignore = true)
-    @Mapping(target = "stars", ignore = true)
     @Mapping(target = "savedViews", ignore = true)
     Screener toEntity(ScreenerCreateReq request);
 
@@ -41,7 +40,6 @@ public interface ScreenerMapper {
     @Mapping(target = "schedules", ignore = true)
     @Mapping(target = "alerts", ignore = true)
     @Mapping(target = "runs", ignore = true)
-    @Mapping(target = "stars", ignore = true)
     @Mapping(target = "savedViews", ignore = true)
     void updateEntity(ScreenerCreateReq request, @MappingTarget Screener entity);
 }

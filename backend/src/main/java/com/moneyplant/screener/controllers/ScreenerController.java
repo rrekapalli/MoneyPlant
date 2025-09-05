@@ -3,6 +3,7 @@ package com.moneyplant.screener.controllers;
 import com.moneyplant.screener.dtos.PageResp;
 import com.moneyplant.screener.dtos.ScreenerCreateReq;
 import com.moneyplant.screener.dtos.ScreenerResp;
+import com.moneyplant.screener.repositories.ScreenerRepository;
 import com.moneyplant.screener.services.ScreenerService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -29,6 +30,7 @@ import java.util.List;
 public class ScreenerController {
 
     private final ScreenerService screenerService;
+    private final ScreenerRepository screenerRepository;
 
     /**
      * Creates a new screener.
@@ -116,8 +118,13 @@ public class ScreenerController {
             @Parameter(description = "Page size") @RequestParam(defaultValue = "25") int size,
             @Parameter(description = "Sort criteria") @RequestParam(required = false) String sort) {
         log.info("Listing screeners - q: {}, page: {}, size: {}, sort: {}", q, page, size, sort);
-        PageResp<ScreenerResp> response = screenerService.listScreeners(q, page, size, sort);
-        return ResponseEntity.ok(response);
+        try {
+            PageResp<ScreenerResp> response = screenerService.listScreeners(q, page, size, sort);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Error in listScreeners controller: ", e);
+            return ResponseEntity.status(500).build();
+        }
     }
 
     /**
@@ -181,5 +188,22 @@ public class ScreenerController {
         log.info("Getting last results for screener: {}", id);
         // This would be implemented to return last results
         return ResponseEntity.ok().build();
+    }
+
+    /**
+     * Test endpoint to check basic repository operations.
+     */
+    @GetMapping("/test")
+    @Operation(summary = "Test endpoint", description = "Test basic repository operations")
+    public ResponseEntity<String> testEndpoint() {
+        log.info("Testing basic repository operations");
+        try {
+            long count = screenerRepository.count();
+            log.info("Total screeners count: {}", count);
+            return ResponseEntity.ok("Test successful. Total screeners: " + count);
+        } catch (Exception e) {
+            log.error("Error in test endpoint: ", e);
+            return ResponseEntity.status(500).body("Test failed: " + e.getMessage());
+        }
     }
 }

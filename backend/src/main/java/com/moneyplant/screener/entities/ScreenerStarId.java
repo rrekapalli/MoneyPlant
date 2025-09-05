@@ -14,6 +14,6 @@ import java.io.Serializable;
 @AllArgsConstructor
 public class ScreenerStarId implements Serializable {
 
-    private Long screener;
+    private Long screenerId;
     private Long userId;
 }

@@ -102,34 +102,44 @@ public class ScreenerService {
     public PageResp<ScreenerResp> listScreeners(String search, int page, int size, String sort) {
         log.info("Listing screeners - search: {}, page: {}, size: {}", search, page, size);
         
-        Long currentUserId = currentUserService.getCurrentUserId();
-        
-        Sort sortObj = Sort.by(Sort.Direction.DESC, "createdAt");
-        if (sort != null && !sort.isEmpty()) {
-            String[] sortParts = sort.split(",");
-            if (sortParts.length == 2) {
-                Sort.Direction direction = "desc".equalsIgnoreCase(sortParts[1]) ? 
-                    Sort.Direction.DESC : Sort.Direction.ASC;
-                sortObj = Sort.by(direction, sortParts[0]);
+        try {
+            Long currentUserId = currentUserService.getCurrentUserId();
+            log.info("Current user ID: {}", currentUserId);
+            
+            Sort sortObj = Sort.by(Sort.Direction.DESC, "createdAt");
+            if (sort != null && !sort.isEmpty()) {
+                String[] sortParts = sort.split(",");
+                if (sortParts.length == 2) {
+                    Sort.Direction direction = "desc".equalsIgnoreCase(sortParts[1]) ? 
+                        Sort.Direction.DESC : Sort.Direction.ASC;
+                    sortObj = Sort.by(direction, sortParts[0]);
+                }
             }
+            
+            Pageable pageable = PageRequest.of(page, size, sortObj);
+            log.info("Executing query with userId: {}, search: {}", currentUserId, search);
+            
+            Page<Screener> screeners = screenerRepository.findByOwnerUserIdOrIsPublicTrueWithSearch(
+                    currentUserId, search, pageable);
+            
+            log.info("Query executed successfully, found {} screeners", screeners.getTotalElements());
+            
+            List<ScreenerResp> content = screeners.getContent().stream()
+                    .map(screenerMapper::toResponse)
+                    .toList();
+            
+            return PageResp.<ScreenerResp>builder()
+                    .content(content)
+                    .page(screeners.getNumber())
+                    .size(screeners.getSize())
+                    .totalElements(screeners.getTotalElements())
+                    .totalPages(screeners.getTotalPages())
+                    .sort(sort)
+                    .build();
+        } catch (Exception e) {
+            log.error("Error in listScreeners: ", e);
+            throw e;
         }
-        
-        Pageable pageable = PageRequest.of(page, size, sortObj);
-        Page<Screener> screeners = screenerRepository.findByOwnerUserIdOrIsPublicTrueWithSearch(
-                currentUserId, search, pageable);
-        
-        List<ScreenerResp> content = screeners.getContent().stream()
-                .map(screenerMapper::toResponse)
-                .toList();
-        
-        return PageResp.<ScreenerResp>builder()
-                .content(content)
-                .page(screeners.getNumber())
-                .size(screeners.getSize())
-                .totalElements(screeners.getTotalElements())
-                .totalPages(screeners.getTotalPages())
-                .sort(sort)
-                .build();
     }
 
     /**

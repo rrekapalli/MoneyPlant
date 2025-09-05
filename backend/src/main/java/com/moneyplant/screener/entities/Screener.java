@@ -1,6 +1,5 @@
 package com.moneyplant.screener.entities;
 
-import com.moneyplant.core.entities.BaseAuditEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -33,10 +32,10 @@ public class Screener {
     @Column(name = "owner_user_id", nullable = false)
     private Long ownerUserId;
 
-    @Column(name = "name", nullable = false)
+    @Column(name = "name", nullable = false, columnDefinition = "text")
     private String name;
 
-    @Column(name = "description")
+    @Column(name = "description", columnDefinition = "text")
     private String description;
 
     @Column(name = "is_public", nullable = false)
@@ -63,9 +62,6 @@ public class Screener {
     @Builder.Default
     private List<ScreenerRun> runs = new ArrayList<>();
 
-    @OneToMany(mappedBy = "screener", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @Builder.Default
-    private List<ScreenerStar> stars = new ArrayList<>();
 
     @OneToMany(mappedBy = "screener", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @Builder.Default

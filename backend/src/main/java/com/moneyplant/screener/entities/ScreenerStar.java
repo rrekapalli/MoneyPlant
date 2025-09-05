@@ -1,6 +1,5 @@
 package com.moneyplant.screener.entities;
 
-import com.moneyplant.core.entities.BaseAuditEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -26,9 +25,8 @@ import java.time.OffsetDateTime;
 public class ScreenerStar {
 
     @Id
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "screener_id", nullable = false)
-    private Screener screener;
+    @Column(name = "screener_id", nullable = false)
+    private Long screenerId;
 
     @Id
     @Column(name = "user_id", nullable = false)

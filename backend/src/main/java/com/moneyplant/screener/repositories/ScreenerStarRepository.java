@@ -19,7 +19,7 @@ public interface ScreenerStarRepository extends JpaRepository<ScreenerStar, Scre
     /**
      * Finds stars by screener ID.
      */
-    List<ScreenerStar> findByScreenerScreenerIdOrderByCreatedAtDesc(Long screenerId);
+    List<ScreenerStar> findByScreenerIdOrderByCreatedAtDesc(Long screenerId);
 
     /**
      * Finds stars by user ID.
@@ -29,17 +29,17 @@ public interface ScreenerStarRepository extends JpaRepository<ScreenerStar, Scre
     /**
      * Finds star by screener ID and user ID.
      */
-    Optional<ScreenerStar> findByScreenerScreenerIdAndUserId(Long screenerId, Long userId);
+    Optional<ScreenerStar> findByScreenerIdAndUserId(Long screenerId, Long userId);
 
     /**
      * Checks if user has starred screener.
      */
-    boolean existsByScreenerScreenerIdAndUserId(Long screenerId, Long userId);
+    boolean existsByScreenerIdAndUserId(Long screenerId, Long userId);
 
     /**
      * Counts stars by screener ID.
      */
-    long countByScreenerScreenerId(Long screenerId);
+    long countByScreenerId(Long screenerId);
 
     /**
      * Counts stars by user ID.
@@ -49,7 +49,7 @@ public interface ScreenerStarRepository extends JpaRepository<ScreenerStar, Scre
     /**
      * Finds starred screeners by user ID.
      */
-    @Query("SELECT ss.screener FROM ScreenerStar ss WHERE ss.userId = :userId " +
+    @Query("SELECT ss FROM ScreenerStar ss WHERE ss.userId = :userId " +
            "ORDER BY ss.createdAt DESC")
     List<ScreenerStar> findStarredScreenersByUserId(@Param("userId") Long userId);
 }
