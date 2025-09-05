@@ -1,0 +1,85 @@
+<div class="screener-form-container">
+  <div class="form-header">
+    <button pButton icon="pi pi-arrow-left" (click)="cancel()" class="p-button-text back-button"></button>
+    <h1>{{ isEdit ? 'Edit Screener' : 'Create Screener' }}</h1>
+  </div>
+
+  <div class="form-content">
+    <p-card>
+      <form (ngSubmit)="saveScreener()" #form="ngForm">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="name">Name *</label>
+            <input 
+              type="text" 
+              id="name"
+              pInputText 
+              [(ngModel)]="screenerForm.name"
+              name="name"
+              placeholder="Enter screener name"
+              required
+              class="w-full"
+            />
+          </div>
+          
+          <div class="form-group">
+            <label for="description">Description</label>
+            <textarea 
+              id="description"
+              [(ngModel)]="screenerForm.description"
+              name="description"
+              placeholder="Enter screener description"
+              rows="3"
+              class="w-full"
+            ></textarea>
+          </div>
+          
+          <div class="form-group">
+            <label for="defaultUniverse">Default Universe</label>
+            <input 
+              type="text" 
+              id="defaultUniverse"
+              pInputText 
+              [(ngModel)]="screenerForm.defaultUniverse"
+              name="defaultUniverse"
+              placeholder="Enter default universe (e.g., NSE, BSE)"
+              class="w-full"
+            />
+          </div>
+          
+          <div class="form-group checkbox-group">
+            <p-checkbox 
+              [(ngModel)]="screenerForm.isPublic"
+              name="isPublic"
+              [binary]="true"
+              label="Make this screener public"
+            ></p-checkbox>
+            <small class="help-text">Public screeners can be viewed and used by other users</small>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button 
+            pButton 
+            type="button"
+            label="Cancel" 
+            icon="pi pi-times" 
+            (click)="cancel()" 
+            class="p-button-outlined"
+          ></button>
+          <button 
+            pButton 
+            type="submit"
+            [label]="isEdit ? 'Update Screener' : 'Create Screener'" 
+            icon="pi pi-check" 
+            [disabled]="!form.valid || loading"
+            [loading]="loading"
+          ></button>
+        </div>
+      </form>
+    </p-card>
+  </div>
+
+  <!-- Toast Messages -->
+  <p-toast></p-toast>
+</div>

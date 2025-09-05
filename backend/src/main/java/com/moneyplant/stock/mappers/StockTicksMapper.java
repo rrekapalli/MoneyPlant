@@ -68,7 +68,7 @@ public class StockTicksMapper {
         stockData.setClose(stockTick.getClose() != null ? stockTick.getClose() : null);
         stockData.setHigh(stockTick.getHigh() != null ? stockTick.getHigh() : null);
         stockData.setLow(stockTick.getLow() != null ? stockTick.getLow() : null);
-        stockData.setVolume(stockTick.getVolume() != null ? stockTick.getVolume() : null);
+        stockData.setVolume(stockTick.getVolume() != null ? stockTick.getVolume().floatValue() : null);
 
         return stockData;
     }

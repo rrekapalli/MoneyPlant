@@ -1,44 +1,44 @@
 spring:
-
-
+  application:
+    name: moneyplant-app-test
   datasource:
-    url: jdbc:h2:mem:testdb
-    username: sa
-    password: 
-    driver-class-name: org.h2.Driver
-
+    url: jdbc:postgresql://localhost:5432/moneyplant_test
+    username: test
+    password: test
+    driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
       ddl-auto: create-drop
-    show-sql: false
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  sql:
+    init:
+      mode: always
+      continue-on-error: true
 
-# Test-specific configurations
-spark:
-  master: local[1]
-  driver:
-    memory: 1g
-  executor:
-    memory: 1g
+# JWT Configuration for testing
+jwt:
+  secret: test-secret-key-for-testing-only-make-it-long-and-secure
+  expiration: 3600000
+  refresh-expiration: 86400000
 
-trino:
-  url: jdbc:trino://localhost:8080
-  user: test
-  catalog: test
-  schema: test
-
-hudi:
-  base:
-    path: /tmp/test/hudi
-  table:
-    name: test_market_data
-
-iceberg:
-  warehouse:
-    path: /tmp/test/iceberg
-  table:
-    name: test_market_data
-
+# Logging
 logging:
   level:
-    com.moneyplant.trading: DEBUG
-    root: WARN
+    com.moneyplant.screener: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.web: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+# Test configuration
+test:
+  containers:
+    postgres:
+      image: postgres:15
+      database: moneyplant_test
+      username: test
+      password: test

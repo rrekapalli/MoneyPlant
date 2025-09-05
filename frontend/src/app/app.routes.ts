@@ -34,18 +34,32 @@ export const routes: Routes = [
         canActivate: [featureFlagGuard('portfolios')]
       },
       {
-        path: 'scanners',
-        loadComponent: () => import('./features/scanners/scanners.component')
-          .then(m => m.ScannersComponent),
-        title: 'Stock Scanners - MoneyPlant',
-        canActivate: [featureFlagGuard('scanners')]
+        path: 'screeners',
+        loadComponent: () => import('./features/screeners/screeners.component')
+          .then(m => m.ScreenersComponent),
+        title: 'Stock Screeners - MoneyPlant',
+        canActivate: [featureFlagGuard('screeners')]
       },
       {
-        path: 'scanners/:id',
-        loadComponent: () => import('./features/scanners/scanners.component')
-          .then(m => m.ScannersComponent),
-        title: 'Scanner Details - MoneyPlant',
-        canActivate: [featureFlagGuard('scanners')]
+        path: 'screeners/:id',
+        loadComponent: () => import('./features/screeners/screener-detail/screener-detail.component')
+          .then(m => m.ScreenerDetailComponent),
+        title: 'Screener Details - MoneyPlant',
+        canActivate: [featureFlagGuard('screeners')]
+      },
+      {
+        path: 'screeners/:id/edit',
+        loadComponent: () => import('./features/screeners/screener-form/screener-form.component')
+          .then(m => m.ScreenerFormComponent),
+        title: 'Edit Screener - MoneyPlant',
+        canActivate: [featureFlagGuard('screeners')]
+      },
+      {
+        path: 'screeners/new',
+        loadComponent: () => import('./features/screeners/screener-form/screener-form.component')
+          .then(m => m.ScreenerFormComponent),
+        title: 'Create Screener - MoneyPlant',
+        canActivate: [featureFlagGuard('screeners')]
       },
       {
         path: 'strategies',

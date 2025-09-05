@@ -801,12 +801,12 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
       .setFilterColumn('symbol')
       .setXAxisName('Trading Date')
       .setYAxisName('Price (₹)')
-      .enableDataZoom(70, 100)  // Show last 30% by default with zoom functionality
+      // Data zoom removed - using time range filters instead
       .setBarWidth('60%')  // Set candlestick bar width for better visibility
       .enableBrush()  // Enable brush selection for technical analysis
       .setLargeMode(100)  // Enable large mode for datasets with 100+ points
       .setTooltipType('axis')  // Enable crosshair tooltip for better analysis
-      .setEvents((widget, chart) => {
+      .setEvents((widget: any, chart: any) => {
         if (chart) {
           chart.off('click');
           chart.on('click', (params: any) => {

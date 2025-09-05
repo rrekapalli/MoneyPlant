@@ -9,7 +9,7 @@ This module serves as the core engine for the MoneyPlant trading platform, provi
 - **Backtesting Engine**: Comprehensive strategy backtesting with performance metrics
 - **Data Ingestion**: Multi-source market data ingestion (Yahoo Finance, CSV, Excel, etc.)
 - **Query Engine**: High-performance data querying and analytics
-- **Market Scanner**: Real-time market scanning for trading opportunities
+- **Market Screener**: Real-time market screening for trading opportunities
 - **Storage Engine**: Efficient data storage with data lake capabilities
 - **Strategy Engine**: Strategy management and execution
 
@@ -22,7 +22,7 @@ engines/
 ├── backtest/          # Strategy backtesting services
 ├── ingestion/         # Market data ingestion services
 ├── query/            # Data querying and analytics services
-├── scanner/          # Market scanning services
+├── screener/          # Market screening services
 ├── storage/          # Data storage and management services
 ├── strategy/         # Strategy management services
 └── config/           # Configuration classes
@@ -64,8 +64,8 @@ engines/
 - Custom SQL execution
 - Query optimization and caching
 
-### Market Scanner
-- Real-time market scanning
+### Market Screener
+- Real-time market screening
 - Technical pattern recognition
 - Support/resistance level detection
 - Volume anomaly detection
@@ -185,7 +185,7 @@ src/
 │   │       ├── backtest/
 │   │       ├── ingestion/
 │   │       ├── query/
-│   │       ├── scanner/
+│   │       ├── screener/
 │   │       ├── storage/
 │   │       ├── strategy/
 │   │       └── config/

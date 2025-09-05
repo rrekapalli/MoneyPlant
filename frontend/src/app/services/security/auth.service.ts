@@ -111,7 +111,8 @@ export class AuthService {
       const existingToken = this.getToken();
       
       if (existingToken && !this.isTokenExpired()) {
-        // Validate existing token with backend
+        // Only validate token if it appears to be valid locally
+        // This prevents unnecessary 401 errors on startup
         this.validateToken(existingToken).subscribe({
           next: (user) => {
             this.currentUserSubject.next(user);
@@ -123,29 +124,21 @@ export class AuthService {
             this.logout();
           }
         });
-      } else if (existingToken && this.isTokenExpired()) {
-        // Token is expired, try to refresh it
-        this.refreshToken().subscribe({
-          next: (response) => {
-            if (response.success && response.token) {
-              this.currentUserSubject.next(response.user);
-              this.isAuthenticatedSubject.next(true);
-              this.startTokenRefreshTimer();
-            } else {
-              this.logout();
-            }
-          },
-          error: (error) => {
-            console.error('AuthService - Token refresh error:', error);
-            this.logout();
-          }
-        });
       } else {
-        // No token or token is invalid, ensure user is marked as not authenticated
-        this.currentUserSubject.next(null);
-        this.isAuthenticatedSubject.next(false);
+        // No token, expired token, or invalid token - clear authentication state
+        this.clearAuthState();
       }
     }
+  }
+
+  private clearAuthState(): void {
+    // Clear any invalid tokens from storage
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('refresh_token');
+    
+    // Set user as not authenticated
+    this.currentUserSubject.next(null);
+    this.isAuthenticatedSubject.next(false);
   }
 
   private validateToken(token: string): Observable<AuthUser> {

@@ -122,9 +122,6 @@ public class IndicesController {
         } catch (IllegalArgumentException e) {
             log.error("Invalid request parameter for indices: {}", e.getMessage());
             throw new ServiceException("Invalid index name: " + indexName, e);
-        } catch (ResourceNotFoundException e) {
-            log.error("Index or historical data not found: {}", indexName);
-            throw e;
         } catch (Exception e) {
             log.error("Error retrieving previous day's indices data for index {}: {}", indexName, e.getMessage(), e);
             throw new ServiceException("Failed to retrieve previous day's indices data for index: " + indexName, e);
@@ -187,4 +184,5 @@ public class IndicesController {
             throw new ServiceException("Failed to retrieve available indices", e);
         }
     }
+
 }

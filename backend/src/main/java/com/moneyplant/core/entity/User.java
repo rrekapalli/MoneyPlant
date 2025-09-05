@@ -50,6 +50,7 @@ public class User {
     private String providerUserId;
 
     @Column(name = "is_enabled", nullable = false)
+    @Builder.Default
     private Boolean isEnabled = true;
 
     @Column(name = "last_login")

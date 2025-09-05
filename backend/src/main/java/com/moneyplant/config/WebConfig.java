@@ -12,6 +12,7 @@ import org.springframework.web.servlet.config.annotation.ContentNegotiationConfi
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.resource.PathResourceResolver;
+import org.springframework.core.Ordered;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -79,7 +80,16 @@ public class WebConfig implements WebMvcConfigurer {
         final String finalIndexPath = indexPath;
         final boolean finalIsDevelopment = isDevelopment;
 
-        registry.addResourceHandler("/**")
+        // Handle static resources (excluding API paths)
+        registry.addResourceHandler("/static/**", "/assets/**", "/*.js", "/*.css", "/*.html", "/*.ico", "/*.png", "/*.jpg", "/*.jpeg", "/*.gif", "/*.svg", "/*.woff", "/*.woff2", "/*.ttf", "/*.eot")
+                .addResourceLocations(resourceLocation)
+                .resourceChain(true);
+
+        // Handle SPA routing - only catch specific frontend routes, not API requests
+        // This approach avoids interfering with API endpoints
+        registry.addResourceHandler("/", "/dashboard/**", "/holdings/**", "/indices/**", "/market/**", 
+                                   "/portfolios/**", "/positions/**", "/screeners/**", "/strategies/**", 
+                                   "/watchlists/**", "/login/**", "/not-found/**")
                 .addResourceLocations(resourceLocation)
                 .resourceChain(true)
                 .addResolver(new PathResourceResolver() {

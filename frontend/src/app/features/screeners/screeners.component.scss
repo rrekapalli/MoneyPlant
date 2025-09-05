@@ -1,0 +1,279 @@
+.screeners-container {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+
+    .header-left {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      flex: 1;
+
+      h1 {
+        margin: 0;
+        color: #2c3e50;
+        font-size: 2.5rem;
+        font-weight: 300;
+      }
+
+      .search-container {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        max-width: 400px;
+
+        .search-input {
+          flex: 1;
+          min-width: 200px;
+        }
+      }
+    }
+
+    .create-button {
+      height: fit-content;
+    }
+  }
+
+  .error-message {
+    margin-bottom: 1rem;
+  }
+
+  .content {
+    flex: 1;
+    overflow-y: auto;
+
+    .loading-card {
+      text-align: center;
+      padding: 3rem;
+
+      .loading-message {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+
+        i {
+          color: #3498db;
+        }
+
+        p {
+          margin: 0;
+          color: #7f8c8d;
+          font-size: 1.1rem;
+        }
+      }
+    }
+
+    .screener-actions {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .screener-name {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+
+      .star-button {
+        margin-left: 0.5rem;
+      }
+    }
+
+    .empty-message {
+      text-align: center;
+      padding: 3rem;
+      color: #7f8c8d;
+
+      i {
+        margin-bottom: 1rem;
+        display: block;
+      }
+
+      p {
+        margin: 0 0 1rem 0;
+        font-size: 1.1rem;
+      }
+
+      button {
+        margin-top: 1rem;
+      }
+    }
+  }
+
+  .screener-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+
+      label {
+        font-weight: 600;
+        color: #2c3e50;
+        font-size: 0.9rem;
+      }
+
+      input, textarea {
+        width: 100%;
+      }
+
+      p-checkbox {
+        margin-top: 0.5rem;
+      }
+    }
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .screeners-container {
+    padding: 1rem;
+
+    .header {
+      flex-direction: column;
+      align-items: stretch;
+
+      .header-left {
+        .search-container {
+          max-width: none;
+        }
+      }
+    }
+
+    .content {
+      .screener-actions {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .screener-name {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+
+        .star-button {
+          margin-left: 0;
+        }
+      }
+    }
+  }
+}
+
+// PrimeNG table customizations
+:host ::ng-deep {
+  .p-datatable {
+    .p-datatable-header {
+      background: #f8f9fa;
+      border-bottom: 1px solid #dee2e6;
+    }
+
+    .p-datatable-tbody > tr {
+      transition: background-color 0.2s;
+
+      &:hover {
+        background-color: #f8f9fa;
+      }
+    }
+
+    .p-paginator {
+      background: #f8f9fa;
+      border-top: 1px solid #dee2e6;
+    }
+
+    .p-datatable-thead > tr > th {
+      padding: 0.75rem 1rem;
+      font-weight: 600;
+      color: #2c3e50;
+    }
+
+    .p-datatable-tbody > tr > td {
+      padding: 0.75rem 1rem;
+    }
+  }
+
+  .p-tabs {
+    .p-tablist {
+      border-bottom: 1px solid #dee2e6;
+    }
+
+    .p-tab {
+      padding: 1rem 1.5rem;
+      transition: all 0.2s;
+
+      &:hover {
+        background-color: #f8f9fa;
+      }
+
+      &.p-tab-selected {
+        background-color: #e3f2fd;
+        color: #1976d2;
+      }
+    }
+
+    .p-tabpanel {
+      padding: 1rem 0;
+    }
+  }
+
+  .p-dialog {
+    .p-dialog-header {
+      background: #f8f9fa;
+      border-bottom: 1px solid #dee2e6;
+    }
+
+    .p-dialog-content {
+      padding: 1.5rem;
+    }
+
+    .p-dialog-footer {
+      background: #f8f9fa;
+      border-top: 1px solid #dee2e6;
+      padding: 1rem 1.5rem;
+    }
+  }
+
+  .p-button {
+    &.p-button-sm {
+      padding: 0.5rem;
+      font-size: 0.875rem;
+    }
+
+    &.p-button-rounded {
+      border-radius: 50%;
+      width: 2.5rem;
+      height: 2.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  }
+
+  .p-tag {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+  }
+
+  .p-tooltip {
+    font-size: 0.875rem;
+  }
+
+  .p-message {
+    margin-bottom: 1rem;
+  }
+}

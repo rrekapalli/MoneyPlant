@@ -20,12 +20,26 @@ public class CustomUserDetailsService implements UserDetailsService {
     private final UserRepository userRepository;
 
     @Override
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        log.info("CustomUserDetailsService - loadUserByUsername called with username: {}", username);
+        
+        // Handle both email and user ID cases
+        User user;
+        if (username.matches("\\d+")) {
+            // If username is a number (user ID), find by ID
+            Long userId = Long.parseLong(username);
+            user = userRepository.findById(userId)
+                    .orElseThrow(() -> new UsernameNotFoundException("User not found with ID: " + userId));
+        } else {
+            // If username is an email, find by email
+            user = userRepository.findByEmail(username)
+                    .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + username));
+        }
 
-        return org.springframework.security.core.userdetails.User.builder()
-                .username(user.getEmail())
+        log.info("CustomUserDetailsService - Found user: id={}, email={}", user.getId(), user.getEmail());
+
+        UserDetails userDetails = org.springframework.security.core.userdetails.User.builder()
+                .username(user.getEmail()) // Always use email as username
                 .password("") // OAuth2 users don't have passwords
                 .authorities(Collections.singleton(new SimpleGrantedAuthority("ROLE_USER")))
                 .accountExpired(false)
@@ -33,5 +47,8 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .credentialsExpired(false)
                 .disabled(!user.getIsEnabled())
                 .build();
+                
+        log.info("CustomUserDetailsService - Created UserDetails with username: {}", userDetails.getUsername());
+        return userDetails;
     }
 } 

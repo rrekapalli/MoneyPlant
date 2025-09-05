@@ -40,6 +40,7 @@ spring:
       # Connection validation settings
       validation-timeout: 5000
       leak-detection-threshold: 60000
+      auto-commit: false
 
 
   jpa:
@@ -58,6 +59,7 @@ spring:
         
         # Connection and transaction management
         connection:
+          auto_commit: false
           provider_disables_autocommit: true
           isolation_level: READ_COMMITTED
         
@@ -85,8 +87,7 @@ spring:
         order_updates: true
         batch_versioned_data: true
         
-        # Explicitly set the dialect to avoid metadata issues
-        dialect: org.hibernate.dialect.PostgreSQLDialect
+        # Dialect not explicitly set; Hibernate will auto-detect PostgreSQL dialect as per HHH90000025 guidance
 
   # Kafka configuration moved to profile-specific files to avoid conflicts
   

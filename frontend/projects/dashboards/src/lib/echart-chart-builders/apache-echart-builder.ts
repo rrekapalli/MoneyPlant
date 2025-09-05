@@ -12,6 +12,8 @@ export abstract class ApacheEchartBuilder<T extends EChartsOption = EChartsOptio
   protected chartOptions: Partial<T>;
   protected seriesOptions!: TSeries;
   protected data: any[] = [];
+  protected filterChangeCallback?: (event: ChartFilterEvent) => void;
+  protected customFilters: Map<string, any> = new Map();
 
   protected constructor() {
     this.widgetBuilder = new WidgetBuilder()
@@ -97,6 +99,79 @@ export abstract class ApacheEchartBuilder<T extends EChartsOption = EChartsOptio
     (widget.config as any).skipDefaultFiltering = skip;
     return this;
   }
+
+  // --- Filtering and Event Handling Methods ---
+
+  /**
+   * Set callback for filter changes
+   * @param callback Function to handle filter change events
+   */
+  setFilterChangeCallback(callback: (event: ChartFilterEvent) => void): this {
+    this.filterChangeCallback = callback;
+    return this;
+  }
+
+  /**
+   * Add a custom filter to the chart
+   * @param filterType The type of filter (e.g., 'timeRange', 'category', 'value')
+   * @param filterConfig The filter configuration
+   */
+  addCustomFilter(filterType: string, filterConfig: any): this {
+    this.customFilters.set(filterType, filterConfig);
+    return this;
+  }
+
+  /**
+   * Remove a custom filter from the chart
+   * @param filterType The type of filter to remove
+   */
+  removeCustomFilter(filterType: string): this {
+    this.customFilters.delete(filterType);
+    return this;
+  }
+
+  /**
+   * Get a custom filter configuration
+   * @param filterType The type of filter to get
+   */
+  getCustomFilter(filterType: string): any {
+    return this.customFilters.get(filterType);
+  }
+
+  /**
+   * Trigger a filter change event
+   * @param event The filter change event
+   */
+  protected triggerFilterChange(event: ChartFilterEvent): void {
+    console.log('Filter change event triggered:', event);
+    
+    if (this.filterChangeCallback) {
+      this.filterChangeCallback(event);
+    } else {
+      console.warn('Filter change callback not set');
+    }
+
+    // Also call global function as fallback
+    if (typeof window !== 'undefined' && (window as any).handleChartFilterChange) {
+      (window as any).handleChartFilterChange(event);
+    }
+  }
+
+  /**
+   * Create a global function for filter changes if it doesn't exist
+   */
+  protected createGlobalFilterFunction(): void {
+    if (typeof window !== 'undefined' && !(window as any).handleChartFilterChange) {
+      (window as any).handleChartFilterChange = (event: ChartFilterEvent) => {
+        console.log('Global chart filter change:', event);
+        if (this.filterChangeCallback) {
+          this.filterChangeCallback(event);
+        }
+      };
+    }
+  }
+
+
 
   // --- Generic Series Option Methods ---
 
@@ -372,6 +447,16 @@ export abstract class ApacheEchartBuilder<T extends EChartsOption = EChartsOptio
    */
   setChartInstance(chartInstance: any): this {
     this.widgetBuilder.setChartInstance(chartInstance);
+    return this;
+  }
+
+  /**
+   * Set widget height based on gridster item dimensions
+   * @param cellHeight - Height of each gridster cell (default: 30px)
+   * @param margin - Margin between cells (default: 10px)
+   */
+  setHeightFromGridster(cellHeight: number = 30, margin: number = 10): this {
+    this.widgetBuilder.setHeightFromGridster(cellHeight, margin);
     return this;
   }
 
@@ -878,6 +963,17 @@ export interface DataFilter {
   operator: 'equals' | 'contains' | 'greaterThan' | 'lessThan' | 'greaterThanOrEqual' | 'lessThanOrEqual' | 'in';
   value: any;
   displayValue?: string;
+}
+
+/**
+ * Custom event interface for chart filter changes
+ */
+export interface ChartFilterEvent {
+  type: 'filterChange' | 'timeRangeChange' | 'customFilter';
+  filterType: string;
+  value: any;
+  widgetId: string;
+  metadata?: any;
 }
 
 /**

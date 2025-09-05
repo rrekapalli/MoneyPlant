@@ -94,7 +94,9 @@ export class WidgetBuilder {
   }
 
   setEvents(onChartOptions: (widget: IWidget, chart?: ECharts, filters?: string | IFilterValues[]) => void) {
+    console.log('🔥 WidgetBuilder.setEvents called with callback:', !!onChartOptions);
     this.widget.config.events = { onChartOptions };
+    console.log('🔥 Event handler stored in widget config:', !!this.widget.config.events);
     return this;
   }
 
@@ -115,6 +117,35 @@ export class WidgetBuilder {
 
   setChartInstance(chartInstance: ECharts | null) {
     this.widget.chartInstance = chartInstance;
+    return this;
+  }
+
+  /**
+   * Set widget height based on gridster item dimensions
+   * @param cellHeight - Height of each gridster cell (default: 30px)
+   * @param margin - Margin between cells (default: 10px)
+   */
+  setHeightFromGridster(cellHeight: number = 30, margin: number = 10) {
+    // Calculate height based on rows: (rows * cellHeight) + ((rows - 1) * margin)
+    const rows = this.widget.position?.rows || this.widget.rows || 1;
+    
+    // For a 12-row widget, we want a much larger height
+    // Let's use a more reasonable calculation: rows * 50px (minimum) with some padding
+    const minHeightPerRow = 50;
+    const calculatedHeight = Math.max(rows * minHeightPerRow, rows * cellHeight + (rows - 1) * margin);
+    
+    this.widget.height = calculatedHeight;
+    
+    // Debug logging
+    console.log('🔧 Widget height calculation:', {
+      rows: rows,
+      cellHeight: cellHeight,
+      margin: margin,
+      minHeightPerRow: minHeightPerRow,
+      calculatedHeight: this.widget.height,
+      position: this.widget.position
+    });
+    
     return this;
   }
 
