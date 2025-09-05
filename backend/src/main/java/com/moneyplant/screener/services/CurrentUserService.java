@@ -19,9 +19,7 @@ public class CurrentUserService {
     public Long getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
-            // TEMPORARY: Return a default user ID for testing when no authentication is present
-            // This should be removed when proper authentication is implemented
-            return 1L; // Default user ID for testing
+            throw new IllegalStateException("No authenticated user found");
         }
         
         // The principal should be the user ID (Long) for screener requests
@@ -32,9 +30,7 @@ public class CurrentUserService {
             String principalStr = (String) principal;
             // Handle anonymous user case
             if ("anonymousUser".equals(principalStr)) {
-                // TEMPORARY: Return a default user ID for testing when anonymous
-                // This should be removed when proper authentication is implemented
-                return 1L; // Default user ID for testing
+                throw new IllegalStateException("Anonymous user not allowed");
             }
             try {
                 return Long.parseLong(principalStr);

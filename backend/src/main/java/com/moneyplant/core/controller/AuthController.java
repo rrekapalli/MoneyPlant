@@ -94,17 +94,118 @@ public class AuthController {
     }
 
     @GetMapping("/auth/validate")
-    public ResponseEntity<User> validateToken() {
+    public ResponseEntity<Map<String, Object>> validateToken() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        log.info("AuthController - validateToken called, authentication: {}", authentication);
+        
+        Map<String, Object> response = new HashMap<>();
+        
         if (authentication != null && authentication.isAuthenticated()) {
-            String email = authentication.getName();
-            User user = userRepository.findByEmail(email)
-                    .orElse(null);
-            if (user != null) {
-                return ResponseEntity.ok(user);
+            // Extract email from authentication details (WebAuthenticationDetails)
+            String email = null;
+            if (authentication.getDetails() instanceof String) {
+                email = (String) authentication.getDetails();
+            } else if (authentication.getPrincipal() instanceof org.springframework.security.core.userdetails.UserDetails) {
+                email = ((org.springframework.security.core.userdetails.UserDetails) authentication.getPrincipal()).getUsername();
+            } else {
+                email = authentication.getName();
             }
+            
+            log.info("AuthController - User email extracted: {}", email);
+            
+            try {
+                User user = userRepository.findByEmail(email)
+                        .orElse(null);
+                log.info("AuthController - User found in database: {}", user != null ? user.getId() : "null");
+                
+                if (user != null) {
+                    response.put("id", user.getId());
+                    response.put("email", user.getEmail());
+                    response.put("fullName", user.getFullName());
+                    response.put("firstName", user.getFirstName());
+                    response.put("lastName", user.getLastName());
+                    response.put("isEnabled", user.getIsEnabled());
+                    response.put("provider", user.getProvider());
+                    return ResponseEntity.ok(response);
+                } else {
+                    log.warn("AuthController - User not found in database for email: {}", email);
+                    response.put("error", "User not found");
+                    response.put("email", email);
+                    return ResponseEntity.status(401).body(response);
+                }
+            } catch (Exception e) {
+                log.error("AuthController - Database error: {}", e.getMessage());
+                response.put("error", "Database error: " + e.getMessage());
+                return ResponseEntity.status(500).body(response);
+            }
+        } else {
+            log.warn("AuthController - No authentication or not authenticated");
+            response.put("error", "Not authenticated");
+            return ResponseEntity.status(401).body(response);
         }
-        return ResponseEntity.status(401).build();
+    }
+
+    @GetMapping("/auth/test")
+    public ResponseEntity<Map<String, Object>> testToken() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Map<String, Object> response = new HashMap<>();
+        
+        if (authentication != null && authentication.isAuthenticated()) {
+            response.put("authenticated", true);
+            response.put("username", authentication.getName());
+            response.put("authorities", authentication.getAuthorities());
+            response.put("principal", authentication.getPrincipal());
+            response.put("details", authentication.getDetails());
+            return ResponseEntity.ok(response);
+        } else {
+            response.put("authenticated", false);
+            return ResponseEntity.status(401).body(response);
+        }
+    }
+
+    @GetMapping("/auth/debug-token")
+    public ResponseEntity<Map<String, Object>> debugToken(HttpServletRequest request) {
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            String bearerToken = request.getHeader("Authorization");
+            if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
+                String token = bearerToken.substring(7);
+                response.put("token", token);
+                
+                // Test token validation
+                boolean isValid = tokenProvider.validateToken(token);
+                response.put("isValid", isValid);
+                
+                if (isValid) {
+                    String username = tokenProvider.getUsernameFromToken(token);
+                    response.put("usernameFromToken", username);
+                    
+                    Long userId = tokenProvider.getUserIdFromToken(token);
+                    response.put("userIdFromToken", userId);
+                    
+                    // Test user lookup
+                    try {
+                        User user = userRepository.findByEmail(username).orElse(null);
+                        if (user != null) {
+                            response.put("userFound", true);
+                            response.put("userEmail", user.getEmail());
+                            response.put("userId", user.getId());
+                        } else {
+                            response.put("userFound", false);
+                        }
+                    } catch (Exception e) {
+                        response.put("userLookupError", e.getMessage());
+                    }
+                }
+            } else {
+                response.put("error", "No Bearer token found");
+            }
+        } catch (Exception e) {
+            response.put("error", e.getMessage());
+        }
+        
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/auth/email-login")
