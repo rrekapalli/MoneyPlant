@@ -77,7 +77,7 @@ public class AuthController {
      * Note: This excludes API paths (starting with /api/) to avoid interfering with API endpoints.
      */
     @GetMapping({"/portfolios", "/portfolios/**", 
-                 "/holdings", "/holdings/**", "/positions", "/positions/**", 
+                 "/holdings", "/holdings/**", "/positions", "/positions/**",  "/screener", "/screener/**",
                  "/market", "/market/**", "/strategies", "/strategies/**",
                  "/watchlists", "/watchlists/**", "/dashboard", "/dashboard/**"})
     public ResponseEntity<Void> handleClientSideRouting(HttpServletRequest request) {
