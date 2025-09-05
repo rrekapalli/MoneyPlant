@@ -23,7 +23,8 @@ public interface ScreenerRepository extends JpaRepository<Screener, Long> {
     @Query(value = "SELECT s.* FROM screener s WHERE " +
            "(s.owner_user_id = :userId OR s.is_public = true) AND " +
            "(:search IS NULL OR LOWER(CAST(s.name AS TEXT)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-           "LOWER(CAST(s.description AS TEXT)) LIKE LOWER(CONCAT('%', :search, '%')))", 
+           "LOWER(CAST(s.description AS TEXT)) LIKE LOWER(CONCAT('%', :search, '%'))) " +
+           "ORDER BY s.created_at DESC", 
            countQuery = "SELECT COUNT(s.*) FROM screener s WHERE " +
            "(s.owner_user_id = :userId OR s.is_public = true) AND " +
            "(:search IS NULL OR LOWER(CAST(s.name AS TEXT)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
@@ -37,11 +38,13 @@ public interface ScreenerRepository extends JpaRepository<Screener, Long> {
     /**
      * Finds screeners by owner.
      */
-    List<Screener> findByOwnerUserIdOrderByCreatedAtDesc(Long ownerUserId);
+    @Query(value = "SELECT s.* FROM screener s WHERE s.owner_user_id = :ownerUserId ORDER BY s.created_at DESC", nativeQuery = true)
+    List<Screener> findByOwnerUserIdOrderByCreatedAtDesc(@Param("ownerUserId") Long ownerUserId);
 
     /**
      * Finds public screeners.
      */
+    @Query(value = "SELECT s.* FROM screener s WHERE s.is_public = true ORDER BY s.created_at DESC", nativeQuery = true)
     List<Screener> findByIsPublicTrueOrderByCreatedAtDesc();
 
     /**
