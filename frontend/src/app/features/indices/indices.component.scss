@@ -123,12 +123,12 @@
 }
 
 .index-symbol {
-  //font-family: 'Courier New', monospace;
+  font-weight: 600;
 }
 
 .indices-container {
   padding: var(--spacing-xl);
-  height: 100%;
+  height: 90vh;
   display: flex;
   flex-direction: column;
   overflow: auto;
@@ -176,6 +176,80 @@
   width: 200px;
   font-size: 0.875rem;
   min-width: 150px; /* Ensure minimum width on smaller screens */
+}
+
+/* Stock list widget container styling */
+.stock-list-widget-container {
+  border-radius: 8px;
+  border: 1px solid var(--surface-border);
+  background: var(--surface-card);
+  min-height: 0; /* Important for flexbox */
+  
+  /* Custom scrollbar styling */
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: var(--surface-ground);
+    border-radius: 4px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+    border-radius: 4px;
+    
+    &:hover {
+      background: var(--primary-color-dark);
+    }
+  }
+  
+  /* Firefox scrollbar styling */
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary-color) var(--surface-ground);
+  
+  /* Ensure dashboard container doesn't create additional scrollbars */
+  ::ng-deep vis-dashboard-container {
+    height: 100%;
+    overflow: hidden;
+    
+    .dashboard-container {
+      height: 100%;
+      overflow: hidden;
+    }
+  }
+}
+
+/* Indices list styling */
+.indices-list {
+  border-radius: 8px;
+  border: 1px solid var(--surface-border);
+  background: var(--surface-card);
+  padding: var(--spacing-md);
+  min-height: 0; /* Important for flexbox */
+  
+  /* Custom scrollbar styling */
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: var(--surface-ground);
+    border-radius: 4px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+    border-radius: 4px;
+    
+    &:hover {
+      background: var(--primary-color-dark);
+    }
+  }
+  
+  /* Firefox scrollbar styling */
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary-color) var(--surface-ground);
 }
 
 /* Responsive adjustments for dropdown and search container */

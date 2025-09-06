@@ -109,6 +109,7 @@ import {
   HeatmapChartBuilder,
   PolarChartBuilder,
   CandlestickChartBuilder,
+  TimeRangeFilterEvent,
   SunburstChartBuilder,
   // Stock List Chart Builder
   StockListChartBuilder,
@@ -222,6 +223,9 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
   
   // Historical data for candlestick chart
   private historicalData: IndexHistoricalData[] = [];
+  
+  // Selected time range for candlestick chart
+  private selectedTimeRange: string = '1Y';
 
   // WebSocket connection state tracking
   private isWebSocketConnected: boolean = false;
@@ -306,6 +310,20 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
     if (this.chartUpdateTimer) {
       clearTimeout(this.chartUpdateTimer);
       this.chartUpdateTimer = null;
+    }
+    
+    // Dispose of all chart instances to prevent reinitialization errors
+    if (this.dashboardConfig?.widgets) {
+      this.dashboardConfig.widgets.forEach(widget => {
+        if (widget.chartInstance && typeof widget.chartInstance.dispose === 'function') {
+          try {
+            widget.chartInstance.dispose();
+            widget.chartInstance = null;
+          } catch (error) {
+            console.warn('Error disposing chart instance:', error);
+          }
+        }
+      });
     }
     
     // Unsubscribe from selected index subscription to prevent memory leaks
@@ -791,9 +809,18 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
       .setSkipDefaultFiltering(true)
       .build();
 
-    // Stock Price Candlestick Chart - Now shows historical data
+    // Stock Price Candlestick Chart - Enhanced with volume bars and timeline legend
     const candlestickChart = CandlestickChartBuilder.create()
-      .setData(this.filteredDashboardData || [])
+      .setData([]) // Use empty array initially, will be populated with historical data
+      .transformData({
+        dateField: 'date',
+        openField: 'open',
+        closeField: 'close',
+        lowField: 'low',
+        highField: 'high',
+        sortBy: 'date',
+        sortOrder: 'asc'
+      })
       .setHeader('Index Historical Price Movement')
       .setCurrencyFormatter('INR', 'en-IN')
       .setPredefinedPalette('finance')
@@ -801,11 +828,18 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
       .setFilterColumn('symbol')
       .setXAxisName('Trading Date')
       .setYAxisName('Price (₹)')
-      // Data zoom removed - using time range filters instead
       .setBarWidth('60%')  // Set candlestick bar width for better visibility
+      .setCandlestickColors('#00da3c', '#ec0000', '#808080')  // Green for positive, red for negative, grey for neutral
       .enableBrush()  // Enable brush selection for technical analysis
       .setLargeMode(100)  // Enable large mode for datasets with 100+ points
       .setTooltipType('axis')  // Enable crosshair tooltip for better analysis
+      .enableTimeRangeFilters(['1D', '5D', '1M', '3M', '6M', 'YTD', '1Y', '3Y', '5Y', 'MAX'], '1Y')  // Enable time range filters with 1Y as default
+      .enableAreaSeries(true, 0.4)  // Enable area series with close price data and higher opacity
+      .setAreaSeriesOpacity(0.5)  // Set area series opacity to 50% for better visibility
+      .enableVolume(false)  // Disable volume bars to avoid dual-axis issues
+      .enableLegend(false)  // Disable legend for cleaner appearance
+      .enableDataZoom(true)  // Enable data zoom for timeline navigation
+      .setTimeRangeChangeCallback(this.handleTimeRangeChange.bind(this))  // Set callback for time range changes
       .setEvents((widget: any, chart: any) => {
         if (chart) {
           chart.off('click');
@@ -826,11 +860,15 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
     if (candlestickChart.config?.options) {
       const options = candlestickChart.config.options as any;
       
-      // Enhanced X-axis configuration for better date display
+      // CRITICAL FIX: Simplify to single-axis configuration to avoid grid issues
+      // Use single-axis configuration with volume on the same chart
       options.xAxis = {
-        ...options.xAxis,
         type: 'category',
         data: [],
+        boundaryGap: false,
+        splitLine: { show: false },
+        min: 'dataMin',
+        max: 'dataMax',
         axisLabel: {
           rotate: 45,
           fontSize: 10,
@@ -858,17 +896,20 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
           alignWithLabel: true
         },
         axisLine: {
+          onZero: false,
           lineStyle: {
             color: '#ddd'
           }
         }
       };
 
-      // Enhanced Y-axis configuration
+      // CRITICAL FIX: Use single Y-axis configuration to avoid grid issues
       options.yAxis = {
-        ...options.yAxis,
         type: 'value',
         scale: true,
+        splitArea: {
+          show: true
+        },
         axisLabel: {
           formatter: (value: number) => {
             return new Intl.NumberFormat('en-IN', {
@@ -878,7 +919,7 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
               maximumFractionDigits: 2
             }).format(value);
           },
-          color: '#333',  // Full opacity for y-axis labels
+          color: '#333',
           fontSize: 10
         },
         axisLine: {
@@ -892,6 +933,15 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
             type: 'dashed'
           }
         }
+      };
+
+      // CRITICAL FIX: Ensure single grid configuration
+      options.grid = {
+        top: '15%',
+        left: '5%',
+        right: '5%',
+        bottom: '18%',
+        containLabel: true
       };
 
       // Enhanced tooltip configuration
@@ -995,12 +1045,12 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
     // Position filter widget at row 2 (below metric tiles which occupy rows 0-1)
     filterWidget.position = { x: 0, y: 2, cols: 12, rows: 1 };
 
-    // Position charts with proper spacing - start from row 4 to avoid filter collision  
-    candlestickChart.position = { x: 0, y: 3, cols: 8, rows: 8 };
+    // Position charts with proper spacing - adjusted candlestick chart height for time range filters
+    candlestickChart.position = { x: 0, y: 3, cols: 8, rows: 12 }; // Increased height for time range filters
     stockListWidget.position = { x: 8, y: 3, cols: 4, rows: 16 };
 
-    barStockIndustry.position = { x: 0, y: 11, cols: 4, rows: 8 };
-    pieStockSector.position = { x: 4, y: 11, cols: 4, rows: 8 };
+    barStockIndustry.position = { x: 0, y: 15, cols: 4, rows: 8 }; // Moved down to accommodate larger candlestick chart
+    pieStockSector.position = { x: 4, y: 15, cols: 4, rows: 8 }; // Moved down to accommodate larger candlestick chart
     
     // Use the Fluent API to build the dashboard config with filter highlighting enabled
     this.dashboardConfig = StandardDashboardBuilder.createStandard()
@@ -1201,9 +1251,9 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
         // This is a pie chart - provide asset allocation data
         return this.groupByAndSum(this.filteredDashboardData || this.dashboardData, 'industry', 'totalTradedValue');
       case 'Index Historical Price Movement':
-        // This is a candlestick chart - provide OHLC data from historical data if available
+        // This is a candlestick chart with volume - provide OHLCV data from historical data if available
         if (this.historicalData.length > 0) {
-          // Use historical data for candlestick chart
+          // Use historical data for candlestick chart (without volume)
           const candlestickData = this.historicalData.map(item => [
             item.open,
             item.close,
@@ -1212,17 +1262,14 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
           ]);
           const xAxisLabels = this.historicalData.map(item => {
             const date = new Date(item.date);
-            return date.toLocaleDateString('en-US', { 
-              month: 'short', 
-              day: 'numeric' 
-            });
+            return date.toISOString().split('T')[0]; // Use ISO date format for consistency
           });
           return {
             data: candlestickData,
             xAxisLabels: xAxisLabels
           };
         } else {
-          // Fallback to stock data
+          // Fallback to stock data (without volume since stock data doesn't have volume)
           const stockData = this.filteredDashboardData || this.dashboardData;
           if (!stockData || stockData.length === 0) {
             return [];
@@ -1363,9 +1410,9 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
         }).sort((a, b) => b.value - a.value);
 
       case 'Index Historical Price Movement':
-        // Use historical data for candlestick chart if available, otherwise use stock data
+        // Use historical data for candlestick chart with volume if available, otherwise use stock data
         if (this.historicalData.length > 0) {
-          // Transform historical data to candlestick format: [open, close, low, high]
+          // Transform historical data to candlestick format (without volume): [open, close, low, high]
           const candlestickData = this.historicalData.map(item => [
             item.open,
             item.close,
@@ -1384,7 +1431,7 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
             xAxisLabels: xAxisLabels
           };
         } else {
-          // Fallback to stock data
+          // Fallback to stock data (without volume since stock data doesn't have volume)
           if (!sourceData) {
             return [];
           }
@@ -2008,68 +2055,70 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
   }
 
   /**
+   * Safely dispose of chart instance before updating
+   */
+  private safelyDisposeChartInstance(widget: IWidget): void {
+    if (widget.chartInstance && typeof widget.chartInstance.dispose === 'function') {
+      try {
+        widget.chartInstance.dispose();
+        widget.chartInstance = null;
+      } catch (error) {
+        console.warn('Error disposing chart instance:', error);
+      }
+    }
+  }
+
+  /**
    * Update candlestick chart with historical data from the API
    */
   private updateCandlestickChartWithHistoricalData(): void {
     if (!this.dashboardConfig?.widgets) return;
 
     const candlestickWidget = this.dashboardConfig.widgets.find(widget => 
-      widget.config?.header?.title === 'Index Historical Price Movement'
+      widget.config?.header?.title === 'Index Historical Price Movement with Volume'
     );
 
     if (candlestickWidget && this.historicalData.length > 0) {
-      // Transform historical data to candlestick format: [open, close, low, high]
-      const candlestickData = this.historicalData.map(item => [
-        item.open,
-        item.close,
-        item.low,
-        item.high
-      ]);
+      // Safely dispose of existing chart instance to prevent reinitialization errors
+      this.safelyDisposeChartInstance(candlestickWidget);
       
-      // Create X-axis labels (dates) with proper formatting
-      const xAxisLabels = this.historicalData.map(item => {
-        const date = new Date(item.date);
-        return date.toISOString().split('T')[0]; // Use ISO date format for consistency
-      });
+      // Use CandlestickChartBuilder.updateData to properly update the chart with volume data
+      CandlestickChartBuilder.updateData(candlestickWidget, this.historicalData);
       
-      // Update the widget with historical data
-      this.updateEchartWidget(candlestickWidget, candlestickData);
+      // Also update the widget's config options for consistency
+      if (candlestickWidget.config?.options) {
+        const options = candlestickWidget.config.options as any;
+        
+        // Update X-axis labels (single-axis configuration)
+        if (options.xAxis) {
+          const xAxisLabels = this.historicalData.map(item => {
+            const date = new Date(item.date);
+            return date.toISOString().split('T')[0];
+          });
+          
+          // Single-axis configuration
+          options.xAxis.data = xAxisLabels;
+        }
+        
+        // Update series data (without volume)
+        if (options.series && options.series[0]) {
+          const candlestickData = this.historicalData.map(item => [
+            item.open,
+            item.close,
+            item.low,
+            item.high
+          ]);
+          options.series[0].data = candlestickData;
+        }
+      }
       
-      // Update X-axis labels and chart options if chart instance exists
+      // Force chart refresh if chart instance exists
       if (candlestickWidget.chartInstance && typeof candlestickWidget.chartInstance.setOption === 'function') {
-        const currentOptions = candlestickWidget.chartInstance.getOption();
-        const newOptions = {
-          ...currentOptions,
-          xAxis: {
-            ...((currentOptions as any)?.xAxis || {}),
-            data: xAxisLabels
-          },
-          series: [{
-            ...((currentOptions as any)?.series?.[0] || {}),
-            data: candlestickData
-          }]
-        };
-        
-        // Apply the new options
-        candlestickWidget.chartInstance.setOption(newOptions, true);
-        
-        // Force a resize to ensure proper rendering
         setTimeout(() => {
           if (candlestickWidget.chartInstance && typeof candlestickWidget.chartInstance.resize === 'function') {
             candlestickWidget.chartInstance.resize();
           }
         }, 100);
-      }
-      
-      // Also update the widget's config options for consistency
-      if (candlestickWidget.config?.options) {
-        const options = candlestickWidget.config.options as any;
-        if (options.xAxis) {
-          options.xAxis.data = xAxisLabels;
-        }
-        if (options.series && options.series[0]) {
-          options.series[0].data = candlestickData;
-        }
       }
     }
   }
@@ -2081,11 +2130,13 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
     if (!this.dashboardConfig?.widgets || !this.filteredDashboardData) return;
 
     const candlestickWidget = this.dashboardConfig.widgets.find(widget => 
-      widget.config?.header?.title === 'Index Historical Price Movement'
+      widget.config?.header?.title === 'Index Historical Price Movement with Volume'
     );
 
     if (candlestickWidget) {
-      // Create candlestick data from filtered stock data
+      // Safely dispose of existing chart instance to prevent reinitialization errors
+      this.safelyDisposeChartInstance(candlestickWidget);
+      // Create candlestick data from filtered stock data (without volume since stock data doesn't have volume)
       const candlestickData = this.filteredDashboardData.map(stock => [
         stock.openPrice || 0,
         stock.lastPrice || 0,
@@ -2631,6 +2682,92 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
       }
     });
   }
+
+  /**
+   * Handle time range change events from the candlestick chart
+   * @param event TimeRangeFilterEvent containing the selected time range
+   */
+  private handleTimeRangeChange(event: TimeRangeFilterEvent): void {
+    console.log('Time range changed to:', event.range);
+    
+    // Store the selected time range
+    this.selectedTimeRange = event.range;
+    
+    // Filter the existing historical data and update the chart
+    const filteredData = this.filterHistoricalDataByTimeRange(event.range);
+    
+    // Update the candlestick chart with filtered data
+    if (this.dashboardConfig?.widgets) {
+      const candlestickWidget = this.dashboardConfig.widgets.find(widget => 
+        widget.config?.header?.title === 'Index Historical Price Movement'
+      );
+      
+      if (candlestickWidget && filteredData.length > 0) {
+        // Safely dispose of existing chart instance to prevent reinitialization errors
+        this.safelyDisposeChartInstance(candlestickWidget);
+        
+        // Use CandlestickChartBuilder.updateData to properly update the chart with filtered data
+        CandlestickChartBuilder.updateData(candlestickWidget, filteredData);
+        this.cdr.detectChanges();
+      }
+    }
+  }
+
+  /**
+   * Filter historical data based on the selected time range
+   * @param timeRange The selected time range
+   */
+  private filterHistoricalDataByTimeRange(timeRange: string): IndexHistoricalData[] {
+    if (!this.historicalData || this.historicalData.length === 0) {
+      return [];
+    }
+
+    const endDate = new Date();
+    let startDate = new Date();
+
+    switch (timeRange) {
+      case '1D':
+        startDate.setDate(endDate.getDate() - 1);
+        break;
+      case '5D':
+        startDate.setDate(endDate.getDate() - 5);
+        break;
+      case '1M':
+        startDate.setMonth(endDate.getMonth() - 1);
+        break;
+      case '3M':
+        startDate.setMonth(endDate.getMonth() - 3);
+        break;
+      case '6M':
+        startDate.setMonth(endDate.getMonth() - 6);
+        break;
+      case 'YTD':
+        startDate = new Date(endDate.getFullYear(), 0, 1);
+        break;
+      case '1Y':
+        startDate.setFullYear(endDate.getFullYear() - 1);
+        break;
+      case '3Y':
+        startDate.setFullYear(endDate.getFullYear() - 3);
+        break;
+      case '5Y':
+        startDate.setFullYear(endDate.getFullYear() - 5);
+        break;
+      case 'MAX':
+        // For MAX, return all data
+        return this.historicalData;
+      default:
+        // Default to 1 year
+        startDate.setFullYear(endDate.getFullYear() - 1);
+    }
+
+    // Filter data based on date range
+    return this.historicalData.filter(item => {
+      const itemDate = new Date(item.date);
+      return itemDate >= startDate && itemDate <= endDate;
+    });
+  }
+
 
   /**
    * Monitor WebSocket connection state changes

@@ -23,9 +23,8 @@
       @if(indicesLists().length > 0) {
         @for(indicesList of indicesLists(); track indicesList.id; let i = $index) {
           <p-tabpanel [value]="i.toString()">
-            <div class="indices-container mt-2">
-<!--            <p-scrollPanel [style]="{width: '100%', height: '85vh'}">-->
-              <div class="flex justify-between items-center mb-2">
+            <div class="indices-container mt-2" style="height: 85vh; overflow: hidden; display: flex; flex-direction: column;">
+              <div class="flex justify-between items-center mb-2" style="flex-shrink: 0;">
                 <!-- Loading indicator for indices -->
                 @if (i === 0 && isLoadingIndices()) {
                   <div class="p-2 text-center w-full">
@@ -33,100 +32,65 @@
                   </div>
                 }
 
-                <!-- Indices TreeTable for main indices (first tab) -->
-                @if (i === 0 && hasTreeData() && !isLoadingIndices()) {
-                  <div class="treetable-container">
-                    <!-- TreeTable Header with Search -->
+                <!-- Index Selection and Stock List for main indices (first tab) -->
+                @if (i === 0 && hasIndices() && !isLoadingIndices()) {
+                  <div class="stock-list-container">
+                    <!-- Index Selection Header with Search -->
                     <div class="flex justify-content-between align-items-center mb-2">
-                      <h3 class="m-0">Market Indices</h3>
+                      <div class="flex align-items-center">
+                        <p-select
+                          [options]="getIndexOptions()"
+                          [ngModel]="selectedIndexForStocks()"
+                          (ngModelChange)="onIndexSelectionChange($event)"
+                          placeholder="Select an index..."
+                          [showClear]="true"
+                          [filter]="true"
+                          filterPlaceholder="Search indices..."
+                          optionLabel="label"
+                          styleClass="p-select-sm"
+                          style="width: 300px;">
+                        </p-select>
+                      </div>
                       <div class="flex align-items-center">
                         <span class="p-input-icon-left">
                           <input
                             type="text" 
                             pInputText 
-                            [ngModel]="globalFilterValue()" 
-                            (ngModelChange)="updateGlobalFilterValue($event)"
-                            placeholder="Search indices..." 
+                            [ngModel]="stockSearchQuery()" 
+                            (ngModelChange)="filterStockList($event)"
+                            placeholder="Search stocks..." 
                             class="p-inputtext-sm"
                             style="width: 250px;"
-                            (input)="tt.filterGlobal($any($event.target).value, 'contains')">
+                            [disabled]="!selectedIndexForStocks()">
                         </span>
                       </div>
                     </div>
                     
-                    <p-treeTable 
-                      [value]="indicesTreeData()" 
-                      [scrollable]="true" 
-                      scrollHeight="85vh"
-                      [globalFilterFields]="['keyCategory', 'symbol']"
-                      [filterMode]="'lenient'"
-                      #tt
-                      styleClass="p-treetable-sm">
-                      
-                      <ng-template pTemplate="header">
-                        <tr>
-                          <th style="width:25%">
-                            Category
-                          </th>
-                          <th style="width:20%">
-                            Symbol
-                          </th>
-                          <th style="width:15%">
-                            Last Price
-                          </th>
-                          <th style="width:15%">
-                            Variation
-                          </th>
-                          <th style="width:15%">
-                            Change (%)
-                          </th>
-                        </tr>
-                      </ng-template>
-                      
-                      <ng-template pTemplate="body" let-rowNode let-rowData="rowData">
-                        <tr [ngClass]="{'category-row': rowData.isCategory, 'selected-row': !rowData.isCategory && selectedIndexSymbol() === rowData.symbol}" 
-                            (click)="onRowClick(rowData)" 
-                            [style.cursor]="!rowData.isCategory ? 'pointer' : 'default'"
-                            [class.clickable-row]="!rowData.isCategory">
-                          <td [attr.colspan]="rowData.isCategory ? 5 : 2">
-                            <p-treeTableToggler [rowNode]="rowNode" *ngIf="rowData.isCategory"></p-treeTableToggler>
-                            <span [ngClass]="{'font-bold': rowData.isCategory}">
-                              {{ rowData.isCategory ? rowData.keyCategory : rowData.symbol }}
-                            </span>
-                          </td>
-                          <td *ngIf="!rowData.isCategory">
-                            <span [ngClass]="{'font-bold': rowData.isCategory}">
-                              {{ rowData.lastPrice ? (rowData.lastPrice | currency) : '' }}
-                            </span>
-                          </td>
-                          <td *ngIf="!rowData.isCategory">
-                            <span [ngClass]="{
-                              'font-bold': rowData.isCategory,
-                              'text-green-500': !rowData.isCategory && rowData.variation >= 0,
-                              'text-red-500': !rowData.isCategory && rowData.variation < 0
-                            }">
-                              {{ rowData.variation ? (rowData.variation | number:'1.2-2') : '' }}
-                            </span>
-                          </td>
-                          <td *ngIf="!rowData.isCategory">
-                            <span [ngClass]="{
-                              'font-bold': rowData.isCategory,
-                              'text-green-500': !rowData.isCategory && rowData.percentChange >= 0,
-                              'text-red-500': !rowData.isCategory && rowData.percentChange < 0
-                            }">
-                              {{ rowData.percentChange ? (rowData.percentChange + '%') : '' }}
-                            </span>
-                          </td>
-                        </tr>
-                      </ng-template>
-
-                    </p-treeTable>
+                    <!-- Stock List Widget -->
+                    @if (selectedIndexForStocks() && !isLoadingStocks()) {
+                      <div class="stock-list-widget-container" style="flex: 1; overflow-y: auto;">
+                        <vis-dashboard-container 
+                          [widgets]="dashboardConfig || []"
+                          [options]="{ editMode: false }"
+                          [dashboardId]="'indices-stock-list'"
+                          data-dashboard-id="indices-stock-list">
+                        </vis-dashboard-container>
+                      </div>
+                    } @else if (isLoadingStocks()) {
+                      <div class="p-4 text-center" style="flex: 1; display: flex; align-items: center; justify-content: center;">
+                        <p>Loading stocks for {{ selectedIndexForStocks()?.indexName }}...</p>
+                      </div>
+                    } @else {
+                      <div class="p-4 text-center" style="flex: 1; display: flex; align-items: center; justify-content: center;">
+                        <p>Loading default index (NIFTY 50)...</p>
+                      </div>
+                    }
                   </div>
                 }
                 
                 <!-- Indices List Items for other tabs -->
                 @if (i !== 0 && indicesList.items.length > 0 && !(i === 0 && isLoadingIndices())) {
-                  <div class="indices-list">
+                  <div class="indices-list" style="flex: 1; overflow-y: auto;">
                     @for(item of indicesList.items; track $index) {
                       <div class="index-item p-2 mb-2 border-round surface-card" [pTooltip]="item.name" tooltipPosition="top">
                         <div class="grid">
@@ -149,12 +113,11 @@
                   </div>
                 }
                 @if (indicesList.items.length === 0 && !(i === 0 && isLoadingIndices())) {
-                  <div class="p-2 text-center">
+                  <div class="p-2 text-center" style="flex: 1; display: flex; align-items: center; justify-content: center;">
                     <p>No indices in this list yet. Use the search box above to add indices.</p>
                   </div>
                 }
               </div>
-<!--            </p-scrollPanel>-->
           </div>
         </p-tabpanel>
         }
@@ -162,13 +125,13 @@
 
       @if(isLoadingIndices()) {
         <p-tabpanel value="0">
-          <div class="p-4 text-center">
+          <div class="p-4 text-center" style="height: 85vh; display: flex; align-items: center; justify-content: center; overflow: hidden;">
             <p>Loading indices data...</p>
           </div>
         </p-tabpanel>
       } @else if(indicesLists().length === 0) {
         <p-tabpanel value="0">
-          <div class="p-4 text-center">
+          <div class="p-4 text-center" style="height: 85vh; display: flex; align-items: center; justify-content: center; overflow: hidden;">
             <p>No indices list found. Create your first indices list to get started.</p>
           </div>
         </p-tabpanel>
