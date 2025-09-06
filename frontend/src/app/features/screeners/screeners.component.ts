@@ -15,6 +15,7 @@ import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
 import { CheckboxModule } from 'primeng/checkbox';
 import { MessageModule } from 'primeng/message';
+import { SelectModule } from 'primeng/select';
 import { FormsModule } from '@angular/forms';
 import { ConfirmationService, MessageService } from 'primeng/api';
 
@@ -41,7 +42,8 @@ import { ScreenerResp, ScreenerCreateReq } from '../../services/entities/screene
     TagModule,
     TooltipModule,
     CheckboxModule,
-    MessageModule
+    MessageModule,
+    SelectModule
   ],
   providers: [ConfirmationService, MessageService],
   templateUrl: './screeners.component.html',
@@ -68,8 +70,6 @@ export class ScreenersComponent implements OnInit, OnDestroy {
   };
 
   // UI State
-  showCreateDialog = false;
-  showEditDialog = false;
   selectedScreener: ScreenerResp | null = null;
   screenerForm: ScreenerCreateReq = {
     name: '',
@@ -78,14 +78,25 @@ export class ScreenersComponent implements OnInit, OnDestroy {
     defaultUniverse: ''
   };
 
-  // Define tabs for the new p-tabs component
-  tabs = [
-    { label: 'All Screeners', value: 'all' },
-    { label: 'My Screeners', value: 'my' },
-    { label: 'Public Screeners', value: 'public' },
-    { label: 'Starred Screeners', value: 'starred' }
+  // Active tab index for switching between tabs
+  activeTab: string = "0";
+
+  // Filter options
+  selectedVisibility: string | null = null;
+  selectedCategory: string | null = null;
+  
+  visibilityOptions = [
+    { label: 'All Visibility', value: null },
+    { label: 'Public', value: 'public' },
+    { label: 'Private', value: 'private' }
   ];
-  activeTab = 'all';
+  
+  categoryOptions = [
+    { label: 'All Categories', value: null },
+    { label: 'Technical', value: 'technical' },
+    { label: 'Fundamental', value: 'fundamental' },
+    { label: 'Custom', value: 'custom' }
+  ];
 
   constructor(
     private screenerState: ScreenerStateService,
@@ -167,21 +178,50 @@ export class ScreenersComponent implements OnInit, OnDestroy {
     this.loadScreeners();
   }
 
-  onTabChange(tab: any) {
-    this.activeTab = tab.value;
+  onTabChange(index: string | number): void {
+    console.log('Tab changed to:', index);
+    this.activeTab = typeof index === 'string' ? index : index.toString();
   }
 
-  getCurrentScreeners(): ScreenerResp[] {
-    switch (this.activeTab) {
-      case 'my':
-        return this.myScreeners;
-      case 'public':
-        return this.publicScreeners;
-      case 'starred':
-        return this.starredScreeners;
-      default:
-        return this.screeners;
+  getFilteredScreeners(): ScreenerResp[] {
+    let filtered = [...this.screeners];
+
+    // Apply search filter
+    if (this.searchQuery.trim()) {
+      const searchLower = this.searchQuery.toLowerCase();
+      filtered = filtered.filter(screener =>
+        screener.name.toLowerCase().includes(searchLower) ||
+        (screener.description && screener.description.toLowerCase().includes(searchLower))
+      );
     }
+
+    // Apply visibility filter
+    if (this.selectedVisibility) {
+      filtered = filtered.filter(screener => {
+        if (this.selectedVisibility === 'public') {
+          return screener.isPublic;
+        } else if (this.selectedVisibility === 'private') {
+          return !screener.isPublic;
+        }
+        return true;
+      });
+    }
+
+    return filtered;
+  }
+
+  onFilterChange(): void {
+    // Filter change is handled by getFilteredScreeners() method
+  }
+
+  clearFilters(): void {
+    this.searchQuery = '';
+    this.selectedVisibility = null;
+    this.selectedCategory = null;
+  }
+
+  trackScreenerById(index: number, screener: ScreenerResp): number {
+    return screener.screenerId;
   }
 
   runScreener(screener: ScreenerResp) {
@@ -199,11 +239,44 @@ export class ScreenersComponent implements OnInit, OnDestroy {
   }
 
   createScreener() {
-    this.router.navigate(['/screeners/new']);
+    // Create a new empty screener for creation mode
+    this.selectedScreener = {
+      screenerId: 0, // Temporary ID for new screener
+      name: '',
+      description: '',
+      isPublic: false,
+      defaultUniverse: '',
+      ownerUserId: 0,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    // Switch to Configure tab for new screener creation
+    this.activeTab = "1";
+    console.log('Switched to Configure tab for new screener creation');
   }
 
-  editScreener(screener: ScreenerResp) {
-    this.router.navigate(['/screeners', screener.screenerId, 'edit']);
+  configureScreener(screener: ScreenerResp) {
+    console.log('Configure screener:', screener);
+    console.log('Current activeTab before switch:', this.activeTab);
+    this.selectedScreener = screener;
+    this.screenerForm = {
+      name: screener.name,
+      description: screener.description || '',
+      isPublic: screener.isPublic,
+      defaultUniverse: screener.defaultUniverse || ''
+    };
+    this.activeTab = "1"; // Switch to Configure tab
+    console.log('ActiveTab after switch to Configure:', this.activeTab);
+  }
+
+  clearSelection(): void {
+    this.selectedScreener = null;
+    this.screenerForm = {
+      name: '',
+      description: '',
+      isPublic: false,
+      defaultUniverse: ''
+    };
   }
 
   deleteScreener(screener: ScreenerResp) {
@@ -233,17 +306,18 @@ export class ScreenersComponent implements OnInit, OnDestroy {
   }
 
   saveScreener() {
-    if (this.selectedScreener) {
-      this.updateScreener();
-    } else {
+    if (this.selectedScreener && this.selectedScreener.screenerId === 0) {
       this.createNewScreener();
+    } else if (this.selectedScreener) {
+      this.updateScreener();
     }
   }
 
   private createNewScreener() {
     this.screenerState.createScreener(this.screenerForm).subscribe({
       next: () => {
-        this.showCreateDialog = false;
+        this.clearSelection();
+        this.activeTab = "0"; // Switch back to Overview tab
         this.messageService.add({
           severity: 'success',
           summary: 'Success',
@@ -265,8 +339,8 @@ export class ScreenersComponent implements OnInit, OnDestroy {
 
     this.screenerState.updateScreener(this.selectedScreener.screenerId, this.screenerForm).subscribe({
       next: () => {
-        this.showEditDialog = false;
-        this.selectedScreener = null;
+        this.clearSelection();
+        this.activeTab = "0"; // Switch back to Overview tab
         this.messageService.add({
           severity: 'success',
           summary: 'Success',
@@ -307,32 +381,9 @@ export class ScreenersComponent implements OnInit, OnDestroy {
     return this.starredScreeners.some(s => s.screenerId === screener.screenerId);
   }
 
-  cancelDialog() {
-    this.showCreateDialog = false;
-    this.showEditDialog = false;
-    this.selectedScreener = null;
-    this.screenerForm = {
-      name: '',
-      description: '',
-      isPublic: false,
-      defaultUniverse: ''
-    };
-  }
 
   formatDate(dateString: string): string {
     return new Date(dateString).toLocaleDateString();
   }
 
-  getStatusSeverity(status: string): string {
-    switch (status) {
-      case 'ACTIVE':
-        return 'success';
-      case 'DRAFT':
-        return 'warning';
-      case 'ARCHIVED':
-        return 'danger';
-      default:
-        return 'info';
-    }
-  }
 }
