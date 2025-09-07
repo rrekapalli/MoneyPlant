@@ -5,79 +5,150 @@
   </div>
 
   <div class="form-content">
-    <p-card>
-      <form (ngSubmit)="saveScreener()" #form="ngForm">
-        <div class="form-grid">
-          <div class="form-group">
-            <label for="name">Name *</label>
-            <input 
-              type="text" 
-              id="name"
-              pInputText 
-              [(ngModel)]="screenerForm.name"
-              name="name"
-              placeholder="Enter screener name"
-              required
-              class="w-full"
-            />
-          </div>
-          
-          <div class="form-group">
-            <label for="description">Description</label>
-            <textarea 
-              id="description"
-              [(ngModel)]="screenerForm.description"
-              name="description"
-              placeholder="Enter screener description"
-              rows="3"
-              class="w-full"
-            ></textarea>
-          </div>
-          
-          <div class="form-group">
-            <label for="defaultUniverse">Default Universe</label>
-            <input 
-              type="text" 
-              id="defaultUniverse"
-              pInputText 
-              [(ngModel)]="screenerForm.defaultUniverse"
-              name="defaultUniverse"
-              placeholder="Enter default universe (e.g., NSE, BSE)"
-              class="w-full"
-            />
-          </div>
-          
-          <div class="form-group checkbox-group">
-            <p-checkbox 
-              [(ngModel)]="screenerForm.isPublic"
-              name="isPublic"
-              [binary]="true"
-              label="Make this screener public"
-            ></p-checkbox>
-            <small class="help-text">Public screeners can be viewed and used by other users</small>
-          </div>
-        </div>
+    <p-tabs [(value)]="activeTab" (valueChange)="onTabChange($event)">
+      <p-tablist>
+        <p-tab value="basic">
+          <i class="pi pi-info-circle"></i>
+          Basic Info
+        </p-tab>
+        <p-tab value="criteria">
+          <i class="pi pi-filter"></i>
+          Screening Criteria
+          <span *ngIf="hasCriteria()" class="criteria-badge">{{ criteriaQuery.rules.length }}</span>
+        </p-tab>
+      </p-tablist>
+      
+      <p-tabpanels>
+        <!-- Basic Info Tab -->
+        <p-tabpanel value="basic">
+          <p-card>
+            <form (ngSubmit)="saveScreener()" #form="ngForm">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="name">Name *</label>
+                  <input 
+                    type="text" 
+                    id="name"
+                    pInputText 
+                    [(ngModel)]="screenerForm.name"
+                    name="name"
+                    placeholder="Enter screener name"
+                    required
+                    class="w-full"
+                  />
+                </div>
+                
+                <div class="form-group">
+                  <label for="description">Description</label>
+                  <textarea 
+                    id="description"
+                    [(ngModel)]="screenerForm.description"
+                    name="description"
+                    placeholder="Enter screener description"
+                    rows="3"
+                    class="w-full"
+                  ></textarea>
+                </div>
+                
+                <div class="form-group">
+                  <label for="defaultUniverse">Default Universe</label>
+                  <input 
+                    type="text" 
+                    id="defaultUniverse"
+                    pInputText 
+                    [(ngModel)]="screenerForm.defaultUniverse"
+                    name="defaultUniverse"
+                    placeholder="Enter default universe (e.g., NSE, BSE)"
+                    class="w-full"
+                  />
+                </div>
+                
+                <div class="form-group checkbox-group">
+                  <p-checkbox 
+                    [(ngModel)]="screenerForm.isPublic"
+                    name="isPublic"
+                    [binary]="true"
+                    label="Make this screener public"
+                  ></p-checkbox>
+                  <small class="help-text">Public screeners can be viewed and used by other users</small>
+                </div>
+              </div>
 
-        <div class="form-actions">
-          <button 
-            pButton 
-            type="button"
-            label="Cancel" 
-            icon="pi pi-times" 
-            (click)="cancel()" 
-            class="p-button-outlined"
-          ></button>
-          <button 
-            pButton 
-            type="submit"
-            [label]="isEdit ? 'Update Screener' : 'Create Screener'" 
-            icon="pi pi-check" 
-            [disabled]="!form.valid || loading"
-            [loading]="loading"
-          ></button>
-        </div>
-      </form>
-    </p-card>
+              <div class="form-actions">
+                <button 
+                  pButton 
+                  type="button"
+                  label="Cancel" 
+                  icon="pi pi-times" 
+                  (click)="cancel()" 
+                  class="p-button-outlined"
+                ></button>
+                <button 
+                  pButton 
+                  type="submit"
+                  [label]="isEdit ? 'Update Screener' : 'Create Screener'" 
+                  icon="pi pi-check" 
+                  [disabled]="!form.valid || loading"
+                  [loading]="loading"
+                ></button>
+              </div>
+            </form>
+          </p-card>
+        </p-tabpanel>
+
+        <!-- Criteria Tab -->
+        <p-tabpanel value="criteria">
+          <p-card>
+            <div class="criteria-header">
+              <h3>Screening Criteria</h3>
+              <p class="criteria-description">
+                Define the technical indicators and conditions that stocks must meet to be included in this screener.
+                You can combine multiple conditions using AND/OR logic.
+              </p>
+            </div>
+
+            <div class="query-builder-container">
+              <app-query-builder
+                [query]="criteriaQuery"
+                [config]="criteriaConfig"
+                (queryChange)="onCriteriaChange($event)">
+              </app-query-builder>
+            </div>
+
+            <div class="criteria-actions">
+              <button 
+                pButton 
+                label="Clear All Criteria" 
+                icon="pi pi-trash" 
+                (click)="clearCriteria()" 
+                class="p-button-outlined p-button-danger"
+                [disabled]="!hasCriteria()"
+              ></button>
+              <button 
+                pButton 
+                label="Save Screener" 
+                icon="pi pi-check" 
+                (click)="saveScreener()" 
+                [disabled]="loading"
+                [loading]="loading"
+              ></button>
+            </div>
+
+            <!-- Criteria Preview -->
+            <div *ngIf="hasCriteria()" class="criteria-preview">
+              <h4>Criteria Preview</h4>
+              <div class="criteria-summary">
+                <p><strong>Total Rules:</strong> {{ criteriaQuery.rules.length }}</p>
+                <p><strong>Logic:</strong> {{ criteriaQuery.condition.toUpperCase() }}</p>
+                <p><strong>Status:</strong> 
+                  <span class="status-badge status-active">Active</span>
+                </p>
+              </div>
+            </div>
+          </p-card>
+        </p-tabpanel>
+      </p-tabpanels>
+    </p-tabs>
   </div>
 
   <!-- Toast Messages -->

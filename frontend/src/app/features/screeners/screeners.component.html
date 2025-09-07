@@ -185,53 +185,134 @@
                 <button pButton icon="pi pi-times" (click)="clearSelection()" class="p-button-text" title="Close Configuration"></button>
               </div>
               
-              <div class="config-form">
-                <div class="form-group">
-                  <label for="configName">Name *</label>
-                  <input 
-                    type="text" 
-                    pInputText 
-                    id="configName"
-                    [(ngModel)]="screenerForm.name"
-                    placeholder="Enter screener name"
-                    class="w-full"
-                  />
+              <!-- Basic Information Section -->
+              <div class="config-section">
+                <h4 class="section-title">Basic Information</h4>
+                <div class="config-form">
+                  <!-- Name and Default Universe on same row -->
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label for="configName">Name *</label>
+                      <input 
+                        type="text" 
+                        pInputText 
+                        id="configName"
+                        [(ngModel)]="screenerForm.name"
+                        placeholder="Enter screener name"
+                        class="w-full"
+                      />
+                    </div>
+                    
+                    <div class="form-group">
+                      <label for="configUniverse">Default Universe</label>
+                      <p-select 
+                        id="configUniverse"
+                        [(ngModel)]="screenerForm.defaultUniverse"
+                        [options]="universeOptions"
+                        placeholder="Select default universe"
+                        class="w-full">
+                      </p-select>
+                    </div>
+                  </div>
+                  
+                  <div class="form-group">
+                    <label for="configDescription">Description</label>
+                    <textarea 
+                      id="configDescription"
+                      [(ngModel)]="screenerForm.description"
+                      placeholder="Enter screener description"
+                      rows="2"
+                      class="w-full"
+                    ></textarea>
+                  </div>
+                  
+                  <div class="form-group">
+                    <label for="configVisibility">Visibility</label>
+                    <div class="toggle-switch">
+                      <label class="switch">
+                        <input 
+                          type="checkbox" 
+                          id="configVisibility"
+                          [(ngModel)]="screenerForm.isPublic"
+                          (change)="onVisibilityChange($event)"
+                        >
+                        <span class="slider"></span>
+                      </label>
+                      <span class="toggle-label">{{ screenerForm.isPublic ? 'Public' : 'Private' }}</span>
+                    </div>
+                  </div>
                 </div>
-                
-                <div class="form-group">
-                  <label for="configDescription">Description</label>
-                  <textarea 
-                    id="configDescription"
-                    [(ngModel)]="screenerForm.description"
-                    placeholder="Enter screener description"
-                    rows="3"
-                    class="w-full"
-                  ></textarea>
+              </div>
+
+              <!-- Screening Criteria Section -->
+              <div class="config-section">
+                <div class="criteria-header">
+                  <h4 class="section-title">Screening Criteria</h4>
+                  <p class="criteria-description">
+                    Define the technical indicators and conditions that stocks must meet to be included in this screener.
+                    You can combine multiple conditions using AND/OR logic.
+                  </p>
                 </div>
-                
-                <div class="form-group">
-                  <label for="configUniverse">Default Universe</label>
-                  <input 
-                    type="text" 
-                    pInputText 
-                    id="configUniverse"
-                    [(ngModel)]="screenerForm.defaultUniverse"
-                    placeholder="Enter default universe"
-                    class="w-full"
-                  />
+
+                <!-- SQL Query Display -->
+                <div class="sql-query-display">
+                  <h5>Generated WHERE Condition:</h5>
+                  <div class="sql-query-box">
+                    <code>{{ getGeneratedWhereCondition() }}</code>
+                  </div>
                 </div>
-                
-                <div class="form-group">
-                  <p-checkbox 
-                    [(ngModel)]="screenerForm.isPublic"
-                    [binary]="true"
-                    label="Make this screener public"
-                  ></p-checkbox>
+
+                <!-- Query Builder with Custom Header Actions -->
+                <div class="query-builder-container">
+                  <div class="query-builder-header-custom">
+                    <h5>Query Builder</h5>
+                    <div class="query-builder-actions">
+                      <button 
+                        pButton 
+                        label="Add Rule" 
+                        icon="pi pi-plus" 
+                        (click)="addRule()" 
+                        class="p-button-outlined p-button-success p-button-sm"
+                      ></button>
+                      <button 
+                        pButton 
+                        label="Add Group" 
+                        icon="pi pi-layer-group" 
+                        (click)="addGroup()" 
+                        class="p-button-outlined p-button-success p-button-sm"
+                      ></button>
+                      <button 
+                        pButton 
+                        label="Clear All Criteria" 
+                        icon="pi pi-trash" 
+                        (click)="clearCriteria()" 
+                        class="p-button-outlined p-button-danger p-button-sm"
+                        [disabled]="!hasCriteria()"
+                      ></button>
+                    </div>
+                  </div>
+                  
+                  <app-query-builder
+                    [query]="criteriaQuery"
+                    [config]="criteriaConfig"
+                    [hideHeader]="true"
+                    (queryChange)="onCriteriaChange($event)">
+                  </app-query-builder>
                 </div>
-                
-                <div class="form-actions">
-                  <button pButton label="Save Changes" icon="pi pi-check" (click)="saveScreener()" [disabled]="!screenerForm.name"></button>
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="config-actions">
+                <div class="action-buttons-right">
                   <button pButton label="Cancel" icon="pi pi-times" (click)="clearSelection()" class="p-button-text"></button>
+                  <button 
+                    pButton 
+                    label="Save Changes" 
+                    icon="pi pi-check" 
+                    (click)="saveScreener()" 
+                    [disabled]="!screenerForm.name || loading"
+                    [loading]="loading"
+                  ></button>
                 </div>
               </div>
             </div>

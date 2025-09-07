@@ -522,4 +522,239 @@
   .p-message {
     margin-bottom: 1rem;
   }
+
+  // Configuration Section Styles
+  .config-section {
+    margin-bottom: 2rem;
+    
+    .section-title {
+      margin: 0 0 0.75rem 0;
+      color: #2c3e50;
+      font-size: 1.1rem;
+      font-weight: 600;
+      padding-bottom: 0.25rem;
+      border-bottom: 1px solid #e0e0e0;
+    }
+  }
+
+  .config-form {
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .form-group {
+      .toggle-switch {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+
+        .switch {
+          position: relative;
+          display: inline-block;
+          width: 50px;
+          height: 24px;
+
+          input[type="checkbox"] {
+            opacity: 0;
+            width: 0;
+            height: 0;
+            position: absolute;
+            margin: 0;
+            padding: 0;
+          }
+
+          .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+            border: none;
+
+            &:before {
+              position: absolute;
+              content: "";
+              height: 18px;
+              width: 18px;
+              left: 3px;
+              bottom: 3px;
+              background-color: white;
+              transition: .4s;
+              border-radius: 50%;
+              box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            }
+          }
+
+          input[type="checkbox"]:checked + .slider {
+            background-color: #28a745;
+          }
+
+          input[type="checkbox"]:checked + .slider:before {
+            transform: translateX(26px);
+          }
+
+          &:hover .slider {
+            box-shadow: 0 0 8px rgba(0,0,0,0.1);
+          }
+        }
+
+        .toggle-label {
+          font-size: 0.9rem;
+          color: #495057;
+          font-weight: 500;
+          min-width: 60px;
+        }
+      }
+    }
+  }
+
+  // Criteria Builder Styles
+  .criteria-header {
+    margin-bottom: 1rem;
+    
+    .criteria-description {
+      color: #7f8c8d;
+      font-size: 0.85rem;
+      line-height: 1.4;
+      margin: 0;
+    }
+  }
+
+  // SQL Query Display
+  .sql-query-display {
+    margin-bottom: 1rem;
+    
+    h5 {
+      margin: 0 0 0.5rem 0;
+      color: #2c3e50;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    
+    .sql-query-box {
+      background-color: #f8f9fa;
+      border: 1px solid #e9ecef;
+      border-radius: 4px;
+      padding: 0.75rem 1rem;
+      font-family: 'Courier New', monospace;
+      
+      code {
+        color: #495057;
+        font-size: 1rem;
+        line-height: 1.4;
+        word-break: break-all;
+        white-space: pre-wrap;
+        font-weight: bold;
+        font-style: italic;
+      }
+    }
+  }
+
+  .config-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid #f0f0f0;
+
+    .action-buttons-right {
+      display: flex;
+      gap: 1rem;
+    }
+
+    button {
+      min-width: 150px;
+    }
+  }
+
+  // Removed query-builder-container styling since we removed the container
+
+  .criteria-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #f0f0f0;
+
+    button {
+      min-width: 150px;
+    }
+  }
+
+  // Query Builder Container
+  .query-builder-container {
+    margin-top: 1rem;
+
+    .query-builder-header-custom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem 1rem;
+      background-color: #f8f9fa;
+      border: 1px solid #e0e0e0;
+      border-bottom: none;
+      border-radius: 6px 6px 0 0;
+
+      h5 {
+        margin: 0;
+        color: #2c3e50;
+        font-size: 1rem;
+        font-weight: 600;
+      }
+
+      .query-builder-actions {
+        display: flex;
+        gap: 0.5rem;
+      }
+    }
+
+    // Override query builder styles when header is hidden
+    ::ng-deep .query-builder {
+      border-top: none;
+      border-radius: 0 0 6px 6px;
+      margin: 0;
+    }
+  }
+
+  // Removed criteria-preview styles since we removed that section
+
+  .p-tabs {
+    .p-tablist {
+      .p-tab {
+        .criteria-badge {
+          background-color: #3498db;
+          color: white;
+          border-radius: 50%;
+          padding: 0.25rem 0.5rem;
+          font-size: 0.7rem;
+          font-weight: 600;
+          margin-left: 0.5rem;
+          min-width: 1.2rem;
+          height: 1.2rem;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+        }
+      }
+    }
+  }
+
+  // Query Builder customizations
+  .query-builder-container {
+    .app-query-builder {
+      .query-builder {
+        border: none;
+        background: transparent;
+      }
+    }
+  }
 }
