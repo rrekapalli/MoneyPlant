@@ -62,10 +62,24 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         user.setLastLogin(LocalDateTime.now());
         userRepository.save(user);
 
+        // Determine a stable name attribute key
+        String nameAttributeKey = "email";
+        if (oAuth2User.getAttributes().get(nameAttributeKey) == null) {
+            if (oAuth2User.getAttributes().get("preferred_username") != null) {
+                nameAttributeKey = "preferred_username";
+            } else if (oAuth2User.getAttributes().get("upn") != null) {
+                nameAttributeKey = "upn";
+            } else if (oAuth2User.getAttributes().get("unique_name") != null) {
+                nameAttributeKey = "unique_name";
+            } else if (oAuth2User.getAttributes().get("sub") != null) {
+                nameAttributeKey = "sub";
+            }
+        }
+
         return new DefaultOAuth2User(
                 Collections.singleton(new SimpleGrantedAuthority("ROLE_USER")),
                 oAuth2User.getAttributes(),
-                "email"
+                nameAttributeKey
         );
     }
 
@@ -95,7 +109,34 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         if ("google".equals(provider)) {
             return (String) attributes.get("email");
         } else if ("microsoft".equals(provider)) {
-            return (String) attributes.get("email");
+            // Microsoft v2 may not always include 'email'. Fallback to other identifiers commonly present.
+            String email = (String) attributes.get("email");
+            if (email == null || email.isBlank()) {
+                Object emails = attributes.get("emails");
+                if (emails instanceof java.util.List<?> list && !list.isEmpty()) {
+                    Object first = list.get(0);
+                    if (first instanceof String s) {
+                        email = s;
+                    } else if (first instanceof Map<?, ?> m) {
+                        Object addr = m.get("value");
+                        if (addr instanceof String s2) email = s2;
+                    }
+                }
+            }
+            if (email == null || email.isBlank()) {
+                email = (String) attributes.get("preferred_username");
+            }
+            if (email == null || email.isBlank()) {
+                email = (String) attributes.get("upn");
+            }
+            if (email == null || email.isBlank()) {
+                email = (String) attributes.get("unique_name");
+            }
+            if (email == null || email.isBlank()) {
+                // last resort, use sub
+                email = (String) attributes.get("sub");
+            }
+            return email;
         }
         
         throw new IllegalArgumentException("Unsupported provider: " + provider);
@@ -107,7 +148,21 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         if ("google".equals(provider)) {
             return (String) attributes.get("name");
         } else if ("microsoft".equals(provider)) {
-            return (String) attributes.get("name");
+            String name = (String) attributes.get("name");
+            if (name == null || name.isBlank()) {
+                String given = (String) attributes.get("given_name");
+                String family = (String) attributes.get("family_name");
+                if (given != null || family != null) {
+                    name = String.join(" ", java.util.stream.Stream.of(given, family).filter(s -> s != null && !s.isBlank()).toList());
+                }
+            }
+            if (name == null || name.isBlank()) {
+                name = (String) attributes.get("displayName");
+            }
+            if (name == null || name.isBlank()) {
+                name = (String) attributes.get("preferred_username");
+            }
+            return name;
         }
         
         throw new IllegalArgumentException("Unsupported provider: " + provider);

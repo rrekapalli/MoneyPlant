@@ -19,6 +19,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class StockService {
     private final StockRepository stockRepository;
+    private final com.moneyplant.stock.repositories.NseEquityHistoricDataRepository nseEquityHistoricDataRepository;
 
     private static final String STOCK_SERVICE = "stockService";
 
@@ -47,7 +48,9 @@ public class StockService {
                     newStock.getSymbol(),
                     newStock.getCompanyName(),
                     newStock.getIndustry(),
-                    newStock.getPdSectorInd()
+                    newStock.getPdSectorInd(),
+                    null,
+                    null
             );
         } catch (Exception e) {
             log.error("Error creating stock: {}", e.getMessage());
@@ -82,7 +85,9 @@ public class StockService {
                             stock.getSymbol(),
                             stock.getCompanyName(),
                             stock.getIndustry(),
-                            stock.getPdSectorInd()
+                            stock.getPdSectorInd(),
+                            null,
+                            null
                     ))
                     .toList();
         } catch (Exception e) {
@@ -109,7 +114,9 @@ public class StockService {
                     stock.getSymbol(),
                     stock.getCompanyName(),
                     stock.getIndustry(),
-                    stock.getPdSectorInd()
+                    stock.getPdSectorInd(),
+                    null,
+                    null
             );
         } catch (ResourceNotFoundException e) {
             throw e;
@@ -156,11 +163,54 @@ public class StockService {
             NseEquityMaster stock = stockRepository.findBySymbolIgnoreCase(symbol)
                     .orElseThrow(() -> new ResourceNotFoundException("Stock not found with symbol: " + symbol));
 
+            // Build additionalDetails from master and latest OHLCV (no index lookups)
+            com.moneyplant.stock.dtos.StockMasterDetailsDto stockDetails = new com.moneyplant.stock.dtos.StockMasterDetailsDto(
+                    stock.getSymbol(),
+                    stock.getCompanyName(),
+                    stock.getIndustry(),
+                    stock.getPdSectorInd(),
+                    stock.getIsin(),
+                    stock.getSeries(),
+                    stock.getStatus(),
+                    stock.getListingDate(),
+                    stock.getIsFnoSec(),
+                    stock.getIsEtfSec(),
+                    stock.getIsSuspended(),
+                    stock.getPdSectorPe(),
+                    stock.getPdSymbolPe()
+            );
+
+            com.moneyplant.stock.dtos.TickDetailsDto tickDetails = null;
+            java.util.Optional<com.moneyplant.core.entities.NseEquityHistoricData> latest =
+                    nseEquityHistoricDataRepository.findFirstById_SymbolOrderById_DateDesc(symbol);
+            if (latest.isPresent()) {
+                com.moneyplant.core.entities.NseEquityHistoricData h = latest.get();
+                com.moneyplant.core.entities.NseEquityHistoricDataId hid = h.getId();
+                tickDetails = new com.moneyplant.stock.dtos.TickDetailsDto(
+                        hid.getSymbol(),
+                        hid.getDate(),
+                        h.getOpen(),
+                        h.getHigh(),
+                        h.getLow(),
+                        h.getClose(),
+                        h.getVolume(),
+                        h.getTotalTradedValue(),
+                        h.getTotalTrades(),
+                        h.getDeliveryQuantity(),
+                        h.getDeliveryPercentage(),
+                        h.getVwap(),
+                        h.getPreviousClose(),
+                        h.getSeries()
+                );
+            }
+
             return new StockResponseDto(
                     stock.getSymbol(),
                     stock.getCompanyName(),
                     stock.getIndustry(),
-                    stock.getPdSectorInd()
+                    stock.getPdSectorInd(),
+                    tickDetails,
+                    stockDetails
             );
         } catch (ResourceNotFoundException e) {
             throw e;
@@ -198,7 +248,9 @@ public class StockService {
                             stock.getSymbol(),
                             stock.getCompanyName(),
                             stock.getIndustry(),
-                            stock.getPdSectorInd()
+                            stock.getPdSectorInd(),
+                            null,
+                            null
                     ))
                     .toList();
         } catch (Exception e) {
@@ -223,7 +275,9 @@ public class StockService {
                             stock.getSymbol(),
                             stock.getCompanyName(),
                             stock.getIndustry(),
-                            stock.getPdSectorInd()
+                            stock.getPdSectorInd(),
+                            null,
+                            null
                     ))
                     .toList();
         } catch (Exception e) {

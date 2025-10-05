@@ -39,17 +39,17 @@ public class SecurityConfig {
     
     @Bean
     public ClientRegistrationRepository clientRegistrationRepository() {
-        return new InMemoryClientRegistrationRepository(this.microsoftClientRegistration());
-    }
-
-    private ClientRegistration microsoftClientRegistration() {
+        // Build Microsoft registration only if env vars are available; otherwise, return empty repo
         String clientId = System.getenv("MICROSOFT_CLIENT_ID");
         String clientSecret = System.getenv("MICROSOFT_CLIENT_SECRET");
-        
-        if (clientId == null || clientSecret == null) {
-            throw new IllegalStateException("Microsoft OAuth2 credentials not configured. Please set MICROSOFT_CLIENT_ID and MICROSOFT_CLIENT_SECRET environment variables.");
+        if (clientId != null && !clientId.isBlank() && clientSecret != null && !clientSecret.isBlank()) {
+            return new InMemoryClientRegistrationRepository(this.microsoftClientRegistration(clientId, clientSecret));
         }
-        
+        // Fallback: empty repository to avoid failing application context in tests/local without OAuth configured.
+        return new InMemoryClientRegistrationRepository(java.util.List.of());
+    }
+
+    private ClientRegistration microsoftClientRegistration(String clientId, String clientSecret) {
         return ClientRegistration.withRegistrationId("microsoft")
                 .clientId(clientId)
                 .clientSecret(clientSecret)
@@ -87,8 +87,26 @@ public class SecurityConfig {
                 if (authentication.getPrincipal() instanceof org.springframework.security.oauth2.core.user.OAuth2User) {
                     org.springframework.security.oauth2.core.user.OAuth2User oauth2User = 
                         (org.springframework.security.oauth2.core.user.OAuth2User) authentication.getPrincipal();
-                    email = oauth2User.getAttribute("email");
-                    System.out.println("OAuth2 Success - Email from attributes: " + email);
+                    java.util.Map<String, Object> attrs = oauth2User.getAttributes();
+                    String tmp = attrs == null ? null : (String) attrs.get("email");
+                    if (tmp == null || tmp.isBlank()) {
+                        Object emails = attrs == null ? null : attrs.get("emails");
+                        if (emails instanceof java.util.List<?> list && !list.isEmpty()) {
+                            Object first = list.get(0);
+                            if (first instanceof String s) {
+                                tmp = s;
+                            } else if (first instanceof java.util.Map<?, ?> m) {
+                                Object addr = m.get("value");
+                                if (addr instanceof String s2) tmp = s2;
+                            }
+                        }
+                    }
+                    if (tmp == null || tmp.isBlank()) tmp = (String) attrs.get("preferred_username");
+                    if (tmp == null || tmp.isBlank()) tmp = (String) attrs.get("upn");
+                    if (tmp == null || tmp.isBlank()) tmp = (String) attrs.get("unique_name");
+                    if (tmp == null || tmp.isBlank()) tmp = (String) attrs.get("sub");
+                    email = tmp;
+                    System.out.println("OAuth2 Success - Email (resolved): " + email);
                 } else {
                     email = null;
                 }

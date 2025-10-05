@@ -14,7 +14,11 @@ import java.time.OffsetDateTime;
 @Getter
 @Setter
 @Entity
-@Table(name = "portfolio_holdings", schema = "public")
+@Table(name = "portfolio_holdings", schema = "public",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_portfolio_holdings_portfolio_symbol",
+                        columnNames = {"portfolio_id", "symbol"})
+        })
 public class PortfolioHolding {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
