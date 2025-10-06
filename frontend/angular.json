@@ -213,10 +213,13 @@
       "projectType": "library",
       "root": "projects/criteria-builder",
       "sourceRoot": "projects/criteria-builder/src",
-      "prefix": "lib",
+      "prefix": "mp",
       "architect": {
         "build": {
-          "builder": "@angular/build:ng-packagr",
+          "builder": "@angular-devkit/build-angular:ng-packagr",
+          "options": {
+            "project": "projects/criteria-builder/ng-package.json"
+          },
           "configurations": {
             "production": {
               "tsConfig": "projects/criteria-builder/tsconfig.lib.prod.json"
@@ -228,12 +231,21 @@
           "defaultConfiguration": "production"
         },
         "test": {
-          "builder": "@angular/build:karma",
+          "builder": "@angular-devkit/build-angular:karma",
           "options": {
             "tsConfig": "projects/criteria-builder/tsconfig.spec.json",
             "polyfills": [
               "zone.js",
               "zone.js/testing"
+            ]
+          }
+        },
+        "lint": {
+          "builder": "@angular-eslint/builder:lint",
+          "options": {
+            "lintFilePatterns": [
+              "projects/criteria-builder/**/*.ts",
+              "projects/criteria-builder/**/*.html"
             ]
           }
         }

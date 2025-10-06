@@ -10,9 +10,14 @@
     "build:superset-integration": "ng build superset-integration",
     "build:query-builder": "ng build query-builder",
     "build:criteria-builder": "ng build criteria-builder",
+    "build:criteria-builder:dev": "ng build criteria-builder --configuration development",
     "build:prod": "npm run build:dashboards && npm run build:superset-integration && npm run build:query-builder && npm run build:criteria-builder && ng build --configuration production",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "test:criteria-builder": "ng test criteria-builder",
+    "test:criteria-builder:watch": "ng test criteria-builder --watch",
+    "lint:criteria-builder": "ng lint criteria-builder",
+    "pack:criteria-builder": "cd projects/criteria-builder && npm run pack"
   },
   "private": true,
   "dependencies": {
