@@ -850,8 +850,7 @@ public class CriteriaValidationService {
         if (!userFields.isEmpty()) {
             suggestions.add(ValidationSuggestion.builder()
                 .type("FIELD")
-                .message("Available fields")
-                .suggestion("Use fields like: " + userFields.stream()
+                .message("Available fields: " + userFields.stream()
                     .limit(3)
                     .map(FieldMetaResp::getLabel)
                     .collect(Collectors.joining(", ")))
@@ -863,8 +862,7 @@ public class CriteriaValidationService {
         if (!userFunctions.isEmpty()) {
             suggestions.add(ValidationSuggestion.builder()
                 .type("FUNCTION")
-                .message("Available functions")
-                .suggestion("Use functions like: " + userFunctions.stream()
+                .message("Available functions: " + userFunctions.stream()
                     .limit(3)
                     .map(FunctionMetaResp::getLabel)
                     .collect(Collectors.joining(", ")))
