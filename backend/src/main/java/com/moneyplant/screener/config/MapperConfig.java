@@ -10,6 +10,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.caffeine.CaffeineCacheManager;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 @Configuration
@@ -37,12 +38,12 @@ public class MapperConfig {
             .recordStats());
         
         // Define cache names for different criteria components
-        cacheManager.setCacheNames(
+        cacheManager.setCacheNames(List.of(
             "fieldMetadata",
             "functionDefinitions", 
             "validationRules",
             "sqlTemplates"
-        );
+        ));
         
         return cacheManager;
     }

@@ -33,22 +33,20 @@
   - Implement efficient joins between screener_functions and screener_function_params tables
   - _Requirements: 1.4, 1.5, 2.1, 2.2, 2.1.7, 2.1.8, 8.1, 8.2_
 
-- [ ] 4. Implement enhanced criteria validation service with visual interface support
-  - [ ] 4.1 Create CriteriaValidationService for comprehensive DSL validation
+- [x] 4. Implement enhanced criteria validation service with visual interface support
+  - [x] 4.1 Create CriteriaValidationService for comprehensive DSL validation
     - Implement structural validation for groups, conditions, and nesting depth limits
     - Add semantic validation for field and function references against user permissions
     - Create operator compatibility validation with field types
     - Add value type checking and range validation
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6_
-
-  - [ ] 4.2 Add visual interface validation support methods
+  - [x] 4.2 Add visual interface validation support methods
     - Implement validatePartialDSL method for real-time validation feedback during query building
     - Create previewCriteria method for generating human-readable descriptions and result estimates
     - Add getAllOperators method for complete operator metadata with descriptions and compatibility
     - Build validation suggestion system for contextual help during query construction
     - _Requirements: 9.1.3, 9.1.5, 9.1.6_
-
-  - [ ] 4.3 Integrate validation with existing screener security
+  - [x] 4.3 Integrate validation with existing screener security
     - Use existing CurrentUserService for user context and permissions
     - Leverage existing screener JWT authentication for field access control
     - Integrate with existing screener audit logging for validation events
