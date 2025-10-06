@@ -1,13 +1,18 @@
 .configure-tab-content {
-  background: var(--surface-card, white);
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: var(--card-shadow, 0 2px 12px rgba(0, 0, 0, 0.08));
-  border: 1px solid var(--surface-border, #e9ecef);
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
+  border: none;
   position: relative;
 
   .portfolio-header {
     margin-bottom: 1rem;
+    padding: 1.5rem;
+    background: var(--surface-card, white);
+    border-radius: 12px;
+    box-shadow: var(--card-shadow, 0 2px 12px rgba(0, 0, 0, 0.08));
+    border: 1px solid var(--surface-border, #e9ecef);
 
     .header-content {
       position: relative;
@@ -253,6 +258,10 @@
   .no-selection-message {
     text-align: center;
     padding: 4rem 2rem;
+    background: var(--surface-card, white);
+    border-radius: 12px;
+    box-shadow: var(--card-shadow, 0 2px 12px rgba(0, 0, 0, 0.08));
+    border: 1px solid var(--surface-border, #e9ecef);
 
     i {
       font-size: 4rem;
@@ -279,8 +288,11 @@
   // Holdings Section Styles
   .holdings-section {
     margin-top: 2rem;
-    border-top: 1px solid var(--surface-border, #e9ecef);
-    padding-top: 2rem;
+    padding: 1.5rem;
+    background: var(--surface-card, white);
+    border-radius: 12px;
+    box-shadow: var(--card-shadow, 0 2px 12px rgba(0, 0, 0, 0.08));
+    border: 1px solid var(--surface-border, #e9ecef);
 
     .holdings-header {
       display: flex;
@@ -373,6 +385,12 @@
             font-size: 0.875rem;
             padding: 1rem 0.75rem;
             text-align: left;
+          }
+
+          // Right-align Volume and VWAP headers to match their data
+          .p-datatable-thead > tr > th:nth-child(5), // Volume column
+          .p-datatable-thead > tr > th:nth-child(6) { // VWAP column
+            text-align: right;
           }
 
           .p-datatable-tbody > tr {

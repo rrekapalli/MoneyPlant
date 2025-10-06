@@ -685,8 +685,8 @@ export class PortfolioConfigureComponent implements OnInit {
     }
     this.isEditing = false;
     this.isSaving = false;
-    // Navigate back to overview
-    this.navigateToOverview();
+    // Stay on the same page - don't navigate to overview
+    console.log('Cancel editing - staying on configure page');
   }
 
   onCancel(): void {
