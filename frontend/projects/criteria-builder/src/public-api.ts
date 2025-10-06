@@ -12,6 +12,9 @@ export * from './lib/components/ac-criteria-builder.component';
 // Token renderer component
 export * from './lib/components/ac-token-renderer.component';
 
+// SQL preview component
+export * from './lib/components/ac-sql-preview.component';
+
 // Overlay components
 export * from './lib/components/interaction-overlay-manager.component';
 export * from './lib/components/dropdown-content.component';

@@ -173,7 +173,7 @@
   - Implement keyboard navigation and selection within dropdowns
   - _Requirements: 4.2, 4.3, 4.4, 4.5, 3.1.4, 3.1.5, 3.1.9_
 
-- [ ] 11. Implement SqlPreviewComponent with API-driven SQL generation
+- [x] 11. Implement SqlPreviewComponent with API-driven SQL generation
   - Create collapsible SQL preview panel using PrimeNG Panel
   - Integrate with CriteriaApiService to generate SQL using server-side API endpoint
   - Display formatted SQL with syntax highlighting using API-generated parameterized queries

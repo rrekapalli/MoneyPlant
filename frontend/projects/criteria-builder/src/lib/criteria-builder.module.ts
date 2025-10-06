@@ -9,6 +9,7 @@ import { DragDropModule } from '@angular/cdk/drag-drop';
 // PrimeNG modules
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
+import { PanelModule } from 'primeng/panel';
 
 // Standalone component is exported separately
 import { AcCriteriaBuilderComponent } from './components/ac-criteria-builder.component';
@@ -26,9 +27,11 @@ import { ContextMenuComponent } from './components/context-menu.component';
 import { 
   AcBuilderToolbarComponent,
   AcErrorBannerComponent,
-  AcTokenQueryDisplayComponent,
-  AcSqlPreviewComponent
+  AcTokenQueryDisplayComponent
 } from './components/placeholders';
+
+// Implemented components
+import { AcSqlPreviewComponent } from './components/ac-sql-preview.component';
 
 /**
  * Criteria Builder Module
@@ -43,6 +46,7 @@ import {
     DragDropModule,
     ButtonModule,
     DialogModule,
+    PanelModule,
     // Standalone overlay components
     InteractionOverlayManagerComponent,
     DropdownContentComponent,
