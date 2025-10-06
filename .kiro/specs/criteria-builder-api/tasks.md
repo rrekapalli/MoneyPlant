@@ -77,8 +77,8 @@
     - Test integration with existing screener SQL execution
     - _Requirements: 12.1, 12.3_
 
-- [ ] 6. Create field and function metadata services with visual interface support
-  - [ ] 6.1 Implement enhanced FieldMetadataService for field management
+- [x] 6. Create field and function metadata services with visual interface support
+  - [x] 6.1 Implement enhanced FieldMetadataService for field management
     - Create field metadata CRUD operations with validation and enhanced visual properties
     - Add role-based field visibility and access control using existing screener security
     - Implement field categorization, search functionality, and description support
@@ -86,8 +86,7 @@
     - Add getCompatibleOperators method for field-specific operator filtering
     - Implement getValueSuggestions method for dynamic value completion with external API support
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 8.1, 8.2_
-
-  - [ ] 6.2 Build database-driven FunctionDefinitionService for function management
+  - [x] 6.2 Build database-driven FunctionDefinitionService for function management
     - Create function metadata operations using ScreenerFunctionRepository and ScreenerFunctionParamRepository
     - Implement function loading with parameter joins from screener_functions and screener_function_params tables
     - Add function validation using is_active flag and SQL template safety checks
