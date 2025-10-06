@@ -14,7 +14,7 @@ import { MessageService } from 'primeng/api';
 import { ScreenerStateService } from '../../../services/state/screener.state';
 import { ScreenerResp, ScreenerCreateReq, ScreenerCriteria, ScreenerRule } from '../../../services/entities/screener.entities';
 import { INDICATOR_FIELDS } from '../../../services/entities/indicators.entities';
-import { CriteriaBuilderComponent } from 'criteria-builder';
+import { CriteriaBuilderModule } from 'criteria-builder';
 import { CriteriaDSL, BuilderConfig, FieldMeta, FieldType, Operator, Group, Condition, FieldRef, Literal } from 'criteria-builder';
 
 // Field type mapping constants
@@ -51,7 +51,7 @@ const BASIC_OPERATORS: Record<FieldType, Operator[]> = {
     CheckboxModule,
     ToastModule,
     TabsModule,
-    CriteriaBuilderComponent
+    CriteriaBuilderModule
   ],
   providers: [MessageService],
   templateUrl: './screener-form.component.html',
@@ -85,7 +85,7 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
   
   set criteriaDSL(value: CriteriaDSL | null) {
     this._criteriaDSL = value;
-    this.convertAndUpdateScreenerCriteria(value);
+    this.onCriteriaChange(value);
   }
   
   criteriaConfig: BuilderConfig = {};
@@ -112,24 +112,40 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
+  /**
+   * Initialize component subscriptions and handle criteria conversion on load
+   * Implements subtask 5.2: Update form initialization for existing screeners
+   * - Modify initializeSubscriptions to handle criteria conversion on load
+   * - Add conversion from existing ScreenerCriteria to CriteriaDSL
+   * - Set criteriaDSL property for criteria builder initialization
+   * - Handle cases where existing screener has no criteria
+   */
   private initializeSubscriptions() {
     this.screenerState.currentScreener$
       .pipe(takeUntil(this.destroy$))
       .subscribe(screener => {
-        this.screener = screener;
-        if (screener) {
-          this.screenerForm = {
-            name: screener.name,
-            description: screener.description || '',
-            isPublic: screener.isPublic,
-            defaultUniverse: screener.defaultUniverse || '',
-            criteria: screener.criteria
-          };
-          
-          // Convert criteria to DSL format if it exists
-          if (screener.criteria) {
-            this._criteriaDSL = this.convertScreenerCriteriaToDsl(screener.criteria);
+        try {
+          this.screener = screener;
+          if (screener) {
+            // Initialize form with screener data
+            this.screenerForm = {
+              name: screener.name,
+              description: screener.description || '',
+              isPublic: screener.isPublic,
+              defaultUniverse: screener.defaultUniverse || '',
+              criteria: screener.criteria
+            };
+            
+            // Handle criteria conversion on load
+            this.initializeCriteriaFromScreener(screener);
+          } else {
+            // Handle cases where existing screener has no criteria
+            this.initializeEmptyForm();
           }
+        } catch (error) {
+          console.error('Error initializing screener form:', error);
+          this.handleCriteriaError(error, 'load');
+          this.initializeEmptyForm();
         }
       });
 
@@ -140,6 +156,57 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
     this.screenerState.error$
       .pipe(takeUntil(this.destroy$))
       .subscribe(error => this.error = error);
+  }
+
+  /**
+   * Initialize criteria from existing screener data
+   * Add conversion from existing ScreenerCriteria to CriteriaDSL
+   * Set criteriaDSL property for criteria builder initialization
+   */
+  private initializeCriteriaFromScreener(screener: ScreenerResp) {
+    if (screener.criteria) {
+      try {
+        // Add conversion from existing ScreenerCriteria to CriteriaDSL
+        const convertedDSL = this.convertScreenerCriteriaToDsl(screener.criteria);
+        
+        // Set criteriaDSL property for criteria builder initialization
+        this._criteriaDSL = convertedDSL;
+        
+        console.log('Initialized criteria from existing screener:', {
+          originalCriteria: screener.criteria,
+          convertedDSL: convertedDSL,
+          conditionCount: this.getCriteriaCount()
+        });
+      } catch (error) {
+        console.error('Failed to convert existing criteria:', error);
+        this.handleConversionError(error);
+        
+        // Handle cases where existing screener has no criteria (fallback)
+        this._criteriaDSL = null;
+      }
+    } else {
+      // Handle cases where existing screener has no criteria
+      this._criteriaDSL = null;
+      console.log('Screener has no existing criteria - initialized with empty state');
+    }
+  }
+
+  /**
+   * Initialize empty form state
+   * Handle cases where screener loading fails or no screener exists
+   */
+  private initializeEmptyForm() {
+    this.screenerForm = {
+      name: '',
+      description: '',
+      isPublic: false,
+      defaultUniverse: '',
+      criteria: undefined
+    };
+    
+    // Handle cases where existing screener has no criteria
+    this._criteriaDSL = null;
+    this.screener = null;
   }
 
   /**
@@ -175,7 +242,7 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
     
     if (screenerId && isEdit) {
       this.screenerState.loadScreener(+screenerId).subscribe({
-        error: (error) => {
+        error: () => {
           this.messageService.add({
             severity: 'error',
             summary: 'Error',
@@ -214,7 +281,7 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
         });
         this.router.navigate(['/screeners']);
       },
-      error: (error) => {
+      error: () => {
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
@@ -236,7 +303,7 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
         });
         this.router.navigate(['/screeners', this.screener!.screenerId]);
       },
-      error: (error) => {
+      error: () => {
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
@@ -345,16 +412,50 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
     console.log('Criteria validity changed:', isValid);
   }
 
+  /**
+   * Handle criteria changes from the criteria builder
+   * Implements subtask 5.1: Update onCriteriaChange method
+   * - Modify method to accept CriteriaDSL instead of QueryRuleSet
+   * - Add conversion from CriteriaDSL to ScreenerCriteria format
+   * - Update screenerForm.criteria with converted data
+   * - Handle null/empty criteria cases gracefully
+   */
+  onCriteriaChange(dsl: CriteriaDSL | null) {
+    try {
+      // Update the internal DSL state
+      this._criteriaDSL = dsl;
+      
+      // Handle null/empty criteria cases gracefully
+      if (!dsl || !this.hasValidCriteria(dsl)) {
+        this.screenerForm.criteria = undefined;
+        console.log('Criteria cleared or invalid - set to undefined');
+        return;
+      }
 
-
-  private convertAndUpdateScreenerCriteria(dsl: CriteriaDSL | null) {
-    // Convert to screener format for backend compatibility
-    if (dsl && this.hasValidCriteria(dsl)) {
-      this.screenerForm.criteria = this.convertDslToScreenerCriteria(dsl);
-    } else {
+      // Add conversion from CriteriaDSL to ScreenerCriteria format
+      const convertedCriteria = this.convertDslToScreenerCriteria(dsl);
+      
+      // Update screenerForm.criteria with converted data
+      this.screenerForm.criteria = convertedCriteria;
+      
+      console.log('Criteria updated:', {
+        dslConditions: this.getCriteriaCount(),
+        convertedCriteria: convertedCriteria
+      });
+      
+    } catch (error) {
+      console.error('Error in onCriteriaChange:', error);
+      this.handleCriteriaError(error, 'change');
+      
+      // Fallback to empty criteria on error
+      this._criteriaDSL = null;
       this.screenerForm.criteria = undefined;
     }
   }
+
+
+
+
 
   private hasValidCriteria(dsl: CriteriaDSL): boolean {
     return dsl && dsl.root && dsl.root.children && dsl.root.children.length > 0;
@@ -695,13 +796,74 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
     };
   }
 
+  /**
+   * Clear all criteria data
+   * Implements subtask 5.3: Update clearCriteria method
+   * - Update clearCriteria to reset both criteriaDSL and screenerForm.criteria
+   * - Ensure proper state synchronization between formats
+   */
   clearCriteria() {
-    this.criteriaDSL = null;
-    this.screenerForm.criteria = undefined;
+    try {
+      // Reset both criteriaDSL and screenerForm.criteria
+      this._criteriaDSL = null;
+      this.screenerForm.criteria = undefined;
+      
+      console.log('Criteria cleared - both DSL and screener format reset');
+      
+      // Show user feedback
+      this.messageService.add({
+        severity: 'info',
+        summary: 'Criteria Cleared',
+        detail: 'All screening criteria have been removed.',
+        life: 3000
+      });
+      
+    } catch (error) {
+      console.error('Error clearing criteria:', error);
+      this.handleCriteriaError(error, 'convert');
+    }
   }
 
+  /**
+   * Check if criteria exists and is valid
+   * Implements subtask 5.3: Modify hasCriteria to work with CriteriaDSL structure
+   * - Ensure proper state synchronization between formats
+   */
   hasCriteria(): boolean {
-    return this.criteriaDSL ? this.hasValidCriteria(this.criteriaDSL) : false;
+    try {
+      // Check if criteriaDSL exists and has valid criteria
+      const hasValidDSL = this._criteriaDSL ? this.hasValidCriteria(this._criteriaDSL) : false;
+      
+      // Check if screenerForm.criteria exists (for state synchronization)
+      const hasScreenerCriteria = this.screenerForm.criteria !== undefined && this.screenerForm.criteria !== null;
+      
+      // Ensure proper state synchronization between formats
+      // Both should be in sync - if one exists, the other should too
+      if (hasValidDSL !== hasScreenerCriteria) {
+        console.warn('Criteria state synchronization issue detected:', {
+          hasValidDSL,
+          hasScreenerCriteria,
+          dslConditions: this.getCriteriaCount(),
+          screenerCriteria: this.screenerForm.criteria
+        });
+        
+        // Try to resync by converting from the existing format
+        if (hasValidDSL && !hasScreenerCriteria && this._criteriaDSL) {
+          // DSL exists but screener format doesn't - convert DSL to screener format
+          this.screenerForm.criteria = this.convertDslToScreenerCriteria(this._criteriaDSL);
+        } else if (!hasValidDSL && hasScreenerCriteria && this.screenerForm.criteria) {
+          // Screener format exists but DSL doesn't - convert screener to DSL format
+          this._criteriaDSL = this.convertScreenerCriteriaToDsl(this.screenerForm.criteria);
+        }
+      }
+      
+      return hasValidDSL;
+      
+    } catch (error) {
+      console.error('Error checking criteria existence:', error);
+      // Return false on error to prevent issues
+      return false;
+    }
   }
 
   getCriteriaCount(): number {
@@ -731,5 +893,35 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
       detail: 'There was an issue converting criteria data. Using empty criteria.',
       life: 5000
     });
+  }
+
+  /**
+   * Handle criteria-related errors with context-specific messages
+   * Used by criteria handling methods for error management
+   */
+  private handleCriteriaError(error: any, context: string): void {
+    console.error(`Criteria error in ${context}:`, error);
+    
+    const userMessage = this.getBasicErrorMessage(context);
+    this.messageService.add({
+      severity: 'error',
+      summary: 'Criteria Error',
+      detail: userMessage,
+      life: 5000
+    });
+  }
+
+  /**
+   * Get user-friendly error messages based on context
+   */
+  private getBasicErrorMessage(context: string): string {
+    const contextMessages: Record<string, string> = {
+      'load': 'Failed to load existing criteria. Starting with empty criteria.',
+      'save': 'Failed to save screener. Please check your criteria and try again.',
+      'convert': 'There was an issue with the criteria format. Please recreate your criteria.',
+      'change': 'Failed to process criteria changes. Please try again.'
+    };
+    
+    return contextMessages[context] || 'An unexpected error occurred. Please try again.';
   }
 }

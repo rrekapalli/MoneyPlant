@@ -54,20 +54,20 @@
     - Remove complex preview features for MVP
     - _Requirements: 6.2, 6.4_
 
-- [ ] 5. Integrate criteria builder with form state management
-  - [ ] 5.1 Update onCriteriaChange method
+- [x] 5. Integrate criteria builder with form state management
+  - [x] 5.1 Update onCriteriaChange method
     - Modify method to accept CriteriaDSL instead of QueryRuleSet
     - Add conversion from CriteriaDSL to ScreenerCriteria format
     - Update screenerForm.criteria with converted data
     - Handle null/empty criteria cases gracefully
     - _Requirements: 3.1, 3.2, 3.3_
-  - [ ] 5.2 Update form initialization for existing screeners
+  - [x] 5.2 Update form initialization for existing screeners
     - Modify initializeSubscriptions to handle criteria conversion on load
     - Add conversion from existing ScreenerCriteria to CriteriaDSL
     - Set criteriaDSL property for criteria builder initialization
     - Handle cases where existing screener has no criteria
     - _Requirements: 2.1, 2.2, 2.5_
-  - [ ] 5.3 Update hasCriteria and clearCriteria methods
+  - [x] 5.3 Update hasCriteria and clearCriteria methods
     - Modify hasCriteria to work with CriteriaDSL structure
     - Update clearCriteria to reset both criteriaDSL and screenerForm.criteria
     - Ensure proper state synchronization between formats
