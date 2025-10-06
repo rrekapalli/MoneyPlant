@@ -164,7 +164,7 @@
     - Test function preview and validation feedback
     - _Requirements: 12.3_
 
-- [ ] 10. Build DropdownContentComponent for API-driven token selection overlays
+- [x] 10. Build DropdownContentComponent for API-driven token selection overlays
   - Create searchable dropdown content for field selection using fields loaded from API with database-stored categorization
   - Implement operator dropdown using field-specific operator API endpoint for compatibility filtering
   - Build function selection dropdown using functions from criteria_functions table with search and category filtering

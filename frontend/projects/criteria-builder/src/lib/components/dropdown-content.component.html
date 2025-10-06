@@ -3,23 +3,56 @@
   <div class="search-wrapper">
     <i class="search-icon">🔍</i>
     <input 
+      #searchInput
       type="text" 
       [(ngModel)]="searchTerm"
       (input)="onSearchChange($event)"
       (keydown)="onKeyDown($event)"
       placeholder="Search..."
       class="search-input"
-      autocomplete="off">
+      autocomplete="off"
+      [disabled]="isLoading">
+    <i class="clear-search" 
+       *ngIf="searchTerm" 
+       (click)="clearSearch()"
+       title="Clear search">✕</i>
   </div>
+  
+  <!-- Loading indicator in search -->
+  <div class="search-loading" *ngIf="isLoading">
+    <p-progressSpinner 
+      [style]="{'width': '16px', 'height': '16px'}"
+      strokeWidth="4">
+    </p-progressSpinner>
+    <span>Loading...</span>
+  </div>
+</div>
+
+<!-- Loading Error -->
+<div class="loading-error" *ngIf="loadingError">
+  <i class="error-icon">⚠</i>
+  <span>{{ loadingError }}</span>
+  <button class="retry-btn" (click)="refreshData()">Retry</button>
 </div>
 
 <!-- Options List -->
 <div class="dropdown-options" 
+     #optionsList
      [style.max-height]="maxHeight"
-     [class.with-search]="searchable">
+     [class.with-search]="searchable"
+     [class.loading]="isLoading">
+  
+  <!-- Loading State -->
+  <div class="loading-state" *ngIf="isLoading && filteredOptions.length === 0">
+    <p-progressSpinner 
+      [style]="{'width': '32px', 'height': '32px'}"
+      strokeWidth="3">
+    </p-progressSpinner>
+    <span>Loading options...</span>
+  </div>
   
   <!-- Categorized Display -->
-  <ng-container *ngIf="categorized && getCategories().length > 1">
+  <ng-container *ngIf="!isLoading && categorized && getCategories().length > 1">
     <div class="option-category" *ngFor="let category of getCategories()">
       <div class="category-header">
         <span class="category-name">{{ category }}</span>
@@ -28,12 +61,18 @@
       
       <div class="category-options">
         <div class="dropdown-option"
-             *ngFor="let option of getOptionsForCategory(category); let i = index"
+             *ngFor="let option of getOptionsForCategory(category)"
              [class.selected]="isOptionSelected(option)"
              [class.disabled]="option.disabled"
-             [class.highlighted]="selectedIndex === i"
+             [class.highlighted]="isOptionHighlighted(option)"
              (click)="onOptionSelect(option)"
-             [attr.title]="option.description">
+             (mouseenter)="onOptionHover(option)"
+             [pTooltip]="getTooltipText(option)"
+             [tooltipDisabled]="!enableTooltips || !getTooltipText(option)"
+             tooltipPosition="right"
+             [attr.role]="'option'"
+             [attr.aria-selected]="isOptionSelected(option)"
+             [attr.aria-disabled]="option.disabled">
           
           <i class="option-icon" 
              *ngIf="option.icon">{{ getIconText(option.icon) }}</i>
@@ -41,7 +80,7 @@
           <div class="option-content">
             <span class="option-label">{{ option.label }}</span>
             <span class="option-description" 
-                  *ngIf="option.description">{{ option.description }}</span>
+                  *ngIf="showDescriptions && option.description">{{ option.description }}</span>
           </div>
           
           <i class="option-check" 
@@ -52,14 +91,20 @@
   </ng-container>
   
   <!-- Simple List Display -->
-  <ng-container *ngIf="!categorized || getCategories().length <= 1">
+  <ng-container *ngIf="!isLoading && (!categorized || getCategories().length <= 1)">
     <div class="dropdown-option"
-         *ngFor="let option of filteredOptions; let i = index"
+         *ngFor="let option of filteredOptions"
          [class.selected]="isOptionSelected(option)"
          [class.disabled]="option.disabled"
-         [class.highlighted]="selectedIndex === i"
+         [class.highlighted]="isOptionHighlighted(option)"
          (click)="onOptionSelect(option)"
-         [attr.title]="option.description">
+         (mouseenter)="onOptionHover(option)"
+         [pTooltip]="getTooltipText(option)"
+         [tooltipDisabled]="!enableTooltips || !getTooltipText(option)"
+         tooltipPosition="right"
+         [attr.role]="'option'"
+         [attr.aria-selected]="isOptionSelected(option)"
+         [attr.aria-disabled]="option.disabled">
       
       <i class="option-icon" 
          *ngIf="option.icon">{{ getIconText(option.icon) }}</i>
@@ -67,7 +112,7 @@
       <div class="option-content">
         <span class="option-label">{{ option.label }}</span>
         <span class="option-description" 
-              *ngIf="option.description">{{ option.description }}</span>
+              *ngIf="showDescriptions && option.description">{{ option.description }}</span>
       </div>
       
       <i class="option-check" 
@@ -76,18 +121,25 @@
   </ng-container>
   
   <!-- No Results -->
-  <div class="no-results" *ngIf="filteredOptions.length === 0">
+  <div class="no-results" *ngIf="!isLoading && filteredOptions.length === 0">
     <i class="info-icon">ℹ</i>
     <span>No options found</span>
     <small *ngIf="searchTerm">Try adjusting your search term</small>
+    <small *ngIf="!searchTerm && overlayType === 'value'">No suggestions available</small>
   </div>
 </div>
 
 <!-- Footer with shortcuts info -->
-<div class="dropdown-footer" *ngIf="filteredOptions.length > 0">
+<div class="dropdown-footer" *ngIf="!isLoading && filteredOptions.length > 0">
   <small class="keyboard-hints">
     <span><kbd>↑↓</kbd> Navigate</span>
     <span><kbd>Enter</kbd> Select</span>
     <span><kbd>Esc</kbd> Close</span>
+    <span *ngIf="searchable"><kbd>/</kbd> Search</span>
+  </small>
+  
+  <!-- Results count -->
+  <small class="results-count" *ngIf="searchTerm">
+    {{ filteredOptions.length }} result{{ filteredOptions.length !== 1 ? 's' : '' }}
   </small>
 </div>
