@@ -212,14 +212,13 @@
     - Test field and function metadata caching effectiveness
     - _Requirements: 12.4_
 
-- [ ] 14. Extend existing screener API documentation for criteria features
-  - [ ] 14.1 Update existing screener OpenAPI/Swagger documentation
+- [x] 14. Extend existing screener API documentation for criteria features
+  - [x] 14.1 Update existing screener OpenAPI/Swagger documentation
     - Document new criteria endpoints with request/response examples
     - Update existing screener version and run endpoint documentation to include criteria DSL support
     - Add criteria DSL schema definitions and validation rules to API documentation
     - _Requirements: 9.1_
-
-  - [ ] 14.2 Update existing screener README and documentation
+  - [x] 14.2 Update existing screener README and documentation
     - Document criteria DSL integration with existing screener workflows
     - Add criteria builder usage examples and best practices
     - Update existing screener troubleshooting guides to include criteria-related issues

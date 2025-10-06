@@ -31,6 +31,7 @@ The application is organized into the following modules:
 - **portfolio**: Manages user portfolios
 - **transaction**: Handles investment transactions
 - **watchlist**: Manages user watchlists for tracking stocks
+- **screener**: Advanced stock screening with criteria builder functionality
 
 ## Technologies
 
@@ -201,6 +202,18 @@ All APIs follow a versioned approach with the format:
 ```
 
 For more details, see the [API Versioning Strategy](docs/api-versioning-strategy.md).
+
+### Criteria Builder API
+
+The application includes an advanced Criteria Builder API that allows users to create complex stock screening conditions using a visual interface. The API provides:
+
+- **Dynamic Field Management**: Role-based access to database fields with metadata
+- **Function Library**: Extensible technical analysis and calculation functions
+- **DSL Validation**: Server-side validation of criteria expressions
+- **SQL Generation**: Secure parameterized SQL generation from criteria
+- **Visual Interface Support**: Real-time validation and suggestions for UI components
+
+For detailed documentation, see the [Criteria Builder API Guide](docs/criteria-builder-api.md).
 
 ## Contributing
 
