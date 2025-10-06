@@ -16,7 +16,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * Integrates with existing screener monitoring infrastructure using Micrometer.
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class CriteriaMetricsService {
 

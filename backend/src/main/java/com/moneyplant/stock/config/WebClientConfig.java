@@ -6,13 +6,9 @@ import io.netty.handler.timeout.WriteTimeoutHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.netty.http.client.HttpClient;
-import reactor.netty.http.client.HttpClientRequest;
-import reactor.netty.http.client.HttpClientResponse;
-
-import java.net.CookieManager;
-import java.net.CookiePolicy;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
@@ -48,5 +44,16 @@ public class WebClientConfig {
                         .defaultCodecs()
                         .maxInMemorySize(2 * 1024 * 1024)) // 2MB buffer size for larger responses
                 .build();
+    }
+
+    /**
+     * Creates a RestTemplate bean for making synchronous HTTP requests.
+     * Used by services that require traditional blocking HTTP client functionality.
+     * 
+     * @return Configured RestTemplate instance
+     */
+    @Bean
+    public RestTemplate restTemplate() {
+        return new RestTemplate();
     }
 }
