@@ -31,16 +31,15 @@
     - Test token system type definitions
     - _Requirements: 12.1, 12.2_
 
-- [ ] 3. Create CriteriaApiService for backend integration and CriteriaSerializerService for local operations
-  - [ ] 3.1 Implement CriteriaApiService for API integration
+- [x] 3. Create CriteriaApiService for backend integration and CriteriaSerializerService for local operations
+  - [x] 3.1 Implement CriteriaApiService for API integration
     - Create service methods for fetching fields, functions, and operators from backend API
     - Implement function signature retrieval from criteria_functions and criteria_function_params tables via API
     - Add field operator compatibility and value suggestions API calls
     - Implement server-side validation and SQL generation API calls
     - Add error handling and fallback behavior for API failures
     - _Requirements: 3.1.1, 3.1.2, 3.1.3, 3.1.4, 3.1.5, 3.1.6, 3.1.7, 3.1.8, 3.1.9, 3.1.10_
-
-  - [ ] 3.2 Implement CriteriaSerializerService for local DSL operations
+  - [x] 3.2 Implement CriteriaSerializerService for local DSL operations
     - Create local DSL validation methods for immediate feedback
     - Implement DSL to token conversion for visual representation
     - Add local validation for structure and basic type checking
