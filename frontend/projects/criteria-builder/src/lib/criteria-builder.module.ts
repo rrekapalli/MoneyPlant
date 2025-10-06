@@ -37,6 +37,12 @@ import { AcErrorBannerComponent } from './components/ac-error-banner.component';
 // Implemented components
 import { AcSqlPreviewComponent } from './components/ac-sql-preview.component';
 
+// Accessibility components and services
+import { AccessibilityService } from './services/accessibility.service';
+import { AccessibilityKeyboardDirective } from './directives/accessibility-keyboard.directive';
+import { LiveAnnouncerComponent } from './components/accessibility/live-announcer.component';
+import { AccessibilitySettingsComponent } from './components/accessibility/accessibility-settings.component';
+
 /**
  * Criteria Builder Module
  * Provides the main criteria builder component and related services
@@ -60,7 +66,11 @@ import { AcSqlPreviewComponent } from './components/ac-sql-preview.component';
     DropdownContentComponent,
     FunctionDialogContentComponent,
     ValueInputContentComponent,
-    ContextMenuComponent
+    ContextMenuComponent,
+    // Accessibility components
+    AccessibilityKeyboardDirective,
+    LiveAnnouncerComponent,
+    AccessibilitySettingsComponent
   ],
   declarations: [
     AcCriteriaBuilderComponent,
@@ -76,10 +86,15 @@ import { AcSqlPreviewComponent } from './components/ac-sql-preview.component';
     DropdownContentComponent,
     FunctionDialogContentComponent,
     ValueInputContentComponent,
-    ContextMenuComponent
+    ContextMenuComponent,
+    // Accessibility components
+    AccessibilityKeyboardDirective,
+    LiveAnnouncerComponent,
+    AccessibilitySettingsComponent
   ],
   providers: [
-    CriteriaBuilderService
+    CriteriaBuilderService,
+    AccessibilityService
   ]
 })
 export class CriteriaBuilderModule { }

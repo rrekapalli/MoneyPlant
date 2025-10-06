@@ -29,5 +29,11 @@ export * from './lib/components/context-menu.component';
 export * from './lib/criteria-builder.service';
 export * from './lib/services';
 
+// Accessibility components and services
+export * from './lib/services/accessibility.service';
+export * from './lib/directives/accessibility-keyboard.directive';
+export * from './lib/components/accessibility/live-announcer.component';
+export * from './lib/components/accessibility/accessibility-settings.component';
+
 // Models and interfaces
 export * from './lib/models';

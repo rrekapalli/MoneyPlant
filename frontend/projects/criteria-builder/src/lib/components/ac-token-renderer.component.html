@@ -7,7 +7,13 @@
   [attr.aria-label]="getAriaLabel()"
   [attr.aria-pressed]="isSelected"
   [attr.aria-disabled]="isDisabled"
+  [attr.aria-describedby]="token.errorMessage ? token.id + '-error' : null"
   [attr.title]="token.tooltip"
+  acAccessibilityKeyboard
+  [token]="token"
+  [enableTokenNavigation]="true"
+  (tokenEdit)="onTokenDoubleClick()"
+  (deleteToken)="tokenDelete.emit()"
   (click)="onTokenClick()"
   (dblclick)="onTokenDoubleClick()"
   (contextmenu)="onTokenRightClick($event)"
@@ -24,6 +30,16 @@
       [class]="getIconClass()" 
       aria-hidden="true">
     </i>
+  }
+  
+  <!-- Shape Indicator for Colorblind Users -->
+  @if (shouldShowShapeIndicator()) {
+    <span 
+      class="token-shape-indicator" 
+      [attr.aria-label]="'Token type: ' + token.type"
+      aria-hidden="true">
+      {{ getShapeIndicator() }}
+    </span>
   }
   
   <!-- Token Text -->
@@ -50,8 +66,18 @@
     <i 
       class="token-error-indicator pi pi-exclamation-triangle" 
       [attr.title]="token.errorMessage"
+      [attr.aria-describedby]="token.id + '-error'"
       aria-hidden="true">
     </i>
+  }
+  
+  <!-- Hidden Error Description for Screen Readers -->
+  @if (shouldShowErrorIndicator()) {
+    <span 
+      [id]="token.id + '-error'"
+      class="sr-only">
+      Error: {{ token.errorMessage }}
+    </span>
   }
   
   <!-- Delete Button -->

@@ -6,7 +6,9 @@ import {
   OnInit, 
   OnDestroy, 
   ChangeDetectorRef,
-  forwardRef
+  forwardRef,
+  HostListener,
+  ElementRef
 } from '@angular/core';
 import { 
   ControlValueAccessor, 
@@ -25,6 +27,8 @@ import { FunctionMetaResp } from '../models/function-meta.interface';
 import { QueryToken } from '../models/token-system.interface';
 import { CriteriaApiService } from '../services/criteria-api.service';
 import { CriteriaSerializerService } from '../services/criteria-serializer.service';
+import { AccessibilityService } from '../services/accessibility.service';
+import { AccessibilityKeyboardDirective } from '../directives/accessibility-keyboard.directive';
 
 /**
  * Main container component implementing ControlValueAccessor for the Criteria Builder
@@ -78,6 +82,11 @@ export class AcCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
   hasApiError = false;
   apiErrorMessage = '';
   
+  // Accessibility state
+  focusedTokenIndex = -1;
+  tokenElements: QueryToken[] = [];
+  showAccessibilitySettings = false;
+  
   // Cleanup subject
   private destroy$ = new Subject<void>();
   
@@ -85,7 +94,9 @@ export class AcCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
     private criteriaApiService: CriteriaApiService,
     private criteriaSerializerService: CriteriaSerializerService,
     private formBuilder: FormBuilder,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    public accessibilityService: AccessibilityService,
+    private elementRef: ElementRef
   ) {
     this.initializeForm();
   }
@@ -94,6 +105,7 @@ export class AcCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
     this.loadMetadata();
     this.setupValidation();
     this.setupChangeDetection();
+    this.setupAccessibility();
   }
   
   ngOnDestroy(): void {
@@ -324,6 +336,139 @@ export class AcCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
       });
   }
   
+  // Accessibility setup and management
+  
+  private setupAccessibility(): void {
+    // Setup keyboard shortcuts
+    this.accessibilityService.registerKeyboardShortcut('Ctrl+Enter', () => {
+      this.addCondition();
+    });
+    
+    this.accessibilityService.registerKeyboardShortcut('Ctrl+Shift+Enter', () => {
+      this.addGroup();
+    });
+    
+    this.accessibilityService.registerKeyboardShortcut('Ctrl+z', () => {
+      this.undo();
+    });
+    
+    this.accessibilityService.registerKeyboardShortcut('Ctrl+y', () => {
+      this.redo();
+    });
+    
+    // Listen to DSL changes for announcements
+    this.currentDSL$.pipe(
+      takeUntil(this.destroy$),
+      distinctUntilChanged()
+    ).subscribe(dsl => {
+      if (dsl) {
+        this.accessibilityService.announceQueryStructure(dsl);
+      }
+    });
+    
+    // Update token elements for navigation
+    this.tokenizedQuery$.pipe(
+      takeUntil(this.destroy$)
+    ).subscribe(tokens => {
+      this.tokenElements = tokens;
+    });
+  }
+  
+  @HostListener('keydown', ['$event'])
+  onGlobalKeyDown(event: KeyboardEvent): void {
+    // Handle global keyboard shortcuts
+    const handled = this.accessibilityService.handleGlobalKeyboardEvent(event);
+    if (handled) {
+      return;
+    }
+    
+    // Handle token navigation
+    this.handleTokenNavigation(event);
+  }
+  
+  private handleTokenNavigation(event: KeyboardEvent): void {
+    if (this.tokenElements.length === 0) {
+      return;
+    }
+    
+    switch (event.key) {
+      case 'ArrowRight':
+      case 'Tab':
+        if (event.shiftKey) {
+          event.preventDefault();
+          this.focusPreviousToken();
+        } else {
+          event.preventDefault();
+          this.focusNextToken();
+        }
+        break;
+        
+      case 'ArrowLeft':
+        if (!event.ctrlKey) {
+          event.preventDefault();
+          this.focusPreviousToken();
+        }
+        break;
+        
+      case 'Home':
+        if (!event.ctrlKey) {
+          event.preventDefault();
+          this.focusFirstToken();
+        }
+        break;
+        
+      case 'End':
+        if (!event.ctrlKey) {
+          event.preventDefault();
+          this.focusLastToken();
+        }
+        break;
+    }
+  }
+  
+  focusNextToken(): void {
+    if (this.focusedTokenIndex < this.tokenElements.length - 1) {
+      this.focusedTokenIndex++;
+      this.focusTokenAtIndex(this.focusedTokenIndex);
+    }
+  }
+  
+  focusPreviousToken(): void {
+    if (this.focusedTokenIndex > 0) {
+      this.focusedTokenIndex--;
+      this.focusTokenAtIndex(this.focusedTokenIndex);
+    }
+  }
+  
+  focusFirstToken(): void {
+    if (this.tokenElements.length > 0) {
+      this.focusedTokenIndex = 0;
+      this.focusTokenAtIndex(0);
+    }
+  }
+  
+  focusLastToken(): void {
+    if (this.tokenElements.length > 0) {
+      this.focusedTokenIndex = this.tokenElements.length - 1;
+      this.focusTokenAtIndex(this.focusedTokenIndex);
+    }
+  }
+  
+  private focusTokenAtIndex(index: number): void {
+    const token = this.tokenElements[index];
+    if (token) {
+      this.accessibilityService.setFocusedToken(token.id);
+      
+      // Find and focus the DOM element
+      const tokenElement = this.elementRef.nativeElement.querySelector(
+        `[data-token-id="${token.id}"]`
+      );
+      if (tokenElement) {
+        this.accessibilityService.focusElement(tokenElement);
+      }
+    }
+  }
+  
   // Public methods for component interaction
   
   /**
@@ -341,7 +486,42 @@ export class AcCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
       
       currentDSL.root.children.push(newCondition);
       this.currentDSL$.next({ ...currentDSL });
+      this.accessibilityService.announceToScreenReader('Added new condition');
     }
+  }
+  
+  /**
+   * Add a new group to the criteria
+   */
+  addGroup(): void {
+    const currentDSL = this.currentDSL$.value;
+    if (currentDSL) {
+      // Create a new empty group
+      const newGroup = {
+        operator: 'AND' as const,
+        children: []
+      };
+      
+      currentDSL.root.children.push(newGroup);
+      this.currentDSL$.next({ ...currentDSL });
+      this.accessibilityService.announceToScreenReader('Added new group');
+    }
+  }
+  
+  /**
+   * Undo last action (placeholder for future implementation)
+   */
+  undo(): void {
+    // TODO: Implement undo functionality
+    this.accessibilityService.announceToScreenReader('Undo not yet implemented');
+  }
+  
+  /**
+   * Redo last undone action (placeholder for future implementation)
+   */
+  redo(): void {
+    // TODO: Implement redo functionality
+    this.accessibilityService.announceToScreenReader('Redo not yet implemented');
   }
   
   /**

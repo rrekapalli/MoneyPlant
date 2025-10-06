@@ -214,3 +214,245 @@
     color: #d4a574;
   }
 }
+// Ac
+cessibility enhancements
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.accessibility-panel {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  max-width: 400px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+}
+
+// High contrast mode
+.ac-criteria-builder.high-contrast {
+  background-color: #000000;
+  border-color: #ffffff;
+  color: #ffffff;
+  border-width: 2px;
+  
+  .query-display-area {
+    background-color: #000000;
+    border-color: #ffffff;
+    border-width: 2px;
+  }
+  
+  .empty-state {
+    .empty-state-content {
+      color: #ffffff;
+      
+      i {
+        color: #ffffff;
+      }
+      
+      h3, p {
+        color: #ffffff;
+      }
+      
+      .add-first-condition-btn {
+        background-color: #ffffff;
+        color: #000000;
+        border: 2px solid #ffffff;
+        font-weight: bold;
+        
+        &:hover:not(:disabled) {
+          background-color: #cccccc;
+        }
+        
+        &:disabled {
+          background-color: #666666;
+          color: #cccccc;
+        }
+      }
+    }
+  }
+  
+  .api-error-banner {
+    background-color: #800000;
+    border-color: #ffffff;
+    color: #ffffff;
+    border-width: 2px;
+    font-weight: bold;
+  }
+  
+  .loading-overlay {
+    background-color: rgba(0, 0, 0, 0.9);
+    
+    .loading-spinner {
+      color: #ffffff;
+      
+      i {
+        color: #ffffff;
+      }
+    }
+  }
+}
+
+// Colorblind mode enhancements
+.ac-criteria-builder.colorblind-mode {
+  // Additional visual indicators will be handled by individual token components
+  
+  .empty-state {
+    .empty-state-content {
+      .add-first-condition-btn {
+        // Add pattern background for colorblind users
+        background-image: repeating-linear-gradient(
+          45deg,
+          transparent,
+          transparent 2px,
+          rgba(255, 255, 255, 0.1) 2px,
+          rgba(255, 255, 255, 0.1) 4px
+        );
+      }
+    }
+  }
+}
+
+// Screen reader mode enhancements
+.ac-criteria-builder.screen-reader-mode {
+  // Enhanced focus indicators
+  * {
+    &:focus {
+      outline: 3px solid #2196f3;
+      outline-offset: 2px;
+    }
+  }
+  
+  // Ensure all interactive elements have proper focus
+  button, [role="button"], [tabindex="0"] {
+    &:focus-visible {
+      outline: 3px solid #2196f3;
+      outline-offset: 2px;
+    }
+  }
+}
+
+// Focus management
+.ac-criteria-builder {
+  &:focus-within {
+    border-color: #2196f3;
+    box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+  }
+  
+  // Skip links for keyboard navigation
+  .skip-link {
+    position: absolute;
+    left: -9999px;
+    z-index: 999999;
+    padding: 8px 16px;
+    background: #000;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 3px;
+    
+    &:focus {
+      left: 6px;
+      top: 6px;
+    }
+  }
+}
+
+// Keyboard navigation indicators
+.keyboard-navigation-active {
+  .query-display-area {
+    border-color: #2196f3;
+    box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+  }
+}
+
+// Reduced motion support
+@media (prefers-reduced-motion: reduce) {
+  .ac-criteria-builder {
+    * {
+      transition: none !important;
+      animation: none !important;
+    }
+  }
+  
+  .loading-overlay {
+    .loading-spinner i {
+      animation: none !important;
+    }
+  }
+}
+
+// Print accessibility
+@media print {
+  .ac-criteria-builder {
+    border: 2px solid #000;
+    background: white;
+    color: black;
+    
+    .accessibility-panel,
+    .loading-overlay {
+      display: none;
+    }
+    
+    .query-display-area {
+      border: 1px solid #000;
+      background: white;
+    }
+    
+    // Show accessibility information in print
+    &::after {
+      content: "Keyboard shortcuts: Ctrl+Enter (add condition), Ctrl+Shift+Enter (add group), Arrow keys (navigate), Delete (remove), F2 (edit)";
+      display: block;
+      margin-top: 1rem;
+      padding: 0.5rem;
+      border: 1px solid #ccc;
+      font-size: 0.8rem;
+      background: #f9f9f9;
+    }
+  }
+}
+
+// Dark theme support
+.ac-criteria-builder[data-theme="dark"] {
+  background-color: #2d2d2d;
+  border-color: #444;
+  color: #e0e0e0;
+  
+  .query-display-area {
+    background-color: #3d3d3d;
+    border-color: #555;
+  }
+  
+  .empty-state {
+    .empty-state-content {
+      color: #ccc;
+      
+      i {
+        color: #666;
+      }
+      
+      p {
+        color: #aaa;
+      }
+    }
+  }
+  
+  .api-error-banner {
+    background-color: #4a3728;
+    border-color: #6b4423;
+    color: #d4a574;
+  }
+  
+  &:focus-within {
+    border-color: #64b5f6;
+    box-shadow: 0 0 0 2px rgba(100, 181, 246, 0.2);
+  }
+}

@@ -1,6 +1,9 @@
-import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy } from '@angular/core';
+import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Subject, takeUntil } from 'rxjs';
 import { QueryToken, TokenType, TOKEN_STYLES, TokenStyle } from '../models/token-system.interface';
+import { AccessibilityService } from '../services/accessibility.service';
+import { AccessibilityKeyboardDirective } from '../directives/accessibility-keyboard.directive';
 
 /**
  * Component for rendering individual tokens with appropriate styling and interaction handlers
@@ -8,16 +11,19 @@ import { QueryToken, TokenType, TOKEN_STYLES, TokenStyle } from '../models/token
 @Component({
   selector: 'ac-token-renderer',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, AccessibilityKeyboardDirective],
   templateUrl: './ac-token-renderer.component.html',
   styleUrls: ['./ac-token-renderer.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class AcTokenRendererComponent {
+export class AcTokenRendererComponent implements OnInit, OnDestroy {
   @Input() token!: QueryToken;
   @Input() isSelected: boolean = false;
   @Input() hasError: boolean = false;
   @Input() isDisabled: boolean = false;
+  @Input() position?: number;
+  @Input() total?: number;
+  @Input() parentType?: string;
 
   @Output() tokenClick = new EventEmitter<void>();
   @Output() tokenDoubleClick = new EventEmitter<void>();
@@ -25,9 +31,36 @@ export class AcTokenRendererComponent {
   @Output() tokenDelete = new EventEmitter<void>();
   @Output() tokenHover = new EventEmitter<boolean>();
   @Output() tokenFocus = new EventEmitter<boolean>();
+  @Output() tokenEdit = new EventEmitter<void>();
 
   isHovered = false;
   isFocused = false;
+  highContrastMode = false;
+  colorBlindMode = false;
+  
+  private destroy$ = new Subject<void>();
+
+  constructor(private accessibilityService: AccessibilityService) {}
+  
+  ngOnInit(): void {
+    // Subscribe to accessibility mode changes
+    this.accessibilityService.highContrastMode
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(enabled => {
+        this.highContrastMode = enabled;
+      });
+    
+    this.accessibilityService.colorBlindMode
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(enabled => {
+        this.colorBlindMode = enabled;
+      });
+  }
+  
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
 
   /**
    * Get CSS classes for the token based on its state
@@ -71,7 +104,7 @@ export class AcTokenRendererComponent {
    */
   getTokenStyles(): Record<string, string> {
     const tokenStyle = TOKEN_STYLES[this.token.type];
-    const styles: Record<string, string> = {};
+    let styles: Record<string, string> = {};
 
     if (this.hasError) {
       styles['background-color'] = tokenStyle.errorColor + '20'; // 20% opacity
@@ -94,6 +127,17 @@ export class AcTokenRendererComponent {
     if (this.isDisabled) {
       styles['opacity'] = '0.6';
       styles['cursor'] = 'not-allowed';
+    }
+
+    // Apply accessibility enhancements
+    styles = this.accessibilityService.getTokenStylesForAccessibility(this.token, styles);
+    
+    // Add colorblind pattern if enabled
+    if (this.colorBlindMode) {
+      const pattern = this.accessibilityService.getTokenPatternForColorBlind(this.token.type);
+      if (pattern) {
+        styles['background-image'] = pattern;
+      }
     }
 
     return styles;
@@ -132,27 +176,27 @@ export class AcTokenRendererComponent {
    * Get ARIA label for accessibility
    */
   getAriaLabel(): string {
-    const typeLabel = this.token.type.charAt(0).toUpperCase() + this.token.type.slice(1);
-    const text = this.getDisplayText();
-    let label = `${typeLabel}: ${text}`;
+    return this.accessibilityService.generateTokenAriaLabel(this.token, {
+      position: this.position,
+      total: this.total,
+      parentType: this.parentType,
+      hasError: this.hasError,
+      errorMessage: this.token.errorMessage
+    });
+  }
 
-    if (this.hasError) {
-      label += '. Has error: ' + (this.token.errorMessage || 'Invalid value');
-    }
+  /**
+   * Get shape indicator for colorblind users
+   */
+  getShapeIndicator(): string {
+    return this.accessibilityService.getTokenShapeIndicator(this.token.type);
+  }
 
-    if (this.token.tooltip) {
-      label += '. ' + this.token.tooltip;
-    }
-
-    if (this.token.isEditable) {
-      label += '. Press Enter or Space to edit';
-    }
-
-    if (this.token.isDeletable) {
-      label += '. Press Delete to remove';
-    }
-
-    return label;
+  /**
+   * Check if shape indicator should be shown
+   */
+  shouldShowShapeIndicator(): boolean {
+    return this.colorBlindMode;
   }
 
   /**
@@ -162,6 +206,7 @@ export class AcTokenRendererComponent {
     if (this.isDisabled) {
       return;
     }
+    this.accessibilityService.announceTokenChange('Selected', this.token, { position: this.position });
     this.tokenClick.emit();
   }
 
@@ -172,7 +217,9 @@ export class AcTokenRendererComponent {
     if (this.isDisabled) {
       return;
     }
+    this.accessibilityService.announceTokenChange('Editing', this.token, { position: this.position });
     this.tokenDoubleClick.emit();
+    this.tokenEdit.emit();
   }
 
   /**
@@ -268,6 +315,7 @@ export class AcTokenRendererComponent {
     }
     event.preventDefault();
     event.stopPropagation();
+    this.accessibilityService.announceTokenChange('Deleted', this.token, { position: this.position });
     this.tokenDelete.emit();
   }
 
