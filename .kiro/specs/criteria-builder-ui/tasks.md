@@ -52,22 +52,20 @@
     - Test import/export functionality with various DSL structures
     - _Requirements: 12.2, 12.4_
 
-- [ ] 4. Build main AcCriteriaBuilderComponent with visual token interface
-  - [ ] 4.1 Create component shell with ControlValueAccessor implementation
+- [x] 4. Build main AcCriteriaBuilderComponent with visual token interface
+  - [x] 4.1 Create component shell with ControlValueAccessor implementation
     - Implement writeValue, registerOnChange, and registerOnTouched methods
     - Set up reactive form structure with FormArray and FormGroup
     - Add debounced change detection (200ms) and validation state management
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6_
-
-  - [ ] 4.2 Implement component inputs, outputs, and API integration
+  - [x] 4.2 Implement component inputs, outputs, and API integration
     - Add @Input properties for config and optional override data
     - Create @Output events for validityChange and sqlPreviewChange
     - Set up BehaviorSubject streams for reactive state management
     - Integrate CriteriaApiService to load fields, functions, and operators dynamically
     - Add error handling for API failures with fallback behavior
     - _Requirements: 2.1, 2.4, 2.5, 8.6, 3.1.1, 3.1.2, 3.1.10_
-
-  - [ ] 4.3 Create component template with token-based query display
+  - [x] 4.3 Create component template with token-based query display
     - Design responsive layout using TokenQueryDisplayComponent
     - Integrate toolbar, error banner, and SQL preview components
     - Add placeholder for empty query state with "Click to add condition"

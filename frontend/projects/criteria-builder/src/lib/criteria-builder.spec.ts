@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { CriteriaBuilder } from './criteria-builder';
+import { CriteriaBuilderComponent } from './criteria-builder';
 
-describe('CriteriaBuilder', () => {
-  let component: CriteriaBuilder;
-  let fixture: ComponentFixture<CriteriaBuilder>;
+describe('CriteriaBuilderComponent', () => {
+  let component: CriteriaBuilderComponent;
+  let fixture: ComponentFixture<CriteriaBuilderComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [CriteriaBuilder]
+      imports: [CriteriaBuilderComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(CriteriaBuilder);
+    fixture = TestBed.createComponent(CriteriaBuilderComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

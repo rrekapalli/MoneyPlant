@@ -6,6 +6,9 @@
 export * from './lib/criteria-builder';
 export * from './lib/criteria-builder.module';
 
+// Main criteria builder component
+export * from './lib/components/ac-criteria-builder.component';
+
 // Services
 export * from './lib/criteria-builder.service';
 export * from './lib/services';
