@@ -119,19 +119,19 @@
     - Ensure graceful degradation when criteria features are unavailable
     - _Requirements: 5.1, 5.2, 5.3, 5.4_
 
-- [ ] 9. Verify backward compatibility and clean up
-  - [ ] 9.1 Test with existing screener data
+- [x] 9. Verify backward compatibility and clean up
+  - [x] 9.1 Test with existing screener data
     - Load existing screeners that were created with query-builder
     - Verify they display and function correctly with criteria-builder
     - Test that existing data can be edited and saved
     - _Requirements: 2.1, 2.2_
-  - [ ] 9.2 Remove unused query-builder code and dependencies
+  - [x] 9.2 Remove unused query-builder code and dependencies
     - Remove any remaining query-builder imports or references
     - Clean up unused methods related to old query-builder implementation
     - Remove query-builder from package dependencies if not used elsewhere
     - Update any comments or documentation references
     - _Requirements: 1.4_
-  - [ ] 9.3 Verify application stability
+  - [x] 9.3 Verify application stability
     - Test complete screener workflow (create, edit, delete)
     - Verify no console errors or warnings related to criteria integration
     - Test navigation between tabs and form state preservation

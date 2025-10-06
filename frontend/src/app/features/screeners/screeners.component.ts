@@ -24,9 +24,17 @@ import { ScreenerStateService } from '../../services/state/screener.state';
 import { ScreenerApiService } from '../../services/apis/screener.api';
 import { ScreenerResp, ScreenerCreateReq, ScreenerCriteria, ScreenerCriteriaConfig } from '../../services/entities/screener.entities';
 import { INDICATOR_FIELDS } from '../../services/entities/indicators.entities';
-import { QueryBuilderComponent } from '../../../../projects/query-builder/src/lib/components/query-builder.component';
-import { QueryRuleSet } from '../../../../projects/query-builder/src/lib/interfaces/query.interface';
-import { QueryBuilderService } from '../../../../projects/query-builder/src/lib/services/query-builder.service';
+// TODO: Update to use criteria-builder - query-builder has been removed
+// import { QueryBuilderComponent } from '../../../../projects/query-builder/src/lib/components/query-builder.component';
+// import { QueryRuleSet } from '../../../../projects/query-builder/src/lib/interfaces/query.interface';
+// import { QueryBuilderService } from '../../../../projects/query-builder/src/lib/services/query-builder.service';
+
+// Temporary interface to replace QueryRuleSet until component is updated to use criteria-builder
+interface QueryRuleSet {
+  condition: 'and' | 'or';
+  rules: any[];
+  collapsed?: boolean;
+}
 
 @Component({
   selector: 'app-screeners',
@@ -48,8 +56,9 @@ import { QueryBuilderService } from '../../../../projects/query-builder/src/lib/
     TooltipModule,
     CheckboxModule,
     MessageModule,
-    SelectModule,
-    QueryBuilderComponent
+    SelectModule
+    // TODO: Update to use criteria-builder - QueryBuilderComponent removed
+    // QueryBuilderComponent
   ],
   providers: [ConfirmationService, MessageService],
   templateUrl: './screeners.component.html',
@@ -138,8 +147,9 @@ export class ScreenersComponent implements OnInit, OnDestroy {
     private confirmationService: ConfirmationService,
     private messageService: MessageService,
     private route: ActivatedRoute,
-    private router: Router,
-    private queryBuilderService: QueryBuilderService
+    private router: Router
+    // TODO: Update to use criteria-builder - QueryBuilderService removed
+    // private queryBuilderService: QueryBuilderService
   ) {}
 
   ngOnInit() {
@@ -542,15 +552,19 @@ export class ScreenersComponent implements OnInit, OnDestroy {
   }
 
   addRule() {
-    const updatedQuery = this.queryBuilderService.addRule(this.criteriaQuery);
-    this.criteriaQuery = updatedQuery;
-    this.onCriteriaChange(this.criteriaQuery);
+    // TODO: Update to use criteria-builder - queryBuilderService removed
+    // const updatedQuery = this.queryBuilderService.addRule(this.criteriaQuery);
+    // this.criteriaQuery = updatedQuery;
+    // this.onCriteriaChange(this.criteriaQuery);
+    console.warn('addRule method needs to be updated to use criteria-builder');
   }
 
   addGroup() {
-    const updatedQuery = this.queryBuilderService.addRuleSet(this.criteriaQuery);
-    this.criteriaQuery = updatedQuery;
-    this.onCriteriaChange(this.criteriaQuery);
+    // TODO: Update to use criteria-builder - queryBuilderService removed
+    // const updatedQuery = this.queryBuilderService.addRuleSet(this.criteriaQuery);
+    // this.criteriaQuery = updatedQuery;
+    // this.onCriteriaChange(this.criteriaQuery);
+    console.warn('addGroup method needs to be updated to use criteria-builder');
   }
 
   hasCriteria(): boolean {
