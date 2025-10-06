@@ -398,6 +398,30 @@ export class AcCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
   }
   
   /**
+   * Handle token edit from query display
+   */
+  onTokenEdit(token: any): void {
+    // Token edit logic will be implemented when we build the token editing system
+    console.log('Token edit:', token);
+  }
+  
+  /**
+   * Handle token delete from query display
+   */
+  onTokenDelete(token: any): void {
+    // Token delete logic will be implemented when we build the token editing system
+    console.log('Token delete:', token);
+  }
+  
+  /**
+   * Handle overlay open from query display
+   */
+  onOverlayOpen(event: any): void {
+    // Overlay management logic will be implemented when we build the overlay system
+    console.log('Overlay open:', event);
+  }
+  
+  /**
    * Handle DSL import from toolbar
    */
   onImportDSL(dsl: CriteriaDSL): void {

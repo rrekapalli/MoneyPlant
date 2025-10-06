@@ -13,6 +13,7 @@ export interface CriteriaDSL {
     version?: number;
     createdBy?: string;
     createdAt?: string;
+    updatedAt?: string;
     tags?: string[];
   };
   validation?: {

@@ -328,6 +328,179 @@ export class CriteriaSerializerService {
     };
   }
 
+  // Token to DSL conversion for drag-and-drop reordering
+
+  /**
+   * Convert reordered tokens back to DSL structure
+   */
+  tokensToDSL(tokens: QueryToken[]): CriteriaDSL | null {
+    if (!tokens || tokens.length === 0) {
+      return this.createEmptyDSL();
+    }
+
+    try {
+      const root = this.tokensToGroup(tokens, 0);
+      return {
+        root,
+        meta: {
+          name: 'Reordered Criteria',
+          version: 1,
+          updatedAt: new Date().toISOString()
+        }
+      };
+    } catch (error) {
+      console.error('Failed to convert tokens to DSL:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Convert tokens to group structure recursively
+   */
+  private tokensToGroup(tokens: QueryToken[], startIndex: number): Group {
+    const group: Group = {
+      operator: 'AND',
+      children: []
+    };
+
+    let i = startIndex;
+    let currentCondition: Partial<Condition> = {};
+    let expectingOperator = false;
+    let expectingValue = false;
+
+    while (i < tokens.length) {
+      const token = tokens[i];
+
+      switch (token.type) {
+        case 'parenthesis':
+          if (token.value === '(') {
+            // Start of nested group - find matching closing parenthesis
+            const nestedTokens = this.extractNestedTokens(tokens, i);
+            if (nestedTokens.length > 0) {
+              const nestedGroup = this.tokensToGroup(nestedTokens, 0);
+              group.children.push(nestedGroup);
+              i += nestedTokens.length + 2; // Skip opening and closing parentheses
+            } else {
+              i++;
+            }
+          } else {
+            // Closing parenthesis - end of current group
+            break;
+          }
+          break;
+
+        case 'logic':
+          // Set group operator and finalize current condition if exists
+          if (this.isCompleteCondition(currentCondition)) {
+            group.children.push(currentCondition as Condition);
+            currentCondition = {};
+            expectingOperator = false;
+            expectingValue = false;
+          }
+          group.operator = token.value as 'AND' | 'OR' | 'NOT';
+          i++;
+          break;
+
+        case 'field':
+          if (!expectingOperator && !expectingValue) {
+            currentCondition.left = { fieldId: token.value };
+            expectingOperator = true;
+          }
+          i++;
+          break;
+
+        case 'function':
+          if (!expectingOperator && !expectingValue) {
+            currentCondition.left = {
+              functionId: token.value,
+              params: token.metadata?.['params'] || []
+            };
+            expectingOperator = true;
+          } else if (expectingValue) {
+            currentCondition.right = {
+              functionId: token.value,
+              params: token.metadata?.['params'] || []
+            };
+            expectingValue = false;
+          }
+          i++;
+          break;
+
+        case 'operator':
+          if (expectingOperator) {
+            currentCondition.op = token.value as Operator;
+            expectingOperator = false;
+            expectingValue = true;
+          }
+          i++;
+          break;
+
+        case 'value':
+          if (expectingValue) {
+            currentCondition.right = {
+              type: token.metadata?.['type'] || 'string',
+              value: token.metadata?.['value'] || token.value
+            };
+            expectingValue = false;
+          }
+          i++;
+          break;
+
+        default:
+          i++;
+          break;
+      }
+    }
+
+    // Add final condition if complete
+    if (this.isCompleteCondition(currentCondition)) {
+      group.children.push(currentCondition as Condition);
+    }
+
+    return group;
+  }
+
+  /**
+   * Extract tokens between matching parentheses
+   */
+  private extractNestedTokens(tokens: QueryToken[], startIndex: number): QueryToken[] {
+    let depth = 0;
+    const nestedTokens: QueryToken[] = [];
+
+    for (let i = startIndex + 1; i < tokens.length; i++) {
+      const token = tokens[i];
+
+      if (token.type === 'parenthesis') {
+        if (token.value === '(') {
+          depth++;
+        } else if (token.value === ')') {
+          if (depth === 0) {
+            break; // Found matching closing parenthesis
+          }
+          depth--;
+        }
+      }
+
+      nestedTokens.push(token);
+    }
+
+    return nestedTokens;
+  }
+
+  /**
+   * Check if condition has all required parts
+   */
+  private isCompleteCondition(condition: Partial<Condition>): condition is Condition {
+    return !!(condition.left && condition.op && (condition.right || this.isUnaryOperator(condition.op)));
+  }
+
+  /**
+   * Check if operator doesn't require a right side
+   */
+  private isUnaryOperator(operator: string): boolean {
+    return ['IS NULL', 'IS NOT NULL', 'EXISTS', 'NOT EXISTS'].includes(operator);
+  }
+
   // Import/export functionality for CriteriaDSL JSON
 
   /**

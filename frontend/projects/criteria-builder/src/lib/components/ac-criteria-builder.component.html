@@ -40,15 +40,17 @@
   <div class="query-display-area">
     <ac-token-query-display
       [dsl]="currentDSL$ | async"
-      [tokens]="tokenizedQuery$ | async"
-      [fields]="fields$ | async"
-      [functions]="functions$ | async"
-      [operators]="operators$ | async"
+      [fields]="(fields$ | async) || []"
+      [functions]="(functions$ | async) || []"
+      [operators]="(operators$ | async) || []"
       [config]="config"
-      [mode]="mode$ | async"
+      [mode]="(mode$ | async) || 'simple'"
       [disabled]="disabled"
       (dslChange)="onDslChange($event)"
-      (tokenSelect)="onTokenSelect($event)">
+      (tokenSelect)="onTokenSelect($event)"
+      (tokenEdit)="onTokenEdit($event)"
+      (tokenDelete)="onTokenDelete($event)"
+      (overlayOpen)="onOverlayOpen($event)">
     </ac-token-query-display>
     
     <!-- Empty State Placeholder -->

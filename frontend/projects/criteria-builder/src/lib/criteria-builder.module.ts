@@ -3,6 +3,9 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
 
+// Angular CDK modules
+import { DragDropModule } from '@angular/cdk/drag-drop';
+
 // PrimeNG modules for toolbar functionality
 import { ButtonModule } from 'primeng/button';
 import { ToggleButtonModule } from 'primeng/togglebutton';
@@ -32,6 +35,8 @@ import {
     ReactiveFormsModule,
     FormsModule,
     HttpClientModule,
+    // Angular CDK modules
+    DragDropModule,
     // PrimeNG modules
     ButtonModule,
     ToggleButtonModule,

@@ -84,14 +84,13 @@
   - Add clear all and SQL preview toggle buttons
   - _Requirements: 10.1, 10.2, 10.3, 8.5_
 
-- [ ] 6. Build TokenQueryDisplayComponent for visual query representation
-  - [ ] 6.1 Create token-based query rendering system
+- [x] 6. Build TokenQueryDisplayComponent for visual query representation
+  - [x] 6.1 Create token-based query rendering system
     - Implement DSL to token conversion logic with proper depth and positioning
     - Create token layout with visual grouping, indentation, and separators
     - Add placeholder state for empty queries with interactive add buttons
     - _Requirements: 4.1, 4.2, 4.9, 4.10, 4.11, 4.12_
-
-  - [ ] 6.2 Integrate Angular CDK drag-and-drop for token reordering
+  - [x] 6.2 Integrate Angular CDK drag-and-drop for token reordering
     - Set up cdkDropList and cdkDrag directives for token reordering
     - Implement drop validation and visual feedback during drag operations
     - Add drag handles and drop zone indicators for tokens
