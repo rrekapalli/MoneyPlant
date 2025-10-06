@@ -42,6 +42,7 @@ public class ScreenerRunService {
     private final CriteriaValidationService criteriaValidationService;
     private final ObjectMapper objectMapper;
     private final CriteriaAuditService auditService;
+    private final CriteriaMetricsService metricsService;
     
     @Qualifier("noopRunExecutor")
     private final RunExecutor runExecutor;
@@ -426,6 +427,10 @@ public class ScreenerRunService {
         
         Long currentUserId = currentUserService.getCurrentUserId();
         
+        // Start execution metrics tracking
+        String operationId = java.util.UUID.randomUUID().toString();
+        metricsService.startExecutionTimer(operationId);
+        
         // Get screener version
         ScreenerVersion version = screenerVersionRepository.findById(request.getScreenerVersionId())
                 .orElseThrow(() -> new RuntimeException("Screener version not found: " + request.getScreenerVersionId()));
@@ -462,12 +467,24 @@ public class ScreenerRunService {
                 
             } catch (Exception e) {
                 log.error("Failed to validate criteria for screener {}: {}", screenerId, e.getMessage(), e);
+                metricsService.recordExecutionFailure(operationId, "VALIDATION_ERROR");
                 throw new RuntimeException("Criteria validation failed: " + e.getMessage(), e);
             }
         }
         
-        // Proceed with standard run creation with enhanced monitoring
-        return createRun(screenerId, request);
+        try {
+            // Proceed with standard run creation with enhanced monitoring
+            RunResp result = createRun(screenerId, request);
+            
+            // Record successful execution metrics
+            long executionTime = System.currentTimeMillis() - System.currentTimeMillis(); // This will be updated by the timer
+            metricsService.recordExecutionSuccess(operationId, 0, executionTime); // Result count will be updated when available
+            
+            return result;
+        } catch (Exception e) {
+            metricsService.recordExecutionFailure(operationId, e.getClass().getSimpleName());
+            throw e;
+        }
     }
 
     /**

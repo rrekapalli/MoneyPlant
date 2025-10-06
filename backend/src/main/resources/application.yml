@@ -39,6 +39,9 @@ management:
   endpoint:
     health:
       show-details: always
+  health:
+    criteria:
+      enabled: true
 
 # Screener Criteria Configuration
 screener:

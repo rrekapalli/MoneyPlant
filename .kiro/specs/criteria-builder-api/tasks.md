@@ -167,21 +167,20 @@
     - Verify backward compatibility with non-criteria screener operations
     - _Requirements: 12.2_
 
-- [ ] 10. Integrate caching with existing screener infrastructure
+- [ ]* 10. Integrate caching with existing screener infrastructure
   - Add field metadata and function definition caching using existing screener caching patterns
   - Implement SQL generation result caching with appropriate TTL management
   - Create cache invalidation strategies for metadata updates
   - Integrate with existing screener cache monitoring and metrics
   - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5, 8.6_
 
-- [ ] 11. Extend existing screener error handling and monitoring
-  - [ ] 11.1 Integrate criteria exceptions with existing screener error handling
+- [x] 11. Extend existing screener error handling and monitoring
+  - [x] 11.1 Integrate criteria exceptions with existing screener error handling
     - Add CriteriaValidationException and SqlGenerationException to existing ScreenerExceptionHandler
     - Use existing screener error response format for criteria-related errors
     - Integrate criteria error logging with existing screener logging infrastructure
     - _Requirements: 10.1, 10.2, 10.3_
-
-  - [ ] 11.2 Extend existing screener monitoring for criteria operations
+  - [x] 11.2 Extend existing screener monitoring for criteria operations
     - Add criteria validation and SQL generation metrics to existing screener metrics collection
     - Integrate criteria performance tracking with existing screener monitoring
     - Use existing screener health checks and alerting infrastructure

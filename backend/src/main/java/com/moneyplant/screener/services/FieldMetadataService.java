@@ -31,6 +31,7 @@ public class FieldMetadataService {
     private final FieldMetadataRepository fieldMetadataRepository;
     private final ObjectMapper objectMapper;
     private final RestTemplate restTemplate;
+    private final CriteriaMetricsService metricsService;
 
     // Operator compatibility mapping
     private static final Map<String, List<String>> OPERATOR_COMPATIBILITY = Map.of(
@@ -53,6 +54,9 @@ public class FieldMetadataService {
     @Cacheable(value = "userFields", key = "#userId")
     public List<FieldMetaResp> getFieldsForUser(Long userId) {
         log.debug("Getting fields for user: {}", userId);
+        
+        // Record cache miss (method execution means cache miss)
+        metricsService.recordCacheEvent("userFields", false);
         
         try {
             List<FieldMetadata> activeFields = fieldMetadataRepository.findActiveFieldsOrderedByCategoryAndSort();

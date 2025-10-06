@@ -36,6 +36,7 @@ public class ScreenerController {
     private final CriteriaValidationService criteriaValidationService;
     private final CriteriaSqlService criteriaSqlService;
     private final CurrentUserService currentUserService;
+    private final CriteriaMetricsService metricsService;
 
     /**
      * Creates a new screener.
@@ -470,6 +471,27 @@ public class ScreenerController {
         } catch (Exception e) {
             log.error("Error getting all operators: ", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * Gets criteria metrics for monitoring.
+     */
+    @GetMapping("/metrics")
+    @Operation(summary = "Get criteria metrics", description = "Gets performance and usage metrics for criteria operations")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Metrics retrieved successfully"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<java.util.Map<String, Object>> getCriteriaMetrics() {
+        try {
+            java.util.Map<String, Object> metrics = metricsService.getMetricsSummary();
+            return ResponseEntity.ok(metrics);
+        } catch (Exception e) {
+            log.error("Error getting criteria metrics: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError()
+                .body(java.util.Map.of("error", "Failed to retrieve metrics: " + e.getMessage()));
         }
     }
 }

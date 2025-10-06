@@ -27,6 +27,7 @@ public class CriteriaValidationService {
     private final CurrentUserService currentUserService;
     private final CriteriaValidationConfig config;
     private final CriteriaAuditService auditService;
+    private final CriteriaMetricsService metricsService;
 
     // Supported operators and their compatibility
     private static final Map<String, Set<String>> OPERATOR_COMPATIBILITY = Map.of(
@@ -68,6 +69,10 @@ public class CriteriaValidationService {
         List<ValidationError> errors = new ArrayList<>();
         List<ValidationWarning> warnings = new ArrayList<>();
         String dslHash = calculateDslHash(dsl);
+        
+        // Start metrics tracking
+        String operationId = java.util.UUID.randomUUID().toString();
+        metricsService.startValidationTimer(operationId);
 
         try {
             // Load user's available fields and functions
@@ -118,6 +123,7 @@ public class CriteriaValidationService {
         } catch (Exception e) {
             log.error("Validation error for user {}: {}", userId, e.getMessage(), e);
             auditService.logSecurityEvent("VALIDATION_ERROR", "Internal validation error: " + e.getMessage());
+            metricsService.recordValidationFailure(operationId, "INTERNAL_ERROR");
             errors.add(ValidationError.builder()
                 .code("VALIDATION_ERROR")
                 .message("Internal validation error: " + e.getMessage())
@@ -126,6 +132,14 @@ public class CriteriaValidationService {
         }
 
         ValidationResult result = buildResult(errors.isEmpty(), errors, warnings, userId, dsl);
+        
+        // Record metrics
+        if (result.isValid()) {
+            metricsService.recordValidationSuccess(operationId);
+        } else {
+            String errorType = errors.isEmpty() ? "unknown" : errors.get(0).getCode();
+            metricsService.recordValidationFailure(operationId, errorType);
+        }
         
         // Audit log the validation event
         auditService.logValidationEvent(dslHash, result.isValid(), 
@@ -417,6 +431,7 @@ public class CriteriaValidationService {
             auditService.logFieldAccessEvent(fieldRef.getField(), "ACCESS_DENIED");
             auditService.logSecurityEvent("UNAUTHORIZED_FIELD_ACCESS", 
                 "User attempted to access unauthorized field: " + fieldRef.getField());
+            metricsService.recordFieldAccess(fieldRef.getField(), context.getUserId().toString(), false);
             
             errors.add(ValidationError.builder()
                 .code("UNKNOWN_FIELD")
@@ -429,6 +444,7 @@ public class CriteriaValidationService {
 
         // Log successful field access
         auditService.logFieldAccessEvent(fieldRef.getField(), "ACCESS_GRANTED");
+        metricsService.recordFieldAccess(fieldRef.getField(), context.getUserId().toString(), true);
         return field.getDataType();
     }
 
@@ -453,6 +469,7 @@ public class CriteriaValidationService {
             auditService.logFunctionAccessEvent(functionCall.getName(), "ACCESS_DENIED");
             auditService.logSecurityEvent("UNAUTHORIZED_FUNCTION_ACCESS", 
                 "User attempted to access unauthorized function: " + functionCall.getName());
+            metricsService.recordFunctionAccess(functionCall.getName(), context.getUserId().toString(), false);
             
             errors.add(ValidationError.builder()
                 .code("UNKNOWN_FUNCTION")
@@ -465,6 +482,7 @@ public class CriteriaValidationService {
 
         // Log successful function access
         auditService.logFunctionAccessEvent(functionCall.getName(), "ACCESS_GRANTED");
+        metricsService.recordFunctionAccess(functionCall.getName(), context.getUserId().toString(), true);
 
         // Validate parameters
         validateFunctionParameters(functionCall, function, context, errors, warnings, path);

@@ -27,6 +27,7 @@ public class CriteriaSqlService {
     private final SqlSecurityUtils sqlSecurity;
     private final ObjectMapper objectMapper;
     private final CriteriaAuditService auditService;
+    private final CriteriaMetricsService metricsService;
 
     /**
      * Generates SQL from validated criteria DSL.
@@ -51,6 +52,10 @@ public class CriteriaSqlService {
 
         Map<String, Object> parameters = new HashMap<>();
         AtomicInteger paramCounter = new AtomicInteger(1);
+        
+        // Start metrics tracking
+        String operationId = java.util.UUID.randomUUID().toString();
+        metricsService.startSqlGenerationTimer(operationId);
 
         try {
             // Generate WHERE clause from root group
@@ -74,6 +79,9 @@ public class CriteriaSqlService {
             log.info("Generated SQL for user {}: {} with {} parameters (complexity: {})", 
                 userId, whereClause, parameters.size(), complexity);
 
+            // Record metrics
+            metricsService.recordSqlGenerationSuccess(operationId, parameters.size(), complexity);
+            
             // Audit log the SQL generation
             auditService.logSqlGenerationEvent(dslHash, true, null);
 
@@ -81,6 +89,7 @@ public class CriteriaSqlService {
 
         } catch (Exception e) {
             log.error("SQL generation failed for user {}: {}", userId, e.getMessage(), e);
+            metricsService.recordSqlGenerationFailure(operationId, e.getClass().getSimpleName());
             auditService.logSqlGenerationEvent(calculateDslHash(dsl), false, e.getMessage());
             throw new SqlGenerationException("SQL generation failed: " + e.getMessage(), e);
         }
