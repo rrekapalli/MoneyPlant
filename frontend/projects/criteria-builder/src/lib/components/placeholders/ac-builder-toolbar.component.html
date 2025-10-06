@@ -36,6 +36,7 @@
         icon="pi pi-upload"
         size="small"
         severity="secondary"
+        [loading]="isImporting"
         (onClick)="onImport()"
         pTooltip="Import criteria from JSON file"
         tooltipPosition="bottom"
@@ -48,6 +49,7 @@
         size="small"
         severity="secondary"
         [disabled]="!hasContent"
+        [loading]="isExporting"
         (onClick)="onExport()"
         pTooltip="Export criteria to JSON file"
         tooltipPosition="bottom"
@@ -81,6 +83,17 @@
         styleClass="presets-btn">
       </p-button>
       
+      <p-button
+        label="Import Preset"
+        icon="pi pi-upload"
+        size="small"
+        severity="info"
+        (onClick)="onImportPreset()"
+        pTooltip="Import preset from file"
+        tooltipPosition="bottom"
+        styleClass="import-preset-btn">
+      </p-button>
+      
       <!-- Presets Dropdown Menu -->
       <div class="presets-menu" *ngIf="showPresetMenu && presets.length > 0">
         <div class="presets-menu-header">
@@ -95,20 +108,40 @@
         <div class="presets-list">
           <div
             class="preset-item"
-            *ngFor="let preset of presets; let i = index"
+            *ngFor="let preset of presets"
             (click)="loadPreset(preset)">
             <div class="preset-info">
               <span class="preset-name">{{ preset.name }}</span>
-              <span class="preset-date">{{ preset.createdAt | date:'short' }}</span>
+              <span class="preset-description" *ngIf="preset.description">{{ preset.description }}</span>
+              <div class="preset-metadata">
+                <span class="preset-date">{{ preset.createdAt | date:'short' }}</span>
+                <span class="preset-complexity" [class]="'complexity-' + preset.metadata.complexity">
+                  {{ preset.metadata.complexity }}
+                </span>
+                <span class="preset-conditions">{{ preset.metadata.conditionCount }} conditions</span>
+              </div>
+              <div class="preset-tags" *ngIf="preset.tags.length > 0">
+                <span class="preset-tag" *ngFor="let tag of preset.tags">{{ tag }}</span>
+              </div>
             </div>
-            <p-button
-              icon="pi pi-trash"
-              size="small"
-              severity="danger"
-              text="true"
-              (onClick)="deletePreset(i, $event)"
-              pTooltip="Delete preset">
-            </p-button>
+            <div class="preset-actions">
+              <p-button
+                icon="pi pi-download"
+                size="small"
+                severity="secondary"
+                text="true"
+                (onClick)="exportPreset(preset, $event)"
+                pTooltip="Export preset">
+              </p-button>
+              <p-button
+                icon="pi pi-trash"
+                size="small"
+                severity="danger"
+                text="true"
+                (onClick)="deletePreset(preset, $event)"
+                pTooltip="Delete preset">
+              </p-button>
+            </div>
           </div>
         </div>
       </div>
@@ -164,7 +197,7 @@
   
   <div class="save-preset-content">
     <div class="field">
-      <label for="presetName">Preset Name</label>
+      <label for="presetName">Preset Name *</label>
       <input
         id="presetName"
         type="text"
@@ -175,8 +208,22 @@
         class="preset-name-input"
         (keyup.enter)="savePreset()">
     </div>
+    
+    <div class="field">
+      <label for="presetDescription">Description (Optional)</label>
+      <textarea
+        id="presetDescription"
+        pInputTextarea
+        [(ngModel)]="newPresetDescription"
+        placeholder="Enter preset description"
+        maxlength="200"
+        rows="3"
+        class="preset-description-input">
+      </textarea>
+    </div>
+    
     <small class="field-help">
-      Give your preset a descriptive name to easily identify it later.
+      Give your preset a descriptive name and optional description to easily identify it later.
     </small>
   </div>
   
@@ -193,6 +240,49 @@
       severity="success"
       [disabled]="!newPresetName.trim()"
       (onClick)="savePreset()">
+    </p-button>
+  </ng-template>
+</p-dialog>
+
+<!-- Import Error Dialog -->
+<p-dialog
+  [(visible)]="showImportErrors"
+  header="Import Results"
+  [modal]="true"
+  [closable]="true"
+  [resizable]="false"
+  [draggable]="false"
+  styleClass="import-errors-dialog"
+  (onHide)="dismissImportErrors()">
+  
+  <div class="import-results-content">
+    <div class="import-errors" *ngIf="importErrors.length > 0">
+      <h4 class="error-title">
+        <i class="pi pi-exclamation-triangle"></i>
+        Errors ({{ importErrors.length }})
+      </h4>
+      <ul class="error-list">
+        <li *ngFor="let error of importErrors" class="error-item">{{ error }}</li>
+      </ul>
+    </div>
+    
+    <div class="import-warnings" *ngIf="importWarnings.length > 0">
+      <h4 class="warning-title">
+        <i class="pi pi-exclamation-circle"></i>
+        Warnings ({{ importWarnings.length }})
+      </h4>
+      <ul class="warning-list">
+        <li *ngFor="let warning of importWarnings" class="warning-item">{{ warning }}</li>
+      </ul>
+    </div>
+  </div>
+  
+  <ng-template pTemplate="footer">
+    <p-button
+      label="Close"
+      icon="pi pi-times"
+      severity="secondary"
+      (onClick)="dismissImportErrors()">
     </p-button>
   </ng-template>
 </p-dialog>

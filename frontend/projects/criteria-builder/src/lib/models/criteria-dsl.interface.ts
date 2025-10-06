@@ -15,6 +15,15 @@ export interface CriteriaDSL {
     createdAt?: string;
     updatedAt?: string;
     tags?: string[];
+    exportedAt?: string;
+    exportedBy?: string;
+    exportVersion?: string;
+    schemaVersion?: string;
+    importedAt?: string;
+    importedBy?: string;
+    originalExportedAt?: string;
+    originalExportedBy?: string;
+    [key: string]: any; // Allow additional metadata
   };
   validation?: {
     isValid: boolean;

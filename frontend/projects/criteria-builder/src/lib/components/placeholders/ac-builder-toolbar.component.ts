@@ -1,5 +1,8 @@
-import { Component, Input, Output, EventEmitter, ViewChild, ElementRef } from '@angular/core';
+import { Component, Input, Output, EventEmitter, ViewChild, ElementRef, OnInit, OnDestroy } from '@angular/core';
+import { Subject, takeUntil } from 'rxjs';
 import { CriteriaDSL, BuilderConfig } from '../../models';
+import { CriteriaImportExportService, ExportOptions, ImportOptions } from '../../services/criteria-import-export.service';
+import { CriteriaPresetService, CriteriaPreset } from '../../services/criteria-preset.service';
 
 /**
  * Builder Toolbar Component for mode switching and actions
@@ -12,7 +15,7 @@ import { CriteriaDSL, BuilderConfig } from '../../models';
   templateUrl: './ac-builder-toolbar.component.html',
   styleUrls: ['./ac-builder-toolbar.component.scss']
 })
-export class AcBuilderToolbarComponent {
+export class AcBuilderToolbarComponent implements OnInit, OnDestroy {
   @Input() currentDSL: CriteriaDSL | null = null;
   @Input() mode: 'simple' | 'advanced' | null = 'simple';
   @Input() config: BuilderConfig = {};
@@ -27,17 +30,44 @@ export class AcBuilderToolbarComponent {
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
   
   // Preset management state
-  presets: Array<{name: string, dsl: CriteriaDSL, createdAt: string}> = [];
+  presets: CriteriaPreset[] = [];
   showPresetMenu = false;
   newPresetName = '';
+  newPresetDescription = '';
   showSavePresetDialog = false;
+  
+  // Import/Export state
+  importErrors: string[] = [];
+  importWarnings: string[] = [];
+  showImportErrors = false;
+  isImporting = false;
+  isExporting = false;
   
   // SQL preview state
   showSqlPreview = false;
   
-  constructor() {
-    this.loadPresets();
+  // Cleanup
+  private destroy$ = new Subject<void>();
+  
+  constructor(
+    private importExportService: CriteriaImportExportService,
+    private presetService: CriteriaPresetService
+  ) {
     this.showSqlPreview = this.config.showSqlPreview || false;
+  }
+  
+  ngOnInit(): void {
+    // Subscribe to presets changes
+    this.presetService.presets$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(presets => {
+        this.presets = presets;
+      });
+  }
+  
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
   
   /**
@@ -56,40 +86,54 @@ export class AcBuilderToolbarComponent {
   }
   
   /**
-   * Process imported file
+   * Process imported file with enhanced validation
    */
-  onFileSelected(event: Event): void {
+  async onFileSelected(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     
-    if (file && file.type === 'application/json') {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        try {
-          const content = e.target?.result as string;
-          const importedDSL = JSON.parse(content) as CriteriaDSL;
-          
-          // Basic validation of imported DSL structure
-          if (this.isValidDSLStructure(importedDSL)) {
-            this.importDSL.emit(importedDSL);
-          } else {
-            alert('Invalid criteria file format. Please select a valid criteria JSON file.');
-          }
-        } catch (error) {
-          alert('Error reading file. Please ensure it is a valid JSON file.');
-        }
-      };
-      reader.readAsText(file);
-    } else {
-      alert('Please select a JSON file.');
+    if (!file) {
+      return;
     }
     
-    // Reset file input
-    input.value = '';
+    this.isImporting = true;
+    this.importErrors = [];
+    this.importWarnings = [];
+    this.showImportErrors = false;
+    
+    try {
+      const importOptions: ImportOptions = {
+        validateContent: true,
+        allowInvalid: false,
+        maxFileSize: 10 * 1024 * 1024, // 10MB
+        importedBy: 'toolbar-import'
+      };
+      
+      const result = await this.importExportService.importFromFile(file, importOptions);
+      
+      if (result.success && result.dsl) {
+        this.importDSL.emit(result.dsl);
+        
+        if (result.warnings && result.warnings.length > 0) {
+          this.importWarnings = result.warnings;
+          this.showImportErrors = true;
+        }
+      } else {
+        this.importErrors = result.errors || ['Unknown import error'];
+        this.showImportErrors = true;
+      }
+    } catch (error) {
+      this.importErrors = [`Import failed: ${error instanceof Error ? error.message : 'Unknown error'}`];
+      this.showImportErrors = true;
+    } finally {
+      this.isImporting = false;
+      // Reset file input
+      input.value = '';
+    }
   }
   
   /**
-   * Handle export functionality with JSON file download
+   * Handle export functionality with enhanced validation and metadata
    */
   onExport(): void {
     if (!this.currentDSL) {
@@ -97,27 +141,34 @@ export class AcBuilderToolbarComponent {
       return;
     }
     
-    const exportData = {
-      ...this.currentDSL,
-      meta: {
-        ...this.currentDSL.meta,
-        exportedAt: new Date().toISOString(),
-        exportedBy: 'criteria-builder-ui'
+    this.isExporting = true;
+    
+    try {
+      const exportOptions: ExportOptions = {
+        minify: false,
+        includeValidation: true,
+        allowInvalid: false,
+        exportedBy: 'toolbar-export',
+        additionalMetadata: {
+          exportSource: 'criteria-builder-toolbar',
+          userAgent: navigator.userAgent,
+          timestamp: Date.now()
+        }
+      };
+      
+      const success = this.importExportService.exportToFile(this.currentDSL, undefined, exportOptions);
+      
+      if (success) {
+        this.exportDSL.emit();
+      } else {
+        alert('Export failed. Please check the console for details.');
       }
-    };
-    
-    const dataStr = JSON.stringify(exportData, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(dataBlob);
-    link.download = `criteria-${this.generateFileName()}.json`;
-    link.click();
-    
-    // Clean up
-    URL.revokeObjectURL(link.href);
-    
-    this.exportDSL.emit();
+    } catch (error) {
+      console.error('Export error:', error);
+      alert(`Export failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      this.isExporting = false;
+    }
   }
   
   /**
@@ -153,7 +204,7 @@ export class AcBuilderToolbarComponent {
   }
   
   /**
-   * Save current criteria as preset
+   * Save current criteria as preset using enhanced preset service
    */
   savePreset(): void {
     if (!this.newPresetName.trim()) {
@@ -165,38 +216,49 @@ export class AcBuilderToolbarComponent {
       return;
     }
     
-    const preset = {
-      name: this.newPresetName.trim(),
-      dsl: { ...this.currentDSL },
-      createdAt: new Date().toISOString()
-    };
+    const result = this.presetService.savePreset(
+      this.newPresetName.trim(),
+      this.currentDSL,
+      this.newPresetDescription.trim() || undefined
+    );
     
-    this.presets.push(preset);
-    this.savePresets();
-    this.showSavePresetDialog = false;
-    this.newPresetName = '';
-  }
-  
-  /**
-   * Load a saved preset
-   */
-  loadPreset(preset: {name: string, dsl: CriteriaDSL, createdAt: string}): void {
-    if (confirm(`Load preset "${preset.name}"? This will replace the current criteria.`)) {
-      this.importDSL.emit(preset.dsl);
-      this.showPresetMenu = false;
+    if (result.success) {
+      this.showSavePresetDialog = false;
+      this.newPresetName = '';
+      this.newPresetDescription = '';
+    } else {
+      alert(result.error || 'Failed to save preset');
     }
   }
   
   /**
-   * Delete a saved preset
+   * Load a saved preset using enhanced preset service
    */
-  deletePreset(index: number, event: Event): void {
+  loadPreset(preset: CriteriaPreset): void {
+    if (confirm(`Load preset "${preset.name}"? This will replace the current criteria.`)) {
+      const result = this.presetService.loadPreset(preset.id);
+      
+      if (result.success && result.dsl) {
+        this.importDSL.emit(result.dsl);
+        this.showPresetMenu = false;
+      } else {
+        alert(result.error || 'Failed to load preset');
+      }
+    }
+  }
+  
+  /**
+   * Delete a saved preset using enhanced preset service
+   */
+  deletePreset(preset: CriteriaPreset, event: Event): void {
     event.stopPropagation();
     
-    const preset = this.presets[index];
     if (confirm(`Delete preset "${preset.name}"?`)) {
-      this.presets.splice(index, 1);
-      this.savePresets();
+      const result = this.presetService.deletePreset(preset.id);
+      
+      if (!result.success) {
+        alert(result.error || 'Failed to delete preset');
+      }
     }
   }
   
@@ -206,56 +268,79 @@ export class AcBuilderToolbarComponent {
   cancelSavePreset(): void {
     this.showSavePresetDialog = false;
     this.newPresetName = '';
+    this.newPresetDescription = '';
   }
   
   /**
-   * Load presets from local storage
+   * Export a preset to file
    */
-  private loadPresets(): void {
-    try {
-      const stored = localStorage.getItem('criteria-builder-presets');
-      if (stored) {
-        this.presets = JSON.parse(stored);
+  exportPreset(preset: CriteriaPreset, event: Event): void {
+    event.stopPropagation();
+    
+    const result = this.presetService.exportPreset(preset.id);
+    
+    if (result.success && result.data && result.filename) {
+      const blob = new Blob([result.data], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = result.filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      URL.revokeObjectURL(url);
+    } else {
+      alert(result.error || 'Failed to export preset');
+    }
+  }
+  
+  /**
+   * Import preset from file
+   */
+  onImportPreset(): void {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    
+    input.onchange = async (event) => {
+      const file = (event.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      
+      try {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const content = e.target?.result as string;
+          if (content) {
+            const result = this.presetService.importPreset(content);
+            
+            if (result.success) {
+              alert(`Preset "${result.preset?.name}" imported successfully!`);
+            } else {
+              alert(result.error || 'Failed to import preset');
+            }
+          }
+        };
+        reader.readAsText(file);
+      } catch (error) {
+        alert(`Import failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
-    } catch (error) {
-      console.warn('Failed to load presets from local storage:', error);
-      this.presets = [];
-    }
+    };
+    
+    input.click();
   }
   
   /**
-   * Save presets to local storage
+   * Dismiss import errors
    */
-  private savePresets(): void {
-    try {
-      localStorage.setItem('criteria-builder-presets', JSON.stringify(this.presets));
-    } catch (error) {
-      console.warn('Failed to save presets to local storage:', error);
-    }
+  dismissImportErrors(): void {
+    this.showImportErrors = false;
+    this.importErrors = [];
+    this.importWarnings = [];
   }
   
-  /**
-   * Generate filename for export
-   */
-  private generateFileName(): string {
-    const now = new Date();
-    const timestamp = now.toISOString().replace(/[:.]/g, '-').slice(0, 19);
-    return `${timestamp}`;
-  }
-  
-  /**
-   * Basic validation of DSL structure
-   */
-  private isValidDSLStructure(dsl: any): dsl is CriteriaDSL {
-    return (
-      dsl &&
-      typeof dsl === 'object' &&
-      dsl.root &&
-      typeof dsl.root === 'object' &&
-      dsl.root.operator &&
-      Array.isArray(dsl.root.children)
-    );
-  }
+
   
   /**
    * Check if current criteria has content

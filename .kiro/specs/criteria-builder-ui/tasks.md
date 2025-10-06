@@ -201,14 +201,13 @@
   - Add shape and pattern indicators for colorblind users alongside color coding
   - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.7, 11.8_
 
-- [ ] 14. Implement import/export and persistence functionality
-  - [ ] 14.1 Create JSON import/export with validation
+- [x] 14. Implement import/export and persistence functionality
+  - [x] 14.1 Create JSON import/export with validation
     - Implement CriteriaDSL JSON serialization and deserialization
     - Add import validation with error reporting
     - Create export functionality with metadata inclusion
     - _Requirements: 10.1, 10.2, 10.3_
-
-  - [ ] 14.2 Add preset management with local storage
+  - [x] 14.2 Add preset management with local storage
     - Implement save/load preset functionality
     - Create preset management UI with naming and descriptions
     - Add preset sharing and import/export capabilities
