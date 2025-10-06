@@ -24,7 +24,10 @@
     [config]="config"
     (modeChange)="setMode($event)"
     (clearAll)="clearAll()"
-    (addCondition)="addCondition()">
+    (addCondition)="addCondition()"
+    (importDSL)="onImportDSL($event)"
+    (exportDSL)="onExportDSL()"
+    (sqlPreviewToggle)="onSqlPreviewToggle($event)">
   </ac-builder-toolbar>
   
   <!-- Error Banner for Validation -->

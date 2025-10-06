@@ -396,4 +396,28 @@ export class AcCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
     // Token selection logic will be implemented when we build the token display component
     console.log('Token selected:', token);
   }
+  
+  /**
+   * Handle DSL import from toolbar
+   */
+  onImportDSL(dsl: CriteriaDSL): void {
+    this.writeValue(dsl);
+  }
+  
+  /**
+   * Handle DSL export from toolbar
+   */
+  onExportDSL(): void {
+    // Export is handled entirely by the toolbar component
+    // This event is just for notification/logging if needed
+    console.log('DSL exported');
+  }
+  
+  /**
+   * Handle SQL preview toggle from toolbar
+   */
+  onSqlPreviewToggle(show: boolean): void {
+    // Update config to reflect SQL preview state
+    this.config = { ...this.config, showSqlPreview: show };
+  }
 }

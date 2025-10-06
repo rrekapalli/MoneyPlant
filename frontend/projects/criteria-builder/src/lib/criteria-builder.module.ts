@@ -1,7 +1,14 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule } from '@angular/forms';
+import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
+
+// PrimeNG modules for toolbar functionality
+import { ButtonModule } from 'primeng/button';
+import { ToggleButtonModule } from 'primeng/togglebutton';
+import { DialogModule } from 'primeng/dialog';
+import { InputTextModule } from 'primeng/inputtext';
+import { TooltipModule } from 'primeng/tooltip';
 
 import { CriteriaBuilderComponent } from './criteria-builder';
 import { AcCriteriaBuilderComponent } from './components/ac-criteria-builder.component';
@@ -23,7 +30,14 @@ import {
   imports: [
     CommonModule,
     ReactiveFormsModule,
+    FormsModule,
     HttpClientModule,
+    // PrimeNG modules
+    ButtonModule,
+    ToggleButtonModule,
+    DialogModule,
+    InputTextModule,
+    TooltipModule,
     CriteriaBuilderComponent // Import standalone component
   ],
   declarations: [

@@ -1,0 +1,345 @@
+.builder-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  position: relative;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1rem;
+  }
+}
+
+.toolbar-section {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  
+  &.toolbar-left {
+    flex: 1;
+    
+    @media (max-width: 768px) {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+  
+  &.toolbar-right {
+    @media (max-width: 768px) {
+      width: 100%;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+  }
+}
+
+// Mode Toggle Group
+.mode-toggle-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  background-color: rgba(255, 255, 255, 0.7);
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+}
+
+.mode-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #495057;
+  margin: 0;
+}
+
+:host ::ng-deep .mode-toggle {
+  .p-togglebutton {
+    border-radius: 4px;
+    
+    &.p-togglebutton-checked {
+      background-color: #0d6efd;
+      border-color: #0d6efd;
+      
+      .p-button-label {
+        color: white;
+      }
+    }
+  }
+}
+
+// Button Groups
+.file-operations-group,
+.presets-group,
+.settings-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem;
+  background-color: rgba(255, 255, 255, 0.5);
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  
+  @media (max-width: 768px) {
+    gap: 0.25rem;
+  }
+}
+
+// Presets Menu
+.presets-group {
+  position: relative;
+}
+
+.presets-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.5rem;
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  min-width: 280px;
+  max-width: 400px;
+  max-height: 300px;
+  overflow: hidden;
+}
+
+.presets-menu-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+  font-weight: 600;
+  color: #495057;
+}
+
+.presets-list {
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.preset-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #f1f3f4;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  
+  &:hover {
+    background-color: #f8f9fa;
+  }
+  
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.preset-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.preset-name {
+  font-weight: 500;
+  color: #212529;
+  font-size: 0.9rem;
+}
+
+.preset-date {
+  font-size: 0.8rem;
+  color: #6c757d;
+}
+
+.preset-menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999;
+  background: transparent;
+}
+
+// Save Preset Dialog
+:host ::ng-deep .save-preset-dialog {
+  .p-dialog {
+    min-width: 400px;
+    
+    @media (max-width: 480px) {
+      min-width: 90vw;
+    }
+  }
+}
+
+.save-preset-content {
+  padding: 1rem 0;
+}
+
+.field {
+  margin-bottom: 0.5rem;
+  
+  label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #495057;
+  }
+}
+
+.preset-name-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  
+  &:focus {
+    outline: none;
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+  }
+}
+
+.field-help {
+  color: #6c757d;
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+  display: block;
+}
+
+// Button Customizations
+:host ::ng-deep {
+  .add-condition-btn .p-button {
+    background-color: #198754;
+    border-color: #198754;
+    
+    &:hover {
+      background-color: #157347;
+      border-color: #146c43;
+    }
+  }
+  
+  .import-btn .p-button,
+  .export-btn .p-button {
+    background-color: #6c757d;
+    border-color: #6c757d;
+    
+    &:hover {
+      background-color: #5c636a;
+      border-color: #565e64;
+    }
+  }
+  
+  .save-preset-btn .p-button,
+  .presets-btn .p-button {
+    background-color: #0dcaf0;
+    border-color: #0dcaf0;
+    
+    &:hover {
+      background-color: #31d2f2;
+      border-color: #25cff2;
+    }
+  }
+  
+  .sql-preview-toggle .p-button {
+    background-color: #6f42c1;
+    border-color: #6f42c1;
+    
+    &:hover {
+      background-color: #5d39a3;
+      border-color: #59359a;
+    }
+  }
+  
+  .clear-all-btn .p-button {
+    background-color: #dc3545;
+    border-color: #dc3545;
+    
+    &:hover {
+      background-color: #c82333;
+      border-color: #bd2130;
+    }
+  }
+  
+  // Disabled state
+  .p-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  
+  // Small button adjustments
+  .p-button-sm {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 576px) {
+  .builder-toolbar {
+    padding: 0.5rem;
+  }
+  
+  .toolbar-section {
+    gap: 0.5rem;
+  }
+  
+  .file-operations-group,
+  .presets-group,
+  .settings-group {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  :host ::ng-deep .p-button-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+    
+    .p-button-label {
+      display: none;
+    }
+    
+    .p-button-icon {
+      margin: 0;
+    }
+  }
+}
+
+// Animation for preset menu
+.presets-menu {
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Focus styles for accessibility
+:host ::ng-deep .p-button:focus {
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+.preset-item:focus {
+  outline: 2px solid #0d6efd;
+  outline-offset: -2px;
+}

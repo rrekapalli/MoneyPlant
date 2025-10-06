@@ -77,7 +77,7 @@
     - Test token-based interface integration
     - _Requirements: 12.1_
 
-- [ ] 5. Implement BuilderToolbarComponent for mode switching and actions
+- [x] 5. Implement BuilderToolbarComponent for mode switching and actions
   - Create toolbar with simple/advanced mode toggle using PrimeNG ToggleButton
   - Add import/export functionality with JSON file handling
   - Implement save/load presets with local storage integration
