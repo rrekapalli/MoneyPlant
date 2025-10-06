@@ -99,20 +99,20 @@
     - Style badge consistently with existing UI patterns
     - _Requirements: 6.2_
 
-- [ ] 8. Test basic integration functionality
-  - [ ] 8.1 Test screener creation with criteria
+- [x] 8. Test basic integration functionality
+  - [x] 8.1 Test screener creation with criteria
     - Verify new screener can be created with criteria from criteria builder
     - Test that criteria data is properly converted and saved
     - Ensure form validation works with criteria data
     - Test empty criteria case (screener without criteria)
     - _Requirements: 3.2, 3.4, 3.5_
-  - [ ] 8.2 Test screener editing with existing criteria
+  - [x] 8.2 Test screener editing with existing criteria
     - Verify existing screener criteria loads properly in criteria builder
     - Test that criteria can be modified and saved
     - Ensure data conversion works in both directions
     - Test edge cases like malformed or missing criteria data
     - _Requirements: 2.1, 2.2, 2.5_
-  - [ ] 8.3 Test error scenarios and edge cases
+  - [x] 8.3 Test error scenarios and edge cases
     - Test behavior when criteria builder fails to load
     - Verify error handling when data conversion fails
     - Test form behavior with invalid criteria data
