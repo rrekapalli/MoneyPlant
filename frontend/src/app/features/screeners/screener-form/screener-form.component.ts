@@ -17,7 +17,19 @@ import { INDICATOR_FIELDS } from '../../../services/entities/indicators.entities
 import { CriteriaBuilderModule } from 'criteria-builder';
 import { CriteriaDSL, BuilderConfig, FieldMeta, FieldType, Operator, Group, Condition, FieldRef, Literal } from 'criteria-builder';
 
-// Field type mapping constants
+/**
+ * Static Field Configuration for Criteria Builder Integration
+ * 
+ * This section contains the static configuration used for the MVP implementation
+ * of the criteria builder integration. These constants map the existing INDICATOR_FIELDS
+ * to the format expected by the criteria-builder library.
+ */
+
+/**
+ * Field type mapping from INDICATOR_FIELDS format to CriteriaBuilder FieldType
+ * Maps the field types used in the existing screener system to the types expected
+ * by the criteria-builder library for proper operator and validation handling.
+ */
 const FIELD_TYPE_MAPPING: Record<string, FieldType> = {
   'number': 'number',
   'string': 'string',
@@ -27,7 +39,12 @@ const FIELD_TYPE_MAPPING: Record<string, FieldType> = {
   'currency': 'currency'
 };
 
-// Basic operator configuration for different field types
+/**
+ * Basic operator configuration for different field types
+ * Defines which operators are available for each field type in the criteria builder.
+ * This provides a static configuration for the MVP implementation, ensuring that
+ * users can only select appropriate operators for each field type.
+ */
 const BASIC_OPERATORS: Record<FieldType, Operator[]> = {
   'number': ['=', '!=', '>', '>=', '<', '<=', 'BETWEEN', 'NOT BETWEEN'],
   'integer': ['=', '!=', '>', '>=', '<', '<=', 'BETWEEN', 'NOT BETWEEN'],
@@ -39,6 +56,44 @@ const BASIC_OPERATORS: Record<FieldType, Operator[]> = {
   'enum': ['=', '!=', 'IN', 'NOT IN']
 };
 
+/**
+ * ScreenerFormComponent - Criteria Builder Integration
+ * 
+ * This component implements the MVP integration of the criteria-builder library
+ * into the screener form, replacing the previous query-builder implementation.
+ * 
+ * ## Integration Approach
+ * 
+ * The integration follows a static configuration approach for the MVP:
+ * - Uses INDICATOR_FIELDS as the static field source
+ * - Implements bidirectional data conversion between ScreenerCriteria and CriteriaDSL formats
+ * - Provides basic error handling and user feedback
+ * - Maintains backward compatibility with existing screener data
+ * 
+ * ## Key Features
+ * 
+ * 1. **Static Field Configuration**: Converts INDICATOR_FIELDS to FieldMeta format
+ * 2. **Data Conversion**: Bidirectional conversion between formats
+ * 3. **Form Integration**: Seamless integration with existing screener form
+ * 4. **Error Handling**: Basic error management with user-friendly messages
+ * 5. **State Management**: Proper synchronization between DSL and screener formats
+ * 
+ * ## Data Flow
+ * 
+ * 1. Load existing screener → Convert ScreenerCriteria to CriteriaDSL
+ * 2. User builds criteria → CriteriaDSL updated in real-time
+ * 3. Save screener → Convert CriteriaDSL to ScreenerCriteria for backend
+ * 
+ * ## Extension Points
+ * 
+ * - Replace static fields with API-driven field loading
+ * - Add advanced validation and error handling
+ * - Implement dynamic operator configuration
+ * - Add criteria templates and presets
+ * 
+ * @see {@link https://github.com/your-org/criteria-builder} Criteria Builder Library
+ * @see {@link ./screener-form-integration.md} Integration Documentation
+ */
 @Component({
   selector: 'app-screener-form',
   standalone: true,
@@ -51,46 +106,84 @@ const BASIC_OPERATORS: Record<FieldType, Operator[]> = {
     CheckboxModule,
     ToastModule,
     TabsModule,
-    CriteriaBuilderModule
+    CriteriaBuilderModule // Criteria Builder integration - replaces QueryBuilderModule
   ],
   providers: [MessageService],
   templateUrl: './screener-form.component.html',
   styleUrl: './screener-form.component.scss'
 })
 export class ScreenerFormComponent implements OnInit, OnDestroy {
+  /** Subscription management for component cleanup */
   private destroy$ = new Subject<void>();
   
-  // State
+  // === Component State ===
+  
+  /** Current screener being edited (null for new screeners) */
   screener: ScreenerResp | null = null;
+  
+  /** Loading state for async operations */
   loading = false;
+  
+  /** Error message for display to user */
   error: string | null = null;
+  
+  /** Whether component is in edit mode (true) or create mode (false) */
   isEdit = false;
   
-  // Form
+  // === Form Data ===
+  
+  /** 
+   * Main form data structure for screener creation/editing
+   * This maintains the existing ScreenerCreateReq format for backend compatibility
+   */
   screenerForm: ScreenerCreateReq = {
     name: '',
     description: '',
     isPublic: false,
     defaultUniverse: '',
-    criteria: undefined
+    criteria: undefined // Will be populated from criteriaDSL conversion
   };
 
-  // Criteria Builder
+  // === Criteria Builder Integration ===
+  
+  /** Current active tab in the form interface */
   activeTab = 'basic';
+  
+  /** 
+   * Internal storage for CriteriaDSL data
+   * This is the format used by the criteria-builder component
+   */
   private _criteriaDSL: CriteriaDSL | null = null;
   
+  /** 
+   * Getter for criteriaDSL with proper typing
+   * @returns Current CriteriaDSL or null if no criteria defined
+   */
   get criteriaDSL(): CriteriaDSL | null {
     return this._criteriaDSL;
   }
   
+  /** 
+   * Setter for criteriaDSL that triggers data conversion
+   * Automatically converts DSL to ScreenerCriteria format when set
+   * @param value - New CriteriaDSL value or null to clear criteria
+   */
   set criteriaDSL(value: CriteriaDSL | null) {
     this._criteriaDSL = value;
     this.onCriteriaChange(value);
   }
   
+  /** 
+   * Configuration for the criteria builder component
+   * Set up with MVP settings - basic functionality only
+   */
   criteriaConfig: BuilderConfig = {};
   
-  // Static field configuration
+  /** 
+   * Static field configuration for criteria builder
+   * Converted from INDICATOR_FIELDS to FieldMeta format
+   * This provides the available fields for building criteria
+   */
   staticFields: FieldMeta[] = [];
 
   constructor(
@@ -211,6 +304,24 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
 
   /**
    * Initialize criteria builder configuration with MVP settings
+   * 
+   * Sets up the BuilderConfig for the criteria-builder component with basic
+   * functionality suitable for the MVP implementation. Advanced features are
+   * disabled to keep the initial integration simple and stable.
+   * 
+   * ## Configuration Details:
+   * 
+   * - **Basic Grouping**: Allows AND/OR grouping up to 3 levels deep
+   * - **Disabled Advanced Features**: No functions, SQL preview, or complex validation
+   * - **UI Settings**: Non-compact mode for better visibility and usability
+   * - **Performance**: Debounced updates to prevent excessive re-rendering
+   * 
+   * ## Future Enhancement Points:
+   * 
+   * - Enable advanced functions when field metadata supports them
+   * - Add SQL preview for technical users
+   * - Implement more sophisticated validation rules
+   * - Add criteria templates and presets
    */
   private initializeCriteriaConfig() {
     this.criteriaConfig = {
@@ -218,17 +329,17 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
       allowGrouping: true,
       maxDepth: 3,
       
-      // Disable advanced features for MVP
-      enableAdvancedFunctions: false,
-      showSqlPreview: false,
+      // Disable advanced features for MVP - can be enabled incrementally
+      enableAdvancedFunctions: false, // TODO: Enable when field metadata supports functions
+      showSqlPreview: false,          // TODO: Enable for technical users
       
-      // UI settings for better visibility
+      // UI settings for better visibility and usability
       compactMode: false,
       
-      // Additional MVP settings
-      enablePartialValidation: true,
-      autoSave: false,
-      debounceMs: 300,
+      // Performance and UX settings
+      enablePartialValidation: true,  // Allow partial criteria while building
+      autoSave: false,               // Manual save to prevent accidental changes
+      debounceMs: 300,              // Debounce updates for better performance
       locale: 'en',
       theme: 'light'
     };
@@ -321,16 +432,48 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
     }
   }
 
+  /**
+   * Load and configure static fields for the criteria builder
+   * 
+   * This method implements the static field configuration approach for the MVP.
+   * It converts the existing INDICATOR_FIELDS array to the FieldMeta format
+   * expected by the criteria-builder library.
+   * 
+   * ## Static Field Configuration Process:
+   * 
+   * 1. **Field Conversion**: Maps each INDICATOR_FIELD to FieldMeta format
+   * 2. **Type Mapping**: Converts field types using FIELD_TYPE_MAPPING
+   * 3. **Operator Assignment**: Assigns appropriate operators for each field type
+   * 4. **Validation Setup**: Configures basic validation rules
+   * 5. **Error Handling**: Provides fallback behavior on conversion failure
+   * 
+   * ## Future Enhancement Points:
+   * 
+   * - Replace with API-driven field loading
+   * - Add dynamic field categorization
+   * - Implement field-specific validation rules
+   * - Add field usage analytics and recommendations
+   * 
+   * @throws Handles conversion errors gracefully with user notification
+   */
   private loadStaticFields() {
     try {
-      // Convert INDICATOR_FIELDS to FieldMeta format
+      // Convert INDICATOR_FIELDS to FieldMeta format for criteria builder
       this.staticFields = INDICATOR_FIELDS.map(field => this.convertIndicatorFieldToFieldMeta(field));
-      console.log(`Loaded ${this.staticFields.length} static fields for criteria builder`);
+      
+      console.log(`Successfully loaded ${this.staticFields.length} static fields for criteria builder`, {
+        fieldCount: this.staticFields.length,
+        categories: [...new Set(this.staticFields.map(f => f.category))],
+        fieldTypes: [...new Set(this.staticFields.map(f => f.dataType))]
+      });
+      
     } catch (error) {
       console.error('Failed to load static fields:', error);
       this.handleCriteriaError(error, 'load');
+      
       // Provide fallback behavior (empty fields array)
       this.staticFields = [];
+      
       this.messageService.add({
         severity: 'warn',
         summary: 'Field Loading Error',
@@ -342,6 +485,22 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
 
   /**
    * Convert an IndicatorField to FieldMeta format for criteria builder
+   * 
+   * This method handles the conversion from the existing INDICATOR_FIELDS format
+   * to the FieldMeta format expected by the criteria-builder library. It includes
+   * comprehensive error handling and fallback behavior.
+   * 
+   * ## Conversion Process:
+   * 
+   * 1. **Type Mapping**: Maps field.type to FieldType using FIELD_TYPE_MAPPING
+   * 2. **Operator Assignment**: Assigns operators based on field type
+   * 3. **Validation Setup**: Creates validation configuration from field properties
+   * 4. **Example Generation**: Generates appropriate example values
+   * 5. **Error Handling**: Provides fallback configuration on conversion failure
+   * 
+   * @param field - The IndicatorField from INDICATOR_FIELDS to convert
+   * @returns FieldMeta object configured for the criteria builder
+   * @throws Handles conversion errors gracefully with fallback configuration
    */
   private convertIndicatorFieldToFieldMeta(field: any): FieldMeta {
     try {
