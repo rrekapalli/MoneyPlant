@@ -27,7 +27,12 @@
       "dashboards": ["./dist/dashboards", "./projects/dashboards/src/public-api"],
       "dashboards/*": ["./dist/dashboards/*"],
       "@dashboards/*": ["./projects/dashboards/src/lib/*"],
-      "@dashboards/public-api": ["./projects/dashboards/src/public-api"],
+      "@dashboards/public-api": [
+        "./projects/dashboards/src/public-api"
+      ],
+      "criteria-builder": [
+        "./dist/criteria-builder"
+      ],
       "superset-integration": ["./dist/superset-integration", "./projects/superset-integration/src/public-api"],
       "superset-integration/*": ["./dist/superset-integration/*"],
       "@superset-integration/*": ["./projects/superset-integration/src/lib/*"],
@@ -45,5 +50,13 @@
     "strictInjectionParameters": true,
     "strictInputAccessModifiers": true,
     "strictTemplates": true
-  }
+  },
+  "references": [
+    {
+      "path": "./projects/criteria-builder/tsconfig.lib.json"
+    },
+    {
+      "path": "./projects/criteria-builder/tsconfig.spec.json"
+    }
+  ]
 }

@@ -1,6 +1,6 @@
 # Implementation Plan - Criteria Builder UI Library
 
-- [ ] 1. Set up Angular library project structure and core interfaces
+- [x] 1. Set up Angular library project structure and core interfaces
   - Create Angular library using `ng generate library criteria-builder` in `./frontend/projects/`
   - Configure ng-packagr build setup with proper exports in public-api.ts
   - Set up TypeScript interfaces for CriteriaDSL, FieldMeta, FunctionMeta, and BuilderConfig
