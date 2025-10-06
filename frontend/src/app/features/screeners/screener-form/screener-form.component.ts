@@ -14,7 +14,7 @@ import { MessageService } from 'primeng/api';
 import { ScreenerStateService } from '../../../services/state/screener.state';
 import { ScreenerResp, ScreenerCreateReq, ScreenerCriteria, ScreenerRule } from '../../../services/entities/screener.entities';
 import { INDICATOR_FIELDS } from '../../../services/entities/indicators.entities';
-import { CriteriaBuilderModule } from 'criteria-builder';
+import { CriteriaBuilderComponent } from 'criteria-builder';
 import { CriteriaDSL, BuilderConfig, FieldMeta, FieldType, Operator, Group, Condition, FieldRef, Literal } from 'criteria-builder';
 
 // Field type mapping constants
@@ -51,7 +51,7 @@ const BASIC_OPERATORS: Record<FieldType, Operator[]> = {
     CheckboxModule,
     ToastModule,
     TabsModule,
-    CriteriaBuilderModule
+    CriteriaBuilderComponent
   ],
   providers: [MessageService],
   templateUrl: './screener-form.component.html',
@@ -85,7 +85,7 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
   
   set criteriaDSL(value: CriteriaDSL | null) {
     this._criteriaDSL = value;
-    this.onCriteriaChange(value);
+    this.convertAndUpdateScreenerCriteria(value);
   }
   
   criteriaConfig: BuilderConfig = {};
@@ -347,7 +347,7 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
 
 
 
-  private onCriteriaChange(dsl: CriteriaDSL | null) {
+  private convertAndUpdateScreenerCriteria(dsl: CriteriaDSL | null) {
     // Convert to screener format for backend compatibility
     if (dsl && this.hasValidCriteria(dsl)) {
       this.screenerForm.criteria = this.convertDslToScreenerCriteria(dsl);

@@ -40,14 +40,14 @@
     - Handle edge cases and default to string type
     - _Requirements: 2.3_
 
-- [ ] 4. Update component template to use criteria-builder
-  - [ ] 4.1 Replace query-builder component with criteria-builder
+- [x] 4. Update component template to use criteria-builder
+  - [x] 4.1 Replace query-builder component with criteria-builder
     - Update criteria tab template to use mp-criteria-builder component
     - Set up component inputs: [value], [config], [fields]
     - Set up component outputs: (valueChange)
     - Remove old query-builder template code
     - _Requirements: 1.2, 1.5_
-  - [ ] 4.2 Update criteria preview section
+  - [x] 4.2 Update criteria preview section
     - Modify criteria preview to work with CriteriaDSL structure
     - Update getCriteriaCount method to count conditions in DSL format
     - Simplify preview to show basic information (count, logic, status)

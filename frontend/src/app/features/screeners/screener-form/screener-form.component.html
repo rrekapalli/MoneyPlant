@@ -14,7 +14,9 @@
         <p-tab value="criteria">
           <i class="pi pi-filter"></i>
           Screening Criteria
-          <span *ngIf="hasCriteria()" class="criteria-badge">{{ getCriteriaCount() }}</span>
+          @if (hasCriteria()) {
+            <span class="criteria-badge">{{ getCriteriaCount() }}</span>
+          }
         </p-tab>
       </p-tablist>
       
@@ -108,12 +110,12 @@
             </div>
 
             <div class="criteria-builder-container">
-              <ac-criteria-builder
+              <mp-criteria-builder
                 [(ngModel)]="criteriaDSL"
                 [config]="criteriaConfig"
                 (validityChange)="onValidityChange($event)"
                 class="screener-criteria-builder">
-              </ac-criteria-builder>
+              </mp-criteria-builder>
             </div>
 
             <div class="criteria-actions">
@@ -135,17 +137,26 @@
               ></button>
             </div>
 
-            <!-- Criteria Preview -->
-            <div *ngIf="hasCriteria()" class="criteria-preview">
-              <h4>Criteria Preview</h4>
-              <div class="criteria-summary">
-                <p><strong>Total Rules:</strong> {{ getCriteriaCount() }}</p>
-                <p><strong>Logic:</strong> {{ criteriaDSL?.root?.operator || 'AND' }}</p>
-                <p><strong>Status:</strong> 
-                  <span class="status-badge status-active">Active</span>
-                </p>
+            <!-- Simple Criteria Preview for MVP -->
+            @if (hasCriteria()) {
+              <div class="criteria-preview">
+                <h4>Criteria Summary</h4>
+                <div class="criteria-summary">
+                  <div class="summary-item">
+                    <span class="summary-label">Total Conditions:</span>
+                    <span class="summary-value">{{ getCriteriaCount() }}</span>
+                  </div>
+                  <div class="summary-item">
+                    <span class="summary-label">Logic Operator:</span>
+                    <span class="summary-value">{{ criteriaDSL?.root?.operator || 'AND' }}</span>
+                  </div>
+                  <div class="summary-item">
+                    <span class="summary-label">Status:</span>
+                    <span class="status-badge status-ready">Ready</span>
+                  </div>
+                </div>
               </div>
-            </div>
+            }
           </p-card>
         </p-tabpanel>
       </p-tabpanels>
