@@ -21,20 +21,20 @@
     - Set compactMode: false for better visibility
     - _Requirements: 4.4, 4.5_
 
-- [ ] 3. Implement basic data conversion methods
-  - [ ] 3.1 Add CriteriaDSL to ScreenerCriteria conversion
+- [x] 3. Implement basic data conversion methods
+  - [x] 3.1 Add CriteriaDSL to ScreenerCriteria conversion
     - Implement convertDslToScreenerCriteria method in component
     - Add convertDslGroup method for recursive group conversion
     - Add convertDslCondition method for individual condition conversion
     - Handle basic operator mapping between formats
     - _Requirements: 2.1, 2.2, 2.3_
-  - [ ] 3.2 Add ScreenerCriteria to CriteriaDSL conversion
+  - [x] 3.2 Add ScreenerCriteria to CriteriaDSL conversion
     - Implement convertScreenerCriteriaToDsl method in component
     - Add convertScreenerGroup method for recursive group conversion
     - Add convertScreenerRule method for individual rule conversion
     - Add createEmptyDSL method for null/empty cases
     - _Requirements: 2.1, 2.2, 2.5_
-  - [ ] 3.3 Add basic value type inference
+  - [x] 3.3 Add basic value type inference
     - Implement inferValueType method for automatic type detection
     - Support number, string, boolean, and date type inference
     - Handle edge cases and default to string type

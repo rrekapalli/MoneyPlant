@@ -12,10 +12,10 @@ import { TabsModule } from 'primeng/tabs';
 import { MessageService } from 'primeng/api';
 
 import { ScreenerStateService } from '../../../services/state/screener.state';
-import { ScreenerResp, ScreenerCreateReq, ScreenerCriteria } from '../../../services/entities/screener.entities';
+import { ScreenerResp, ScreenerCreateReq, ScreenerCriteria, ScreenerRule } from '../../../services/entities/screener.entities';
 import { INDICATOR_FIELDS } from '../../../services/entities/indicators.entities';
 import { CriteriaBuilderModule } from 'criteria-builder';
-import { CriteriaDSL, BuilderConfig, FieldMeta, FieldType, Operator } from 'criteria-builder';
+import { CriteriaDSL, BuilderConfig, FieldMeta, FieldType, Operator, Group, Condition, FieldRef, Literal } from 'criteria-builder';
 
 // Field type mapping constants
 const FIELD_TYPE_MAPPING: Record<string, FieldType> = {
@@ -366,6 +366,7 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
 
   /**
    * Convert ScreenerCriteria to CriteriaDSL for criteria builder
+   * Implements subtask 3.2: Add ScreenerCriteria to CriteriaDSL conversion
    */
   private convertScreenerCriteriaToDsl(criteria: ScreenerCriteria): CriteriaDSL {
     if (!criteria) {
@@ -378,17 +379,21 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
         meta: {
           version: 1,
           createdAt: new Date().toISOString(),
-          source: 'screener'
+          source: 'screener',
+          name: 'Converted from Screener Criteria',
+          description: 'Automatically converted from existing screener criteria format'
         }
       };
     } catch (error) {
       console.error('Failed to convert ScreenerCriteria to DSL:', error);
+      this.handleConversionError(error);
       return this.createEmptyDSL();
     }
   }
 
   /**
    * Convert CriteriaDSL to ScreenerCriteria for backend
+   * Implements subtask 3.1: Add CriteriaDSL to ScreenerCriteria conversion
    */
   private convertDslToScreenerCriteria(dsl: CriteriaDSL): ScreenerCriteria | undefined {
     if (!dsl || !dsl.root) {
@@ -399,17 +404,22 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
       return this.convertDslGroup(dsl.root);
     } catch (error) {
       console.error('Failed to convert DSL to ScreenerCriteria:', error);
+      this.handleConversionError(error);
       return undefined;
     }
   }
 
-  private convertScreenerGroup(criteria: ScreenerCriteria): any {
+  /**
+   * Convert ScreenerCriteria to DSL Group for recursive group conversion
+   * Implements subtask 3.2: Add convertScreenerGroup method for recursive group conversion
+   */
+  private convertScreenerGroup(criteria: ScreenerCriteria): Group {
     return {
       operator: criteria.condition.toUpperCase() as 'AND' | 'OR',
       children: criteria.rules.map(rule => {
         if ('field' in rule) {
           // It's a ScreenerRule - convert to Condition
-          return this.convertScreenerRule(rule as any);
+          return this.convertScreenerRule(rule as ScreenerRule);
         } else {
           // It's a nested ScreenerCriteria - convert recursively
           return this.convertScreenerGroup(rule as ScreenerCriteria);
@@ -418,51 +428,257 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
     };
   }
 
-  private convertScreenerRule(rule: any): any {
-    return {
+  /**
+   * Convert ScreenerRule to DSL Condition for individual rule conversion
+   * Implements subtask 3.2: Add convertScreenerRule method for individual rule conversion
+   */
+  private convertScreenerRule(rule: ScreenerRule): Condition {
+    const condition: Condition = {
       left: {
         fieldId: rule.field
-      },
-      op: rule.operator,
-      right: {
+      } as FieldRef,
+      op: rule.operator as Operator,
+      right: undefined
+    };
+
+    // Handle operators that don't require a right side value
+    if (rule.operator === 'IS NULL' || rule.operator === 'IS NOT NULL') {
+      // These operators don't need a right side
+      return condition;
+    }
+
+    // Add right side for operators that require a value
+    if (rule.value !== null && rule.value !== undefined) {
+      condition.right = {
         type: this.inferValueType(rule.value),
         value: rule.value
-      }
-    };
+      } as Literal;
+    }
+
+    return condition;
   }
 
-  private convertDslGroup(group: any): ScreenerCriteria {
+  /**
+   * Convert DSL Group to ScreenerCriteria for recursive group conversion
+   * Implements subtask 3.1: Add convertDslGroup method for recursive group conversion
+   */
+  private convertDslGroup(group: Group): ScreenerCriteria {
+    // Handle NOT operator by converting to AND with negated conditions
+    const operator = group.operator === 'NOT' ? 'and' : group.operator.toLowerCase() as 'and' | 'or';
+    
     return {
-      condition: group.operator.toLowerCase() as 'and' | 'or',
-      rules: group.children.map((child: any) => {
+      condition: operator,
+      rules: group.children.map((child: Condition | Group) => {
         if ('left' in child) {
           // It's a Condition - convert to ScreenerRule
-          return this.convertDslCondition(child);
+          return this.convertDslCondition(child as Condition, group.operator === 'NOT');
         } else {
           // It's a nested Group - convert recursively
-          return this.convertDslGroup(child);
+          return this.convertDslGroup(child as Group);
         }
       }),
       collapsed: false
     };
   }
 
-  private convertDslCondition(condition: any): any {
+  /**
+   * Convert DSL Condition to ScreenerRule for individual condition conversion
+   * Implements subtask 3.1: Add convertDslCondition method for individual condition conversion
+   */
+  private convertDslCondition(condition: Condition, isNegated: boolean = false): ScreenerRule {
+    // Extract field ID from FieldRef
+    const fieldId = (condition.left as FieldRef).fieldId;
+    
+    // Handle basic operator mapping between formats
+    let operator = condition.op;
+    if (isNegated) {
+      operator = this.negateOperator(operator);
+    }
+    
+    // Extract value from right side (Literal or FieldRef)
+    let value: any;
+    if (condition.right) {
+      if ('value' in condition.right) {
+        // It's a Literal
+        value = (condition.right as Literal).value;
+      } else if ('fieldId' in condition.right) {
+        // It's a FieldRef - use field ID as value for field-to-field comparisons
+        value = (condition.right as FieldRef).fieldId;
+      } else {
+        // It's a FunctionCall - not supported in basic conversion
+        throw new Error('Function calls in conditions are not supported in basic conversion');
+      }
+    } else {
+      // Handle operators that don't require right side (IS NULL, IS NOT NULL)
+      value = null;
+    }
+    
     return {
-      field: condition.left.fieldId,
-      operator: condition.op,
-      value: condition.right.value,
+      field: fieldId,
+      operator: operator,
+      value: value,
       entity: 'stock'
     };
   }
 
-  private inferValueType(value: any): 'string' | 'number' | 'boolean' | 'date' {
-    if (typeof value === 'number') return 'number';
-    if (typeof value === 'boolean') return 'boolean';
-    if (value instanceof Date || /^\d{4}-\d{2}-\d{2}/.test(value)) return 'date';
+  /**
+   * Handle basic operator mapping between formats
+   * Implements subtask 3.1: Handle basic operator mapping between formats
+   */
+  private negateOperator(operator: Operator): Operator {
+    const negationMap: Record<Operator, Operator> = {
+      '=': '!=',
+      '!=': '=',
+      '>': '<=',
+      '>=': '<',
+      '<': '>=',
+      '<=': '>',
+      'LIKE': 'NOT LIKE',
+      'NOT LIKE': 'LIKE',
+      'IN': 'NOT IN',
+      'NOT IN': 'IN',
+      'IS NULL': 'IS NOT NULL',
+      'IS NOT NULL': 'IS NULL',
+      'BETWEEN': 'NOT BETWEEN',
+      'NOT BETWEEN': 'BETWEEN'
+    };
+    
+    return negationMap[operator] || operator;
+  }
+
+  /**
+   * Implement inferValueType method for automatic type detection
+   * Implements subtask 3.3: Add basic value type inference
+   * Support number, string, boolean, and date type inference
+   * Handle edge cases and default to string type
+   */
+  private inferValueType(value: any): FieldType {
+    // Handle null and undefined values
+    if (value === null || value === undefined) {
+      return 'string'; // Default to string for null values
+    }
+
+    // Handle boolean values
+    if (typeof value === 'boolean') {
+      return 'boolean';
+    }
+
+    // Handle number values (including integers and floats)
+    if (typeof value === 'number') {
+      // Check if it's an integer
+      if (Number.isInteger(value)) {
+        return 'integer';
+      }
+      return 'number';
+    }
+
+    // Handle string values - check for special patterns
+    if (typeof value === 'string') {
+      // Handle empty strings
+      if (value.trim() === '') {
+        return 'string';
+      }
+
+      // Check for boolean string representations
+      const lowerValue = value.toLowerCase().trim();
+      if (lowerValue === 'true' || lowerValue === 'false') {
+        return 'boolean';
+      }
+
+      // Check for numeric string representations
+      const numericValue = parseFloat(value);
+      if (!isNaN(numericValue) && isFinite(numericValue)) {
+        // Check if it's a percentage (ends with %)
+        if (value.trim().endsWith('%')) {
+          return 'percent';
+        }
+        
+        // Check if it's a currency (starts with $ or other currency symbols)
+        if (/^[\$€£¥₹]/.test(value.trim())) {
+          return 'currency';
+        }
+        
+        // Check if it's an integer string
+        if (Number.isInteger(numericValue) && !value.includes('.')) {
+          return 'integer';
+        }
+        
+        return 'number';
+      }
+
+      // Check for date patterns (various formats)
+      if (this.isDateString(value)) {
+        return 'date';
+      }
+
+      // Default to string for all other cases
+      return 'string';
+    }
+
+    // Handle Date objects
+    if (value instanceof Date) {
+      return 'date';
+    }
+
+    // Handle arrays (for IN/NOT IN operators)
+    if (Array.isArray(value)) {
+      // Infer type from first non-null element
+      for (const item of value) {
+        if (item !== null && item !== undefined) {
+          return this.inferValueType(item);
+        }
+      }
+      return 'string'; // Default if array is empty or all null
+    }
+
+    // Handle objects and other complex types
+    if (typeof value === 'object') {
+      // Try to convert to string and infer from that
+      try {
+        const stringValue = JSON.stringify(value);
+        return 'string';
+      } catch {
+        return 'string';
+      }
+    }
+
+    // Default fallback for any other type
     return 'string';
   }
 
+  /**
+   * Helper method to detect if a string represents a date
+   * Handles edge cases for date detection
+   */
+  private isDateString(value: string): boolean {
+    // Common date patterns
+    const datePatterns = [
+      /^\d{4}-\d{2}-\d{2}$/, // YYYY-MM-DD
+      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/, // ISO datetime
+      /^\d{2}\/\d{2}\/\d{4}$/, // MM/DD/YYYY
+      /^\d{2}-\d{2}-\d{4}$/, // MM-DD-YYYY
+      /^\d{1,2}\/\d{1,2}\/\d{4}$/, // M/D/YYYY
+      /^\d{4}\/\d{2}\/\d{2}$/, // YYYY/MM/DD
+    ];
+
+    // Check against patterns
+    for (const pattern of datePatterns) {
+      if (pattern.test(value.trim())) {
+        // Additional validation - try to parse as date
+        const date = new Date(value);
+        return !isNaN(date.getTime());
+      }
+    }
+
+    // Try parsing with Date constructor as fallback
+    const date = new Date(value);
+    return !isNaN(date.getTime()) && value.length > 4; // Avoid treating years as dates
+  }
+
+  /**
+   * Create empty DSL for null/empty cases
+   * Implements subtask 3.2: Add createEmptyDSL method for null/empty cases
+   */
   private createEmptyDSL(): CriteriaDSL {
     return {
       root: {
@@ -472,7 +688,9 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
       meta: {
         version: 1,
         createdAt: new Date().toISOString(),
-        source: 'screener'
+        source: 'screener',
+        name: 'Empty Criteria',
+        description: 'Empty criteria set - no conditions defined'
       }
     };
   }
@@ -499,5 +717,19 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
         return count + this.countConditions(child); // It's a nested group
       }
     }, 0);
+  }
+
+  /**
+   * Handle conversion errors with user-friendly messages
+   * Used by data conversion methods for error handling
+   */
+  private handleConversionError(error: any): void {
+    console.error('Data conversion error:', error);
+    this.messageService.add({
+      severity: 'warn',
+      summary: 'Data Conversion',
+      detail: 'There was an issue converting criteria data. Using empty criteria.',
+      life: 5000
+    });
   }
 }
