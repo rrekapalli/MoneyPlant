@@ -1,0 +1,225 @@
+<!-- Function Selection Step -->
+<div class="function-selection" *ngIf="currentStep === 'select'">
+  <!-- Search -->
+  <div class="function-search">
+    <div class="search-wrapper">
+      <i class="search-icon">🔍</i>
+      <input 
+        type="text" 
+        [(ngModel)]="searchTerm"
+        (input)="onSearchChange($event)"
+        placeholder="Search functions..."
+        class="search-input">
+    </div>
+  </div>
+  
+  <!-- Function Categories -->
+  <div class="function-categories">
+    <div class="function-category" *ngFor="let category of getCategories()">
+      <div class="category-header">
+        <span class="category-name">{{ category }}</span>
+        <span class="category-count">({{ getFunctionsForCategory(category).length }})</span>
+      </div>
+      
+      <div class="function-list">
+        <div class="function-item"
+             *ngFor="let func of getFunctionsForCategory(category)"
+             (click)="selectFunction(func)"
+             [class.deprecated]="func.deprecated">
+          
+          <div class="function-header">
+            <i class="function-icon">⚡</i>
+            <span class="function-name">{{ func.label }}</span>
+            <span class="function-return-type">→ {{ func.returnType }}</span>
+          </div>
+          
+          <div class="function-description" *ngIf="func.description">
+            {{ func.description }}
+          </div>
+          
+          <div class="function-params" *ngIf="func.params.length > 0">
+            <span class="param-label">Parameters:</span>
+            <span class="param-list">
+              <span class="param-item" 
+                    *ngFor="let param of func.params; let last = last"
+                    [class.required]="param.required">
+                {{ param.name }}: {{ param.type }}{{ param.required ? '*' : '' }}{{ !last ? ', ' : '' }}
+              </span>
+            </span>
+          </div>
+          
+          <div class="function-examples" *ngIf="func.examples && func.examples.length > 0">
+            <span class="example-label">Example:</span>
+            <code class="example-code">{{ func.examples[0] }}</code>
+          </div>
+          
+          <div class="deprecated-notice" *ngIf="func.deprecated">
+            <i class="warning-icon">⚠</i>
+            <span>This function is deprecated</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- No Results -->
+  <div class="no-functions" *ngIf="filteredFunctions.length === 0">
+    <i class="pi pi-info-circle"></i>
+    <span>No functions found</span>
+    <small *ngIf="searchTerm">Try adjusting your search term</small>
+  </div>
+</div>
+
+<!-- Function Configuration Step -->
+<div class="function-configuration" *ngIf="currentStep === 'configure' && selectedFunctionMeta">
+  <form [formGroup]="functionForm">
+    <!-- Function Header -->
+    <div class="config-header">
+      <button type="button" 
+              class="back-button"
+              (click)="goBackToSelection()"
+              title="Back to function selection">
+        ← Back
+      </button>
+      
+      <div class="selected-function-info">
+        <h3 class="function-title">{{ selectedFunctionMeta.label }}</h3>
+        <p class="function-desc" *ngIf="selectedFunctionMeta.description">
+          {{ selectedFunctionMeta.description }}
+        </p>
+      </div>
+    </div>
+    
+    <!-- Parameters Configuration -->
+    <div class="parameters-section" formArrayName="parameters">
+      <h4 class="section-title">
+        <i class="config-icon">⚙</i>
+        Parameters
+        <span class="param-count">({{ selectedFunctionMeta.params.length }})</span>
+      </h4>
+      
+      <div class="parameter-item" 
+           *ngFor="let paramControl of parameterControls; let i = index"
+           [formGroupName]="i">
+        
+        <div class="param-header">
+          <label class="param-label" [for]="'param-' + i">
+            {{ paramControl.get('name')?.value }}
+            <span class="param-type">{{ paramControl.get('type')?.value }}</span>
+            <span class="required-indicator" *ngIf="paramControl.get('required')?.value">*</span>
+          </label>
+          
+          <button type="button" 
+                  class="nested-function-btn"
+                  *ngIf="allowNestedFunctions && paramControl.get('type')?.value !== 'string'"
+                  (click)="onSelectNestedFunction(i)"
+                  title="Use function as parameter">
+            ⚡ Function
+          </button>
+        </div>
+        
+        <div class="param-description" 
+             *ngIf="paramControl.get('description')?.value">
+          {{ paramControl.get('description')?.value }}
+        </div>
+        
+        <!-- Parameter Input -->
+        <div class="param-input">
+          <!-- String Input -->
+          <input *ngIf="paramControl.get('type')?.value === 'string'"
+                 type="text"
+                 formControlName="value"
+                 [id]="'param-' + i"
+                 [class.invalid]="hasParameterError(i, 'required') || hasParameterError(i, 'patternError')"
+                 [placeholder]="'Enter ' + paramControl.get('name')?.value">
+          
+          <!-- Number Input -->
+          <input *ngIf="paramControl.get('type')?.value === 'number' || paramControl.get('type')?.value === 'integer'"
+                 type="number"
+                 formControlName="value"
+                 [id]="'param-' + i"
+                 [class.invalid]="hasParameterError(i, 'required') || hasParameterError(i, 'minError') || hasParameterError(i, 'maxError')"
+                 [placeholder]="'Enter ' + paramControl.get('name')?.value">
+          
+          <!-- Boolean Input -->
+          <select *ngIf="paramControl.get('type')?.value === 'boolean'"
+                  formControlName="value"
+                  [id]="'param-' + i">
+            <option value="">Select {{ paramControl.get('name')?.value }}</option>
+            <option [value]="true">True</option>
+            <option [value]="false">False</option>
+          </select>
+          
+          <!-- Date Input -->
+          <input *ngIf="paramControl.get('type')?.value === 'date'"
+                 type="date"
+                 formControlName="value"
+                 [id]="'param-' + i"
+                 [placeholder]="'Select ' + paramControl.get('name')?.value">
+        </div>
+        
+        <!-- Parameter Error -->
+        <small class="param-error" 
+               *ngIf="paramControl.get('value')?.invalid && paramControl.get('value')?.touched">
+          {{ getParameterErrorMessage(i) }}
+        </small>
+      </div>
+      
+      <!-- No Parameters -->
+      <div class="no-parameters" *ngIf="selectedFunctionMeta.params.length === 0">
+        <i class="pi pi-info-circle"></i>
+        <span>This function has no parameters</span>
+      </div>
+    </div>
+    
+    <!-- Function Preview -->
+    <div class="function-preview" *ngIf="previewText">
+      <h4 class="section-title">
+        <i class="pi pi-eye"></i>
+        Preview
+      </h4>
+      <div class="preview-content">
+        <code class="preview-code">{{ previewText }}</code>
+      </div>
+    </div>
+    
+    <!-- Examples -->
+    <div class="function-examples" *ngIf="selectedFunctionMeta.examples && selectedFunctionMeta.examples.length > 0">
+      <h4 class="section-title">
+        <i class="book-icon">📖</i>
+        Examples
+      </h4>
+      <div class="example-list">
+        <div class="example-item" *ngFor="let example of selectedFunctionMeta.examples">
+          <code class="example-code">{{ example }}</code>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
+
+<!-- Dialog Footer -->
+<div class="dialog-footer">
+  <ng-container *ngIf="currentStep === 'select'">
+    <button type="button" 
+            class="cancel-btn"
+            (click)="onCancel()">
+      Cancel
+    </button>
+  </ng-container>
+  
+  <ng-container *ngIf="currentStep === 'configure'">
+    <button type="button" 
+            class="cancel-btn"
+            (click)="onCancel()">
+      Cancel
+    </button>
+    
+    <button type="button" 
+            class="confirm-btn"
+            [disabled]="!isValid"
+            (click)="onConfirm()">
+      Apply Function
+    </button>
+  </ng-container>
+</div>

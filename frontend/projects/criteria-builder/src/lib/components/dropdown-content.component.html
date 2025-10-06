@@ -1,0 +1,93 @@
+<!-- Search Input -->
+<div class="dropdown-search" *ngIf="searchable">
+  <div class="search-wrapper">
+    <i class="search-icon">🔍</i>
+    <input 
+      type="text" 
+      [(ngModel)]="searchTerm"
+      (input)="onSearchChange($event)"
+      (keydown)="onKeyDown($event)"
+      placeholder="Search..."
+      class="search-input"
+      autocomplete="off">
+  </div>
+</div>
+
+<!-- Options List -->
+<div class="dropdown-options" 
+     [style.max-height]="maxHeight"
+     [class.with-search]="searchable">
+  
+  <!-- Categorized Display -->
+  <ng-container *ngIf="categorized && getCategories().length > 1">
+    <div class="option-category" *ngFor="let category of getCategories()">
+      <div class="category-header">
+        <span class="category-name">{{ category }}</span>
+        <span class="category-count">({{ getOptionsForCategory(category).length }})</span>
+      </div>
+      
+      <div class="category-options">
+        <div class="dropdown-option"
+             *ngFor="let option of getOptionsForCategory(category); let i = index"
+             [class.selected]="isOptionSelected(option)"
+             [class.disabled]="option.disabled"
+             [class.highlighted]="selectedIndex === i"
+             (click)="onOptionSelect(option)"
+             [attr.title]="option.description">
+          
+          <i class="option-icon" 
+             *ngIf="option.icon">{{ getIconText(option.icon) }}</i>
+          
+          <div class="option-content">
+            <span class="option-label">{{ option.label }}</span>
+            <span class="option-description" 
+                  *ngIf="option.description">{{ option.description }}</span>
+          </div>
+          
+          <i class="option-check" 
+             *ngIf="isOptionSelected(option)">✓</i>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+  
+  <!-- Simple List Display -->
+  <ng-container *ngIf="!categorized || getCategories().length <= 1">
+    <div class="dropdown-option"
+         *ngFor="let option of filteredOptions; let i = index"
+         [class.selected]="isOptionSelected(option)"
+         [class.disabled]="option.disabled"
+         [class.highlighted]="selectedIndex === i"
+         (click)="onOptionSelect(option)"
+         [attr.title]="option.description">
+      
+      <i class="option-icon" 
+         *ngIf="option.icon">{{ getIconText(option.icon) }}</i>
+      
+      <div class="option-content">
+        <span class="option-label">{{ option.label }}</span>
+        <span class="option-description" 
+              *ngIf="option.description">{{ option.description }}</span>
+      </div>
+      
+      <i class="option-check" 
+         *ngIf="isOptionSelected(option)">✓</i>
+    </div>
+  </ng-container>
+  
+  <!-- No Results -->
+  <div class="no-results" *ngIf="filteredOptions.length === 0">
+    <i class="info-icon">ℹ</i>
+    <span>No options found</span>
+    <small *ngIf="searchTerm">Try adjusting your search term</small>
+  </div>
+</div>
+
+<!-- Footer with shortcuts info -->
+<div class="dropdown-footer" *ngIf="filteredOptions.length > 0">
+  <small class="keyboard-hints">
+    <span><kbd>↑↓</kbd> Navigate</span>
+    <span><kbd>Enter</kbd> Select</span>
+    <span><kbd>Esc</kbd> Close</span>
+  </small>
+</div>

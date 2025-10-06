@@ -12,6 +12,13 @@ export * from './lib/components/ac-criteria-builder.component';
 // Token renderer component
 export * from './lib/components/ac-token-renderer.component';
 
+// Overlay components
+export * from './lib/components/interaction-overlay-manager.component';
+export * from './lib/components/dropdown-content.component';
+export * from './lib/components/function-dialog-content.component';
+export * from './lib/components/value-input-content.component';
+export * from './lib/components/context-menu.component';
+
 // Services
 export * from './lib/criteria-builder.service';
 export * from './lib/services';

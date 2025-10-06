@@ -6,17 +6,21 @@ import { HttpClientModule } from '@angular/common/http';
 // Angular CDK modules
 import { DragDropModule } from '@angular/cdk/drag-drop';
 
-// PrimeNG modules for toolbar functionality
+// PrimeNG modules
 import { ButtonModule } from 'primeng/button';
-import { ToggleButtonModule } from 'primeng/togglebutton';
 import { DialogModule } from 'primeng/dialog';
-import { InputTextModule } from 'primeng/inputtext';
-import { TooltipModule } from 'primeng/tooltip';
 
-import { CriteriaBuilderComponent } from './criteria-builder';
+// Standalone component is exported separately
 import { AcCriteriaBuilderComponent } from './components/ac-criteria-builder.component';
 import { AcTokenRendererComponent } from './components/ac-token-renderer.component';
 import { CriteriaBuilderService } from './criteria-builder.service';
+
+// Overlay components
+import { InteractionOverlayManagerComponent } from './components/interaction-overlay-manager.component';
+import { DropdownContentComponent } from './components/dropdown-content.component';
+import { FunctionDialogContentComponent } from './components/function-dialog-content.component';
+import { ValueInputContentComponent } from './components/value-input-content.component';
+import { ContextMenuComponent } from './components/context-menu.component';
 
 // Placeholder components for child components (will be implemented in later tasks)
 import { 
@@ -36,16 +40,15 @@ import {
     ReactiveFormsModule,
     FormsModule,
     HttpClientModule,
-    // Angular CDK modules
     DragDropModule,
-    // PrimeNG modules
     ButtonModule,
-    ToggleButtonModule,
     DialogModule,
-    InputTextModule,
-    TooltipModule,
-    CriteriaBuilderComponent, // Import standalone component
-    AcTokenRendererComponent // Import standalone component
+    // Standalone overlay components
+    InteractionOverlayManagerComponent,
+    DropdownContentComponent,
+    FunctionDialogContentComponent,
+    ValueInputContentComponent,
+    ContextMenuComponent
   ],
   declarations: [
     AcCriteriaBuilderComponent,
@@ -55,9 +58,13 @@ import {
     AcSqlPreviewComponent
   ],
   exports: [
-    CriteriaBuilderComponent, // Export imported standalone component
     AcCriteriaBuilderComponent,
-    AcTokenRendererComponent
+    // Overlay components
+    InteractionOverlayManagerComponent,
+    DropdownContentComponent,
+    FunctionDialogContentComponent,
+    ValueInputContentComponent,
+    ContextMenuComponent
   ],
   providers: [
     CriteriaBuilderService

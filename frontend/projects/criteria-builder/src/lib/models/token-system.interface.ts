@@ -92,8 +92,8 @@ export const TOKEN_STYLES: Record<TokenType, TokenStyle> = {
 export type OverlayType = 'dropdown' | 'dialog' | 'contextmenu' | 'valueInput';
 
 export interface OverlayConfig {
-  type: OverlayType;
-  position: 'below' | 'above' | 'center' | 'right' | 'left';
+  type?: OverlayType;
+  position?: 'below' | 'above' | 'center' | 'right' | 'left';
   width?: string;
   height?: string;
   modal?: boolean;
@@ -106,6 +106,8 @@ export interface OverlayConfig {
   currentValue?: any;
   operator?: string;
   fieldMeta?: any;
+  loading?: boolean;
+  loadingText?: string;
 }
 
 export interface OverlayAction {
