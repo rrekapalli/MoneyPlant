@@ -58,15 +58,14 @@
     - Test partial validation and preview functionality for visual interface
     - _Requirements: 12.1, 12.3_
 
-- [ ] 5. Implement SQL generation service for criteria DSL
-  - [ ] 5.1 Create CriteriaSqlService for safe SQL generation
+- [x] 5. Implement SQL generation service for criteria DSL
+  - [x] 5.1 Create CriteriaSqlService for safe SQL generation
     - Build recursive SQL generation for groups and conditions with proper parentheses
     - Implement parameter binding with sequential naming (:p1, :p2, etc.) compatible with existing screener execution
     - Add SQL template processing for function calls with token replacement
     - Create column name sanitization and SQL injection prevention
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6_
-
-  - [ ] 5.2 Integrate with existing screener SQL execution infrastructure
+  - [x] 5.2 Integrate with existing screener SQL execution infrastructure
     - Generate SQL compatible with existing screener query execution framework
     - Store generated SQL in ScreenerVersion.compiled_sql field
     - Create parameter schema compatible with existing screener parameter handling

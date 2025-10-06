@@ -1,9 +1,10 @@
 package com.moneyplant.screener.services;
 
-import com.moneyplant.screener.dtos.PageResp;
-import com.moneyplant.screener.dtos.RunCreateReq;
-import com.moneyplant.screener.dtos.RunResp;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.moneyplant.screener.dtos.*;
 import com.moneyplant.screener.entities.ScreenerRun;
+import com.moneyplant.screener.entities.ScreenerVersion;
+import com.moneyplant.screener.exceptions.CriteriaValidationException;
 import com.moneyplant.screener.mappers.RunMapper;
 import com.moneyplant.screener.repositories.ScreenerRunRepository;
 import com.moneyplant.screener.repositories.ScreenerVersionRepository;
@@ -36,6 +37,9 @@ public class ScreenerRunService {
     private final ScreenerParamsetRepository screenerParamsetRepository;
     private final RunMapper runMapper;
     private final CurrentUserService currentUserService;
+    private final CriteriaValidationService criteriaValidationService;
+    private final ObjectMapper objectMapper;
+    private final CriteriaAuditService auditService;
     
     @Qualifier("noopRunExecutor")
     private final RunExecutor runExecutor;
@@ -55,6 +59,9 @@ public class ScreenerRunService {
         if (!version.getScreener().getScreenerId().equals(screenerId)) {
             throw new RuntimeException("Screener version does not belong to screener: " + screenerId);
         }
+        
+        // Validate criteria DSL if present
+        validateCriteriaBeforeRun(version, currentUserId);
         
         // Validate paramset if provided
         if (request.getParamsetId() != null) {
@@ -217,5 +224,133 @@ public class ScreenerRunService {
         return runs.stream()
                 .map(runMapper::toResponse)
                 .toList();
+    }
+
+    /**
+     * Validates criteria DSL before run execution.
+     * Integrates criteria validation with existing screener run workflow.
+     */
+    private void validateCriteriaBeforeRun(ScreenerVersion version, Long userId) {
+        if (version.getDslJson() == null) {
+            // No criteria DSL to validate
+            return;
+        }
+
+        try {
+            CriteriaDSL dsl = objectMapper.convertValue(version.getDslJson(), CriteriaDSL.class);
+            
+            // Re-validate DSL server-side before execution
+            ValidationResult validation = criteriaValidationService.validateDSL(dsl, userId);
+            
+            if (!validation.isValid()) {
+                log.warn("Invalid criteria DSL for version {}: {} errors", 
+                    version.getScreenerVersionId(), validation.getErrors().size());
+                
+                // Audit log the validation failure
+                auditService.logCriteriaExecutionEvent(
+                    calculateDslHash(dsl), 
+                    version.getScreener().getScreenerId(), 
+                    false, 
+                    "Criteria validation failed: " + validation.getErrors().size() + " errors"
+                );
+                
+                throw new CriteriaValidationException("Criteria DSL validation failed before execution", validation.getErrors());
+            }
+            
+            log.info("Criteria DSL validation passed for version {}", version.getScreenerVersionId());
+            
+            // Audit log successful validation
+            auditService.logCriteriaExecutionEvent(
+                calculateDslHash(dsl), 
+                version.getScreener().getScreenerId(), 
+                true, 
+                null
+            );
+            
+        } catch (CriteriaValidationException e) {
+            // Re-throw validation exceptions as-is
+            throw e;
+        } catch (Exception e) {
+            log.error("Failed to validate criteria DSL for version {}: {}", 
+                version.getScreenerVersionId(), e.getMessage(), e);
+            
+            auditService.logCriteriaExecutionEvent(
+                "unknown", 
+                version.getScreener().getScreenerId(), 
+                false, 
+                "DSL parsing failed: " + e.getMessage()
+            );
+            
+            throw new RuntimeException("Failed to validate criteria DSL: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Creates a run with criteria DSL validation and enhanced error handling.
+     * This method provides additional criteria-specific functionality.
+     */
+    public RunResp createRunWithCriteriaValidation(Long screenerId, RunCreateReq request) {
+        log.info("Creating run with criteria validation for screener: {}", screenerId);
+        
+        Long currentUserId = currentUserService.getCurrentUserId();
+        
+        // Validate screener version
+        ScreenerVersion version = screenerVersionRepository.findById(request.getScreenerVersionId())
+                .orElseThrow(() -> new RuntimeException("Screener version not found: " + request.getScreenerVersionId()));
+        
+        if (!version.getScreener().getScreenerId().equals(screenerId)) {
+            throw new RuntimeException("Screener version does not belong to screener: " + screenerId);
+        }
+
+        // Enhanced criteria validation with detailed error reporting
+        if (version.getDslJson() != null) {
+            try {
+                CriteriaDSL dsl = objectMapper.convertValue(version.getDslJson(), CriteriaDSL.class);
+                
+                ValidationResult validation = criteriaValidationService.validateDSL(dsl, currentUserId);
+                
+                if (!validation.isValid()) {
+                    log.warn("Criteria validation failed for screener {} version {}: {} errors, {} warnings", 
+                        screenerId, version.getVersionNumber(), 
+                        validation.getErrors().size(), validation.getWarnings().size());
+                    
+                    // Create detailed error message
+                    StringBuilder errorMsg = new StringBuilder("Criteria validation failed:\n");
+                    validation.getErrors().forEach(error -> 
+                        errorMsg.append("- ").append(error.getMessage()).append(" (").append(error.getPath()).append(")\n"));
+                    
+                    throw new CriteriaValidationException(errorMsg.toString(), validation.getErrors());
+                }
+                
+                // Log warnings if any
+                if (!validation.getWarnings().isEmpty()) {
+                    log.warn("Criteria validation warnings for screener {} version {}: {} warnings", 
+                        screenerId, version.getVersionNumber(), validation.getWarnings().size());
+                    validation.getWarnings().forEach(warning -> 
+                        log.warn("Warning: {} ({})", warning.getMessage(), warning.getPath()));
+                }
+                
+            } catch (Exception e) {
+                log.error("Failed to parse or validate criteria DSL for screener {} version {}: {}", 
+                    screenerId, version.getVersionNumber(), e.getMessage(), e);
+                throw new RuntimeException("Criteria DSL validation failed: " + e.getMessage(), e);
+            }
+        }
+        
+        // Proceed with standard run creation
+        return createRun(screenerId, request);
+    }
+
+    /**
+     * Calculates hash of DSL for audit logging.
+     */
+    private String calculateDslHash(CriteriaDSL dsl) {
+        try {
+            String dslJson = objectMapper.writeValueAsString(dsl);
+            return Integer.toHexString(dslJson.hashCode());
+        } catch (Exception e) {
+            log.warn("Failed to calculate DSL hash: {}", e.getMessage());
+            return "unknown-" + System.currentTimeMillis();
+        }
     }
 }
