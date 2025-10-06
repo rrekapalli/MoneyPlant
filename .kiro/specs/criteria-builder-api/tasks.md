@@ -5,14 +5,14 @@
   - Extend existing screener configuration to support criteria features
   - _Requirements: 11.1, 11.2, 11.3, 11.4_
 
-- [ ] 2. Implement criteria DSL model classes and new entities
-  - [ ] 2.1 Create criteria DSL model classes in screener.dtos package
+- [x] 2. Implement criteria DSL model classes and new entities
+  - [x] 2.1 Create criteria DSL model classes in screener.dtos package
     - Implement CriteriaDSL, Group, Condition, FunctionCall, FieldRef, and Literal classes in existing screener.dtos package
     - Add JSON serialization annotations for storage in existing ScreenerVersion.dsl_json field
     - Create validation constraints for DSL structure and content
     - _Requirements: 3.1, 3.2, 6.1, 6.2_
 
-  - [ ] 2.2 Create new JPA entities for field and function metadata in screener.entities package
+  - [x] 2.2 Create new JPA entities for field and function metadata in screener.entities package
     - Implement FieldMetadata entity with validation rules, audit fields, category, description, and example properties
     - Create ScreenerFunction entity with SQL templates, category, description, examples, and is_active flag for soft deletion
     - Add ScreenerFunctionParam entity with parameter definitions, validation rules, help text, and ordering support
