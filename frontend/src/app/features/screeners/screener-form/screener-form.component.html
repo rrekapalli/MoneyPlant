@@ -14,7 +14,7 @@
         <p-tab value="criteria">
           <i class="pi pi-filter"></i>
           Screening Criteria
-          <span *ngIf="hasCriteria()" class="criteria-badge">{{ criteriaQuery.rules.length }}</span>
+          <span *ngIf="hasCriteria()" class="criteria-badge">{{ getCriteriaCount() }}</span>
         </p-tab>
       </p-tablist>
       
@@ -107,12 +107,13 @@
               </p>
             </div>
 
-            <div class="query-builder-container">
-              <app-query-builder
-                [query]="criteriaQuery"
+            <div class="criteria-builder-container">
+              <ac-criteria-builder
+                [(ngModel)]="criteriaDSL"
                 [config]="criteriaConfig"
-                (queryChange)="onCriteriaChange($event)">
-              </app-query-builder>
+                (validityChange)="onValidityChange($event)"
+                class="screener-criteria-builder">
+              </ac-criteria-builder>
             </div>
 
             <div class="criteria-actions">
@@ -138,8 +139,8 @@
             <div *ngIf="hasCriteria()" class="criteria-preview">
               <h4>Criteria Preview</h4>
               <div class="criteria-summary">
-                <p><strong>Total Rules:</strong> {{ criteriaQuery.rules.length }}</p>
-                <p><strong>Logic:</strong> {{ criteriaQuery.condition.toUpperCase() }}</p>
+                <p><strong>Total Rules:</strong> {{ getCriteriaCount() }}</p>
+                <p><strong>Logic:</strong> {{ criteriaDSL?.root?.operator || 'AND' }}</p>
                 <p><strong>Status:</strong> 
                   <span class="status-badge status-active">Active</span>
                 </p>

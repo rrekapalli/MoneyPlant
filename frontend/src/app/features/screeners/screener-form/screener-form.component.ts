@@ -12,10 +12,10 @@ import { TabsModule } from 'primeng/tabs';
 import { MessageService } from 'primeng/api';
 
 import { ScreenerStateService } from '../../../services/state/screener.state';
-import { ScreenerResp, ScreenerCreateReq, ScreenerCriteria, ScreenerCriteriaConfig } from '../../../services/entities/screener.entities';
+import { ScreenerResp, ScreenerCreateReq, ScreenerCriteria } from '../../../services/entities/screener.entities';
 import { INDICATOR_FIELDS } from '../../../services/entities/indicators.entities';
-import { QueryBuilderComponent } from '../../../../../projects/query-builder/src/lib/components/query-builder.component';
-import { QueryRuleSet } from '../../../../../projects/query-builder/src/lib/interfaces/query.interface';
+import { CriteriaBuilderModule } from 'criteria-builder';
+import { CriteriaDSL, BuilderConfig, FieldMeta } from 'criteria-builder';
 
 @Component({
   selector: 'app-screener-form',
@@ -29,7 +29,7 @@ import { QueryRuleSet } from '../../../../../projects/query-builder/src/lib/inte
     CheckboxModule,
     ToastModule,
     TabsModule,
-    QueryBuilderComponent
+    CriteriaBuilderModule
   ],
   providers: [MessageService],
   templateUrl: './screener-form.component.html',
@@ -53,19 +53,29 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
     criteria: undefined
   };
 
-  // Query Builder
+  // Criteria Builder
   activeTab = 'basic';
-  criteriaQuery: QueryRuleSet = {
-    condition: 'and',
-    rules: []
+  private _criteriaDSL: CriteriaDSL | null = null;
+  
+  get criteriaDSL(): CriteriaDSL | null {
+    return this._criteriaDSL;
+  }
+  
+  set criteriaDSL(value: CriteriaDSL | null) {
+    this._criteriaDSL = value;
+    this.onCriteriaChange(value);
+  }
+  
+  criteriaConfig: BuilderConfig = {
+    allowGrouping: true,
+    maxDepth: 3,
+    enableAdvancedFunctions: false,
+    showSqlPreview: false,
+    compactMode: false
   };
   
-  criteriaConfig: ScreenerCriteriaConfig = {
-    fields: this.getIndicatorFields(),
-    defaultCondition: 'and',
-    allowCollapse: true,
-    allowEmpty: false
-  };
+  // Static field configuration
+  staticFields: FieldMeta[] = [];
 
   constructor(
     private route: ActivatedRoute,
@@ -76,6 +86,7 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.initializeSubscriptions();
+    this.loadStaticFields();
     this.loadScreener();
   }
 
@@ -98,9 +109,9 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
             criteria: screener.criteria
           };
           
-          // Convert criteria to query format if it exists
+          // Convert criteria to DSL format if it exists
           if (screener.criteria) {
-            this.criteriaQuery = this.convertCriteriaToQuery(screener.criteria);
+            this._criteriaDSL = this.convertScreenerCriteriaToDsl(screener.criteria);
           }
         }
       });
@@ -201,97 +212,189 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
     }
   }
 
-  // Query Builder Methods
-  onCriteriaChange(query: QueryRuleSet) {
-    this.criteriaQuery = query;
-    this.screenerForm.criteria = this.convertQueryToCriteria(query);
+  private loadStaticFields() {
+    // Convert INDICATOR_FIELDS to FieldMeta format
+    this.staticFields = INDICATOR_FIELDS.map(field => ({
+      id: field.value,
+      label: field.name,
+      dbColumn: field.value,
+      dataType: this.mapFieldType(field.type),
+      category: field.category,
+      description: field.description
+    }));
+  }
+
+  private mapFieldType(type: string): any {
+    const typeMapping: Record<string, string> = {
+      'number': 'number',
+      'string': 'string',
+      'date': 'date',
+      'boolean': 'boolean',
+      'percent': 'number',
+      'currency': 'number'
+    };
+    return typeMapping[type] || 'string';
+  }
+
+  // Criteria Builder Methods
+  onValidityChange(isValid: boolean) {
+    // Handle validity changes if needed
+    console.log('Criteria validity changed:', isValid);
+  }
+
+
+
+  private onCriteriaChange(dsl: CriteriaDSL | null) {
+    // Convert to screener format for backend compatibility
+    if (dsl && this.hasValidCriteria(dsl)) {
+      this.screenerForm.criteria = this.convertDslToScreenerCriteria(dsl);
+    } else {
+      this.screenerForm.criteria = undefined;
+    }
+  }
+
+  private hasValidCriteria(dsl: CriteriaDSL): boolean {
+    return dsl && dsl.root && dsl.root.children && dsl.root.children.length > 0;
   }
 
   onTabChange(event: any) {
     this.activeTab = event.value;
   }
 
-  private getIndicatorFields() {
-    return INDICATOR_FIELDS.map(field => ({
-      name: field.name,
-      value: field.value,
-      type: field.type as 'string' | 'number' | 'date' | 'time' | 'boolean' | 'category',
-      category: field.category,
-      description: field.description,
-      operators: this.getOperatorsForType(field.type),
-      options: undefined
-    }));
-  }
+  /**
+   * Convert ScreenerCriteria to CriteriaDSL for criteria builder
+   */
+  private convertScreenerCriteriaToDsl(criteria: ScreenerCriteria): CriteriaDSL {
+    if (!criteria) {
+      return this.createEmptyDSL();
+    }
 
-  private getOperatorsForType(type: string): string[] {
-    switch (type) {
-      case 'number':
-        return ['=', '!=', '>', '>=', '<', '<=', 'between', 'not between', 'is empty', 'is not empty'];
-      case 'string':
-        return ['=', '!=', 'contains', 'not contains', 'starts with', 'ends with', 'is empty', 'is not empty'];
-      case 'date':
-      case 'time':
-        return ['=', '!=', '>', '>=', '<', '<=', 'between', 'not between', 'is empty', 'is not empty'];
-      case 'boolean':
-        return ['=', '!=', 'is empty', 'is not empty'];
-      case 'category':
-        return ['=', '!=', 'in', 'not in', 'is empty', 'is not empty'];
-      default:
-        return ['=', '!=', 'is empty', 'is not empty'];
+    try {
+      return {
+        root: this.convertScreenerGroup(criteria),
+        meta: {
+          version: 1,
+          createdAt: new Date().toISOString(),
+          source: 'screener'
+        }
+      };
+    } catch (error) {
+      console.error('Failed to convert ScreenerCriteria to DSL:', error);
+      return this.createEmptyDSL();
     }
   }
 
-  private convertQueryToCriteria(query: QueryRuleSet): ScreenerCriteria {
+  /**
+   * Convert CriteriaDSL to ScreenerCriteria for backend
+   */
+  private convertDslToScreenerCriteria(dsl: CriteriaDSL): ScreenerCriteria | undefined {
+    if (!dsl || !dsl.root) {
+      return undefined;
+    }
+
+    try {
+      return this.convertDslGroup(dsl.root);
+    } catch (error) {
+      console.error('Failed to convert DSL to ScreenerCriteria:', error);
+      return undefined;
+    }
+  }
+
+  private convertScreenerGroup(criteria: ScreenerCriteria): any {
     return {
-      condition: query.condition,
-      rules: query.rules.map((rule: any) => {
+      operator: criteria.condition.toUpperCase() as 'AND' | 'OR',
+      children: criteria.rules.map(rule => {
         if ('field' in rule) {
-          // It's a QueryRule
-          return {
-            field: rule.field,
-            operator: rule.operator,
-            value: rule.value,
-            entity: rule.entity
-          };
+          // It's a ScreenerRule - convert to Condition
+          return this.convertScreenerRule(rule as any);
         } else {
-          // It's a nested QueryRuleSet
-          return this.convertQueryToCriteria(rule);
+          // It's a nested ScreenerCriteria - convert recursively
+          return this.convertScreenerGroup(rule as ScreenerCriteria);
         }
-      }),
-      collapsed: query.collapsed
+      })
     };
   }
 
-  private convertCriteriaToQuery(criteria: ScreenerCriteria): QueryRuleSet {
+  private convertScreenerRule(rule: any): any {
     return {
-      condition: criteria.condition,
-      rules: criteria.rules.map((rule: any) => {
-        if ('field' in rule) {
-          // It's a ScreenerRule
-          return {
-            field: rule.field,
-            operator: rule.operator,
-            value: rule.value,
-            entity: rule.entity
-          };
+      left: {
+        fieldId: rule.field
+      },
+      op: rule.operator,
+      right: {
+        type: this.inferValueType(rule.value),
+        value: rule.value
+      }
+    };
+  }
+
+  private convertDslGroup(group: any): ScreenerCriteria {
+    return {
+      condition: group.operator.toLowerCase() as 'and' | 'or',
+      rules: group.children.map((child: any) => {
+        if ('left' in child) {
+          // It's a Condition - convert to ScreenerRule
+          return this.convertDslCondition(child);
         } else {
-          // It's a nested ScreenerCriteria
-          return this.convertCriteriaToQuery(rule);
+          // It's a nested Group - convert recursively
+          return this.convertDslGroup(child);
         }
       }),
-      collapsed: criteria.collapsed
+      collapsed: false
+    };
+  }
+
+  private convertDslCondition(condition: any): any {
+    return {
+      field: condition.left.fieldId,
+      operator: condition.op,
+      value: condition.right.value,
+      entity: 'stock'
+    };
+  }
+
+  private inferValueType(value: any): 'string' | 'number' | 'boolean' | 'date' {
+    if (typeof value === 'number') return 'number';
+    if (typeof value === 'boolean') return 'boolean';
+    if (value instanceof Date || /^\d{4}-\d{2}-\d{2}/.test(value)) return 'date';
+    return 'string';
+  }
+
+  private createEmptyDSL(): CriteriaDSL {
+    return {
+      root: {
+        operator: 'AND',
+        children: []
+      },
+      meta: {
+        version: 1,
+        createdAt: new Date().toISOString(),
+        source: 'screener'
+      }
     };
   }
 
   clearCriteria() {
-    this.criteriaQuery = {
-      condition: 'and',
-      rules: []
-    };
+    this.criteriaDSL = null;
     this.screenerForm.criteria = undefined;
   }
 
   hasCriteria(): boolean {
-    return this.criteriaQuery.rules.length > 0;
+    return this.criteriaDSL ? this.hasValidCriteria(this.criteriaDSL) : false;
+  }
+
+  getCriteriaCount(): number {
+    if (!this.criteriaDSL || !this.criteriaDSL.root) return 0;
+    return this.countConditions(this.criteriaDSL.root);
+  }
+
+  private countConditions(group: any): number {
+    return group.children.reduce((count: number, child: any) => {
+      if ('left' in child) {
+        return count + 1; // It's a condition
+      } else {
+        return count + this.countConditions(child); // It's a nested group
+      }
+    }, 0);
   }
 }

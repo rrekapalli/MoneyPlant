@@ -109,7 +109,7 @@
       }
     }
 
-    .query-builder-container {
+    .criteria-builder-container {
       margin-bottom: 2rem;
       padding: 1.5rem;
       border: 1px solid #e0e0e0;
@@ -245,10 +245,10 @@
     }
   }
 
-  // Query Builder customizations
-  .query-builder-container {
-    .app-query-builder {
-      .query-builder {
+  // Criteria Builder customizations
+  .criteria-builder-container {
+    .screener-criteria-builder {
+      ac-criteria-builder {
         border: none;
         background: transparent;
       }
