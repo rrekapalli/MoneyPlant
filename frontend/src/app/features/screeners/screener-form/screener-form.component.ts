@@ -322,28 +322,58 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
   }
 
   private loadStaticFields() {
-    // Convert INDICATOR_FIELDS to FieldMeta format
-    this.staticFields = INDICATOR_FIELDS.map(field => this.convertIndicatorFieldToFieldMeta(field));
+    try {
+      // Convert INDICATOR_FIELDS to FieldMeta format
+      this.staticFields = INDICATOR_FIELDS.map(field => this.convertIndicatorFieldToFieldMeta(field));
+      console.log(`Loaded ${this.staticFields.length} static fields for criteria builder`);
+    } catch (error) {
+      console.error('Failed to load static fields:', error);
+      this.handleCriteriaError(error, 'load');
+      // Provide fallback behavior (empty fields array)
+      this.staticFields = [];
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Field Loading Error',
+        detail: 'Failed to load available fields. Criteria builder may have limited functionality.',
+        life: 5000
+      });
+    }
   }
 
   /**
    * Convert an IndicatorField to FieldMeta format for criteria builder
    */
   private convertIndicatorFieldToFieldMeta(field: any): FieldMeta {
-    const dataType = this.mapFieldType(field.type);
-    
-    return {
-      id: field.value,
-      label: field.name,
-      dbColumn: field.value,
-      dataType: dataType,
-      allowedOps: this.getBasicOperatorsForType(dataType),
-      category: field.category,
-      description: field.description,
-      validation: this.createValidationConfig(field),
-      nullable: true, // Allow null values for technical indicators
-      example: this.generateExampleValue(dataType, field)
-    };
+    try {
+      const dataType = this.mapFieldType(field.type);
+      
+      return {
+        id: field.value,
+        label: field.name,
+        dbColumn: field.value,
+        dataType: dataType,
+        allowedOps: this.getBasicOperatorsForType(dataType),
+        category: field.category,
+        description: field.description,
+        validation: this.createValidationConfig(field),
+        nullable: true, // Allow null values for technical indicators
+        example: this.generateExampleValue(dataType, field)
+      };
+    } catch (error) {
+      console.error('Failed to convert indicator field to FieldMeta:', error, field);
+      // Provide fallback behavior (basic field configuration)
+      return {
+        id: field.value || 'unknown',
+        label: field.name || 'Unknown Field',
+        dbColumn: field.value || 'unknown',
+        dataType: 'string',
+        allowedOps: ['=', '!='],
+        category: field.category || 'Other',
+        description: field.description || 'Field conversion failed',
+        nullable: true,
+        example: 'N/A'
+      };
+    }
   }
 
   /**
@@ -515,18 +545,23 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
    * Implements subtask 3.2: Add convertScreenerGroup method for recursive group conversion
    */
   private convertScreenerGroup(criteria: ScreenerCriteria): Group {
-    return {
-      operator: criteria.condition.toUpperCase() as 'AND' | 'OR',
-      children: criteria.rules.map(rule => {
-        if ('field' in rule) {
-          // It's a ScreenerRule - convert to Condition
-          return this.convertScreenerRule(rule as ScreenerRule);
-        } else {
-          // It's a nested ScreenerCriteria - convert recursively
-          return this.convertScreenerGroup(rule as ScreenerCriteria);
-        }
-      })
-    };
+    try {
+      return {
+        operator: criteria.condition.toUpperCase() as 'AND' | 'OR',
+        children: criteria.rules.map(rule => {
+          if ('field' in rule) {
+            // It's a ScreenerRule - convert to Condition
+            return this.convertScreenerRule(rule as ScreenerRule);
+          } else {
+            // It's a nested ScreenerCriteria - convert recursively
+            return this.convertScreenerGroup(rule as ScreenerCriteria);
+          }
+        })
+      };
+    } catch (error) {
+      console.error('Failed to convert screener group:', error);
+      throw error; // Re-throw to be handled by parent conversion method
+    }
   }
 
   /**
@@ -534,29 +569,34 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
    * Implements subtask 3.2: Add convertScreenerRule method for individual rule conversion
    */
   private convertScreenerRule(rule: ScreenerRule): Condition {
-    const condition: Condition = {
-      left: {
-        fieldId: rule.field
-      } as FieldRef,
-      op: rule.operator as Operator,
-      right: undefined
-    };
+    try {
+      const condition: Condition = {
+        left: {
+          fieldId: rule.field
+        } as FieldRef,
+        op: rule.operator as Operator,
+        right: undefined
+      };
 
-    // Handle operators that don't require a right side value
-    if (rule.operator === 'IS NULL' || rule.operator === 'IS NOT NULL') {
-      // These operators don't need a right side
+      // Handle operators that don't require a right side value
+      if (rule.operator === 'IS NULL' || rule.operator === 'IS NOT NULL') {
+        // These operators don't need a right side
+        return condition;
+      }
+
+      // Add right side for operators that require a value
+      if (rule.value !== null && rule.value !== undefined) {
+        condition.right = {
+          type: this.inferValueType(rule.value),
+          value: rule.value
+        } as Literal;
+      }
+
       return condition;
+    } catch (error) {
+      console.error('Failed to convert screener rule:', error);
+      throw error; // Re-throw to be handled by parent conversion method
     }
-
-    // Add right side for operators that require a value
-    if (rule.value !== null && rule.value !== undefined) {
-      condition.right = {
-        type: this.inferValueType(rule.value),
-        value: rule.value
-      } as Literal;
-    }
-
-    return condition;
   }
 
   /**
@@ -564,22 +604,27 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
    * Implements subtask 3.1: Add convertDslGroup method for recursive group conversion
    */
   private convertDslGroup(group: Group): ScreenerCriteria {
-    // Handle NOT operator by converting to AND with negated conditions
-    const operator = group.operator === 'NOT' ? 'and' : group.operator.toLowerCase() as 'and' | 'or';
-    
-    return {
-      condition: operator,
-      rules: group.children.map((child: Condition | Group) => {
-        if ('left' in child) {
-          // It's a Condition - convert to ScreenerRule
-          return this.convertDslCondition(child as Condition, group.operator === 'NOT');
-        } else {
-          // It's a nested Group - convert recursively
-          return this.convertDslGroup(child as Group);
-        }
-      }),
-      collapsed: false
-    };
+    try {
+      // Handle NOT operator by converting to AND with negated conditions
+      const operator = group.operator === 'NOT' ? 'and' : group.operator.toLowerCase() as 'and' | 'or';
+      
+      return {
+        condition: operator,
+        rules: group.children.map((child: Condition | Group) => {
+          if ('left' in child) {
+            // It's a Condition - convert to ScreenerRule
+            return this.convertDslCondition(child as Condition, group.operator === 'NOT');
+          } else {
+            // It's a nested Group - convert recursively
+            return this.convertDslGroup(child as Group);
+          }
+        }),
+        collapsed: false
+      };
+    } catch (error) {
+      console.error('Failed to convert DSL group:', error);
+      throw error; // Re-throw to be handled by parent conversion method
+    }
   }
 
   /**
@@ -587,39 +632,44 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
    * Implements subtask 3.1: Add convertDslCondition method for individual condition conversion
    */
   private convertDslCondition(condition: Condition, isNegated: boolean = false): ScreenerRule {
-    // Extract field ID from FieldRef
-    const fieldId = (condition.left as FieldRef).fieldId;
-    
-    // Handle basic operator mapping between formats
-    let operator = condition.op;
-    if (isNegated) {
-      operator = this.negateOperator(operator);
-    }
-    
-    // Extract value from right side (Literal or FieldRef)
-    let value: any;
-    if (condition.right) {
-      if ('value' in condition.right) {
-        // It's a Literal
-        value = (condition.right as Literal).value;
-      } else if ('fieldId' in condition.right) {
-        // It's a FieldRef - use field ID as value for field-to-field comparisons
-        value = (condition.right as FieldRef).fieldId;
-      } else {
-        // It's a FunctionCall - not supported in basic conversion
-        throw new Error('Function calls in conditions are not supported in basic conversion');
+    try {
+      // Extract field ID from FieldRef
+      const fieldId = (condition.left as FieldRef).fieldId;
+      
+      // Handle basic operator mapping between formats
+      let operator = condition.op;
+      if (isNegated) {
+        operator = this.negateOperator(operator);
       }
-    } else {
-      // Handle operators that don't require right side (IS NULL, IS NOT NULL)
-      value = null;
+      
+      // Extract value from right side (Literal or FieldRef)
+      let value: any;
+      if (condition.right) {
+        if ('value' in condition.right) {
+          // It's a Literal
+          value = (condition.right as Literal).value;
+        } else if ('fieldId' in condition.right) {
+          // It's a FieldRef - use field ID as value for field-to-field comparisons
+          value = (condition.right as FieldRef).fieldId;
+        } else {
+          // It's a FunctionCall - not supported in basic conversion
+          throw new Error('Function calls in conditions are not supported in basic conversion');
+        }
+      } else {
+        // Handle operators that don't require right side (IS NULL, IS NOT NULL)
+        value = null;
+      }
+      
+      return {
+        field: fieldId,
+        operator: operator,
+        value: value,
+        entity: 'stock'
+      };
+    } catch (error) {
+      console.error('Failed to convert DSL condition:', error);
+      throw error; // Re-throw to be handled by parent conversion method
     }
-    
-    return {
-      field: fieldId,
-      operator: operator,
-      value: value,
-      entity: 'stock'
-    };
   }
 
   /**
@@ -848,12 +898,21 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
         });
         
         // Try to resync by converting from the existing format
-        if (hasValidDSL && !hasScreenerCriteria && this._criteriaDSL) {
-          // DSL exists but screener format doesn't - convert DSL to screener format
-          this.screenerForm.criteria = this.convertDslToScreenerCriteria(this._criteriaDSL);
-        } else if (!hasValidDSL && hasScreenerCriteria && this.screenerForm.criteria) {
-          // Screener format exists but DSL doesn't - convert screener to DSL format
-          this._criteriaDSL = this.convertScreenerCriteriaToDsl(this.screenerForm.criteria);
+        try {
+          if (hasValidDSL && !hasScreenerCriteria && this._criteriaDSL) {
+            // DSL exists but screener format doesn't - convert DSL to screener format
+            this.screenerForm.criteria = this.convertDslToScreenerCriteria(this._criteriaDSL);
+          } else if (!hasValidDSL && hasScreenerCriteria && this.screenerForm.criteria) {
+            // Screener format exists but DSL doesn't - convert screener to DSL format
+            this._criteriaDSL = this.convertScreenerCriteriaToDsl(this.screenerForm.criteria);
+          }
+        } catch (error) {
+          console.error('Failed to synchronize criteria state:', error);
+          this.handleConversionError(error);
+          // Reset both to prevent inconsistent state
+          this._criteriaDSL = null;
+          this.screenerForm.criteria = undefined;
+          return false;
         }
       }
       
@@ -867,18 +926,28 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
   }
 
   getCriteriaCount(): number {
-    if (!this.criteriaDSL || !this.criteriaDSL.root) return 0;
-    return this.countConditions(this.criteriaDSL.root);
+    try {
+      if (!this.criteriaDSL || !this.criteriaDSL.root) return 0;
+      return this.countConditions(this.criteriaDSL.root);
+    } catch (error) {
+      console.error('Failed to count criteria conditions:', error);
+      return 0; // Provide fallback behavior (return 0 on error)
+    }
   }
 
   private countConditions(group: any): number {
-    return group.children.reduce((count: number, child: any) => {
-      if ('left' in child) {
-        return count + 1; // It's a condition
-      } else {
-        return count + this.countConditions(child); // It's a nested group
-      }
-    }, 0);
+    try {
+      return group.children.reduce((count: number, child: any) => {
+        if ('left' in child) {
+          return count + 1; // It's a condition
+        } else {
+          return count + this.countConditions(child); // It's a nested group
+        }
+      }, 0);
+    } catch (error) {
+      console.error('Failed to count conditions in group:', error);
+      return 0; // Provide fallback behavior (return 0 on error)
+    }
   }
 
   /**
