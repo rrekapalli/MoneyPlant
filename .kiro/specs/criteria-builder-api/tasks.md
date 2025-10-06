@@ -25,7 +25,7 @@
     - Verify JPA entity persistence and retrieval for metadata entities
     - _Requirements: 12.1_
 
-- [ ] 3. Create repositories for new metadata entities in screener.repositories package
+- [x] 3. Create repositories for new metadata entities in screener.repositories package
   - Create FieldMetadataRepository with custom queries for user-based field access and role filtering
   - Implement ScreenerFunctionRepository with active function filtering, category-based queries, and soft deletion support
   - Add ScreenerFunctionParamRepository with parameter ordering and function relationship queries
