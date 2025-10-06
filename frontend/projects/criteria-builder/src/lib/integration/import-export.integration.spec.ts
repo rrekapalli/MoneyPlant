@@ -95,10 +95,10 @@ describe('Import/Export Integration', () => {
 
       const importResult = importExportService.importFromJson(exportResult.data!);
 
-      expect(importResult.dsl?.meta?.customField).toBe('test-value');
-      expect(importResult.dsl?.meta?.timestamp).toBeDefined();
-      expect(importResult.dsl?.meta?.exportedBy).toBe('criteria-builder-ui');
-      expect(importResult.dsl?.meta?.importedBy).toBe('criteria-builder-ui');
+      expect(importResult.dsl?.meta?.['customField']).toBe('test-value');
+      expect(importResult.dsl?.meta?.['timestamp']).toBeDefined();
+      expect(importResult.dsl?.meta?.['exportedBy']).toBe('criteria-builder-ui');
+      expect(importResult.dsl?.meta?.['importedBy']).toBe('criteria-builder-ui');
     });
   });
 
