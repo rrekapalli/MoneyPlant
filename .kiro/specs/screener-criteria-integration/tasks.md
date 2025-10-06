@@ -87,13 +87,13 @@
     - Provide fallback behavior (empty criteria) when conversion fails
     - _Requirements: 5.2, 5.4_
 
-- [ ] 7. Update component styling and visual integration
-  - [ ] 7.1 Ensure criteria builder fits within existing layout
+- [x] 7. Update component styling and visual integration
+  - [x] 7.1 Ensure criteria builder fits within existing layout
     - Verify criteria-builder component renders properly within tab panel
     - Ensure consistent spacing and padding with existing form elements
     - Test responsive behavior on different screen sizes
     - _Requirements: 6.1, 6.3_
-  - [ ] 7.2 Update criteria tab badge to show count
+  - [x] 7.2 Update criteria tab badge to show count
     - Modify template to show criteria count badge when criteria exist
     - Use getCriteriaCount method to display number of conditions
     - Style badge consistently with existing UI patterns

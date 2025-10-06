@@ -115,6 +115,65 @@
       border: 1px solid #e0e0e0;
       border-radius: 8px;
       background-color: #fafafa;
+      min-height: 300px;
+      
+      // Ensure criteria builder fits within existing layout
+      .screener-criteria-builder {
+        width: 100%;
+        
+        // Override any fixed widths from criteria builder
+        ac-criteria-builder {
+          width: 100% !important;
+          max-width: 100% !important;
+          
+          // Ensure consistent spacing with existing form elements
+          .criteria-builder-root {
+            padding: 0;
+            margin: 0;
+          }
+          
+          // Match existing form element spacing
+          .criteria-group, .criteria-condition {
+            margin-bottom: 1rem;
+          }
+          
+          // Ensure buttons match existing button styling
+          .criteria-button {
+            font-size: 0.875rem;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+          }
+          
+          // Ensure input fields match existing form styling
+          .criteria-input {
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+            
+            &:focus {
+              outline: none;
+              border-color: #3498db;
+              box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+            }
+          }
+          
+          // Ensure select dropdowns match existing styling
+          .criteria-select {
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+            background-color: white;
+            
+            &:focus {
+              outline: none;
+              border-color: #3498db;
+              box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+            }
+          }
+        }
+      }
     }
 
     .criteria-actions {
@@ -197,6 +256,99 @@
           min-width: auto;
         }
       }
+      
+      // Responsive criteria builder adjustments
+      .criteria-builder-container {
+        padding: 1rem;
+        min-height: 250px;
+        
+        .screener-criteria-builder {
+          ac-criteria-builder {
+            // Adjust for smaller screens
+            .criteria-group, .criteria-condition {
+              margin-bottom: 0.75rem;
+            }
+            
+            // Stack form elements vertically on mobile
+            .criteria-condition-row {
+              flex-direction: column;
+              gap: 0.5rem;
+            }
+            
+            // Ensure buttons are touch-friendly
+            .criteria-button {
+              min-height: 44px;
+              padding: 0.75rem 1rem;
+            }
+            
+            // Make inputs full width on mobile
+            .criteria-input, .criteria-select {
+              width: 100%;
+              min-height: 44px;
+            }
+          }
+        }
+      }
+      
+      .criteria-actions {
+        flex-direction: column;
+        gap: 1rem;
+        
+        button {
+          min-width: auto;
+          width: 100%;
+        }
+      }
+    }
+    
+    // Responsive badge adjustments
+    :host ::ng-deep .p-tabs .p-tablist .p-tab {
+      .criteria-badge {
+        font-size: 0.65rem;
+        min-width: 1rem;
+        height: 1rem;
+        padding: 0.2rem 0.4rem;
+        margin-left: 0.25rem;
+      }
+      
+      .criteria-preview {
+        padding: 1rem;
+        
+        .criteria-summary {
+          .summary-item {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.25rem;
+          }
+        }
+      }
+    }
+  }
+}
+
+// Tablet responsive adjustments
+@media (max-width: 1024px) and (min-width: 769px) {
+  .screener-form-container {
+    .form-content {
+      .criteria-builder-container {
+        .screener-criteria-builder {
+          ac-criteria-builder {
+            // Adjust spacing for tablet
+            .criteria-group, .criteria-condition {
+              margin-bottom: 0.875rem;
+            }
+            
+            // Ensure adequate touch targets
+            .criteria-button {
+              min-height: 40px;
+            }
+            
+            .criteria-input, .criteria-select {
+              min-height: 40px;
+            }
+          }
+        }
+      }
     }
   }
 }
@@ -240,6 +392,37 @@
           display: inline-flex;
           align-items: center;
           justify-content: center;
+          transition: all 0.2s ease;
+          
+          // Style badge consistently with existing UI patterns
+          &.criteria-badge-active {
+            background-color: #27ae60;
+            animation: pulse 2s infinite;
+          }
+          
+          &.criteria-badge-warning {
+            background-color: #f39c12;
+          }
+          
+          &.criteria-badge-error {
+            background-color: #e74c3c;
+          }
+        }
+        
+        // Enhance tab appearance when criteria exist
+        &.p-tab-active {
+          .criteria-badge {
+            background-color: #2980b9;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+          }
+        }
+        
+        // Hover effects for better UX
+        &:hover {
+          .criteria-badge {
+            transform: scale(1.05);
+            box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+          }
         }
       }
     }
@@ -251,6 +434,44 @@
       ac-criteria-builder {
         border: none;
         background: transparent;
+        
+        // Ensure criteria builder integrates with PrimeNG theme
+        .p-button {
+          font-family: inherit;
+          
+          &.p-button-sm {
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem;
+          }
+        }
+        
+        .p-dropdown, .p-inputtext {
+          font-family: inherit;
+          border-color: #ddd;
+          
+          &:focus {
+            border-color: #3498db;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+          }
+        }
+        
+        // Match PrimeNG card styling for nested groups
+        .criteria-group-container {
+          background: white;
+          border: 1px solid #e0e0e0;
+          border-radius: 6px;
+          padding: 1rem;
+          margin: 0.5rem 0;
+        }
+        
+        // Ensure proper spacing matches form elements
+        .criteria-row {
+          margin-bottom: 1rem;
+          
+          &:last-child {
+            margin-bottom: 0;
+          }
+        }
       }
     }
   }
@@ -262,5 +483,20 @@
   }
   to {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
   }
 }

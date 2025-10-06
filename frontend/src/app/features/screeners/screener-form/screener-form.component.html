@@ -15,7 +15,13 @@
           <i class="pi pi-filter"></i>
           Screening Criteria
           @if (hasCriteria()) {
-            <span class="criteria-badge">{{ getCriteriaCount() }}</span>
+            <span 
+              class="criteria-badge"
+              [class.criteria-badge-active]="getCriteriaCount() > 0"
+              [class.criteria-badge-warning]="getCriteriaCount() > 10"
+              [title]="'Total conditions: ' + getCriteriaCount()">
+              {{ getCriteriaCount() }}
+            </span>
           }
         </p-tab>
       </p-tablist>
