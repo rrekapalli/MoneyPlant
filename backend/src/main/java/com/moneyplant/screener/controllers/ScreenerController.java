@@ -8,23 +8,29 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 /**
  * REST controller for screener management.
+ * Integrates with existing screener security infrastructure including JWT authentication,
+ * rate limiting, and audit logging.
  */
 @RestController
 @RequestMapping("/api/screeners")
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Screeners", description = "Screener management operations")
+@SecurityRequirement(name = "bearerAuth")
+@PreAuthorize("isAuthenticated()")
 public class ScreenerController {
 
     private final ScreenerService screenerService;
