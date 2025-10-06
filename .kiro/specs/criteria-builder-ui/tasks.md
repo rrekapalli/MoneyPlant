@@ -7,21 +7,19 @@
   - Configure library to use PrimeNG v20 as peer dependency
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5_
 
-- [ ] 2. Implement core data models and token system types
-  - [ ] 2.1 Create TypeScript interfaces for DSL structure
+- [x] 2. Implement core data models and token system types
+  - [x] 2.1 Create TypeScript interfaces for DSL structure
     - Define CriteriaDSL, Group, Condition, FunctionCall, FieldRef, and Literal interfaces
     - Implement FieldType enum and Operator type definitions
     - Create ValidationError and ValidationResult interfaces
     - _Requirements: 3.1, 3.2, 9.1, 9.2_
-
-  - [ ] 2.2 Create visual token system type definitions
+  - [x] 2.2 Create visual token system type definitions
     - Define QueryToken interface with type, display, interaction, and styling properties
     - Implement TokenType enum and TokenStyle interfaces for visual representation
     - Create OverlayConfig and OverlayAction interfaces for interaction management
     - Add DropdownOption interface for selection overlays
     - _Requirements: 3.1.1, 3.1.2, 3.1.3, 3.1.4_
-
-  - [ ] 2.3 Create field and function metadata models
+  - [x] 2.3 Create field and function metadata models
     - Implement FieldMeta interface with validation rules and formatting options
     - Create FunctionMeta interface with parameter definitions and SQL templates
     - Define BuilderConfig interface for component configuration

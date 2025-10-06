@@ -1,6 +1,9 @@
 // Core DSL interfaces
 export * from './criteria-dsl.interface';
 
+// Visual token system interfaces
+export * from './token-system.interface';
+
 // Field metadata interfaces
 export * from './field-meta.interface';
 
