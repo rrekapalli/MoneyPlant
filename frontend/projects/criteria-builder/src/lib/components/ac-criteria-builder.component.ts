@@ -18,7 +18,7 @@ import {
 import { BehaviorSubject, Subject, combineLatest } from 'rxjs';
 import { debounceTime, takeUntil, distinctUntilChanged } from 'rxjs/operators';
 
-import { CriteriaDSL, ValidationResult } from '../models/criteria-dsl.interface';
+import { CriteriaDSL, ValidationResult, ValidationError, ValidationWarning } from '../models/criteria-dsl.interface';
 import { BuilderConfig } from '../models/builder-config.interface';
 import { FieldMetaResp, OperatorInfo } from '../models/field-meta.interface';
 import { FunctionMetaResp } from '../models/function-meta.interface';
@@ -443,5 +443,37 @@ export class AcCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
   onSqlPreviewToggle(show: boolean): void {
     // Update config to reflect SQL preview state
     this.config = { ...this.config, showSqlPreview: show };
+  }
+  
+  /**
+   * Handle error highlighting from error banner
+   */
+  onErrorHighlight(error: ValidationError): void {
+    // Error highlighting logic will be implemented when we build the token highlighting system
+    console.log('Highlighting error:', error);
+  }
+  
+  /**
+   * Handle warning highlighting from error banner
+   */
+  onWarningHighlight(warning: ValidationWarning): void {
+    // Warning highlighting logic will be implemented when we build the token highlighting system
+    console.log('Highlighting warning:', warning);
+  }
+  
+  /**
+   * Handle clear highlighting from error banner
+   */
+  onClearHighlight(): void {
+    // Clear highlighting logic will be implemented when we build the token highlighting system
+    console.log('Clearing highlights');
+  }
+  
+  /**
+   * Handle error details toggle from error banner
+   */
+  onErrorDetailsToggle(expanded: boolean): void {
+    // Update config or state to reflect error details visibility
+    console.log('Error details toggled:', expanded);
   }
 }

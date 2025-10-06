@@ -12,7 +12,7 @@ import { ValidationResult } from '../../models';
     <div class="error-banner-placeholder" *ngIf="validationResult && !validationResult.isValid">
       <div class="error-summary">
         <i class="pi pi-exclamation-triangle"></i>
-        <span>{{ validationResult.errors.length }} validation error(s) found</span>
+        <span>{{ validationResult?.errors?.length || 0 }} validation error(s) found</span>
         <button type="button" 
                 class="toggle-details" 
                 (click)="showDetails = !showDetails">
@@ -21,7 +21,7 @@ import { ValidationResult } from '../../models';
       </div>
       
       <div class="error-details" *ngIf="showDetails">
-        <div class="error-item" *ngFor="let error of validationResult.errors">
+        <div class="error-item" *ngFor="let error of (validationResult?.errors || [])">
           <span class="error-type">{{ error.type }}</span>
           <span class="error-message">{{ error.message }}</span>
           <span class="error-path">{{ error.path }}</span>

@@ -5,6 +5,7 @@ export interface BuilderConfig {
   allowGrouping?: boolean;
   maxDepth?: number;
   enableAdvancedFunctions?: boolean;
+  enablePartialValidation?: boolean;
   autoSave?: boolean;
   locale?: string;
   theme?: 'light' | 'dark';

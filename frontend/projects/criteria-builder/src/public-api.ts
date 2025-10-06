@@ -15,6 +15,9 @@ export * from './lib/components/ac-token-renderer.component';
 // SQL preview component
 export * from './lib/components/ac-sql-preview.component';
 
+// Error banner component
+export * from './lib/components/ac-error-banner.component';
+
 // Overlay components
 export * from './lib/components/interaction-overlay-manager.component';
 export * from './lib/components/dropdown-content.component';

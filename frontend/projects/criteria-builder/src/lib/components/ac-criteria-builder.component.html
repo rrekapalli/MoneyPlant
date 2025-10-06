@@ -33,7 +33,13 @@
   <!-- Error Banner for Validation -->
   <ac-error-banner
     [validationResult]="validationResult$ | async"
-    [showDetails]="getCurrentMode() === 'advanced'">
+    [showDetails]="getCurrentMode() === 'advanced'"
+    [enablePartialValidation]="config.enablePartialValidation || true"
+    [debounceMs]="config.debounceMs || 200"
+    (errorHighlight)="onErrorHighlight($event)"
+    (warningHighlight)="onWarningHighlight($event)"
+    (clearHighlight)="onClearHighlight()"
+    (detailsToggle)="onErrorDetailsToggle($event)">
   </ac-error-banner>
   
   <!-- Main Query Display Area -->

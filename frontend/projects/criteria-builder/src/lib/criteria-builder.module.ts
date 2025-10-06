@@ -1,15 +1,17 @@
 import { NgModule } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, AsyncPipe, DatePipe } from '@angular/common';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
 // Angular CDK modules
 import { DragDropModule } from '@angular/cdk/drag-drop';
 
 // PrimeNG modules
-import { ButtonModule } from 'primeng/button';
-import { DialogModule } from 'primeng/dialog';
-import { PanelModule } from 'primeng/panel';
+import { Button } from 'primeng/button';
+import { Dialog } from 'primeng/dialog';
+import { Panel } from 'primeng/panel';
+import { ToggleButton } from 'primeng/togglebutton';
 
 // Standalone component is exported separately
 import { AcCriteriaBuilderComponent } from './components/ac-criteria-builder.component';
@@ -26,9 +28,11 @@ import { ContextMenuComponent } from './components/context-menu.component';
 // Placeholder components for child components (will be implemented in later tasks)
 import { 
   AcBuilderToolbarComponent,
-  AcErrorBannerComponent,
   AcTokenQueryDisplayComponent
 } from './components/placeholders';
+
+// Implemented components
+import { AcErrorBannerComponent } from './components/ac-error-banner.component';
 
 // Implemented components
 import { AcSqlPreviewComponent } from './components/ac-sql-preview.component';
@@ -43,10 +47,14 @@ import { AcSqlPreviewComponent } from './components/ac-sql-preview.component';
     ReactiveFormsModule,
     FormsModule,
     HttpClientModule,
+    BrowserAnimationsModule,
     DragDropModule,
-    ButtonModule,
-    DialogModule,
-    PanelModule,
+    AsyncPipe,
+    DatePipe,
+    Button,
+    Dialog,
+    Panel,
+    ToggleButton,
     // Standalone overlay components
     InteractionOverlayManagerComponent,
     DropdownContentComponent,

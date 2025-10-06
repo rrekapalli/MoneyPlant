@@ -1,0 +1,199 @@
+<div class="ac-error-banner" 
+     [class.has-errors]="hasErrors"
+     [class.has-warnings]="hasWarnings"
+     [class.expanded]="isExpanded"
+     *ngIf="hasIssues">
+  
+  <!-- Main Error/Warning Messages -->
+  <div class="error-banner-messages">
+    <div class="message error-message" *ngIf="hasErrors">
+      <div class="message-icon">
+        <i class="pi pi-times-circle"></i>
+      </div>
+      <div class="message-content">
+        <div class="message-summary">{{ errorCount }} Validation Error{{ errorCount > 1 ? 's' : '' }}</div>
+        <div class="message-detail">{{ getErrorSummary() }}</div>
+      </div>
+    </div>
+    
+    <div class="message warning-message" *ngIf="hasWarnings">
+      <div class="message-icon">
+        <i class="pi pi-exclamation-triangle"></i>
+      </div>
+      <div class="message-content">
+        <div class="message-summary">{{ warningCount }} Warning{{ warningCount > 1 ? 's' : '' }}</div>
+        <div class="message-detail">{{ getWarningSummary() }}</div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Toggle Details Button -->
+  <div class="details-toggle-container">
+    <button 
+      type="button"
+      class="details-toggle-btn"
+      (click)="toggleDetails()">
+      <i class="pi" [class.pi-chevron-up]="isExpanded" [class.pi-chevron-down]="!isExpanded"></i>
+      {{ isExpanded ? 'Hide Details' : 'Show Details' }}
+    </button>
+    
+    <span class="issue-count">
+      <span *ngIf="hasErrors" class="error-count">
+        <i class="pi pi-times-circle"></i>
+        {{ errorCount }} error{{ errorCount > 1 ? 's' : '' }}
+      </span>
+      <span *ngIf="hasWarnings" class="warning-count">
+        <i class="pi pi-exclamation-triangle"></i>
+        {{ warningCount }} warning{{ warningCount > 1 ? 's' : '' }}
+      </span>
+    </span>
+  </div>
+  
+  <!-- Expandable Error Details -->
+  <div class="error-details" 
+       *ngIf="isExpanded"
+       [@slideDown]>
+    
+    <!-- Clear Highlighting Button -->
+    <div class="details-header" *ngIf="selectedError || selectedWarning">
+      <button 
+        type="button"
+        class="clear-highlight-btn"
+        (click)="clearAllHighlighting()">
+        <i class="pi pi-times"></i>
+        Clear Highlighting
+      </button>
+    </div>
+    
+    <!-- Error Details Section -->
+    <div class="errors-section" *ngIf="hasErrors">
+      <h4 class="section-title">
+        <i class="pi pi-times-circle error-icon"></i>
+        Validation Errors
+      </h4>
+      
+      <div class="error-list">
+        <div class="error-item" 
+             *ngFor="let error of getAllErrors(); trackBy: trackByErrorId"
+             [class.selected]="isErrorSelected(error)"
+             (click)="highlightError(error)">
+          
+          <div class="error-header">
+            <div class="error-type-badge" [attr.data-type]="error.type">
+              <i class="pi" [class]="getErrorIcon(error.type)"></i>
+              <span>{{ getErrorTypeDisplay(error.type) }}</span>
+            </div>
+            
+            <div class="error-severity" [attr.data-severity]="error.severity">
+              {{ error.severity }}
+            </div>
+          </div>
+          
+          <div class="error-message">
+            {{ error.message }}
+          </div>
+          
+          <div class="error-path" *ngIf="error.path">
+            <i class="pi pi-map-marker"></i>
+            <span class="path-text">{{ formatPath(error.path) }}</span>
+            <code class="raw-path">{{ error.path }}</code>
+          </div>
+          
+          <div class="error-actions">
+            <button 
+              type="button"
+              class="highlight-btn"
+              title="Highlight in query"
+              (click)="highlightError(error); $event.stopPropagation()">
+              <i class="pi pi-search"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Warning Details Section -->
+    <div class="warnings-section" *ngIf="hasWarnings">
+      <h4 class="section-title">
+        <i class="pi pi-exclamation-triangle warning-icon"></i>
+        Warnings & Suggestions
+      </h4>
+      
+      <div class="warning-list">
+        <div class="warning-item" 
+             *ngFor="let warning of getAllWarnings(); trackBy: trackByWarningId"
+             [class.selected]="isWarningSelected(warning)"
+             (click)="highlightWarning(warning)">
+          
+          <div class="warning-header">
+            <div class="warning-type-badge" [attr.data-type]="warning.type">
+              <i class="pi" [class]="getWarningIcon(warning.type)"></i>
+              <span>{{ getWarningTypeDisplay(warning.type) }}</span>
+            </div>
+          </div>
+          
+          <div class="warning-message">
+            {{ warning.message }}
+          </div>
+          
+          <div class="warning-path" *ngIf="warning.path">
+            <i class="pi pi-map-marker"></i>
+            <span class="path-text">{{ formatPath(warning.path) }}</span>
+            <code class="raw-path">{{ warning.path }}</code>
+          </div>
+          
+          <div class="warning-actions">
+            <button 
+              type="button"
+              class="highlight-btn"
+              title="Highlight in query"
+              (click)="highlightWarning(warning); $event.stopPropagation()">
+              <i class="pi pi-search"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Partial Validation Suggestions -->
+    <div class="suggestions-section" 
+         *ngIf="partialValidationResult && partialValidationResult.suggestions && partialValidationResult.suggestions.length > 0">
+      <h4 class="section-title">
+        <i class="pi pi-lightbulb suggestion-icon"></i>
+        Suggestions
+      </h4>
+      
+      <div class="suggestion-list">
+        <div class="suggestion-item" 
+             *ngFor="let suggestion of partialValidationResult.suggestions">
+          
+          <div class="suggestion-header">
+            <div class="suggestion-type-badge">
+              <i class="pi pi-lightbulb"></i>
+              <span>{{ suggestion.type }}</span>
+            </div>
+          </div>
+          
+          <div class="suggestion-message">
+            {{ suggestion.message }}
+          </div>
+          
+          <div class="suggestion-actions" *ngIf="suggestion.action">
+            <button 
+              type="button"
+              class="suggestion-btn">
+              <i class="pi pi-arrow-right"></i>
+              {{ suggestion.action }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Empty State for Details -->
+    <div class="empty-details" *ngIf="!hasErrors && !hasWarnings">
+      <i class="pi pi-check-circle"></i>
+      <span>No validation issues found</span>
+    </div>
+  </div>
+</div>
