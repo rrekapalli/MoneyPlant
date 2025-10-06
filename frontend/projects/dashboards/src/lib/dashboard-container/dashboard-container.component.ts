@@ -64,6 +64,7 @@ export class DashboardContainerComponent {
   @Output() editModeStringChange: EventEmitter<string> = new EventEmitter<string>();
   @Output() changesMade: EventEmitter<string> = new EventEmitter<string>();
   @Output() filterValuesChanged: EventEmitter<IFilterValues[]> = new EventEmitter<IFilterValues[]>();
+  @Output() onDataLoad: EventEmitter<IWidget> = new EventEmitter<IWidget>();
 
   availableDashboards: any[] = [];
   //selectedDashboardId: string = '';
@@ -256,11 +257,16 @@ export class DashboardContainerComponent {
     return this.dashboardBuilder;
   }
 
-  async onDataLoad(widget: IWidget) {
+  async handleDataLoad(widget: IWidget) {
+    console.log('🔥 Dashboard container handleDataLoad called for widget:', widget.id, widget.config?.header?.title);
+    
     // Apply filters to widget if any exist
     if (this.filterValues && this.filterValues.length > 0) {
       this.applyFiltersToWidget(widget);
     }
+    
+    // Forward the event to the parent component
+    this.onDataLoad.emit(widget);
   }
 
   /**

@@ -6,12 +6,18 @@ import { InputTextModule } from 'primeng/inputtext';
 import { TextareaModule } from 'primeng/textarea';
 import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
+import { DialogModule } from 'primeng/dialog';
 import { FormsModule } from '@angular/forms';
 
 import { PortfolioWithMetrics } from '../portfolio.types';
 import { PortfolioApiService } from '../../../services/apis/portfolio.api';
-import { PortfolioCreateRequest, PortfolioUpdateRequest, PortfolioHoldingDto } from '../../../services/entities/portfolio.entities';
+import { PortfolioCreateRequest, PortfolioUpdateRequest, PortfolioHoldingDto, HoldingsCreateRequest, HoldingUpdateRequest } from '../../../services/entities/portfolio.entities';
 import { AuthService } from '../../../services/security/auth.service';
+import { MarketService } from '../../../services/apis/market.api';
+import { StockService } from '../../../services/apis/stock.api';
+import { IndicesService } from '../../../services/apis/indices.api';
+import { Stock } from '../../../services/entities/stock';
+import { IndexResponseDto } from '../../../services/entities/indices';
 
 @Component({
   selector: 'app-portfolio-configure',
@@ -24,6 +30,7 @@ import { AuthService } from '../../../services/security/auth.service';
     TextareaModule,
     SelectModule,
     TableModule,
+    DialogModule,
     FormsModule
   ],
   templateUrl: './configure.component.html',
@@ -42,6 +49,11 @@ export class PortfolioConfigureComponent implements OnInit {
   
   // Inject the auth service to get current user ID
   private authService = inject(AuthService);
+  
+  // Inject market, stock, and indices services for stock search and price data
+  private marketService = inject(MarketService);
+  private stockService = inject(StockService);
+  private indicesService = inject(IndicesService);
 
   // Local copy for editing
   editingPortfolio: PortfolioWithMetrics | null = null;
@@ -59,11 +71,44 @@ export class PortfolioConfigureComponent implements OnInit {
   portfolioHoldings: PortfolioHoldingDto[] = [];
   isLoadingHoldings = false;
   
+  // Market data for holdings
+  holdingsMarketData: { [symbol: string]: any } = {};
+  isLoadingMarketData = false;
+  
   // Table filter
   globalFilterValue = '';
 
+  // Add Stock Dialog properties
+  showAddStockDialog = false;
+  stockSearchQuery = '';
+  stockSearchResults: any[] = [];
+  selectedStock: any = null;
+  selectedStockDetails: any = null;
+  stockQuantity = 0;
+  isSearchingStocks = false;
+  isAddingStock = false;
+  isLoadingStockDetails = false;
+
+  // All stocks for search validation (like stock-insights component)
+  allStocks: Stock[] = [];
+
   ngOnInit(): void {
-    // Component initialization logic can go here
+    // Load all stocks for search functionality
+    this.loadAllStocksForSearch();
+  }
+
+  // Load all stocks for search functionality (like stock-insights component)
+  private loadAllStocksForSearch(): void {
+    this.stockService.getAllStocks().subscribe({
+      next: (stocks: Stock[]) => {
+        this.allStocks = stocks || [];
+        console.log('Loaded stocks for search:', this.allStocks.length);
+      },
+      error: (error) => {
+        console.error('Error loading stocks for search:', error);
+        this.allStocks = [];
+      }
+    });
   }
 
   ngOnChanges(): void {
@@ -97,120 +142,96 @@ export class PortfolioConfigureComponent implements OnInit {
       next: (holdings) => {
         this.portfolioHoldings = holdings;
         this.isLoadingHoldings = false;
+        // Load market data for each holding
+        this.loadMarketDataForHoldings(holdings);
       },
       error: (error) => {
         console.error('Error loading portfolio holdings:', error);
         this.isLoadingHoldings = false;
-        // For now, use mock data if API fails
-        this.loadMockHoldings();
+        this.portfolioHoldings = [];
       }
     });
   }
 
-  // Load mock holdings data for demonstration
-  loadMockHoldings(): void {
-    this.portfolioHoldings = [
-      {
-        id: 1,
-        portfolioId: this.selectedPortfolio?.id || 0,
-        symbol: 'TCS',
-        quantity: 100,
-        avgCost: 3812.4,
-        realizedPnl: 0,
-        lastUpdated: new Date().toISOString()
-      },
-      {
-        id: 2,
-        portfolioId: this.selectedPortfolio?.id || 0,
-        symbol: 'INFY',
-        quantity: 150,
-        avgCost: 1567.3,
-        realizedPnl: 0,
-        lastUpdated: new Date().toISOString()
-      },
-      {
-        id: 3,
-        portfolioId: this.selectedPortfolio?.id || 0,
-        symbol: 'HCLTECH',
-        quantity: 200,
-        avgCost: 1234.75,
-        realizedPnl: 0,
-        lastUpdated: new Date().toISOString()
-      },
-      {
-        id: 4,
-        portfolioId: this.selectedPortfolio?.id || 0,
-        symbol: 'WIPRO',
-        quantity: 300,
-        avgCost: 456.8,
-        realizedPnl: 0,
-        lastUpdated: new Date().toISOString()
-      }
-    ];
+  // Load market data for holdings
+  loadMarketDataForHoldings(holdings: PortfolioHoldingDto[]): void {
+    this.isLoadingMarketData = true;
+    this.holdingsMarketData = {};
+    
+    // Load market data for each holding
+    holdings.forEach(holding => {
+      this.loadMarketDataForHolding(holding.symbol);
+    });
   }
 
-  // Get mock market data for holdings (in real app, this would come from market data API)
-  getMockMarketData(symbol: string): any {
-    const mockData: { [key: string]: any } = {
-      'TCS': {
-        name: 'Tata Consultancy Services',
-        currentPrice: 3812.4,
-        change: -15.6,
-        changePercent: -0.41,
-        sector: 'Information Technology',
-        stageAnalysis: 'Stage 2',
-        stageLabel: 'Markup',
-        uptrend: true,
-        sectorTrend: 'Bullish',
-        sectorRank: 3,
-        totalSectorStocks: 10
+  // Load market data for a single holding
+  loadMarketDataForHolding(symbol: string): void {
+    this.stockService.getStockBySymbol(symbol).subscribe({
+      next: (stockData: Stock) => {
+        this.holdingsMarketData[symbol] = {
+          name: stockData.companyName || stockData.name || symbol + ' Limited',
+          currentPrice: stockData.tickDetails?.close || 0,
+          change: stockData.tickDetails?.close && stockData.tickDetails?.previousClose ? 
+                  stockData.tickDetails.close - stockData.tickDetails.previousClose : 0,
+          changePercent: stockData.tickDetails?.close && stockData.tickDetails?.previousClose ? 
+                        ((stockData.tickDetails.close - stockData.tickDetails.previousClose) / stockData.tickDetails.previousClose) * 100 : 0,
+          sector: stockData.stockDetails?.pdSectorInd || stockData.pdSectorInd || 'Unknown',
+          industry: stockData.stockDetails?.industry || stockData.industry || 'Unknown',
+          volume: stockData.tickDetails?.volume || 0,
+          dayHigh: stockData.tickDetails?.high || 0,
+          dayLow: stockData.tickDetails?.low || 0,
+          open: stockData.tickDetails?.open || 0,
+          previousClose: stockData.tickDetails?.previousClose || 0,
+          vwap: stockData.tickDetails?.vwap || 0,
+          lastUpdated: stockData.tickDetails?.date || ''
+        };
+        this.isLoadingMarketData = false;
       },
-      'INFY': {
-        name: 'Infosys Limited',
-        currentPrice: 1567.3,
-        change: 21.5,
-        changePercent: 1.39,
-        sector: 'Information Technology',
-        stageAnalysis: 'Stage 2',
-        stageLabel: 'Markup',
-        uptrend: true,
-        sectorTrend: 'Bullish',
-        sectorRank: 2,
-        totalSectorStocks: 10
-      },
-      'HCLTECH': {
-        name: 'HCL Technologies',
-        currentPrice: 1234.75,
-        change: 12.4,
-        changePercent: 1.01,
-        sector: 'Information Technology',
-        stageAnalysis: 'Stage 2',
-        stageLabel: 'Markup',
-        uptrend: true,
-        sectorTrend: 'Bullish',
-        sectorRank: 1,
-        totalSectorStocks: 10
-      },
-      'WIPRO': {
-        name: 'Wipro Limited',
-        currentPrice: 456.8,
-        change: -8.2,
-        changePercent: -1.76,
-        sector: 'Information Technology',
-        stageAnalysis: 'Stage 3',
-        stageLabel: 'Distribution',
-        uptrend: false,
-        sectorTrend: 'Bullish',
-        sectorRank: 6,
-        totalSectorStocks: 10
+      error: (error) => {
+        console.error(`Error loading market data for ${symbol}:`, error);
+        // Set default values for failed requests
+        this.holdingsMarketData[symbol] = {
+          name: symbol + ' Limited',
+          currentPrice: 0,
+          change: 0,
+          changePercent: 0,
+          sector: 'Unknown',
+          industry: 'Unknown',
+          volume: 0,
+          dayHigh: 0,
+          dayLow: 0,
+          open: 0,
+          previousClose: 0,
+          vwap: 0,
+          lastUpdated: ''
+        };
+        this.isLoadingMarketData = false;
       }
+    });
+  }
+
+  // Get market data for a holding
+  getMarketData(symbol: string): any {
+    return this.holdingsMarketData[symbol] || {
+      name: symbol + ' Limited',
+      currentPrice: 0,
+      change: 0,
+      changePercent: 0,
+      sector: 'Unknown',
+      industry: 'Unknown',
+      volume: 0,
+      dayHigh: 0,
+      dayLow: 0,
+      open: 0,
+      previousClose: 0,
+      vwap: 0,
+      lastUpdated: ''
     };
-    return mockData[symbol] || {};
   }
 
   // Calculate current value for a holding
   getCurrentValue(holding: PortfolioHoldingDto): number {
-    const marketData = this.getMockMarketData(holding.symbol);
+    const marketData = this.getMarketData(holding.symbol);
     return marketData.currentPrice ? holding.quantity * marketData.currentPrice : 0;
   }
 
@@ -228,10 +249,262 @@ export class PortfolioConfigureComponent implements OnInit {
     return (this.getUnrealizedPnl(holding) / costBasis) * 100;
   }
 
-  // Add holdings method
+  // Open Add Stock Dialog
+  openAddStockDialog(): void {
+    this.showAddStockDialog = true;
+    this.stockSearchQuery = '';
+    this.stockSearchResults = [];
+    this.selectedStock = null;
+    this.stockQuantity = 0;
+    this.isSearchingStocks = false;
+  }
+
+  // Close Add Stock Dialog
+  closeAddStockDialog(): void {
+    this.showAddStockDialog = false;
+    this.stockSearchQuery = '';
+    this.stockSearchResults = [];
+    this.selectedStock = null;
+    this.selectedStockDetails = null;
+    this.stockQuantity = 0;
+    this.isSearchingStocks = false;
+    this.isLoadingStockDetails = false;
+  }
+
+  // Handle stock search input (like stock-insights component)
+  onStockSearchInput(event: any): void {
+    const query = event.target.value;
+    this.stockSearchQuery = query;
+    
+    if (!query || query.length < 2) {
+      this.stockSearchResults = [];
+      return;
+    }
+
+    this.isSearchingStocks = true;
+    
+    // Filter against allStocks list (like stock-insights component)
+    const normalizedQuery = query.toLowerCase().trim();
+    const filtered = this.allStocks.filter(stock => 
+      stock.symbol?.toLowerCase().includes(normalizedQuery) ||
+      stock.name?.toLowerCase().includes(normalizedQuery)
+    );
+    
+    // Convert Stock[] to the format expected by our UI
+    this.stockSearchResults = filtered.map(stock => ({
+      symbol: stock.symbol,
+      name: stock.name,
+      companyName: stock.name, // Stock interface doesn't have companyName, use name
+      price: 0 // We'll get price separately if needed
+    }));
+    
+    this.isSearchingStocks = false;
+  }
+
+
+  // Select stock from search results
+  selectStock(stock: any): void {
+    this.selectedStock = stock;
+    this.selectedStockDetails = null;
+    this.isLoadingStockDetails = true;
+    
+    // Clear search results and query after selection
+    this.stockSearchResults = [];
+    this.stockSearchQuery = '';
+    
+    console.log('Stock selected:', stock);
+    
+    // Try multiple API endpoints to get stock details
+    this.tryMultipleStockApis(stock);
+  }
+
+  // Try multiple API endpoints to get stock details
+  private tryMultipleStockApis(stock: any): void {
+    console.log('Trying multiple APIs for stock:', stock.symbol);
+    
+    // Try StockService.getStockBySymbol first (now has comprehensive data)
+    this.stockService.getStockBySymbol(stock.symbol).subscribe({
+      next: (stockData: Stock) => {
+        console.log('API response from getStockBySymbol:', stockData);
+        
+        // Map updated Stock interface with nested tickDetails and stockDetails structure
+        this.selectedStockDetails = {
+          // Basic info from stockDetails
+          symbol: stockData.symbol || stock.symbol,
+          name: stockData.companyName || stockData.name || stock.name || stock.companyName,
+          industry: stockData.industry || '',
+          
+          // Market data from tickDetails (nested object)
+          price: stockData.tickDetails?.close || 0,
+          change: stockData.tickDetails?.close && stockData.tickDetails?.previousClose ? 
+                  stockData.tickDetails.close - stockData.tickDetails.previousClose : 0,
+          changePercent: stockData.tickDetails?.close && stockData.tickDetails?.previousClose ? 
+                        ((stockData.tickDetails.close - stockData.tickDetails.previousClose) / stockData.tickDetails.previousClose) * 100 : 0,
+          dayHigh: stockData.tickDetails?.high || 0,
+          dayLow: stockData.tickDetails?.low || 0,
+          previousClose: stockData.tickDetails?.previousClose || 0,
+          volume: stockData.tickDetails?.volume || 0,
+          open: stockData.tickDetails?.open || 0,
+          marketCap: 0, // Not available in current response
+          yearHigh: 0, // Not available in current response
+          yearLow: 0, // Not available in current response
+          totalTradedValue: stockData.tickDetails?.totalTradedValue || 0,
+          vwap: stockData.tickDetails?.vwap || 0,
+          identifier: '',
+          series: stockData.tickDetails?.series || stockData.stockDetails?.series || '',
+          isin: stockData.stockDetails?.isin || '',
+          nearWeekHigh: 0,
+          nearWeekLow: 0,
+          percentChange365d: 0,
+          percentChange30d: 0,
+          lastUpdated: stockData.tickDetails?.date || '',
+          exchange: 'NSE', // Default to NSE
+          currency: 'INR' // Default to INR
+        };
+        
+        this.isLoadingStockDetails = false;
+        console.log('Stock details loaded from StockService:', this.selectedStockDetails);
+      },
+      error: (error) => {
+        console.error('StockService failed, trying IndicesService:', error);
+        
+        // Try IndicesService.getIndexBySymbol as fallback
+        this.indicesService.getIndexBySymbol(stock.symbol).subscribe({
+          next: (indexData: IndexResponseDto) => {
+            console.log('API response from getIndexBySymbol:', indexData);
+            
+            // Map IndexResponseDto to our expected format
+            this.selectedStockDetails = {
+              symbol: indexData.indexSymbol || stock.symbol,
+              name: indexData.indexName || stock.name || stock.companyName,
+              price: indexData.lastPrice || 0,
+              change: indexData.variation || 0,
+              changePercent: indexData.percentChange || 0,
+              dayHigh: indexData.highPrice || 0,
+              dayLow: indexData.lowPrice || 0,
+              previousClose: indexData.previousClose || 0,
+              volume: 0, // Not available in IndexResponseDto
+              open: indexData.openPrice || 0,
+              marketCap: 0, // Not available in IndexResponseDto
+              yearHigh: indexData.yearHigh || 0,
+              yearLow: indexData.yearLow || 0,
+              peRatio: indexData.peRatio || 0,
+              pbRatio: indexData.pbRatio || 0,
+              dividendYield: indexData.dividendYield || 0,
+              sector: indexData.keyCategory || '',
+              industry: '',
+              exchange: '',
+              currency: 'INR',
+              lastUpdated: ''
+            };
+            
+            this.isLoadingStockDetails = false;
+            console.log('Stock details loaded from IndicesService:', this.selectedStockDetails);
+          },
+          error: (error2) => {
+            console.error('IndicesService also failed, trying MarketService:', error2);
+            
+            // Try MarketService.getStockDetails as last resort
+            this.marketService.getStockDetails(stock.symbol).subscribe({
+              next: (marketData: any) => {
+                console.log('API response from getStockDetails:', marketData);
+                
+                // Map MarketData to our expected format
+                this.selectedStockDetails = {
+                  symbol: marketData.symbol || stock.symbol,
+                  name: marketData.name || stock.name || stock.companyName,
+                  price: marketData.price || 0,
+                  change: marketData.change || 0,
+                  changePercent: marketData.changePercent || 0,
+                  dayHigh: marketData.dayHigh || 0,
+                  dayLow: marketData.dayLow || 0,
+                  previousClose: marketData.previousClose || 0,
+                  volume: marketData.volume || 0,
+                  open: marketData.open || 0,
+                  marketCap: marketData.marketCap || 0,
+                  yearHigh: 0,
+                  yearLow: 0,
+                  peRatio: 0,
+                  pbRatio: 0,
+                  dividendYield: 0,
+                  sector: '',
+                  industry: '',
+                  exchange: '',
+                  currency: 'INR',
+                  lastUpdated: ''
+                };
+                
+                this.isLoadingStockDetails = false;
+                console.log('Stock details loaded from MarketService:', this.selectedStockDetails);
+              },
+              error: (error3) => {
+                console.error('All APIs failed:', error3);
+                this.isLoadingStockDetails = false;
+                
+                // Show error message to user
+                alert(`Failed to load details for ${stock.symbol}. All API endpoints failed.`);
+                
+                // Clear the selected stock details
+                this.selectedStockDetails = null;
+              }
+            });
+          }
+        });
+      }
+    });
+  }
+
+  // Add selected stock to portfolio using PUT endpoint
+  addSelectedStock(): void {
+    if (!this.selectedStock || !this.editingPortfolio || this.editingPortfolio.id <= 0) {
+      return;
+    }
+
+    this.isAddingStock = true;
+
+    // Validate symbol against allStocks (like stock-insights component)
+    const matched = this.allStocks.find(s => s.symbol?.toUpperCase() === this.selectedStock.symbol.toUpperCase());
+    const targetSymbol = matched ? matched.symbol : this.selectedStock.symbol.toUpperCase();
+
+    // Use PUT endpoint for individual holding (as per Swagger documentation)
+    const holdingRequest: HoldingUpdateRequest = {
+      quantity: this.stockQuantity || 0,
+      avgCost: 0, // Will be set by backend or can be updated later
+      realizedPnl: 0
+    };
+
+    console.log('Adding stock with PUT endpoint:', {
+      portfolioId: this.editingPortfolio.id,
+      symbol: targetSymbol,
+      request: holdingRequest
+    });
+
+    this.portfolioApiService.putHolding(this.editingPortfolio.id, targetSymbol, holdingRequest).subscribe({
+      next: (newHolding) => {
+        console.log('Stock added successfully:', newHolding);
+        // Refresh holdings list
+        this.loadPortfolioHoldings(this.editingPortfolio!.id);
+        this.closeAddStockDialog();
+        this.isAddingStock = false;
+      },
+      error: (error) => {
+        console.error('Error adding stock:', error);
+        console.error('Error details:', {
+          status: error.status,
+          statusText: error.statusText,
+          message: error.message,
+          error: error.error
+        });
+        alert('Failed to add stock to portfolio. Please try again.');
+        this.isAddingStock = false;
+      }
+    });
+  }
+
+
+  // Add holdings method (legacy - keeping for compatibility)
   addHoldings(): void {
-    // TODO: Implement add holdings functionality
-    console.log('Add holdings clicked');
+    this.openAddStockDialog();
   }
 
   // Remove holding method
@@ -412,8 +685,8 @@ export class PortfolioConfigureComponent implements OnInit {
     }
     this.isEditing = false;
     this.isSaving = false;
-    // Navigate back to overview
-    this.navigateToOverview();
+    // Stay on the same page - don't navigate to overview
+    console.log('Cancel editing - staying on configure page');
   }
 
   onCancel(): void {

@@ -443,6 +443,188 @@ export abstract class ApacheEchartBuilder<T extends EChartsOption = EChartsOptio
   }
 
   /**
+   * Set click event handler
+   * @param handler Function to handle click events
+   */
+  setClickEvent(handler: (params: any, widget: IWidget, chart: any) => void): this {
+    this.widgetBuilder.setEvents((widget, chart) => {
+      if (chart) {
+        chart.off('click');
+        chart.on('click', (params: any) => {
+          handler(params, widget, chart);
+        });
+      }
+    });
+    return this;
+  }
+
+  /**
+   * Set double-click event handler
+   * @param handler Function to handle double-click events
+   */
+  setDoubleClickEvent(handler: (params: any, widget: IWidget, chart: any) => void): this {
+    this.widgetBuilder.setEvents((widget, chart) => {
+      if (chart) {
+        chart.off('dblclick');
+        chart.on('dblclick', (params: any) => {
+          handler(params, widget, chart);
+        });
+      }
+    });
+    return this;
+  }
+
+  /**
+   * Set mouse down event handler
+   * @param handler Function to handle mouse down events
+   */
+  setMouseDownEvent(handler: (params: any, widget: IWidget, chart: any) => void): this {
+    this.widgetBuilder.setEvents((widget, chart) => {
+      if (chart) {
+        chart.off('mousedown');
+        chart.on('mousedown', (params: any) => {
+          handler(params, widget, chart);
+        });
+      }
+    });
+    return this;
+  }
+
+  /**
+   * Set mouse up event handler
+   * @param handler Function to handle mouse up events
+   */
+  setMouseUpEvent(handler: (params: any, widget: IWidget, chart: any) => void): this {
+    this.widgetBuilder.setEvents((widget, chart) => {
+      if (chart) {
+        chart.off('mouseup');
+        chart.on('mouseup', (params: any) => {
+          handler(params, widget, chart);
+        });
+      }
+    });
+    return this;
+  }
+
+  /**
+   * Set mouse over event handler
+   * @param handler Function to handle mouse over events
+   */
+  setMouseOverEvent(handler: (params: any, widget: IWidget, chart: any) => void): this {
+    this.widgetBuilder.setEvents((widget, chart) => {
+      if (chart) {
+        chart.off('mouseover');
+        chart.on('mouseover', (params: any) => {
+          handler(params, widget, chart);
+        });
+      }
+    });
+    return this;
+  }
+
+  /**
+   * Set mouse out event handler
+   * @param handler Function to handle mouse out events
+   */
+  setMouseOutEvent(handler: (params: any, widget: IWidget, chart: any) => void): this {
+    this.widgetBuilder.setEvents((widget, chart) => {
+      if (chart) {
+        chart.off('mouseout');
+        chart.on('mouseout', (params: any) => {
+          handler(params, widget, chart);
+        });
+      }
+    });
+    return this;
+  }
+
+  /**
+   * Set multiple event handlers at once
+   * @param events Object containing event handlers
+   */
+  setMultipleEvents(events: {
+    click?: (params: any, widget: IWidget, chart: any) => void;
+    dblclick?: (params: any, widget: IWidget, chart: any) => void;
+    mousedown?: (params: any, widget: IWidget, chart: any) => void;
+    mouseup?: (params: any, widget: IWidget, chart: any) => void;
+    mouseover?: (params: any, widget: IWidget, chart: any) => void;
+    mouseout?: (params: any, widget: IWidget, chart: any) => void;
+  }): this {
+    this.widgetBuilder.setEvents((widget, chart) => {
+      if (chart) {
+        // Remove all existing event listeners
+        chart.off('click');
+        chart.off('dblclick');
+        chart.off('mousedown');
+        chart.off('mouseup');
+        chart.off('mouseover');
+        chart.off('mouseout');
+
+        // Add new event listeners
+        if (events.click) {
+          chart.on('click', (params: any) => events.click!(params, widget, chart));
+        }
+        if (events.dblclick) {
+          chart.on('dblclick', (params: any) => events.dblclick!(params, widget, chart));
+        }
+        if (events.mousedown) {
+          chart.on('mousedown', (params: any) => events.mousedown!(params, widget, chart));
+        }
+        if (events.mouseup) {
+          chart.on('mouseup', (params: any) => events.mouseup!(params, widget, chart));
+        }
+        if (events.mouseover) {
+          chart.on('mouseover', (params: any) => events.mouseover!(params, widget, chart));
+        }
+        if (events.mouseout) {
+          chart.on('mouseout', (params: any) => events.mouseout!(params, widget, chart));
+        }
+      }
+    });
+    return this;
+  }
+
+  /**
+   * Set stock navigation event handlers (common pattern for stock-related charts)
+   * @param navigationCallback Function to handle navigation (receives stock symbol)
+   * @param symbolField Field name to extract symbol from (default: 'symbol')
+   * @param preferredEvent Preferred event type (default: 'dblclick')
+   */
+  setStockNavigationEvents(
+    navigationCallback: (symbol: string) => void,
+    symbolField: string = 'symbol',
+    preferredEvent: 'click' | 'dblclick' | 'mousedown' = 'dblclick'
+  ): this {
+    const eventHandler = (params: any, widget: IWidget, chart: any) => {
+      console.log(`Stock ${preferredEvent} event:`, params);
+      
+      // Check if the event is on a data point (series)
+      if (params.componentType === 'series' && params.data) {
+        const stockSymbol = params.data[symbolField] || params.data[0];
+        if (stockSymbol) {
+          console.log(`Stock ${preferredEvent}ed:`, stockSymbol);
+          navigationCallback(stockSymbol);
+        }
+      }
+    };
+
+    // Set the preferred event
+    switch (preferredEvent) {
+      case 'click':
+        this.setClickEvent(eventHandler);
+        break;
+      case 'dblclick':
+        this.setDoubleClickEvent(eventHandler);
+        break;
+      case 'mousedown':
+        this.setMouseDownEvent(eventHandler);
+        break;
+    }
+
+    return this;
+  }
+
+  /**
    * Set chart instance
    */
   setChartInstance(chartInstance: any): this {

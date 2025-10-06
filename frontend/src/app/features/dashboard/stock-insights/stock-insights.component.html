@@ -20,7 +20,8 @@
       [widgets]="dashboardConfig.widgets" 
       [options]="dashboardConfig.config"
       [dashboardId]="dashboardConfig.dashboardId"
-      (filterValuesChanged)="onFilterValuesChanged($event)">
+      (filterValuesChanged)="onFilterValuesChanged($event)"
+      (onDataLoad)="onDataLoad($event)">
     </vis-dashboard-container>
   </div>
 </p-scrollPanel>

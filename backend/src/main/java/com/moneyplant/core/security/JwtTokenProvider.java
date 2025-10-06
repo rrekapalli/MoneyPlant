@@ -40,13 +40,26 @@ public class JwtTokenProvider {
             username = ((UserDetails) principal).getUsername();
         } else if (principal instanceof OAuth2User) {
             OAuth2User oauth2User = (OAuth2User) principal;
-            // Try to get email from OAuth2User attributes
+            // Try to get email from OAuth2User attributes (robust for Microsoft)
             Map<String, Object> attributes = oauth2User.getAttributes();
-            username = (String) attributes.get("email");
-            if (username == null) {
-                // Fallback to name if email is not available
-                username = oauth2User.getName();
+            String resolved = attributes == null ? null : (String) attributes.get("email");
+            if (resolved == null || resolved.isBlank()) {
+                Object emails = attributes == null ? null : attributes.get("emails");
+                if (emails instanceof java.util.List<?> list && !list.isEmpty()) {
+                    Object first = list.get(0);
+                    if (first instanceof String s) {
+                        resolved = s;
+                    } else if (first instanceof Map<?, ?> m) {
+                        Object addr = m.get("value");
+                        if (addr instanceof String s2) resolved = s2;
+                    }
+                }
             }
+            if (resolved == null || resolved.isBlank()) resolved = (String) attributes.get("preferred_username");
+            if (resolved == null || resolved.isBlank()) resolved = (String) attributes.get("upn");
+            if (resolved == null || resolved.isBlank()) resolved = (String) attributes.get("unique_name");
+            if (resolved == null || resolved.isBlank()) resolved = oauth2User.getName();
+            username = resolved;
         } else {
             // Fallback for other authentication types
             username = principal.toString();

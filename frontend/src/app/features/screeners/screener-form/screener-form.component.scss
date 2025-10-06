@@ -89,6 +89,91 @@
         min-width: 120px;
       }
     }
+
+    // Criteria Builder Styles
+    .criteria-header {
+      margin-bottom: 2rem;
+      
+      h3 {
+        margin: 0 0 0.5rem 0;
+        color: #2c3e50;
+        font-size: 1.5rem;
+        font-weight: 600;
+      }
+      
+      .criteria-description {
+        color: #7f8c8d;
+        font-size: 0.9rem;
+        line-height: 1.5;
+        margin: 0;
+      }
+    }
+
+    .query-builder-container {
+      margin-bottom: 2rem;
+      padding: 1.5rem;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      background-color: #fafafa;
+    }
+
+    .criteria-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid #f0f0f0;
+
+      button {
+        min-width: 150px;
+      }
+    }
+
+    .criteria-preview {
+      padding: 1.5rem;
+      background-color: #f8f9fa;
+      border-radius: 8px;
+      border-left: 4px solid #3498db;
+
+      h4 {
+        margin: 0 0 1rem 0;
+        color: #2c3e50;
+        font-size: 1.1rem;
+        font-weight: 600;
+      }
+
+      .criteria-summary {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+
+        p {
+          margin: 0;
+          color: #2c3e50;
+          font-size: 0.9rem;
+
+          strong {
+            font-weight: 600;
+          }
+        }
+
+        .status-badge {
+          display: inline-block;
+          padding: 0.25rem 0.5rem;
+          border-radius: 4px;
+          font-size: 0.8rem;
+          font-weight: 600;
+          text-transform: uppercase;
+
+          &.status-active {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+          }
+        }
+      }
+    }
   }
 }
 
@@ -135,6 +220,37 @@
     &.p-button-loading {
       .p-button-icon {
         animation: spin 1s linear infinite;
+      }
+    }
+  }
+
+  .p-tabs {
+    .p-tablist {
+      .p-tab {
+        .criteria-badge {
+          background-color: #3498db;
+          color: white;
+          border-radius: 50%;
+          padding: 0.25rem 0.5rem;
+          font-size: 0.7rem;
+          font-weight: 600;
+          margin-left: 0.5rem;
+          min-width: 1.2rem;
+          height: 1.2rem;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+        }
+      }
+    }
+  }
+
+  // Query Builder customizations
+  .query-builder-container {
+    .app-query-builder {
+      .query-builder {
+        border: none;
+        background: transparent;
       }
     }
   }

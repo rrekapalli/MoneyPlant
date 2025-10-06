@@ -269,6 +269,13 @@ public class IndexService {
      */
     public IndexResponseDto getIndexBySymbolFallback(String symbol, Exception e) {
         log.error("Circuit breaker triggered for getIndexBySymbol with symbol {}: {}", symbol, e.getMessage());
+        // Propagate not-found errors to ensure correct 404 response instead of 503
+        if (e instanceof ResourceNotFoundException) {
+            throw (ResourceNotFoundException) e;
+        }
+        if (e.getCause() instanceof ResourceNotFoundException) {
+            throw (ResourceNotFoundException) e.getCause();
+        }
         throw new ServiceException("Service unavailable", e);
     }
 

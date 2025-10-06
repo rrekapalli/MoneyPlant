@@ -13,13 +13,27 @@ import { ScrollerModule } from "primeng/scroller";
 import { ScrollPanelModule } from 'primeng/scrollpanel';
 import { TabsModule } from 'primeng/tabs';
 import { TooltipModule } from 'primeng/tooltip';
+import { SelectModule } from 'primeng/select';
 import { Subject, takeUntil, interval, Subscription } from 'rxjs';
+
+// Import dashboard modules and chart builders
+import { 
+  StockListChartBuilder,
+  StockListData,
+  FilterBy,
+  DashboardContainerComponent,
+  DashboardHeaderComponent,
+  StandardDashboardBuilder,
+  IWidget
+} from '@dashboards/public-api';
 
 import { TreeNode } from 'primeng/api';
 import { IndicesService } from '../../services/apis/indices.api';
 import { IndexResponseDto } from '../../services/entities/indices';
 import { ComponentCommunicationService, SelectedIndexData } from '../../services/component-communication.service';
 import { WebSocketService, IndexDataDto, IndicesDto } from '../../services/websockets';
+import { StockTicksService } from '../../services/apis/stock-ticks.api';
+import { StockDataDto } from '../../services/entities/stock-ticks';
 
 @Component({
   selector: 'app-indices',
@@ -38,7 +52,9 @@ import { WebSocketService, IndexDataDto, IndicesDto } from '../../services/webso
     DataViewModule,
     ScrollPanelModule,
     TabsModule,
-    TooltipModule
+    TooltipModule,
+    SelectModule,
+    DashboardContainerComponent
   ],
   templateUrl: './indices.component.html',
   styleUrls: ['./indices.component.scss'],
@@ -53,15 +69,23 @@ export class IndicesComponent implements OnInit, OnDestroy {
   searchResults = signal<any[]>([]);
   selectedIndexSymbol = signal<string | null>(null);
   
+  // Stock list data and dashboard
+  stockListData = signal<StockDataDto[]>([]);
+  filteredStockListData = signal<StockDataDto[]>([]);
+  dashboardConfig: IWidget[] | null = null;
+  selectedIndexForStocks = signal<IndexResponseDto | null>(null);
+  
   // Loading states as signals
   isLoadingIndices = signal<boolean>(true); // Start with loading true
   isSearching = signal<boolean>(false);
+  isLoadingStocks = signal<boolean>(false);
   
 
 
   // Search functionality
   searchQuery = signal<string>('');
   globalFilterValue = signal<string>('');
+  stockSearchQuery = signal<string>('');
 
   // Tab functionality
   activeTab = signal<string>('0');
@@ -112,6 +136,7 @@ export class IndicesComponent implements OnInit, OnDestroy {
     private indicesService: IndicesService,
     private componentCommunicationService: ComponentCommunicationService,
     private webSocketService: WebSocketService,
+    private stockTicksService: StockTicksService,
     private cdr: ChangeDetectorRef
   ) {
     // Removed effects to prevent infinite loops
@@ -563,6 +588,240 @@ export class IndicesComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Handle index selection from dropdown
+   * @param selectedOption The selected option object with label and value
+   */
+  onIndexSelectionChange(selectedOption: any): void {
+    // Extract the actual index from the option object
+    const selectedIndex = selectedOption?.value || selectedOption;
+    console.log('Index selection changed:', selectedIndex);
+    this.selectedIndexForStocks.set(selectedIndex);
+    this.loadStocksForIndex(selectedIndex);
+  }
+
+  /**
+   * Load stocks for the selected index
+   * @param index The selected index
+   */
+  private loadStocksForIndex(index: IndexResponseDto): void {
+    if (!index || !index.indexName) {
+      console.warn('Invalid index provided to loadStocksForIndex:', index);
+      return;
+    }
+
+    console.log('Loading stocks for index:', index.indexName);
+    this.isLoadingStocks.set(true);
+    
+    // Convert index name to URL-friendly format
+    const urlFriendlyIndexName = index.indexName.replace(/\s+/g, '-');
+    console.log('URL-friendly index name:', urlFriendlyIndexName);
+    
+    this.stockTicksService.getStockTicksByIndex(urlFriendlyIndexName).subscribe({
+      next: (stockData: StockDataDto[]) => {
+        console.log('Received stock data:', stockData?.length || 0, 'stocks');
+        this.stockListData.set(stockData || []);
+        this.filteredStockListData.set(stockData || []);
+        this.isLoadingStocks.set(false);
+        
+        // Initialize dashboard with stock list widget
+        this.initializeStockListDashboard();
+        this.cdr.detectChanges();
+      },
+      error: (error: any) => {
+        console.error('Failed to load stocks for index:', index.indexName, error);
+        this.stockListData.set([]);
+        this.filteredStockListData.set([]);
+        this.isLoadingStocks.set(false);
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  /**
+   * Initialize the stock list dashboard widget
+   */
+  private initializeStockListDashboard(): void {
+    console.log('Initializing stock list dashboard with data:', this.filteredStockListData().length, 'stocks');
+    
+    const stockListWidget = StockListChartBuilder.create()
+      .setData(this.filteredStockListData())
+      .setStockPerformanceConfiguration()
+      .setHeader('Stock List')
+      .setCurrencyFormatter('INR', 'en-IN')
+      .setPredefinedPalette('finance')
+      .setAccessor('symbol')
+      .setFilterColumn('symbol', FilterBy.Value)
+      .setId('stock-list-widget')
+      .setStockNavigationEvents(
+        (symbol: string) => this.navigateToStockInsights(symbol),
+        'symbol',
+        'dblclick'
+      )
+      .setEvents((widget, chart) => {
+        // Add a global click handler to the chart container as fallback
+        if (chart) {
+          const chartContainer = chart.getDom();
+          if (chartContainer) {
+            console.log('Adding global click handler to chart container');
+            chartContainer.addEventListener('dblclick', (event: Event) => {
+              console.log('Global double-click on chart container:', event);
+              // Try to find the clicked element and extract stock symbol
+              const target = event.target as HTMLElement;
+              if (target) {
+                console.log('Clicked element:', target);
+                // Look for text content that might be a stock symbol
+                const textContent = target.textContent || target.innerText;
+                if (textContent && textContent.length <= 10) {
+                  console.log('Potential stock symbol from text:', textContent);
+                  this.navigateToStockInsights(textContent.trim());
+                }
+              }
+            });
+          }
+        }
+      })
+      .build();
+
+    // Position the widget
+    stockListWidget.position = { x: 0, y: 0, cols: 12, rows: 16 };
+
+    this.dashboardConfig = [stockListWidget];
+    console.log('Dashboard config created:', this.dashboardConfig);
+    
+    // Add click handlers after dashboard is rendered
+    this.addDashboardClickHandlers();
+  }
+
+  /**
+   * Filter stock list data based on search query
+   * @param query The search query
+   */
+  filterStockList(query: string): void {
+    this.stockSearchQuery.set(query);
+    
+    if (!query || query.trim() === '') {
+      this.filteredStockListData.set(this.stockListData());
+      return;
+    }
+
+    const normalizedQuery = query.toLowerCase().trim();
+    const filtered = this.stockListData().filter(stock => 
+      stock.symbol?.toLowerCase().includes(normalizedQuery) ||
+      stock.companyName?.toLowerCase().includes(normalizedQuery) ||
+      stock.industry?.toLowerCase().includes(normalizedQuery) ||
+      stock.sector?.toLowerCase().includes(normalizedQuery)
+    );
+    
+    this.filteredStockListData.set(filtered);
+    
+    // Update dashboard with filtered data
+    if (this.dashboardConfig && this.dashboardConfig.length > 0) {
+      const stockListWidget = this.dashboardConfig[0];
+      if (stockListWidget && stockListWidget['updateData']) {
+        stockListWidget['updateData'](this.filteredStockListData());
+      }
+    }
+  }
+
+  /**
+   * Get display options for the index dropdown
+   */
+  getIndexOptions(): any[] {
+    return this.indices().map(index => ({
+      label: `${index.indexSymbol} - ${index.indexName}`,
+      value: index
+    }));
+  }
+
+  /**
+   * Navigate to stock insights dashboard with selected stock
+   * @param stockSymbol The symbol of the stock to navigate to
+   */
+  private navigateToStockInsights(stockSymbol: string): void {
+    if (!stockSymbol || stockSymbol.trim() === '') {
+      console.warn('Invalid stock symbol for navigation:', stockSymbol);
+      return;
+    }
+
+    console.log('Navigating to stock insights for:', stockSymbol);
+    
+    // Navigate to stock insights dashboard with the stock symbol
+    this.router.navigate(['/dashboard/stock-insights', stockSymbol]);
+  }
+
+  /**
+   * Add click handlers to the dashboard after it's rendered
+   * This method can be called after the dashboard is initialized
+   */
+  private addDashboardClickHandlers(): void {
+    // Use setTimeout to ensure the dashboard is fully rendered
+    setTimeout(() => {
+      const dashboardContainer = document.querySelector('[data-dashboard-id="indices-stock-list"]');
+      if (dashboardContainer) {
+        console.log('Adding click handlers to dashboard container');
+        
+        // Add double-click handler to the entire dashboard
+        dashboardContainer.addEventListener('dblclick', (event: Event) => {
+          console.log('Dashboard double-click event:', event);
+          
+          // Find the clicked element
+          const target = event.target as HTMLElement;
+          if (target) {
+            console.log('Clicked element:', target);
+            console.log('Element text:', target.textContent);
+            console.log('Element classes:', target.className);
+            
+            // Look for stock symbol in the clicked element or its parents
+            let currentElement = target;
+            while (currentElement && currentElement !== dashboardContainer) {
+              const textContent = currentElement.textContent || currentElement.innerText;
+              if (textContent && textContent.length <= 10 && textContent.length >= 2) {
+                // Check if it looks like a stock symbol (letters and numbers)
+                if (/^[A-Z0-9]+$/.test(textContent.trim())) {
+                  console.log('Found potential stock symbol:', textContent.trim());
+                  this.navigateToStockInsights(textContent.trim());
+                  return;
+                }
+              }
+              currentElement = currentElement.parentElement as HTMLElement;
+            }
+          }
+        });
+      } else {
+        console.warn('Dashboard container not found for click handlers');
+      }
+    }, 1000); // Wait 1 second for dashboard to render
+  }
+
+  /**
+   * Auto-select NIFTY 50 index by default
+   * @param indices Array of loaded indices
+   */
+  private selectNifty50ByDefault(indices: IndexResponseDto[]): void {
+    // Find NIFTY 50 index
+    const nifty50Index = indices.find(index => 
+      index.indexSymbol?.toUpperCase() === 'NIFTY 50' || 
+      index.indexName?.toUpperCase() === 'NIFTY 50' ||
+      index.indexSymbol?.toUpperCase() === 'NIFTY50' ||
+      index.indexName?.toUpperCase() === 'NIFTY50'
+    );
+
+    if (nifty50Index) {
+      console.log('Auto-selecting NIFTY 50 index:', nifty50Index);
+      this.selectedIndexForStocks.set(nifty50Index);
+      this.loadStocksForIndex(nifty50Index);
+    } else {
+      console.warn('NIFTY 50 index not found in loaded indices');
+      // If NIFTY 50 is not found, select the first available index
+      if (indices.length > 0) {
+        console.log('Selecting first available index:', indices[0]);
+        this.selectedIndexForStocks.set(indices[0]);
+        this.loadStocksForIndex(indices[0]);
+      }
+    }
+  }
+
+  /**
    * Load indices lists from the indices API
    * Gets all indices from the API and fills the list with indices data
    */
@@ -599,6 +858,9 @@ export class IndicesComponent implements OnInit, OnDestroy {
           // Set the active tab to the first list
           this.activeTab.set('0');
           
+          // Auto-select NIFTY 50 index by default
+          this.selectNifty50ByDefault(indices);
+          
           // Force change detection to ensure template updates
           this.cdr.detectChanges();
         },
@@ -619,6 +881,9 @@ export class IndicesComponent implements OnInit, OnDestroy {
           
           // Set the active tab to the first list
           this.activeTab.set('0');
+          
+          // Try to auto-select NIFTY 50 even with empty list (will fallback gracefully)
+          this.selectNifty50ByDefault([]);
         }
       });
     } catch (error) {
@@ -638,6 +903,9 @@ export class IndicesComponent implements OnInit, OnDestroy {
       
       // Set the active tab to the first list
       this.activeTab.set('0');
+      
+      // Try to auto-select NIFTY 50 even with empty list (will fallback gracefully)
+      this.selectNifty50ByDefault([]);
     }
   }
 }

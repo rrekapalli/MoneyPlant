@@ -82,27 +82,16 @@ import { QueryRuleComponent } from './query-rule.component';
         </div>
       </div>
 
-      <!-- Add Buttons -->
-      <div class="query-rule-set-actions" *ngIf="!ruleset.collapsed">
+      <!-- Add Buttons removed - now in query-builder header -->
+      
+      <!-- Remove Group Button -->
+      <div class="query-rule-set-actions" *ngIf="!ruleset.collapsed && level > 0">
         <button 
           type="button" 
-          class="btn btn-primary btn-sm"
-          (click)="addRule()">
-          <i class="fas fa-plus"></i> Add Rule
+          class="btn btn-danger btn-sm"
+          (click)="removeCurrentRuleSet()">
+          <i class="fas fa-trash"></i> Remove Group
         </button>
-        <button 
-          type="button" 
-          class="btn btn-secondary btn-sm"
-          (click)="addRuleSet()">
-          <i class="fas fa-layer-group"></i> Add Group
-        </button>
-                  <button 
-            *ngIf="level > 0"
-            type="button" 
-            class="btn btn-danger btn-sm"
-            (click)="removeCurrentRuleSet()">
-            <i class="fas fa-trash"></i> Remove Group
-          </button>
       </div>
     </div>
   `,
@@ -168,11 +157,8 @@ export class QueryRuleSetComponent implements OnInit {
   removeRule(index: number): void {
     this.ruleset.rules.splice(index, 1);
     
-    // Ensure at least one rule exists
-    if (this.ruleset.rules.length === 0) {
-      this.addRule();
-    }
-    
+    // Allow empty rules array - user can explicitly remove all rules
+    // The parent component (screeners) handles empty criteria properly
     this.queryChange.emit(this.ruleset);
   }
 

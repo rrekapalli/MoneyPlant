@@ -91,27 +91,18 @@
     <div class="holdings-section">
       <div class="holdings-header">
         <h3>Portfolio Holdings</h3>
-        <div class="holdings-actions">
-          @if (isLoadingHoldings) {
-            <div class="loading-indicator">
-              <i class="pi pi-spin pi-spinner"></i>
-              Loading holdings...
-            </div>
-          } @else {
-            <button pButton 
-                    icon="pi pi-refresh" 
-                    class="p-button-outlined p-button-sm"
-                    (click)="refreshHoldings()"
-                    title="Refresh holdings">
-            </button>
-          }
-        </div>
+        @if (isLoadingHoldings) {
+          <div class="loading-indicator">
+            <i class="pi pi-spin pi-spinner"></i>
+            Loading holdings...
+          </div>
+        }
       </div>
 
       @if (portfolioHoldings.length > 0) {
         <div class="holdings-table-container">
-          <!-- Global Filter -->
-          <div class="table-filter">
+          <!-- Global Filter and Actions Row -->
+          <div class="table-filter-row">
             <span class="p-input-icon-left">
               <i class="pi pi-search"></i>
               <input pInputText 
@@ -121,6 +112,23 @@
                      placeholder="Search holdings..." 
                      class="p-inputtext-sm" />
             </span>
+            
+            <div class="table-actions">
+              <button pButton 
+                      icon="pi pi-refresh" 
+                      class="p-button-outlined p-button-sm"
+                      (click)="refreshHoldings()"
+                      title="Refresh holdings">
+              </button>
+              
+              <button pButton 
+                      label="Add Stock" 
+                      icon="pi pi-plus" 
+                      class="p-button-sm"
+                      (click)="openAddStockDialog()"
+                      title="Add stock to portfolio">
+              </button>
+            </div>
           </div>
 
           <p-table [value]="portfolioHoldings" 
@@ -138,104 +146,78 @@
             
             <ng-template pTemplate="header">
               <tr>
-                <th style="width: 20%">Stock</th>
-                <th style="width: 15%">LTP</th>
+                <th style="width: 25%">Stock</th>
+                <th style="width: 20%">LTP</th>
                 <th style="width: 15%">Sector</th>
-                <th style="width: 15%">Stage Analysis</th>
-                <th style="width: 10%">Uptrend</th>
-                <th style="width: 10%">Sector Trend</th>
-                <th style="width: 10%">Sector Rank</th>
+                <th style="width: 15%">Industry</th>
+                <th style="width: 10%">Volume</th>
+                <th style="width: 10%">VWAP</th>
                 <th style="width: 5%">Actions</th>
               </tr>
             </ng-template>
 
             <ng-template pTemplate="body" let-holding>
-              @if (getMockMarketData(holding.symbol).name) {
-                <tr>
-                  <!-- Stock Column -->
-                  <td>
-                    <div class="stock-info">
-                      <div class="stock-symbol">{{ holding.symbol }}</div>
-                      <div class="stock-name">{{ getMockMarketData(holding.symbol).name }}</div>
+              <tr>
+                <!-- Stock Column -->
+                <td>
+                  <div class="stock-info">
+                    <div class="stock-symbol">{{ holding.symbol }}</div>
+                    <div class="stock-name">{{ getMarketData(holding.symbol).name || holding.symbol + ' Limited' }}</div>
+                  </div>
+                </td>
+
+                <!-- LTP Column -->
+                <td>
+                  <div class="ltp-info">
+                    <div class="current-price">₹{{ (getMarketData(holding.symbol).currentPrice || 0) | number:'1.2-2' }}</div>
+                    <div class="price-change" 
+                         [ngClass]="(getMarketData(holding.symbol).change || 0) >= 0 ? 'positive' : 'negative'">
+                      <i class="pi" 
+                         [ngClass]="(getMarketData(holding.symbol).change || 0) >= 0 ? 'pi-arrow-up' : 'pi-arrow-down'">
+                      </i>
+                      {{ (getMarketData(holding.symbol).change || 0) >= 0 ? '+' : '' }}{{ (getMarketData(holding.symbol).changePercent || 0) | number:'1.2-2' }}%
                     </div>
-                  </td>
+                  </div>
+                </td>
 
-                  <!-- LTP Column -->
-                  <td>
-                    <div class="ltp-info">
-                      <div class="current-price">₹{{ getMockMarketData(holding.symbol).currentPrice | number:'1.2-2' }}</div>
-                      <div class="price-change" 
-                           [ngClass]="getMockMarketData(holding.symbol).change >= 0 ? 'positive' : 'negative'">
-                        <i class="pi" 
-                           [ngClass]="getMockMarketData(holding.symbol).change >= 0 ? 'pi-arrow-up' : 'pi-arrow-down'">
-                        </i>
-                        {{ getMockMarketData(holding.symbol).change >= 0 ? '+' : '' }}{{ getMockMarketData(holding.symbol).changePercent | number:'1.2-2' }}%
-                      </div>
-                    </div>
-                  </td>
+                <!-- Sector Column -->
+                <td>
+                  <span class="sector-tag">{{ getMarketData(holding.symbol).sector || 'Unknown' }}</span>
+                </td>
 
-                  <!-- Sector Column -->
-                  <td>
-                    <span class="sector-tag">{{ getMockMarketData(holding.symbol).sector }}</span>
-                  </td>
+                <!-- Industry Column -->
+                <td>
+                  <span class="industry-tag">{{ getMarketData(holding.symbol).industry || 'Unknown' }}</span>
+                </td>
 
-                  <!-- Stage Analysis Column -->
-                  <td>
-                    <div class="stage-analysis">
-                      <span class="stage-tag stage-{{ getMockMarketData(holding.symbol).stageAnalysis.toLowerCase().replace(' ', '-') }}">
-                        {{ getMockMarketData(holding.symbol).stageAnalysis }}
-                      </span>
-                      <div class="stage-label">{{ getMockMarketData(holding.symbol).stageLabel }}</div>
-                    </div>
-                  </td>
+                <!-- Volume Column -->
+                <td>
+                  <div class="volume-info">
+                    {{ (getMarketData(holding.symbol).volume || 0) | number:'1.0-0' }}
+                  </div>
+                </td>
 
-                  <!-- Uptrend Column -->
-                  <td>
-                    <span class="trend-tag" 
-                          [ngClass]="getMockMarketData(holding.symbol).uptrend ? 'uptrend-yes' : 'uptrend-no'">
-                      @if (getMockMarketData(holding.symbol).uptrend) {
-                        <i class="pi pi-check"></i>
-                        Yes
-                      } @else {
-                        <i class="pi pi-times"></i>
-                        No
-                      }
-                    </span>
-                  </td>
+                <!-- VWAP Column -->
+                <td>
+                  <div class="vwap-info">
+                    ₹{{ (getMarketData(holding.symbol).vwap || 0) | number:'1.2-2' }}
+                  </div>
+                </td>
 
-                  <!-- Sector Trend Column -->
-                  <td>
-                    <span class="sector-trend-tag">
-                      <i class="pi pi-arrow-up"></i>
-                      {{ getMockMarketData(holding.symbol).sectorTrend }}
-                    </span>
-                  </td>
-
-                  <!-- Sector Rank Column -->
-                  <td>
-                    <div class="sector-rank">
-                      <span class="rank-circle rank-{{ getMockMarketData(holding.symbol).sectorRank <= 3 ? 'top' : getMockMarketData(holding.symbol).sectorRank <= 5 ? 'middle' : 'bottom' }}">
-                        {{ getMockMarketData(holding.symbol).sectorRank }}
-                      </span>
-                      <div class="rank-total">of {{ getMockMarketData(holding.symbol).totalSectorStocks }}</div>
-                    </div>
-                  </td>
-
-                  <!-- Actions Column -->
-                  <td>
-                    <button class="action-btn delete-btn" 
-                            title="Remove holding"
-                            (click)="removeHolding(holding)">
-                      <i class="pi pi-trash"></i>
-                    </button>
-                  </td>
-                </tr>
-              }
+                <!-- Actions Column -->
+                <td>
+                  <button class="action-btn delete-btn" 
+                          title="Remove holding"
+                          (click)="removeHolding(holding)">
+                    <i class="pi pi-trash"></i>
+                  </button>
+                </td>
+              </tr>
             </ng-template>
 
             <ng-template pTemplate="emptymessage">
               <tr>
-                <td colspan="8" class="text-center">
+                <td colspan="7" class="text-center">
                   <div class="empty-holdings">
                     <i class="pi pi-info-circle"></i>
                     <p>No holdings found for this portfolio.</p>
@@ -273,4 +255,181 @@
       </button>
     </div>
   }
+
+  <!-- Add Stock Dialog -->
+  <p-dialog header="Add Stock to Portfolio" 
+            [(visible)]="showAddStockDialog" 
+            [modal]="true" 
+            [closable]="true"
+            [draggable]="false"
+            [resizable]="false"
+            styleClass="add-stock-dialog"
+            [style]="{width: '500px', height: '620px'}">
+    
+    <div class="add-stock-content">
+      <!-- Stock Search -->
+      <div class="stock-search-section">
+        <label for="stockSearch" class="field-label">Search Stock</label>
+        <div class="stock-search-input-container">
+          <span class="p-input-icon-left">
+            <i class="pi pi-search"></i>
+            <input pInputText 
+                   id="stockSearch"
+                   type="text" 
+                   [(ngModel)]="stockSearchQuery"
+                   (input)="onStockSearchInput($event)"
+                   placeholder="Type stock symbol or name..."
+                   class="stock-search-input" />
+          </span>
+          @if (isSearchingStocks) {
+            <div class="search-loading">
+              <i class="pi pi-spin pi-spinner"></i>
+            </div>
+          }
+        </div>
+        
+        <!-- Search Results -->
+        @if (stockSearchResults.length > 0) {
+          <div class="search-results">
+            @for (stock of stockSearchResults; track stock.symbol) {
+              <div class="search-result-item" 
+                   (click)="selectStock(stock)"
+                   [class.selected]="selectedStock?.symbol === stock.symbol">
+                <div class="stock-info">
+                  <div class="stock-symbol">{{ stock.symbol }}</div>
+                  <div class="stock-name">{{ stock.name }}</div>
+                </div>
+                <div class="stock-price" *ngIf="stock.price && stock.price > 0">
+                  ₹{{ stock.price | number:'1.2-2' }}
+                </div>
+              </div>
+            }
+          </div>
+        } @else if (stockSearchQuery && stockSearchQuery.length >= 2 && !isSearchingStocks && !selectedStock) {
+          <div class="no-results">
+            <i class="pi pi-info-circle"></i>
+            <span>No stocks found. Try a different search term.</span>
+          </div>
+        }
+      </div>
+
+      <!-- Selected Stock Info -->
+      <div class="selected-stock-section" *ngIf="selectedStock">
+        <h4>Selected Stock</h4>
+        
+        @if (isLoadingStockDetails) {
+          <div class="loading-stock-details">
+            <i class="pi pi-spin pi-spinner"></i>
+            <span>Loading stock details...</span>
+          </div>
+        } @else if (selectedStockDetails) {
+          <div class="selected-stock-info">
+            <!-- Basic Stock Info - Company Name with Industry -->
+            <div class="stock-basic-info">
+              <div class="stock-symbol">{{ selectedStockDetails.symbol || selectedStock.symbol }}</div>
+              <div class="stock-name-with-industry">
+                {{ selectedStockDetails.name || selectedStock.name || selectedStock.companyName || (selectedStock.symbol + ' Limited') }}
+                <span *ngIf="selectedStockDetails.industry"> - {{ selectedStockDetails.industry }}</span>
+              </div>
+            </div>
+            
+            <!-- Organized Market Data Rows -->
+            <div class="stock-market-data">
+              <!-- Open, Close Row -->
+              <div class="market-data-row">
+                <div class="market-item">
+                  <span class="market-label">Open:</span>
+                  <span class="market-value">₹{{ (selectedStockDetails.open || 0) | number:'1.2-2' }}</span>
+                </div>
+                <div class="market-item">
+                  <span class="market-label">Close:</span>
+                  <span class="market-value">₹{{ (selectedStockDetails.previousClose || 0) | number:'1.2-2' }}</span>
+                </div>
+              </div>
+              
+              <!-- High, Low Row -->
+              <div class="market-data-row">
+                <div class="market-item">
+                  <span class="market-label">High:</span>
+                  <span class="market-value">₹{{ (selectedStockDetails.dayHigh || 0) | number:'1.2-2' }}</span>
+                </div>
+                <div class="market-item">
+                  <span class="market-label">Low:</span>
+                  <span class="market-value">₹{{ (selectedStockDetails.dayLow || 0) | number:'1.2-2' }}</span>
+                </div>
+              </div>
+              
+              <!-- Change, Change % Row -->
+              <div class="market-data-row">
+                <div class="market-item">
+                  <span class="market-label">Change:</span>
+                  <span class="market-value">{{ (selectedStockDetails.change || 0) >= 0 ? '+' : '' }}₹{{ (selectedStockDetails.change || 0) | number:'1.2-2' }}</span>
+                </div>
+                <div class="market-item">
+                  <span class="market-label">Change %:</span>
+                  <span class="market-value">{{ (selectedStockDetails.changePercent || 0) >= 0 ? '+' : '' }}{{ (selectedStockDetails.changePercent || 0) | number:'1.2-2' }}%</span>
+                </div>
+              </div>
+              
+              <!-- Volume, VWAP Row -->
+              <div class="market-data-row">
+                <div class="market-item">
+                  <span class="market-label">Volume:</span>
+                  <span class="market-value">{{ (selectedStockDetails.volume || 0) | number:'1.0-0' }}</span>
+                </div>
+                <div class="market-item">
+                  <span class="market-label">VWAP:</span>
+                  <span class="market-value">₹{{ (selectedStockDetails.vwap || 0) | number:'1.2-2' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        } @else {
+          <!-- Fallback to basic info if details failed to load -->
+          <div class="selected-stock-info">
+            <div class="stock-basic-info">
+              <div class="stock-symbol">{{ selectedStock.symbol }}</div>
+              <div class="stock-name">{{ selectedStock.name || selectedStock.companyName }}</div>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Quantity Input -->
+      <div class="quantity-section" *ngIf="selectedStock">
+        <label for="stockQuantity" class="field-label">Quantity</label>
+        <input pInputText 
+               id="stockQuantity"
+               type="number" 
+               [(ngModel)]="stockQuantity"
+               placeholder="Enter quantity"
+               min="0"
+               class="quantity-input" />
+        <small class="field-help">Default quantity is 0. You can modify this later.</small>
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <div class="dialog-footer">
+        <button pButton 
+                label="Cancel" 
+                icon="pi pi-times" 
+                class="p-button-outlined"
+                (click)="closeAddStockDialog()"
+                [disabled]="isAddingStock">
+        </button>
+        <button pButton 
+                label="Add Stock" 
+                icon="pi pi-plus" 
+                class="p-button"
+                (click)="addSelectedStock()"
+                [disabled]="!selectedStock || isAddingStock">
+          @if (isAddingStock) {
+            <i class="pi pi-spin pi-spinner"></i>
+            Adding...
+          }
+        </button>
+      </div>
+    </ng-template>
+  </p-dialog>
 </div>

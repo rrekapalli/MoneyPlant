@@ -11,16 +11,55 @@
   .query-rule-content {
     flex: 1;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 16px;
+    grid-template-columns: 1fr 1fr 2fr;
+    gap: 12px;
     align-items: end;
   }
 
-  .query-rule-actions {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+  .value-input-group {
+    .value-input-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      .form-control,
+      .form-select,
+      .between-inputs {
+        flex: 1;
+      }
+
+      .remove-rule-btn {
+        flex-shrink: 0;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border-radius: 4px;
+        font-size: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #dc3545;
+        background-color: transparent;
+        color: #dc3545;
+        transition: all 0.2s ease;
+
+        &:hover {
+          background-color: #dc3545;
+          color: white;
+          border-color: #dc3545;
+        }
+
+        i {
+          font-size: 12px;
+          color: inherit;
+          visibility: visible !important;
+          opacity: 1 !important;
+        }
+      }
+    }
   }
+
+  // Removed query-rule-actions styles since button moved to value input group
 
   .form-group {
     display: flex;
@@ -75,6 +114,25 @@
         margin: 0;
       }
     }
+
+  .between-inputs {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+
+    .form-control {
+      flex: 1;
+    }
+
+    .between-separator {
+      font-size: 12px;
+      font-weight: 500;
+      color: #6c757d;
+      white-space: nowrap;
+      padding: 0 4px;
+    }
+  }
   }
 
   .btn {
@@ -100,6 +158,12 @@
       &:hover {
         background-color: #c82333;
         border-color: #bd2130;
+      }
+
+      i {
+        font-size: 14px;
+        color: white !important;
+        visibility: visible !important;
       }
     }
 

@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
-import { Observable, throwError, timer } from 'rxjs';
-import { catchError, mergeMap, retryWhen } from 'rxjs/operators';
+import { Observable, throwError } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { AuthService } from '../security/auth.service';
 
@@ -49,21 +49,6 @@ export class EnginesApiService {
       headers: this.getHeaders()
     })
       .pipe(
-        retryWhen(errors => 
-          errors.pipe(
-            // Retry up to 3 times
-            mergeMap((error, i) => {
-              const retryAttempt = i + 1;
-              // If we've tried 3 times and still failing, throw the error
-              if (retryAttempt > 3) {
-                return throwError(() => error);
-              }
-              console.log(`Engines API GET Attempt ${retryAttempt}: retrying in ${retryAttempt * 1000}ms`);
-              // Retry after 1s, 2s, then 3s
-              return timer(retryAttempt * 1000);
-            })
-          )
-        ),
         catchError(this.handleError)
       );
   }
@@ -79,21 +64,6 @@ export class EnginesApiService {
       headers: this.getHeaders()
     })
       .pipe(
-        retryWhen(errors => 
-          errors.pipe(
-            // Retry up to 3 times
-            mergeMap((error, i) => {
-              const retryAttempt = i + 1;
-              // If we've tried 3 times and still failing, throw the error
-              if (retryAttempt > 3) {
-                return throwError(() => error);
-              }
-              console.log(`Engines API POST Attempt ${retryAttempt}: retrying in ${retryAttempt * 1000}ms`);
-              // Retry after 1s, 2s, then 3s
-              return timer(retryAttempt * 1000);
-            })
-          )
-        ),
         catchError(this.handleError)
       );
   }
@@ -109,21 +79,6 @@ export class EnginesApiService {
       headers: this.getHeaders()
     })
       .pipe(
-        retryWhen(errors => 
-          errors.pipe(
-            // Retry up to 3 times
-            mergeMap((error, i) => {
-              const retryAttempt = i + 1;
-              // If we've tried 3 times and still failing, throw the error
-              if (retryAttempt > 3) {
-                return throwError(() => error);
-              }
-              console.log(`Engines API PUT Attempt ${retryAttempt}: retrying in ${retryAttempt * 1000}ms`);
-              // Retry after 1s, 2s, then 3s
-              return timer(retryAttempt * 1000);
-            })
-          )
-        ),
         catchError(this.handleError)
       );
   }
@@ -138,21 +93,6 @@ export class EnginesApiService {
       headers: this.getHeaders()
     })
       .pipe(
-        retryWhen(errors => 
-          errors.pipe(
-            // Retry up to 3 times
-            mergeMap((error, i) => {
-              const retryAttempt = i + 1;
-              // If we've tried 3 times and still failing, throw the error
-              if (retryAttempt > 3) {
-                return throwError(() => error);
-              }
-              console.log(`Engines API DELETE Attempt ${retryAttempt}: retrying in ${retryAttempt * 1000}ms`);
-              // Retry after 1s, 2s, then 3s
-              return timer(retryAttempt * 1000);
-            })
-          )
-        ),
         catchError(this.handleError)
       );
   }
@@ -168,21 +108,6 @@ export class EnginesApiService {
       headers: this.getHeaders()
     })
       .pipe(
-        retryWhen(errors => 
-          errors.pipe(
-            // Retry up to 3 times
-            mergeMap((error, i) => {
-              const retryAttempt = i + 1;
-              // If we've tried 3 times and still failing, throw the error
-              if (retryAttempt > 3) {
-                return throwError(() => error);
-              }
-              console.log(`Engines API PATCH Attempt ${retryAttempt}: retrying in ${retryAttempt * 1000}ms`);
-              // Retry after 1s, 2s, then 3s
-              return timer(retryAttempt * 1000);
-            })
-          )
-        ),
         catchError(this.handleError)
       );
   }

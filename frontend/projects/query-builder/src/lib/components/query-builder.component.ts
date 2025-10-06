@@ -3,39 +3,31 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { QueryRuleSet, QueryBuilderConfig } from '../interfaces/query.interface';
 import { QueryBuilderService } from '../services/query-builder.service';
-import { QueryRuleComponent } from './query-rule.component';
 import { QueryRuleSetComponent } from './query-rule-set.component';
 import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-query-builder',
   standalone: true,
-  imports: [CommonModule, FormsModule, QueryRuleComponent, QueryRuleSetComponent],
+  imports: [CommonModule, FormsModule, QueryRuleSetComponent],
   template: `
-    <div class="query-builder" [class]="config?.classNames?.['queryBuilder'] || ''">
-      <div class="query-builder-header" *ngIf="config?.allowCollapse">
-        <button 
-          type="button" 
-          class="btn btn-link"
-          (click)="toggleCollapse()"
-          [attr.aria-expanded]="!collapsed"
-          [attr.aria-label]="collapsed ? 'Expand query builder' : 'Collapse query builder'">
-          <i class="fas" [class.fa-chevron-down]="!collapsed" [class.fa-chevron-right]="collapsed"></i>
-          Query Builder
-        </button>
-      </div>
-      
-      <div class="query-builder-content" [class.collapsed]="collapsed">
-        <div class="query-rule-set" *ngIf="!collapsed">
-          <app-query-rule-set
-            [ruleset]="query"
-            [config]="config"
-            [level]="0"
-            (queryChange)="onQueryChange($event)">
-          </app-query-rule-set>
+    <div class="query-builder" [class]="config.classNames?.['queryBuilder'] || ''">
+      <div class="query-builder-header" *ngIf="!hideHeader">
+        <div class="query-builder-title">
+          <button 
+            *ngIf="config.allowCollapse"
+            type="button" 
+            class="btn btn-link"
+            (click)="toggleCollapse()"
+            [attr.aria-expanded]="!collapsed"
+            [attr.aria-label]="collapsed ? 'Expand query builder' : 'Collapse query builder'">
+            <i class="fas" [class.fa-chevron-down]="!collapsed" [class.fa-chevron-right]="collapsed"></i>
+            Query Builder
+          </button>
+          <span *ngIf="!config.allowCollapse" class="query-builder-title-text">Query Builder</span>
         </div>
         
-        <div class="query-builder-actions" *ngIf="!collapsed">
+        <div class="query-builder-header-actions" *ngIf="!collapsed">
           <button 
             type="button" 
             class="btn btn-primary btn-sm"
@@ -50,6 +42,17 @@ import { Subscription } from 'rxjs';
           </button>
         </div>
       </div>
+      
+      <div class="query-builder-content" [class.collapsed]="collapsed && !hideHeader">
+        <div class="query-rule-set" *ngIf="!collapsed || hideHeader">
+          <app-query-rule-set
+            [ruleset]="query"
+            [config]="config"
+            [level]="0"
+            (queryChange)="onQueryChange($event)">
+          </app-query-rule-set>
+        </div>
+      </div>
     </div>
   `,
   styleUrls: ['./query-builder.component.scss'],
@@ -58,6 +61,7 @@ import { Subscription } from 'rxjs';
 export class QueryBuilderComponent implements OnInit, OnDestroy {
   @Input() query: QueryRuleSet = { condition: 'and', rules: [] };
   @Input() config!: QueryBuilderConfig;
+  @Input() hideHeader: boolean = false;
   @Output() queryChange = new EventEmitter<QueryRuleSet>();
 
   collapsed = false;
@@ -66,7 +70,7 @@ export class QueryBuilderComponent implements OnInit, OnDestroy {
   constructor(private queryBuilderService: QueryBuilderService) {}
 
   ngOnInit(): void {
-    if (this.config?.allowCollapse) {
+    if (this.config.allowCollapse) {
       this.collapsed = false;
     }
     

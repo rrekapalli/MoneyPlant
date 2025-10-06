@@ -28,7 +28,7 @@ import { QueryBuilderService } from '../services/query-builder.service';
         </div>
 
         <!-- Operator Selection -->
-        <div class="form-group" *ngIf="rule.field">
+        <div class="form-group">
           <label class="form-label">Operator</label>
           <select 
             class="form-select"
@@ -44,9 +44,10 @@ import { QueryBuilderService } from '../services/query-builder.service';
         </div>
 
         <!-- Value Input -->
-        <div class="form-group" *ngIf="rule.field && rule.operator">
+        <div class="form-group value-input-group">
           <label class="form-label">Value</label>
-          <ng-container [ngSwitch]="getFieldType()">
+          <div class="value-input-container">
+            <ng-container [ngSwitch]="getValueInputType()">
             
             <!-- String Input -->
             <input 
@@ -65,6 +66,38 @@ import { QueryBuilderService } from '../services/query-builder.service';
               [(ngModel)]="rule.value"
               (ngModelChange)="onValueChange($event)"
               placeholder="Enter number">
+            
+            <!-- Between Operator - Two Number Inputs -->
+            <div *ngSwitchCase="'between-number'" class="between-inputs">
+              <input 
+                type="number" 
+                class="form-control"
+                [ngModel]="getBetweenValue('min')"
+                (ngModelChange)="onBetweenValueChange('min', $event)"
+                placeholder="Min value">
+              <span class="between-separator">and</span>
+              <input 
+                type="number" 
+                class="form-control"
+                [ngModel]="getBetweenValue('max')"
+                (ngModelChange)="onBetweenValueChange('max', $event)"
+                placeholder="Max value">
+            </div>
+            
+            <!-- Between Operator - Two Date Inputs -->
+            <div *ngSwitchCase="'between-date'" class="between-inputs">
+              <input 
+                type="date" 
+                class="form-control"
+                [ngModel]="getBetweenValue('min')"
+                (ngModelChange)="onBetweenValueChange('min', $event)">
+              <span class="between-separator">and</span>
+              <input 
+                type="date" 
+                class="form-control"
+                [ngModel]="getBetweenValue('max')"
+                (ngModelChange)="onBetweenValueChange('max', $event)">
+            </div>
             
             <!-- Date Input -->
             <input 
@@ -117,19 +150,18 @@ import { QueryBuilderService } from '../services/query-builder.service';
               [(ngModel)]="rule.value"
               (ngModelChange)="onValueChange($event)"
               placeholder="Enter value">
-          </ng-container>
+            </ng-container>
+            
+            <!-- Remove Button -->
+            <button 
+              type="button" 
+              class="btn btn-outline-danger btn-sm remove-rule-btn"
+              (click)="removeRule()"
+              title="Remove rule">
+              <i class="pi pi-trash"></i>
+            </button>
+          </div>
         </div>
-      </div>
-
-      <!-- Remove Button -->
-      <div class="query-rule-actions">
-        <button 
-          type="button" 
-          class="btn btn-danger btn-sm"
-          (click)="removeRule()"
-          title="Remove rule">
-          <i class="fas fa-trash"></i>
-        </button>
       </div>
     </div>
   `,
@@ -167,6 +199,25 @@ export class QueryRuleComponent implements OnInit {
     return field?.type || 'string';
   }
 
+  getValueInputType(): string {
+    if (!this.rule.field || !this.rule.operator) {
+      return 'string'; // Default fallback
+    }
+
+    const fieldType = this.getFieldType();
+    
+    // Handle between operators
+    if (this.rule.operator === 'between' || this.rule.operator === 'not between') {
+      if (fieldType === 'number') {
+        return 'between-number';
+      } else if (fieldType === 'date') {
+        return 'between-date';
+      }
+    }
+    
+    return fieldType;
+  }
+
   getFieldOptions(): any[] {
     const field = this.config.fields.find(f => f.value === this.rule.field);
     if (field?.getOptions) {
@@ -185,11 +236,39 @@ export class QueryRuleComponent implements OnInit {
 
   onOperatorChange(operator: string): void {
     this.rule.operator = operator;
+    
+    // Initialize value as object for between operators
+    if (operator === 'between' || operator === 'not between') {
+      if (!this.rule.value || typeof this.rule.value !== 'object') {
+        this.rule.value = { min: null, max: null };
+      }
+    } else {
+      // For non-between operators, ensure value is not an object
+      if (this.rule.value && typeof this.rule.value === 'object') {
+        this.rule.value = null;
+      }
+    }
+    
     this.ruleChange.emit(this.rule);
   }
 
   onValueChange(value: any): void {
     this.rule.value = value;
+    this.ruleChange.emit(this.rule);
+  }
+
+  getBetweenValue(type: 'min' | 'max'): any {
+    if (!this.rule.value || typeof this.rule.value !== 'object') {
+      return null;
+    }
+    return this.rule.value[type];
+  }
+
+  onBetweenValueChange(type: 'min' | 'max', value: any): void {
+    if (!this.rule.value || typeof this.rule.value !== 'object') {
+      this.rule.value = { min: null, max: null };
+    }
+    this.rule.value[type] = value;
     this.ruleChange.emit(this.rule);
   }
 
@@ -199,6 +278,12 @@ export class QueryRuleComponent implements OnInit {
 
   private initializeDefaultValue(): void {
     const fieldType = this.getFieldType();
+    
+    // Handle between operators
+    if (this.rule.operator === 'between' || this.rule.operator === 'not between') {
+      this.rule.value = { min: null, max: null };
+      return;
+    }
     
     switch (fieldType) {
       case 'boolean':

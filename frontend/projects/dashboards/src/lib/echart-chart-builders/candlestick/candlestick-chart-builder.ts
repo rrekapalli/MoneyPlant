@@ -1367,10 +1367,48 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
           
           // Check if chart is properly initialized
           if (!widget.chartInstance.getOption) {
-            console.warn('⚠️ Chart instance not properly initialized, retrying...');
+            console.warn('⚠️ Chart instance getOption not available, but trying direct update...');
+            console.log('🔄 Chart instance properties:', Object.getOwnPropertyNames(widget.chartInstance));
+            console.log('🔄 Chart instance prototype:', Object.getPrototypeOf(widget.chartInstance));
+            
+            // Try direct update even without getOption
+            if (widget.chartInstance.setOption) {
+              console.log('🔄 Attempting direct setOption update...');
+              try {
+                // Create basic options structure
+                const basicOptions = {
+                  series: [{
+                    type: 'candlestick',
+                    data: data.map((item: any) => [
+                      Number(item.open) || 0,
+                      Number(item.close) || 0,
+                      Number(item.low) || 0,
+                      Number(item.high) || 0
+                    ])
+                  }],
+                  xAxis: [{
+                    type: 'category',
+                    data: data.map((item: any) => item.date || '')
+                  }],
+                  yAxis: [{
+                    scale: true
+                  }]
+                };
+                
+                widget.chartInstance.setOption(basicOptions, true);
+                console.log('✅ Direct setOption update successful');
+                return;
+              } catch (error) {
+                console.error('❌ Direct setOption update failed:', error);
+              }
+            }
+            
             if (retryCount < maxRetries) {
               retryCount++;
               setTimeout(updateWithRetry, 100 * retryCount);
+              return;
+            } else {
+              console.error('❌ Chart instance never properly initialized after max retries');
               return;
             }
           }
@@ -1384,23 +1422,23 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
           if (Array.isArray(data) && data.length > 0 && typeof data[0] === 'object') {
             console.log('🔄 Transforming object data to candlestick format');
             transformedData = data.map(item => [
-              parseFloat(item.open) || 0,
-              parseFloat(item.close) || 0,
-              parseFloat(item.low) || 0,
-              parseFloat(item.high) || 0
+              Number(item.open) || 0,
+              Number(item.close) || 0,
+              Number(item.low) || 0,
+              Number(item.high) || 0
             ]);
             
             // Extract volume data if available
             if (data[0].volume !== undefined) {
               console.log('🔄 Extracting volume data');
               volumeData = data.map(item => [
-                item.date || item.lastUpdateTime || '',
-                parseFloat(item.volume) || 0
+                item.date || '',
+                Number(item.volume) || 0
               ]);
             }
             
             // Extract x-axis labels
-            xAxisLabels = data.map(item => item.date || item.lastUpdateTime || '');
+            xAxisLabels = data.map(item => item.date || '');
             console.log('🔄 Transformed data:', transformedData.length, 'candlesticks,', volumeData.length, 'volume records');
           } else {
             console.log('🔄 Data is already in array format or empty');
@@ -1420,101 +1458,187 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
           
           console.log('🔄 Full current options structure:', currentOptions);
           
+          // Validate current options structure
+          if (!currentOptions || typeof currentOptions !== 'object') {
+            console.error('❌ Invalid chart options structure:', currentOptions);
+            return;
+          }
+          
+          // If chart options are completely empty, create a basic structure
+          if (!(currentOptions as any)['series'] && !(currentOptions as any)['xAxis'] && !(currentOptions as any)['yAxis']) {
+            console.log('🔄 Chart options are empty, creating basic structure');
+            const basicOptions = {
+              series: [{
+                name: 'Candlestick',
+                type: 'candlestick',
+                data: transformedData,
+                itemStyle: {
+                  color: '#00da3c',
+                  color0: '#ec0000',
+                  borderColor: '#00da3c',
+                  borderColor0: '#ec0000'
+                }
+              }],
+              xAxis: [{
+                type: 'category',
+                data: xAxisLabels,
+                boundaryGap: false,
+                axisLine: { onZero: false },
+                splitLine: { show: false }
+              }],
+              yAxis: [{
+                scale: true,
+                splitArea: { show: true }
+              }],
+              grid: [{
+                left: '10%',
+                right: '10%',
+                top: '10%',
+                height: '65%'
+              }]
+            };
+            
+            console.log('🔄 Setting basic chart options');
+            widget.chartInstance.setOption(basicOptions, true);
+            return;
+          }
+          
           // Extract close prices for area series if it exists
           const closePrices = transformedData.map((candle: number[]) => candle[1]); // Close is at index 1
           
-          // Update series data
-          const newSeries = [{
-            ...(currentOptions as any)['series'][0],
-            data: transformedData
-          }];
+          // Safely get existing series configuration
+          const existingSeries = (currentOptions as any).series || [];
+          const existingXAxis = (currentOptions as any).xAxis || [];
+          const existingYAxis = (currentOptions as any).yAxis || [];
+          const existingGrid = (currentOptions as any).grid || [];
+          
+          // Update series data with safe access
+          const newSeries = [];
+          
+          // Add candlestick series
+          if (existingSeries[0]) {
+            newSeries.push({
+              ...existingSeries[0],
+              data: transformedData
+            });
+          } else {
+            // Fallback candlestick series configuration
+            newSeries.push({
+              name: 'Candlestick',
+              type: 'candlestick',
+              data: transformedData,
+              itemStyle: {
+                color: '#00da3c',
+                color0: '#ec0000',
+                borderColor: '#00da3c',
+                borderColor0: '#ec0000'
+              }
+            });
+          }
           
           // Add volume series if it exists and we have volume data
-          if ((currentOptions as any)['series']?.[1]?.name === 'Volume' && volumeData.length > 0) {
+          if (existingSeries[1]?.name === 'Volume' && volumeData.length > 0) {
             console.log('🔄 Adding volume series with data:', volumeData.length, 'records');
             newSeries.push({
-              ...(currentOptions as any)['series'][1],
+              ...existingSeries[1],
               data: volumeData,
               xAxisIndex: 1,
               yAxisIndex: 1,
               type: 'bar'
             });
-          } else {
-            console.log('🔄 Volume series not found or no volume data:', {
-              hasVolumeSeries: (currentOptions as any)['series']?.[1]?.name === 'Volume',
-              volumeDataLength: volumeData.length,
-              seriesCount: (currentOptions as any)['series']?.length || 0
+          } else if (volumeData.length > 0) {
+            // Fallback volume series configuration
+            newSeries.push({
+              name: 'Volume',
+              type: 'bar',
+              data: volumeData,
+              xAxisIndex: 1,
+              yAxisIndex: 1,
+              itemStyle: {
+                color: '#7fbe9e'
+              }
             });
           }
           
           // Add area series if it exists in current options
-          const areaSeriesIndex = (currentOptions as any)['series'].findIndex((s: any) => s.name === 'Close Price Area');
+          const areaSeriesIndex = existingSeries.findIndex((s: any) => s.name === 'Close Price Area');
           if (areaSeriesIndex >= 0) {
             newSeries.push({
-              ...(currentOptions as any)['series'][areaSeriesIndex],
+              ...existingSeries[areaSeriesIndex],
               data: closePrices
             });
           }
+          
+          // Create safe xAxis configuration
+          const newXAxis = [
+            {
+              ...(existingXAxis[0] || {}),
+              data: xAxisLabels,
+              type: 'category',
+              boundaryGap: false,
+              axisLine: { onZero: false },
+              splitLine: { show: false },
+              min: 'dataMin',
+              max: 'dataMax'
+            },
+            {
+              ...(existingXAxis[1] || {}),
+              data: xAxisLabels,
+              gridIndex: 1,
+              type: 'category',
+              boundaryGap: false,
+              axisLine: { onZero: false },
+              splitLine: { show: false },
+              axisLabel: { show: false },
+              min: 'dataMin',
+              max: 'dataMax'
+            }
+          ];
+          
+          // Create safe yAxis configuration
+          const newYAxis = [
+            {
+              ...(existingYAxis[0] || {}),
+              scale: true,
+              splitArea: { show: true }
+            },
+            {
+              ...(existingYAxis[1] || {}),
+              scale: true,
+              gridIndex: 1,
+              splitNumber: 2,
+              axisLabel: { show: false },
+              axisLine: { show: false },
+              axisTick: { show: false },
+              splitLine: { show: false }
+            }
+          ];
+          
+          // Create safe grid configuration
+          const newGrid = [
+            {
+              ...(existingGrid[0] || {}),
+              left: '10%',
+              right: '10%',
+              top: '10%',
+              height: '65%'
+            },
+            {
+              ...(existingGrid[1] || {}),
+              left: '10%',
+              right: '10%',
+              top: '75%',
+              height: '12%'
+            }
+          ];
           
           // Ensure we have proper dual-axis configuration
           const newOptions = {
             ...currentOptions,
             series: newSeries,
-            xAxis: [
-              {
-                ...(currentOptions as any).xAxis?.[0],
-                data: xAxisLabels,
-                type: 'category',
-                boundaryGap: false,
-                axisLine: { onZero: false },
-                splitLine: { show: false },
-                min: 'dataMin',
-                max: 'dataMax'
-              },
-              {
-                ...(currentOptions as any).xAxis?.[1],
-                data: xAxisLabels,
-                gridIndex: 1,
-                type: 'category',
-                boundaryGap: false,
-                axisLine: { onZero: false },
-                splitLine: { show: false },
-                axisLabel: { show: false },
-                min: 'dataMin',
-                max: 'dataMax'
-              }
-            ],
-            yAxis: [
-              {
-                ...(currentOptions as any).yAxis?.[0],
-                scale: true,
-                splitArea: { show: true }
-              },
-              {
-                ...(currentOptions as any).yAxis?.[1],
-                scale: true,
-                gridIndex: 1,
-                splitNumber: 2,
-                axisLabel: { show: false },
-                axisLine: { show: false },
-                axisTick: { show: false },
-                splitLine: { show: false }
-              }
-            ],
-            grid: [
-              {
-                left: '10%',
-                right: '10%',
-                top: '10%',
-                height: '65%'
-              },
-              {
-                left: '10%',
-                right: '10%',
-                top: '75%',
-                height: '12%'
-              }
-            ]
+            xAxis: newXAxis,
+            yAxis: newYAxis,
+            grid: newGrid
           };
 
           console.log('🔄 Updating chart with new options:', {
@@ -1606,8 +1730,33 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
     console.log('🔥 Current timeRangeChangeCallback:', !!this.timeRangeChangeCallback);
     console.log('🔥 Current filterChangeCallback:', !!this.filterChangeCallback);
     
-    // Use the base class implementation
-    super.setEvents(callback);
+    // Create a wrapper callback that includes immediate data update
+    const wrappedCallback = (widget: IWidget, chart: any) => {
+      console.log('🔥 Setting up events for recreated chart');
+      console.log('🔥 Current data length:', this.data?.length || 0);
+      console.log('🔥 Sample data:', this.data?.slice(0, 2));
+      
+      if (chart) {
+        console.log('🔥 Chart instance available in events:', chart);
+        widget.chartInstance = chart;
+        
+        // Only update data if we have valid data
+        if (this.data && this.data.length > 0) {
+          console.log('🔥 Updating chart data immediately after instance is set');
+          CandlestickChartBuilder.updateData(widget, this.data);
+        } else {
+          console.log('🔥 No data available for immediate update, skipping');
+        }
+      }
+      
+      // Call the original callback if provided
+      if (callback) {
+        callback(widget, chart);
+      }
+    };
+    
+    // Use the base class implementation with wrapped callback
+    super.setEvents(wrappedCallback);
     return this;
   }
 } 

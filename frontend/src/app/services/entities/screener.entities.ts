@@ -16,6 +16,7 @@ export interface ScreenerCreateReq {
   description?: string;
   isPublic: boolean;
   defaultUniverse?: string;
+  criteria?: ScreenerCriteria;
 }
 
 export interface ScreenerResp {
@@ -25,6 +26,7 @@ export interface ScreenerResp {
   description?: string;
   isPublic: boolean;
   defaultUniverse?: string;
+  criteria?: ScreenerCriteria;
   createdAt: string;
   updatedAt: string;
 }
@@ -282,4 +284,44 @@ export interface ResultListParams {
   page?: number;
   size?: number;
   sort?: 'rank' | 'score';
+}
+
+// Screener Criteria interfaces for query builder integration
+export interface ScreenerCriteria {
+  condition: 'and' | 'or';
+  rules: (ScreenerRule | ScreenerCriteria)[];
+  collapsed?: boolean;
+}
+
+export interface ScreenerRule {
+  field: string;
+  operator: string;
+  value: any;
+  entity?: string;
+}
+
+export interface ScreenerCriteriaConfig {
+  fields: ScreenerField[];
+  operators?: { [key: string]: string[] };
+  defaultCondition?: 'and' | 'or';
+  allowEmpty?: boolean;
+  allowCollapse?: boolean;
+  classNames?: { [key: string]: string };
+}
+
+export interface ScreenerField {
+  name: string;
+  value: string;
+  type: 'string' | 'number' | 'date' | 'time' | 'boolean' | 'category';
+  category?: string;
+  description?: string;
+  operators?: string[];
+  options?: ScreenerOption[];
+  getOperators?: () => string[];
+  getOptions?: () => ScreenerOption[];
+}
+
+export interface ScreenerOption {
+  name: string;
+  value: any;
 }
