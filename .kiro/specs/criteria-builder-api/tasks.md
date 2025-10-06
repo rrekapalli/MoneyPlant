@@ -121,15 +121,14 @@
     - Verify integration with existing screener run and result infrastructure
     - _Requirements: 12.2_
 
-- [ ] 8. Extend existing ScreenerController for criteria-specific endpoints
-  - [ ] 8.1 Implement core criteria validation and SQL generation endpoints in ScreenerController
+- [x] 8. Extend existing ScreenerController for criteria-specific endpoints
+  - [x] 8.1 Implement core criteria validation and SQL generation endpoints in ScreenerController
     - Create GET /api/screeners/fields endpoint with role-based field filtering and enhanced metadata
     - Build GET /api/screeners/functions endpoint with user-based function access and category support
     - Implement POST /api/screeners/validate-criteria endpoint for DSL validation
     - Add POST /api/screeners/generate-sql endpoint for SQL generation from DSL
     - _Requirements: 9.2, 9.3, 9.4, 9.5_
-
-  - [ ] 8.2 Implement visual interface support endpoints in ScreenerController
+  - [x] 8.2 Implement visual interface support endpoints in ScreenerController
     - Create GET /api/screeners/fields/{fieldId}/operators endpoint for field-specific operator compatibility
     - Build GET /api/screeners/fields/{fieldId}/suggestions endpoint for dynamic value suggestions
     - Implement POST /api/screeners/validate-partial-criteria endpoint for real-time validation feedback
@@ -137,8 +136,7 @@
     - Create POST /api/screeners/preview-criteria endpoint for criteria preview and estimation
     - Build GET /api/screeners/operators endpoint for complete operator metadata
     - _Requirements: 9.1.1, 9.1.2, 9.1.3, 9.1.4, 9.1.5, 9.1.6_
-
-  - [ ] 8.3 Integrate with existing screener authentication and security
+  - [x] 8.3 Integrate with existing screener authentication and security
     - Use existing ScreenerJwtAuthenticationFilter for authentication
     - Leverage existing CurrentUserService for user context
     - Integrate with existing screener error handling and response patterns

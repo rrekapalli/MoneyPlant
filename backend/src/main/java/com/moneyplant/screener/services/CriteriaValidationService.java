@@ -683,6 +683,388 @@ public class CriteriaValidationService {
     }
 
     /**
+     * Validates partial DSL for real-time feedback during query building.
+     */
+    public PartialValidationResult validatePartialDSL(Object partialDsl, Long userId) {
+        log.debug("Validating partial DSL for user: {}", userId);
+        
+        try {
+            // Security check
+            Long currentUserId = currentUserService.getCurrentUserId();
+            if (!currentUserId.equals(userId)) {
+                throw new CriteriaValidationException("Unauthorized: cannot validate partial criteria for another user");
+            }
+
+            List<ValidationError> errors = new ArrayList<>();
+            List<ValidationWarning> warnings = new ArrayList<>();
+            List<ValidationSuggestion> suggestions = new ArrayList<>();
+            List<String> completionHints = new ArrayList<>();
+
+            // Basic validation for partial DSL
+            if (partialDsl == null) {
+                suggestions.add(ValidationSuggestion.builder()
+                    .type("STRUCTURE")
+                    .message("Start by creating a root group")
+                    .suggestion("Add a group with AND/OR operator")
+                    .build());
+                completionHints.add("Create root group");
+            } else {
+                // Add contextual suggestions based on partial structure
+                addContextualSuggestions(partialDsl, userId, suggestions, completionHints);
+            }
+
+            return PartialValidationResult.builder()
+                .valid(errors.isEmpty())
+                .errors(errors)
+                .warnings(warnings)
+                .suggestions(suggestions)
+                .completionHints(completionHints)
+                .validatedAt(Instant.now())
+                .build();
+
+        } catch (Exception e) {
+            log.error("Error validating partial DSL for user {}: {}", userId, e.getMessage(), e);
+            return PartialValidationResult.builder()
+                .valid(false)
+                .errors(List.of(ValidationError.builder()
+                    .code("PARTIAL_VALIDATION_ERROR")
+                    .message("Error validating partial DSL: " + e.getMessage())
+                    .path("$")
+                    .build()))
+                .validatedAt(Instant.now())
+                .build();
+        }
+    }
+
+    /**
+     * Generates criteria preview with human-readable description and estimates.
+     */
+    public CriteriaPreview previewCriteria(CriteriaDSL dsl, Long userId) {
+        log.debug("Generating criteria preview for user: {}", userId);
+        
+        try {
+            // Security check
+            Long currentUserId = currentUserService.getCurrentUserId();
+            if (!currentUserId.equals(userId)) {
+                throw new CriteriaValidationException("Unauthorized: cannot preview criteria for another user");
+            }
+
+            // First validate the DSL
+            ValidationResult validation = validateDSL(dsl, userId);
+            if (!validation.isValid()) {
+                return CriteriaPreview.builder()
+                    .description("Invalid criteria - please fix validation errors")
+                    .complexity("UNKNOWN")
+                    .performanceWarning("Cannot preview invalid criteria")
+                    .generatedAt(Instant.now())
+                    .build();
+            }
+
+            // Generate human-readable description
+            String description = generateHumanReadableDescription(dsl.getRoot(), userId);
+            
+            // Estimate complexity
+            String complexity = estimateComplexity(dsl);
+            
+            // Check for performance warnings
+            String performanceWarning = null;
+            if (validation.getWarnings().stream().anyMatch(w -> "PERFORMANCE_CONCERN".equals(w.getCode()))) {
+                performanceWarning = "This criteria may impact query performance due to complexity";
+            }
+
+            return CriteriaPreview.builder()
+                .description(description)
+                .estimatedResultCount(null) // Could be implemented with actual database estimation
+                .complexity(complexity)
+                .performanceWarning(performanceWarning)
+                .sqlPreview(null) // Could include sanitized SQL preview
+                .generatedAt(Instant.now())
+                .build();
+
+        } catch (Exception e) {
+            log.error("Error generating criteria preview for user {}: {}", userId, e.getMessage(), e);
+            return CriteriaPreview.builder()
+                .description("Error generating preview")
+                .complexity("UNKNOWN")
+                .performanceWarning("Preview generation failed")
+                .generatedAt(Instant.now())
+                .build();
+        }
+    }
+
+    /**
+     * Gets all available operators with descriptions and compatibility information.
+     */
+    public List<OperatorInfo> getAllOperators() {
+        log.debug("Getting all available operators");
+        
+        List<OperatorInfo> operators = new ArrayList<>();
+        
+        // Create operator info for each supported operator
+        Set<String> allOperators = OPERATOR_COMPATIBILITY.values().stream()
+            .flatMap(Set::stream)
+            .collect(Collectors.toSet());
+        
+        for (String operator : allOperators) {
+            operators.add(createOperatorInfo(operator));
+        }
+        
+        // Sort by category and then by operator
+        operators.sort((a, b) -> {
+            int categoryCompare = a.getCategory().compareTo(b.getCategory());
+            return categoryCompare != 0 ? categoryCompare : a.getOperator().compareTo(b.getOperator());
+        });
+        
+        return operators;
+    }
+
+    /**
+     * Adds contextual suggestions for partial DSL.
+     */
+    private void addContextualSuggestions(Object partialDsl, Long userId, 
+                                        List<ValidationSuggestion> suggestions, 
+                                        List<String> completionHints) {
+        
+        // Load available fields and functions for suggestions
+        List<FieldMetaResp> userFields = fieldService.getFieldsForUser(userId);
+        List<FunctionMetaResp> userFunctions = functionService.getFunctionsForUser(userId);
+        
+        // Add field suggestions
+        if (!userFields.isEmpty()) {
+            suggestions.add(ValidationSuggestion.builder()
+                .type("FIELD")
+                .message("Available fields")
+                .suggestion("Use fields like: " + userFields.stream()
+                    .limit(3)
+                    .map(FieldMetaResp::getLabel)
+                    .collect(Collectors.joining(", ")))
+                .build());
+            completionHints.add("Add field condition");
+        }
+        
+        // Add function suggestions
+        if (!userFunctions.isEmpty()) {
+            suggestions.add(ValidationSuggestion.builder()
+                .type("FUNCTION")
+                .message("Available functions")
+                .suggestion("Use functions like: " + userFunctions.stream()
+                    .limit(3)
+                    .map(FunctionMetaResp::getLabel)
+                    .collect(Collectors.joining(", ")))
+                .build());
+            completionHints.add("Add function call");
+        }
+        
+        // Add operator suggestions
+        completionHints.add("Add AND/OR group");
+        completionHints.add("Add comparison condition");
+    }
+
+    /**
+     * Generates human-readable description of criteria.
+     */
+    private String generateHumanReadableDescription(Group group, Long userId) {
+        if (group == null) {
+            return "Empty criteria";
+        }
+        
+        List<String> childDescriptions = new ArrayList<>();
+        
+        if (group.getChildren() != null) {
+            for (Object child : group.getChildren()) {
+                if (child instanceof Condition) {
+                    childDescriptions.add(generateConditionDescription((Condition) child, userId));
+                } else if (child instanceof Group) {
+                    childDescriptions.add("(" + generateHumanReadableDescription((Group) child, userId) + ")");
+                }
+            }
+        }
+        
+        if (childDescriptions.isEmpty()) {
+            return "Empty group";
+        }
+        
+        String operator = group.getOperator();
+        if ("NOT".equals(operator)) {
+            return "NOT " + childDescriptions.get(0);
+        } else {
+            return String.join(" " + operator + " ", childDescriptions);
+        }
+    }
+
+    /**
+     * Generates human-readable description of a condition.
+     */
+    private String generateConditionDescription(Condition condition, Long userId) {
+        StringBuilder desc = new StringBuilder();
+        
+        // Left side
+        if (condition.getLeft() instanceof FieldRef) {
+            FieldRef fieldRef = (FieldRef) condition.getLeft();
+            FieldMetaResp field = fieldService.getFieldForUser(fieldRef.getField(), userId);
+            desc.append(field != null ? field.getLabel() : fieldRef.getField());
+        } else if (condition.getLeft() instanceof FunctionCall) {
+            FunctionCall funcCall = (FunctionCall) condition.getLeft();
+            FunctionMetaResp function = functionService.getFunctionForUser(funcCall.getName(), userId);
+            desc.append(function != null ? function.getLabel() : funcCall.getName()).append("()");
+        }
+        
+        // Operator
+        desc.append(" ").append(getOperatorLabel(condition.getOperator()));
+        
+        // Right side (if present)
+        if (condition.getRight() != null && requiresRightSide(condition.getOperator())) {
+            desc.append(" ");
+            if (condition.getRight() instanceof Literal) {
+                Literal literal = (Literal) condition.getRight();
+                desc.append(formatLiteralValue(literal));
+            } else {
+                desc.append("value");
+            }
+        }
+        
+        return desc.toString();
+    }
+
+    /**
+     * Estimates complexity of criteria.
+     */
+    private String estimateComplexity(CriteriaDSL dsl) {
+        int conditionCount = countConditions(dsl.getRoot());
+        int maxDepth = getMaxDepth(dsl.getRoot(), 0);
+        
+        if (conditionCount <= 3 && maxDepth <= 2) {
+            return "LOW";
+        } else if (conditionCount <= 10 && maxDepth <= 4) {
+            return "MEDIUM";
+        } else {
+            return "HIGH";
+        }
+    }
+
+    /**
+     * Creates OperatorInfo for a given operator.
+     */
+    private OperatorInfo createOperatorInfo(String operator) {
+        return OperatorInfo.builder()
+            .operator(operator)
+            .label(getOperatorLabel(operator))
+            .description(getOperatorDescription(operator))
+            .compatibleTypes(getOperatorCompatibleTypes(operator))
+            .requiresRightOperand(requiresRightOperand(operator))
+            .category(getOperatorCategory(operator))
+            .examples(getOperatorExamples(operator))
+            .build();
+    }
+
+    /**
+     * Gets operator label for display.
+     */
+    private String getOperatorLabel(String operator) {
+        return switch (operator) {
+            case "=" -> "equals";
+            case "!=" -> "not equals";
+            case "<" -> "less than";
+            case "<=" -> "less than or equal";
+            case ">" -> "greater than";
+            case ">=" -> "greater than or equal";
+            case "LIKE" -> "contains";
+            case "NOT_LIKE" -> "does not contain";
+            case "IN" -> "is in";
+            case "NOT_IN" -> "is not in";
+            case "BETWEEN" -> "is between";
+            case "NOT_BETWEEN" -> "is not between";
+            case "IS_NULL" -> "is empty";
+            case "IS_NOT_NULL" -> "is not empty";
+            default -> operator.toLowerCase();
+        };
+    }
+
+    /**
+     * Gets operator description.
+     */
+    private String getOperatorDescription(String operator) {
+        return switch (operator) {
+            case "=" -> "Tests for equality between two values";
+            case "!=" -> "Tests for inequality between two values";
+            case "<" -> "Tests if left value is less than right value";
+            case "<=" -> "Tests if left value is less than or equal to right value";
+            case ">" -> "Tests if left value is greater than right value";
+            case ">=" -> "Tests if left value is greater than or equal to right value";
+            case "LIKE" -> "Tests if text contains the specified pattern";
+            case "NOT_LIKE" -> "Tests if text does not contain the specified pattern";
+            case "IN" -> "Tests if value is in the specified list";
+            case "NOT_IN" -> "Tests if value is not in the specified list";
+            case "BETWEEN" -> "Tests if value is between two specified values";
+            case "NOT_BETWEEN" -> "Tests if value is not between two specified values";
+            case "IS_NULL" -> "Tests if value is null or empty";
+            case "IS_NOT_NULL" -> "Tests if value is not null or empty";
+            default -> "Operator: " + operator;
+        };
+    }
+
+    /**
+     * Gets compatible types for operator.
+     */
+    private List<String> getOperatorCompatibleTypes(String operator) {
+        return OPERATOR_COMPATIBILITY.entrySet().stream()
+            .filter(entry -> entry.getValue().contains(operator))
+            .map(Map.Entry::getKey)
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * Gets operator category.
+     */
+    private String getOperatorCategory(String operator) {
+        return switch (operator) {
+            case "=", "!=", "<", "<=", ">", ">=" -> "COMPARISON";
+            case "LIKE", "NOT_LIKE" -> "PATTERN";
+            case "IN", "NOT_IN" -> "LIST";
+            case "BETWEEN", "NOT_BETWEEN" -> "RANGE";
+            case "IS_NULL", "IS_NOT_NULL" -> "NULL_CHECK";
+            default -> "OTHER";
+        };
+    }
+
+    /**
+     * Gets operator examples.
+     */
+    private List<String> getOperatorExamples(String operator) {
+        return switch (operator) {
+            case "=" -> List.of("price = 100", "symbol = 'AAPL'");
+            case "!=" -> List.of("price != 0", "sector != 'Technology'");
+            case "<" -> List.of("price < 50", "volume < 1000000");
+            case ">" -> List.of("market_cap > 1000000000", "pe_ratio > 15");
+            case "LIKE" -> List.of("company_name LIKE '%Apple%'", "description LIKE '%tech%'");
+            case "IN" -> List.of("sector IN ('Technology', 'Healthcare')", "rating IN ('A', 'B')");
+            case "BETWEEN" -> List.of("price BETWEEN 10 AND 100", "volume BETWEEN 100000 AND 1000000");
+            case "IS_NULL" -> List.of("dividend_yield IS NULL", "earnings_date IS NULL");
+            default -> List.of();
+        };
+    }
+
+    /**
+     * Formats literal value for display.
+     */
+    private String formatLiteralValue(Literal literal) {
+        if (literal.getValue() == null) {
+            return "null";
+        }
+        
+        if (literal.getValue() instanceof String) {
+            return "'" + literal.getValue() + "'";
+        } else if (literal.getValue() instanceof List) {
+            List<?> values = (List<?>) literal.getValue();
+            return "[" + values.stream()
+                .map(v -> v instanceof String ? "'" + v + "'" : String.valueOf(v))
+                .collect(Collectors.joining(", ")) + "]";
+        } else {
+            return String.valueOf(literal.getValue());
+        }
+    }
+
+    /**
      * Validates literal type against parameter expectation.
      */
     private void validateLiteralType(Literal literal, String expectedType, 

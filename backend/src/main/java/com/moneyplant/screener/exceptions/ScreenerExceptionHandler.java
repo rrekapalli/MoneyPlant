@@ -139,6 +139,23 @@ public class ScreenerExceptionHandler {
     }
 
     /**
+     * Handles SQL generation errors.
+     */
+    @ExceptionHandler(SqlGenerationException.class)
+    public ResponseEntity<ProblemDetail> handleSqlGeneration(SqlGenerationException ex, WebRequest request) {
+        log.warn("SQL generation error: {}", ex.getMessage());
+        
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST, ex.getMessage());
+        problemDetail.setType(URI.create("https://api.moneyplant.com/problems/sql-generation-error"));
+        problemDetail.setTitle("SQL Generation Error");
+        problemDetail.setProperty("timestamp", OffsetDateTime.now());
+        problemDetail.setProperty("path", request.getDescription(false).replace("uri=", ""));
+
+        return ResponseEntity.badRequest().body(problemDetail);
+    }
+
+    /**
      * Handles illegal state errors.
      */
     @ExceptionHandler(IllegalStateException.class)
