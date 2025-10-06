@@ -8,14 +8,14 @@
   - Verify application compiles without query-builder dependencies
   - _Requirements: 1.1, 1.2, 1.3, 1.4_
 
-- [ ] 2. Set up static field configuration for MVP
-  - [ ] 2.1 Create static field mapping from INDICATOR_FIELDS
+- [x] 2. Set up static field configuration for MVP
+  - [x] 2.1 Create static field mapping from INDICATOR_FIELDS
     - Add method to convert INDICATOR_FIELDS to FieldMeta format
     - Map field types using FIELD_TYPE_MAPPING constants
     - Set up basic operator configuration for different field types
     - Initialize staticFields property in component
     - _Requirements: 4.1, 4.2, 4.3_
-  - [ ] 2.2 Configure basic criteria builder settings
+  - [x] 2.2 Configure basic criteria builder settings
     - Set up criteriaConfig with MVP settings (no advanced functions, no SQL preview)
     - Configure allowGrouping: true and maxDepth: 3 for basic grouping
     - Set compactMode: false for better visibility

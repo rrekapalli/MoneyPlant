@@ -15,7 +15,29 @@ import { ScreenerStateService } from '../../../services/state/screener.state';
 import { ScreenerResp, ScreenerCreateReq, ScreenerCriteria } from '../../../services/entities/screener.entities';
 import { INDICATOR_FIELDS } from '../../../services/entities/indicators.entities';
 import { CriteriaBuilderModule } from 'criteria-builder';
-import { CriteriaDSL, BuilderConfig, FieldMeta } from 'criteria-builder';
+import { CriteriaDSL, BuilderConfig, FieldMeta, FieldType, Operator } from 'criteria-builder';
+
+// Field type mapping constants
+const FIELD_TYPE_MAPPING: Record<string, FieldType> = {
+  'number': 'number',
+  'string': 'string',
+  'date': 'date',
+  'boolean': 'boolean',
+  'percent': 'percent',
+  'currency': 'currency'
+};
+
+// Basic operator configuration for different field types
+const BASIC_OPERATORS: Record<FieldType, Operator[]> = {
+  'number': ['=', '!=', '>', '>=', '<', '<=', 'BETWEEN', 'NOT BETWEEN'],
+  'integer': ['=', '!=', '>', '>=', '<', '<=', 'BETWEEN', 'NOT BETWEEN'],
+  'percent': ['=', '!=', '>', '>=', '<', '<=', 'BETWEEN', 'NOT BETWEEN'],
+  'currency': ['=', '!=', '>', '>=', '<', '<=', 'BETWEEN', 'NOT BETWEEN'],
+  'string': ['=', '!=', 'LIKE', 'NOT LIKE', 'IN', 'NOT IN'],
+  'date': ['=', '!=', '>', '>=', '<', '<=', 'BETWEEN', 'NOT BETWEEN'],
+  'boolean': ['=', '!='],
+  'enum': ['=', '!=', 'IN', 'NOT IN']
+};
 
 @Component({
   selector: 'app-screener-form',
@@ -66,13 +88,7 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
     this.onCriteriaChange(value);
   }
   
-  criteriaConfig: BuilderConfig = {
-    allowGrouping: true,
-    maxDepth: 3,
-    enableAdvancedFunctions: false,
-    showSqlPreview: false,
-    compactMode: false
-  };
+  criteriaConfig: BuilderConfig = {};
   
   // Static field configuration
   staticFields: FieldMeta[] = [];
@@ -86,6 +102,7 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.initializeSubscriptions();
+    this.initializeCriteriaConfig();
     this.loadStaticFields();
     this.loadScreener();
   }
@@ -123,6 +140,31 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
     this.screenerState.error$
       .pipe(takeUntil(this.destroy$))
       .subscribe(error => this.error = error);
+  }
+
+  /**
+   * Initialize criteria builder configuration with MVP settings
+   */
+  private initializeCriteriaConfig() {
+    this.criteriaConfig = {
+      // Basic grouping configuration for MVP
+      allowGrouping: true,
+      maxDepth: 3,
+      
+      // Disable advanced features for MVP
+      enableAdvancedFunctions: false,
+      showSqlPreview: false,
+      
+      // UI settings for better visibility
+      compactMode: false,
+      
+      // Additional MVP settings
+      enablePartialValidation: true,
+      autoSave: false,
+      debounceMs: 300,
+      locale: 'en',
+      theme: 'light'
+    };
   }
 
   private loadScreener() {
@@ -214,26 +256,87 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
 
   private loadStaticFields() {
     // Convert INDICATOR_FIELDS to FieldMeta format
-    this.staticFields = INDICATOR_FIELDS.map(field => ({
+    this.staticFields = INDICATOR_FIELDS.map(field => this.convertIndicatorFieldToFieldMeta(field));
+  }
+
+  /**
+   * Convert an IndicatorField to FieldMeta format for criteria builder
+   */
+  private convertIndicatorFieldToFieldMeta(field: any): FieldMeta {
+    const dataType = this.mapFieldType(field.type);
+    
+    return {
       id: field.value,
       label: field.name,
       dbColumn: field.value,
-      dataType: this.mapFieldType(field.type),
+      dataType: dataType,
+      allowedOps: this.getBasicOperatorsForType(dataType),
       category: field.category,
-      description: field.description
-    }));
+      description: field.description,
+      validation: this.createValidationConfig(field),
+      nullable: true, // Allow null values for technical indicators
+      example: this.generateExampleValue(dataType, field)
+    };
   }
 
-  private mapFieldType(type: string): any {
-    const typeMapping: Record<string, string> = {
-      'number': 'number',
-      'string': 'string',
-      'date': 'date',
-      'boolean': 'boolean',
-      'percent': 'number',
-      'currency': 'number'
-    };
-    return typeMapping[type] || 'string';
+  /**
+   * Map field type from INDICATOR_FIELDS to FieldType
+   */
+  private mapFieldType(type: string): FieldType {
+    return FIELD_TYPE_MAPPING[type] || 'string';
+  }
+
+  /**
+   * Get basic operators for a specific field type
+   */
+  private getBasicOperatorsForType(fieldType: FieldType): Operator[] {
+    return BASIC_OPERATORS[fieldType] || ['=', '!='];
+  }
+
+  /**
+   * Create validation configuration for a field
+   */
+  private createValidationConfig(field: any): FieldMeta['validation'] {
+    const validation: FieldMeta['validation'] = {};
+    
+    if (field.min !== undefined) {
+      validation.min = field.min;
+    }
+    
+    if (field.max !== undefined) {
+      validation.max = field.max;
+    }
+    
+    // Add specific validation for certain field types
+    if (field.type === 'number' || field.type === 'percent' || field.type === 'currency') {
+      validation.required = false; // Technical indicators can be null
+    }
+    
+    return Object.keys(validation).length > 0 ? validation : undefined;
+  }
+
+  /**
+   * Generate example value for field documentation
+   */
+  private generateExampleValue(dataType: FieldType, field: any): string {
+    switch (dataType) {
+      case 'number':
+      case 'integer':
+        if (field.value.includes('rsi')) return '70.5';
+        if (field.value.includes('sma') || field.value.includes('ema')) return '150.25';
+        if (field.value.includes('volume')) return '1000000';
+        return '100.0';
+      case 'percent':
+        return '15.5';
+      case 'currency':
+        return '50.25';
+      case 'boolean':
+        return 'true';
+      case 'date':
+        return '2024-01-15';
+      default:
+        return 'example';
+    }
   }
 
   // Criteria Builder Methods
