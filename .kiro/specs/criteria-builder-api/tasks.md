@@ -149,15 +149,14 @@
     - Test visual interface support endpoints with different field and function types
     - _Requirements: 12.2_
 
-- [ ] 9. Extend existing screener controllers for criteria integration
-  - [ ] 9.1 Extend ScreenerVersionController to support criteria DSL
+- [x] 9. Extend existing screener controllers for criteria integration
+  - [x] 9.1 Extend ScreenerVersionController to support criteria DSL
     - Modify existing POST /api/screeners/{id}/versions endpoint to accept criteria DSL in dsl_json field
     - Add automatic validation and SQL generation when DSL is provided
     - Integrate criteria validation errors with existing screener error handling
     - Ensure backward compatibility with existing screener version creation
     - _Requirements: 9.6, 9.7, 9.8_
-
-  - [ ] 9.2 Extend ScreenerRunController for criteria-based execution
+  - [x] 9.2 Extend ScreenerRunController for criteria-based execution
     - Modify existing POST /api/screeners/{id}/runs endpoint to support criteria-based screener versions
     - Add criteria DSL re-validation before run execution
     - Integrate with existing screener run monitoring and result handling

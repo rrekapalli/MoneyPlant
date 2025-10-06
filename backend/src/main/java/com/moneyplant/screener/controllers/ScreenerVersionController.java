@@ -1,7 +1,11 @@
 package com.moneyplant.screener.controllers;
 
-import com.moneyplant.screener.dtos.ScreenerVersionCreateReq;
-import com.moneyplant.screener.dtos.ScreenerVersionResp;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.moneyplant.screener.dtos.*;
+import com.moneyplant.screener.exceptions.CriteriaValidationException;
+import com.moneyplant.screener.services.CriteriaSqlService;
+import com.moneyplant.screener.services.CriteriaValidationService;
+import com.moneyplant.screener.services.CurrentUserService;
 import com.moneyplant.screener.services.ScreenerVersionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -28,15 +32,19 @@ import java.util.List;
 public class ScreenerVersionController {
 
     private final ScreenerVersionService screenerVersionService;
+    private final CriteriaValidationService criteriaValidationService;
+    private final CriteriaSqlService criteriaSqlService;
+    private final CurrentUserService currentUserService;
+    private final ObjectMapper objectMapper;
 
     /**
-     * Creates a new screener version.
+     * Creates a new screener version with criteria DSL support.
      */
     @PostMapping("/{id}/versions")
-    @Operation(summary = "Create screener version", description = "Creates a new version for a screener")
+    @Operation(summary = "Create screener version with criteria", description = "Creates a new version for a screener with optional criteria DSL validation and SQL generation")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Screener version created successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid request data"),
+            @ApiResponse(responseCode = "400", description = "Invalid request data or criteria validation failed"),
             @ApiResponse(responseCode = "403", description = "Access denied"),
             @ApiResponse(responseCode = "404", description = "Screener not found"),
             @ApiResponse(responseCode = "409", description = "Version number already exists"),
@@ -46,6 +54,42 @@ public class ScreenerVersionController {
             @Parameter(description = "Screener ID") @PathVariable Long id,
             @Valid @RequestBody ScreenerVersionCreateReq request) {
         log.info("Creating version for screener: {}", id);
+        
+        Long userId = currentUserService.getCurrentUserId();
+        
+        // If request contains criteria DSL, validate and generate SQL
+        if (request.getDslJson() != null) {
+            try {
+                log.info("Processing criteria DSL for screener version creation");
+                
+                // Convert dslJson to CriteriaDSL object
+                CriteriaDSL dsl = objectMapper.convertValue(request.getDslJson(), CriteriaDSL.class);
+                
+                // Validate the DSL
+                ValidationResult validation = criteriaValidationService.validateDSL(dsl, userId);
+                if (!validation.isValid()) {
+                    log.warn("Criteria DSL validation failed for user {}: {}", userId, validation.getErrors());
+                    throw new CriteriaValidationException("Invalid criteria DSL", validation.getErrors());
+                }
+                
+                // Generate SQL from validated DSL
+                SqlGenerationResult sqlResult = criteriaSqlService.generateSql(dsl, userId);
+                
+                // Set the generated SQL and parameters in the request
+                request.setCompiledSql(sqlResult.getSql());
+                request.setParamsSchemaJson(sqlResult.getParameters());
+                
+                log.info("Successfully validated criteria DSL and generated SQL for user {}", userId);
+                
+            } catch (CriteriaValidationException e) {
+                // Re-throw criteria validation exceptions as-is
+                throw e;
+            } catch (Exception e) {
+                log.error("Error processing criteria DSL for user {}: {}", userId, e.getMessage(), e);
+                throw new CriteriaValidationException("Failed to process criteria DSL: " + e.getMessage());
+            }
+        }
+        
         ScreenerVersionResp response = screenerVersionService.createVersion(id, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -86,13 +130,13 @@ public class ScreenerVersionController {
     }
 
     /**
-     * Updates a screener version.
+     * Updates a screener version with criteria DSL support.
      */
     @PatchMapping("/versions/{versionId}")
-    @Operation(summary = "Update screener version", description = "Updates a screener version (owner only)")
+    @Operation(summary = "Update screener version with criteria", description = "Updates a screener version with optional criteria DSL validation and SQL generation (owner only)")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Version updated successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid request data"),
+            @ApiResponse(responseCode = "400", description = "Invalid request data or criteria validation failed"),
             @ApiResponse(responseCode = "403", description = "Access denied"),
             @ApiResponse(responseCode = "404", description = "Version not found"),
             @ApiResponse(responseCode = "401", description = "Unauthorized")
@@ -101,6 +145,42 @@ public class ScreenerVersionController {
             @Parameter(description = "Version ID") @PathVariable Long versionId,
             @Valid @RequestBody ScreenerVersionCreateReq request) {
         log.info("Updating screener version: {}", versionId);
+        
+        Long userId = currentUserService.getCurrentUserId();
+        
+        // If request contains criteria DSL, validate and generate SQL
+        if (request.getDslJson() != null) {
+            try {
+                log.info("Processing criteria DSL for screener version update");
+                
+                // Convert dslJson to CriteriaDSL object
+                CriteriaDSL dsl = objectMapper.convertValue(request.getDslJson(), CriteriaDSL.class);
+                
+                // Validate the DSL
+                ValidationResult validation = criteriaValidationService.validateDSL(dsl, userId);
+                if (!validation.isValid()) {
+                    log.warn("Criteria DSL validation failed for user {}: {}", userId, validation.getErrors());
+                    throw new CriteriaValidationException("Invalid criteria DSL", validation.getErrors());
+                }
+                
+                // Generate SQL from validated DSL
+                SqlGenerationResult sqlResult = criteriaSqlService.generateSql(dsl, userId);
+                
+                // Set the generated SQL and parameters in the request
+                request.setCompiledSql(sqlResult.getSql());
+                request.setParamsSchemaJson(sqlResult.getParameters());
+                
+                log.info("Successfully validated criteria DSL and generated SQL for user {}", userId);
+                
+            } catch (CriteriaValidationException e) {
+                // Re-throw criteria validation exceptions as-is
+                throw e;
+            } catch (Exception e) {
+                log.error("Error processing criteria DSL for user {}: {}", userId, e.getMessage(), e);
+                throw new CriteriaValidationException("Failed to process criteria DSL: " + e.getMessage());
+            }
+        }
+        
         ScreenerVersionResp response = screenerVersionService.updateVersion(versionId, request);
         return ResponseEntity.ok(response);
     }
