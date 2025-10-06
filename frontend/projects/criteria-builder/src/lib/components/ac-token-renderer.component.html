@@ -1,0 +1,71 @@
+<span 
+  class="token-container"
+  [class]="getTokenClasses()"
+  [style]="getTokenStyles()"
+  [attr.tabindex]="isDisabled ? -1 : 0"
+  [attr.role]="'button'"
+  [attr.aria-label]="getAriaLabel()"
+  [attr.aria-pressed]="isSelected"
+  [attr.aria-disabled]="isDisabled"
+  [attr.title]="token.tooltip"
+  (click)="onTokenClick()"
+  (dblclick)="onTokenDoubleClick()"
+  (contextmenu)="onTokenRightClick($event)"
+  (keydown)="onTokenKeyDown($event)"
+  (mouseenter)="onTokenHover()"
+  (mouseleave)="onTokenHoverLeave()"
+  (focus)="onTokenFocus()"
+  (blur)="onTokenBlur()">
+  
+  <!-- Token Icon -->
+  @if (token.icon || token.type) {
+    <i 
+      class="token-icon" 
+      [class]="getIconClass()" 
+      aria-hidden="true">
+    </i>
+  }
+  
+  <!-- Token Text -->
+  <span class="token-text">{{ getDisplayText() }}</span>
+  
+  <!-- Dropdown Indicator -->
+  @if (shouldShowDropdownIndicator()) {
+    <i 
+      class="token-dropdown-indicator pi pi-chevron-down" 
+      aria-hidden="true">
+    </i>
+  }
+  
+  <!-- Dialog Indicator -->
+  @if (shouldShowDialogIndicator()) {
+    <i 
+      class="token-dialog-indicator pi pi-external-link" 
+      aria-hidden="true">
+    </i>
+  }
+  
+  <!-- Error Indicator -->
+  @if (shouldShowErrorIndicator()) {
+    <i 
+      class="token-error-indicator pi pi-exclamation-triangle" 
+      [attr.title]="token.errorMessage"
+      aria-hidden="true">
+    </i>
+  }
+  
+  <!-- Delete Button -->
+  @if (shouldShowDeleteButton()) {
+    <span 
+      class="token-delete" 
+      [attr.aria-label]="'Delete ' + token.type + ' token'"
+      [attr.title]="'Delete this ' + token.type"
+      role="button"
+      tabindex="0"
+      (click)="onDeleteClick($event)"
+      (keydown.enter)="onDeleteClick($event)"
+      (keydown.space)="onDeleteClick($event)">
+      <i class="pi pi-times" aria-hidden="true"></i>
+    </span>
+  }
+</span>

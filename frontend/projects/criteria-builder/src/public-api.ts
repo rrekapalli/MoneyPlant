@@ -9,6 +9,9 @@ export * from './lib/criteria-builder.module';
 // Main criteria builder component
 export * from './lib/components/ac-criteria-builder.component';
 
+// Token renderer component
+export * from './lib/components/ac-token-renderer.component';
+
 // Services
 export * from './lib/criteria-builder.service';
 export * from './lib/services';

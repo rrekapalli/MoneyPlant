@@ -1,0 +1,289 @@
+/**
+ * Token Renderer Component Styles
+ * Implements visual styling system for different token types with interaction states
+ */
+
+.token-container {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: 1px solid;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.2;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s ease-in-out;
+  position: relative;
+  white-space: nowrap;
+  min-height: 24px;
+  box-sizing: border-box;
+
+  // Focus outline for accessibility
+  &:focus {
+    outline: 2px solid #2196f3;
+    outline-offset: 2px;
+  }
+
+  // Hover effects
+  &:hover:not(.token-disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  // Active state
+  &:active:not(.token-disabled) {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  }
+
+  // Disabled state
+  &.token-disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+    
+    &:hover {
+      transform: none;
+      box-shadow: none;
+    }
+  }
+
+  // Selected state
+  &.token-selected {
+    box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.3);
+    transform: translateY(-1px);
+  }
+
+  // Error state
+  &.token-error {
+    animation: shake 0.3s ease-in-out;
+    
+    .token-text {
+      text-decoration: underline wavy;
+    }
+  }
+
+  // Focused state
+  &.token-focused {
+    box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.5);
+  }
+
+  // Hovered state
+  &.token-hovered:not(.token-disabled) {
+    .token-delete {
+      opacity: 1;
+      visibility: visible;
+    }
+  }
+
+  // Editable indicator
+  &.token-editable {
+    cursor: text;
+    
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 80%;
+      height: 1px;
+      background: currentColor;
+      opacity: 0.3;
+    }
+  }
+
+  // Deletable indicator
+  &.token-deletable:hover {
+    padding-right: 24px; // Make room for delete button
+  }
+}
+
+// Token type specific styles
+.token-field {
+  // Blue theme - already handled by getTokenStyles()
+}
+
+.token-operator {
+  // Gray theme - already handled by getTokenStyles()
+}
+
+.token-value {
+  // Green theme - already handled by getTokenStyles()
+}
+
+.token-function {
+  // Purple theme - already handled by getTokenStyles()
+}
+
+.token-group {
+  // Orange theme - already handled by getTokenStyles()
+}
+
+.token-logic {
+  // Pink theme - already handled by getTokenStyles()
+}
+
+.token-parenthesis {
+  // Purple theme - already handled by getTokenStyles()
+  font-weight: bold;
+  font-size: 14px;
+}
+
+// Token elements
+.token-icon {
+  font-size: 10px;
+  opacity: 0.8;
+  flex-shrink: 0;
+}
+
+.token-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: inherit;
+}
+
+.token-dropdown-indicator,
+.token-dialog-indicator {
+  font-size: 8px;
+  opacity: 0.6;
+  flex-shrink: 0;
+  margin-left: 2px;
+}
+
+.token-error-indicator {
+  font-size: 10px;
+  color: #f44336;
+  flex-shrink: 0;
+  animation: pulse 1s infinite;
+}
+
+.token-delete {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 16px;
+  height: 16px;
+  background: #f44336;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s ease-in-out;
+  font-size: 8px;
+  z-index: 1;
+
+  &:hover {
+    background: #d32f2f;
+    transform: scale(1.1);
+  }
+
+  &:focus {
+    outline: 2px solid #2196f3;
+    outline-offset: 1px;
+    opacity: 1;
+    visibility: visible;
+  }
+
+  i {
+    font-size: inherit;
+  }
+}
+
+// Animations
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+// High contrast mode support
+@media (prefers-contrast: high) {
+  .token-container {
+    border-width: 2px;
+    
+    &:focus {
+      outline-width: 3px;
+    }
+    
+    &.token-selected {
+      box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.5);
+    }
+  }
+}
+
+// Reduced motion support
+@media (prefers-reduced-motion: reduce) {
+  .token-container {
+    transition: none;
+    
+    &:hover:not(.token-disabled) {
+      transform: none;
+    }
+    
+    &.token-selected {
+      transform: none;
+    }
+  }
+  
+  .token-error-indicator {
+    animation: none;
+  }
+  
+  .token-error {
+    animation: none;
+  }
+}
+
+// Dark theme support
+@media (prefers-color-scheme: dark) {
+  .token-container {
+    &:focus {
+      outline-color: #64b5f6;
+    }
+    
+    &.token-selected {
+      box-shadow: 0 0 0 2px rgba(100, 181, 246, 0.3);
+    }
+    
+    &.token-focused {
+      box-shadow: 0 0 0 2px rgba(100, 181, 246, 0.5);
+    }
+  }
+  
+  .token-delete {
+    &:focus {
+      outline-color: #64b5f6;
+    }
+  }
+}
+
+// Print styles
+@media print {
+  .token-container {
+    border: 1px solid #000 !important;
+    background: white !important;
+    color: black !important;
+    box-shadow: none !important;
+    transform: none !important;
+  }
+  
+  .token-delete,
+  .token-dropdown-indicator,
+  .token-dialog-indicator {
+    display: none !important;
+  }
+}

@@ -15,6 +15,7 @@ import { TooltipModule } from 'primeng/tooltip';
 
 import { CriteriaBuilderComponent } from './criteria-builder';
 import { AcCriteriaBuilderComponent } from './components/ac-criteria-builder.component';
+import { AcTokenRendererComponent } from './components/ac-token-renderer.component';
 import { CriteriaBuilderService } from './criteria-builder.service';
 
 // Placeholder components for child components (will be implemented in later tasks)
@@ -43,7 +44,8 @@ import {
     DialogModule,
     InputTextModule,
     TooltipModule,
-    CriteriaBuilderComponent // Import standalone component
+    CriteriaBuilderComponent, // Import standalone component
+    AcTokenRendererComponent // Import standalone component
   ],
   declarations: [
     AcCriteriaBuilderComponent,
@@ -54,7 +56,8 @@ import {
   ],
   exports: [
     CriteriaBuilderComponent, // Export imported standalone component
-    AcCriteriaBuilderComponent
+    AcCriteriaBuilderComponent,
+    AcTokenRendererComponent
   ],
   providers: [
     CriteriaBuilderService
