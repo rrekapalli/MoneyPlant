@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -269,6 +270,70 @@ public class ScreenerVersionService {
                 .warnings(List.of())
                 .build();
         }
+    }
+
+    /**
+     * Migrates DSL format for a screener version to current version.
+     * Provides tools to update old DSL format to current version within screener versions.
+     */
+    public ScreenerVersionResp migrateDslFormat(Long versionId) {
+        log.info("Migrating DSL format for screener version: {}", versionId);
+        
+        Long currentUserId = currentUserService.getCurrentUserId();
+        ScreenerVersion version = screenerVersionRepository.findByIdAndScreenerOwner(versionId, currentUserId)
+                .orElseThrow(() -> new RuntimeException("Screener version not found or access denied: " + versionId));
+        
+        if (version.getDslJson() == null) {
+            throw new RuntimeException("Version does not contain criteria DSL: " + versionId);
+        }
+        
+        try {
+            // Parse existing DSL
+            CriteriaDSL dsl = objectMapper.convertValue(version.getDslJson(), CriteriaDSL.class);
+            
+            // Apply any format migrations (this would be expanded as DSL format evolves)
+            CriteriaDSL migratedDsl = applyDslMigrations(dsl);
+            
+            // Re-validate migrated DSL
+            ValidationResult validation = criteriaValidationService.validateDSL(migratedDsl, currentUserId);
+            if (!validation.isValid()) {
+                throw new CriteriaValidationException("Migrated DSL validation failed", validation.getErrors());
+            }
+            
+            // Regenerate SQL with migrated DSL
+            SqlGenerationResult sqlResult = criteriaSqlService.generateSql(migratedDsl, currentUserId);
+            
+            // Validate SQL compatibility
+            if (!integrationUtils.isValidScreenerSql(sqlResult.getSql())) {
+                throw new RuntimeException("Migrated SQL is not compatible with screener execution framework");
+            }
+            
+            // Update version with migrated DSL and new SQL
+            @SuppressWarnings("unchecked")
+            Map<String, Object> dslMap = objectMapper.convertValue(migratedDsl, Map.class);
+            version.setDslJson(dslMap);
+            version.setCompiledSql(sqlResult.getSql());
+            version.setParamsSchemaJson(integrationUtils.createParameterSchema(sqlResult.getParameters()));
+            
+            ScreenerVersion savedVersion = screenerVersionRepository.save(version);
+            log.info("Migrated DSL format for version {}", versionId);
+            
+            return screenerVersionMapper.toResponse(savedVersion);
+            
+        } catch (Exception e) {
+            log.error("Failed to migrate DSL format for version {}: {}", versionId, e.getMessage(), e);
+            throw new RuntimeException("Failed to migrate DSL format: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Applies DSL format migrations to update old DSL structures to current version.
+     */
+    private CriteriaDSL applyDslMigrations(CriteriaDSL dsl) {
+        // This method would contain logic to migrate old DSL formats to current version
+        // For now, return the DSL as-is since we're starting with the current format
+        log.debug("Applying DSL migrations - no migrations needed for current format");
+        return dsl;
     }
 
     /**

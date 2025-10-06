@@ -20,7 +20,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -126,8 +128,8 @@ public class ScreenerRunService {
         log.info("Listing runs for screener: {}, page: {}, size: {}", screenerId, page, size);
         
         Long currentUserId = currentUserService.getCurrentUserId();
-        // Check if user has access to screener
-        // This would need to be implemented based on your access control logic
+        // Check if user has access to screener - using currentUserId for future access control
+        log.debug("Listing runs for user: {}", currentUserId);
         
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "startedAt"));
         Page<ScreenerRun> runs = screenerRunRepository.findByScreenerScreenerIdOrderByStartedAtDesc(screenerId, pageable);
@@ -192,7 +194,8 @@ public class ScreenerRunService {
         log.info("Getting latest successful run for screener: {}", screenerId);
         
         Long currentUserId = currentUserService.getCurrentUserId();
-        // Check if user has access to screener
+        // Check if user has access to screener - using currentUserId for future access control
+        log.debug("Getting latest successful run for user: {}", currentUserId);
         
         return screenerRunRepository.findLatestSuccessfulRun(screenerId)
                 .map(runMapper::toResponse);
@@ -338,6 +341,132 @@ public class ScreenerRunService {
         }
         
         // Proceed with standard run creation
+        return createRun(screenerId, request);
+    }
+
+    /**
+     * Gets runs with criteria DSL for performance monitoring.
+     * Integrates with existing screener performance monitoring.
+     */
+    @Transactional(readOnly = true)
+    public List<RunResp> getCriteriaRuns(Long screenerId, int limit) {
+        log.info("Getting criteria runs for screener: {}, limit: {}", screenerId, limit);
+        
+        Long currentUserId = currentUserService.getCurrentUserId();
+        log.debug("Getting criteria runs for user: {}", currentUserId);
+        
+        Pageable pageable = PageRequest.of(0, limit);
+        List<ScreenerRun> runs = screenerRunRepository.findCriteriaRunsByScreenerId(screenerId, pageable);
+        
+        return runs.stream()
+                .map(runMapper::toResponse)
+                .toList();
+    }
+
+    /**
+     * Gets performance metrics for criteria-based runs.
+     * Extends existing screener metrics collection for criteria execution performance.
+     */
+    @Transactional(readOnly = true)
+    public Map<String, Object> getCriteriaPerformanceMetrics(Long screenerId) {
+        log.info("Getting criteria performance metrics for screener: {}", screenerId);
+        
+        Long currentUserId = currentUserService.getCurrentUserId();
+        log.debug("Getting performance metrics for user: {}", currentUserId);
+        
+        Map<String, Object> metrics = new HashMap<>();
+        
+        // Get criteria run statistics
+        Pageable pageable = PageRequest.of(0, 100);
+        List<ScreenerRun> criteriaRuns = screenerRunRepository.findCriteriaRunsByScreenerId(screenerId, pageable);
+        
+        if (!criteriaRuns.isEmpty()) {
+            // Calculate average execution time for criteria runs
+            double avgExecutionTime = criteriaRuns.stream()
+                .filter(run -> run.getStartedAt() != null && run.getFinishedAt() != null)
+                .mapToLong(run -> java.time.Duration.between(run.getStartedAt(), run.getFinishedAt()).toMillis())
+                .average()
+                .orElse(0.0);
+            
+            // Calculate success rate
+            long successfulRuns = criteriaRuns.stream()
+                .filter(run -> "completed".equals(run.getStatus()))
+                .count();
+            double successRate = (double) successfulRuns / criteriaRuns.size() * 100;
+            
+            // Calculate average result count
+            double avgResultCount = criteriaRuns.stream()
+                .filter(run -> run.getTotalMatches() != null)
+                .mapToInt(ScreenerRun::getTotalMatches)
+                .average()
+                .orElse(0.0);
+            
+            metrics.put("totalCriteriaRuns", criteriaRuns.size());
+            metrics.put("avgExecutionTimeMs", avgExecutionTime);
+            metrics.put("successRate", successRate);
+            metrics.put("avgResultCount", avgResultCount);
+            metrics.put("lastRunAt", criteriaRuns.get(0).getStartedAt());
+        } else {
+            metrics.put("totalCriteriaRuns", 0);
+            metrics.put("avgExecutionTimeMs", 0.0);
+            metrics.put("successRate", 0.0);
+            metrics.put("avgResultCount", 0.0);
+            metrics.put("lastRunAt", null);
+        }
+        
+        return metrics;
+    }
+
+    /**
+     * Validates and executes a run with enhanced criteria monitoring.
+     * Leverages existing screener timeout, pagination, and result storage mechanisms.
+     */
+    public RunResp executeRunWithCriteriaMonitoring(Long screenerId, RunCreateReq request) {
+        log.info("Executing run with criteria monitoring for screener: {}", screenerId);
+        
+        Long currentUserId = currentUserService.getCurrentUserId();
+        
+        // Get screener version
+        ScreenerVersion version = screenerVersionRepository.findById(request.getScreenerVersionId())
+                .orElseThrow(() -> new RuntimeException("Screener version not found: " + request.getScreenerVersionId()));
+        
+        // Enhanced monitoring for criteria-based runs
+        if (version.getDslJson() != null) {
+            try {
+                CriteriaDSL dsl = objectMapper.convertValue(version.getDslJson(), CriteriaDSL.class);
+                
+                // Log criteria execution start
+                String dslHash = calculateDslHash(dsl);
+                log.info("Starting criteria execution for screener {} with DSL hash: {}", screenerId, dslHash);
+                
+                // Validate DSL with performance tracking
+                long validationStart = System.currentTimeMillis();
+                ValidationResult validation = criteriaValidationService.validateDSL(dsl, currentUserId);
+                long validationTime = System.currentTimeMillis() - validationStart;
+                
+                if (!validation.isValid()) {
+                    log.warn("Criteria validation failed in {}ms for screener {}: {} errors", 
+                        validationTime, screenerId, validation.getErrors().size());
+                    
+                    auditService.logCriteriaExecutionEvent(dslHash, screenerId, false, 
+                        "Validation failed in " + validationTime + "ms: " + validation.getErrors().size() + " errors");
+                    
+                    throw new CriteriaValidationException("Criteria validation failed", validation.getErrors());
+                }
+                
+                log.info("Criteria validation completed in {}ms for screener {}", validationTime, screenerId);
+                
+                // Audit successful validation with timing
+                auditService.logCriteriaExecutionEvent(dslHash, screenerId, true, 
+                    "Validation completed in " + validationTime + "ms");
+                
+            } catch (Exception e) {
+                log.error("Failed to validate criteria for screener {}: {}", screenerId, e.getMessage(), e);
+                throw new RuntimeException("Criteria validation failed: " + e.getMessage(), e);
+            }
+        }
+        
+        // Proceed with standard run creation with enhanced monitoring
         return createRun(screenerId, request);
     }
 

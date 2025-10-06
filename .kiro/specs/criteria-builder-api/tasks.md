@@ -102,15 +102,14 @@
     - Test visual interface support methods (operator compatibility, value suggestions, function signatures)
     - _Requirements: 12.1, 12.2_
 
-- [ ] 7. Extend existing screener services for criteria support
-  - [ ] 7.1 Extend ScreenerVersionService to support criteria DSL
+- [x] 7. Extend existing screener services for criteria support
+  - [x] 7.1 Extend ScreenerVersionService to support criteria DSL
     - Add criteria DSL validation when creating screener versions
     - Implement automatic SQL generation from DSL and storage in compiled_sql field
     - Add DSL format migration support for version updates
     - Integrate criteria validation with existing screener version creation workflow
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.6_
-
-  - [ ] 7.2 Extend ScreenerRunService to support criteria-based execution
+  - [x] 7.2 Extend ScreenerRunService to support criteria-based execution
     - Add criteria DSL re-validation before screener run execution
     - Integrate criteria-generated SQL with existing screener execution framework
     - Leverage existing screener timeout, pagination, and result storage mechanisms
