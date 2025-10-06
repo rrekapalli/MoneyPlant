@@ -1,3 +1,19 @@
+// Loading States
+.loading-functions, .loading-signature {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 3rem 1rem;
+  color: #6c757d;
+  font-size: 0.875rem;
+  
+  i {
+    font-size: 1.25rem;
+    color: #007bff;
+  }
+}
+
 // Function Selection Styles
 .function-selection {
   .function-search {
@@ -5,14 +21,37 @@
     border-bottom: 1px solid #e9ecef;
     background: #f8f9fa;
     
+    .search-wrapper {
+      position: relative;
+      
+      .search-icon {
+        position: absolute;
+        left: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #6c757d;
+        z-index: 1;
+      }
+    }
+    
     .search-input {
       width: 100%;
       padding: 0.5rem 0.75rem 0.5rem 2.5rem;
+      border: 1px solid #ced4da;
+      border-radius: 4px;
+      font-size: 0.875rem;
+      
+      &:focus {
+        outline: none;
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+      }
     }
     
-    .p-input-icon-left i {
-      left: 0.75rem;
+    .search-results-info {
+      margin-top: 0.5rem;
       color: #6c757d;
+      font-size: 0.75rem;
     }
   }
   
@@ -82,6 +121,29 @@
             padding: 0.25rem 0.5rem;
             border-radius: 12px;
             font-family: monospace;
+          }
+          
+          .param-count {
+            font-size: 0.7rem;
+            color: #6c757d;
+            background: #f8f9fa;
+            padding: 0.125rem 0.375rem;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+          }
+        }
+        
+        .function-category-tag {
+          margin-bottom: 0.5rem;
+          
+          .category-tag {
+            display: inline-block;
+            font-size: 0.7rem;
+            color: #495057;
+            background: #e9ecef;
+            padding: 0.125rem 0.5rem;
+            border-radius: 12px;
+            font-weight: 500;
           }
         }
         
@@ -196,10 +258,28 @@
       }
       
       .function-desc {
-        margin: 0;
+        margin: 0 0 0.5rem 0;
         color: #6c757d;
         font-size: 0.875rem;
         line-height: 1.4;
+      }
+      
+      .function-meta {
+        display: flex;
+        gap: 1rem;
+        font-size: 0.75rem;
+        
+        .return-type {
+          color: #495057;
+          background: #e9ecef;
+          padding: 0.25rem 0.5rem;
+          border-radius: 12px;
+          font-family: monospace;
+        }
+        
+        .category-info {
+          color: #6c757d;
+        }
       }
     }
   }
@@ -261,6 +341,16 @@
             color: #dc3545;
             font-weight: 700;
           }
+          
+          .param-order {
+            font-size: 0.7rem;
+            color: #6c757d;
+            background: #f8f9fa;
+            padding: 0.125rem 0.375rem;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+            font-weight: 400;
+          }
         }
         
         .nested-function-btn {
@@ -270,10 +360,43 @@
       }
       
       .param-description {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.5rem;
         font-size: 0.75rem;
         color: #6c757d;
         margin-bottom: 0.75rem;
         line-height: 1.4;
+        padding: 0.5rem;
+        background: #f8f9fa;
+        border-radius: 4px;
+        border-left: 3px solid #007bff;
+        
+        i {
+          color: #007bff;
+          margin-top: 0.125rem;
+          flex-shrink: 0;
+        }
+      }
+      
+      .param-validation-info {
+        margin-bottom: 0.75rem;
+        
+        .validation-rules {
+          display: flex;
+          align-items: center;
+          gap: 0.375rem;
+          color: #6c757d;
+          font-size: 0.7rem;
+          padding: 0.25rem 0.5rem;
+          background: #fff3cd;
+          border: 1px solid #ffeaa7;
+          border-radius: 4px;
+          
+          i {
+            color: #856404;
+          }
+        }
       }
       
       .param-input {
@@ -285,10 +408,20 @@
       }
       
       .param-error {
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
         color: #dc3545;
         font-size: 0.75rem;
-        display: block;
         margin-top: 0.25rem;
+        padding: 0.375rem 0.5rem;
+        background: #f8d7da;
+        border: 1px solid #f5c6cb;
+        border-radius: 4px;
+        
+        i {
+          flex-shrink: 0;
+        }
       }
     }
     
@@ -456,5 +589,423 @@
   }
   to {
     opacity: 1;
+  }
+}//
+ SQL Template Styles
+.sql-template-info {
+  padding: 0 1.5rem 1.5rem;
+  
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 0 1rem 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #495057;
+    
+    i {
+      color: #6f42c1;
+    }
+  }
+  
+  .sql-template {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    padding: 1rem;
+    
+    .sql-code {
+      display: block;
+      font-family: 'Courier New', monospace;
+      font-size: 0.875rem;
+      color: #495057;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+  }
+}
+
+// Enhanced button styles
+.back-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  
+  &:hover {
+    background: #5a6268;
+  }
+  
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 0.2rem rgba(108, 117, 125, 0.25);
+  }
+}
+
+.nested-function-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  background: #e3f2fd;
+  color: #1976d2;
+  border: 1px solid #bbdefb;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background: #bbdefb;
+    border-color: #90caf9;
+  }
+  
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 0.2rem rgba(25, 118, 210, 0.25);
+  }
+}
+
+.cancel-btn {
+  padding: 0.5rem 1rem;
+  background: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  
+  &:hover {
+    background: #5a6268;
+  }
+  
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 0.2rem rgba(108, 117, 125, 0.25);
+  }
+}
+
+.confirm-btn {
+  padding: 0.5rem 1rem;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  
+  &:hover:not(:disabled) {
+    background: #218838;
+  }
+  
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+  }
+  
+  &:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+}
+
+// Enhanced accessibility
+@media (prefers-reduced-motion: reduce) {
+  .function-configuration,
+  .function-selection {
+    animation: none;
+  }
+  
+  * {
+    transition: none !important;
+  }
+}
+
+// Focus management for keyboard navigation
+.function-item:focus,
+.parameter-item:focus-within {
+  outline: 2px solid #007bff;
+  outline-offset: 2px;
+}
+
+// Dark mode support
+@media (prefers-color-scheme: dark) {
+  .function-selection {
+    background: #212529;
+    color: #f8f9fa;
+    
+    .function-search {
+      background: #343a40;
+      border-color: #495057;
+      
+      .search-input {
+        background: #495057;
+        border-color: #6c757d;
+        color: #f8f9fa;
+        
+        &::placeholder {
+          color: #adb5bd;
+        }
+      }
+    }
+    
+    .function-categories .category-header {
+      background: #343a40;
+      color: #f8f9fa;
+    }
+    
+    .function-item {
+      border-color: #495057;
+      
+      &:hover {
+        background: #343a40;
+      }
+    }
+  }
+  
+  .function-configuration {
+    background: #212529;
+    color: #f8f9fa;
+    
+    .config-header {
+      background: #343a40;
+      border-color: #495057;
+    }
+    
+    .parameter-item {
+      background: #343a40;
+      border-color: #495057;
+    }
+  }
+}// Enh
+anced Validation Styles
+.param-validation-status {
+  margin-top: 0.5rem;
+  
+  .param-success {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    color: #28a745;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+    border-radius: 4px;
+    
+    i {
+      flex-shrink: 0;
+    }
+  }
+  
+  .param-warning {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    color: #856404;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 4px;
+    
+    i {
+      flex-shrink: 0;
+    }
+  }
+}
+
+// Enhanced Preview Styles
+.function-preview {
+  .validation-status {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-weight: 500;
+    
+    &.valid {
+      color: #28a745;
+      background: #d4edda;
+      border: 1px solid #c3e6cb;
+    }
+    
+    &.invalid {
+      color: #dc3545;
+      background: #f8d7da;
+      border: 1px solid #f5c6cb;
+    }
+    
+    i {
+      margin-right: 0.25rem;
+    }
+  }
+  
+  .validation-summary {
+    display: flex;
+    gap: 1rem;
+    margin-top: 0.75rem;
+    padding: 0.75rem;
+    background: #f8f9fa;
+    border-radius: 4px;
+    border-left: 3px solid #6c757d;
+    
+    .validation-errors {
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+      color: #dc3545;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+    
+    .validation-warnings {
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+      color: #856404;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+  }
+}
+
+// Function Output Format Styles
+.function-output-format {
+  padding: 0 1.5rem 1.5rem;
+  
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 0 1rem 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #495057;
+    
+    i {
+      color: #28a745;
+    }
+  }
+  
+  .output-format-content {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    padding: 1rem;
+    
+    .output-format-text {
+      font-family: 'Courier New', monospace;
+      font-size: 0.875rem;
+      color: #495057;
+      margin: 0;
+      white-space: pre-wrap;
+      line-height: 1.4;
+    }
+  }
+}
+
+// Enhanced Button Styles
+.confirm-btn {
+  .config-status {
+    font-size: 0.7rem;
+    opacity: 0.8;
+    margin-left: 0.5rem;
+  }
+}
+
+// Parameter validation indicators
+.parameter-item {
+  &.has-error {
+    border-color: #dc3545;
+    background: #fff5f5;
+  }
+  
+  &.has-warning {
+    border-color: #ffc107;
+    background: #fffbf0;
+  }
+  
+  &.is-valid {
+    border-color: #28a745;
+    background: #f8fff8;
+  }
+}
+
+// Real-time validation feedback
+.param-input {
+  input, select {
+    &.ng-invalid.ng-touched {
+      border-color: #dc3545;
+      box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+    }
+    
+    &.ng-valid.ng-touched {
+      border-color: #28a745;
+      box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+    }
+  }
+}
+
+// Loading states for validation
+.validating {
+  position: relative;
+  
+  &::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: 0.75rem;
+    transform: translateY(-50%);
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+}
+
+@keyframes spin {
+  0% { transform: translateY(-50%) rotate(0deg); }
+  100% { transform: translateY(-50%) rotate(360deg); }
+}
+
+// Accessibility improvements for validation states
+@media (prefers-reduced-motion: reduce) {
+  .validating::after {
+    animation: none;
+    border-top-color: #007bff;
+  }
+}
+
+// High contrast mode for validation
+@media (prefers-contrast: high) {
+  .param-error {
+    background: #000;
+    color: #fff;
+    border-color: #fff;
+  }
+  
+  .param-success {
+    background: #000;
+    color: #0f0;
+    border-color: #0f0;
+  }
+  
+  .param-warning {
+    background: #000;
+    color: #ff0;
+    border-color: #ff0;
   }
 }

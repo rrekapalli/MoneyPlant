@@ -1,20 +1,31 @@
 <!-- Function Selection Step -->
 <div class="function-selection" *ngIf="currentStep === 'select'">
+  <!-- Loading State -->
+  <div class="loading-functions" *ngIf="isLoadingFunctions">
+    <i class="pi pi-spin pi-spinner"></i>
+    <span>Loading functions from database...</span>
+  </div>
+
   <!-- Search -->
-  <div class="function-search">
+  <div class="function-search" *ngIf="!isLoadingFunctions">
     <div class="search-wrapper">
       <i class="search-icon">🔍</i>
       <input 
         type="text" 
         [(ngModel)]="searchTerm"
         (input)="onSearchChange($event)"
-        placeholder="Search functions..."
+        placeholder="Search functions by name, description, or category..."
         class="search-input">
+    </div>
+    
+    <!-- Search Results Count -->
+    <div class="search-results-info" *ngIf="searchTerm">
+      <small>{{ filteredFunctions.length }} function(s) found</small>
     </div>
   </div>
   
   <!-- Function Categories -->
-  <div class="function-categories">
+  <div class="function-categories" *ngIf="!isLoadingFunctions">
     <div class="function-category" *ngFor="let category of getCategories()">
       <div class="category-header">
         <span class="category-name">{{ category }}</span>
@@ -31,21 +42,15 @@
             <i class="function-icon">⚡</i>
             <span class="function-name">{{ func.label }}</span>
             <span class="function-return-type">→ {{ func.returnType }}</span>
+            <span class="param-count" *ngIf="func.paramCount > 0">({{ func.paramCount }} params)</span>
           </div>
           
           <div class="function-description" *ngIf="func.description">
             {{ func.description }}
           </div>
           
-          <div class="function-params" *ngIf="func.params.length > 0">
-            <span class="param-label">Parameters:</span>
-            <span class="param-list">
-              <span class="param-item" 
-                    *ngFor="let param of func.params; let last = last"
-                    [class.required]="param.required">
-                {{ param.name }}: {{ param.type }}{{ param.required ? '*' : '' }}{{ !last ? ', ' : '' }}
-              </span>
-            </span>
+          <div class="function-category-tag">
+            <span class="category-tag">{{ func.category }}</span>
           </div>
           
           <div class="function-examples" *ngIf="func.examples && func.examples.length > 0">
@@ -71,8 +76,14 @@
 </div>
 
 <!-- Function Configuration Step -->
-<div class="function-configuration" *ngIf="currentStep === 'configure' && selectedFunctionMeta">
-  <form [formGroup]="functionForm">
+<div class="function-configuration" *ngIf="currentStep === 'configure'">
+  <!-- Loading Signature -->
+  <div class="loading-signature" *ngIf="isLoadingSignature">
+    <i class="pi pi-spin pi-spinner"></i>
+    <span>Loading function parameters from database...</span>
+  </div>
+
+  <form [formGroup]="functionForm" *ngIf="!isLoadingSignature && (selectedFunctionMeta || selectedFunctionSignature)">
     <!-- Function Header -->
     <div class="config-header">
       <button type="button" 
@@ -83,10 +94,18 @@
       </button>
       
       <div class="selected-function-info">
-        <h3 class="function-title">{{ selectedFunctionMeta.label }}</h3>
-        <p class="function-desc" *ngIf="selectedFunctionMeta.description">
-          {{ selectedFunctionMeta.description }}
+        <h3 class="function-title">
+          {{ (selectedFunctionSignature || selectedFunctionMeta)?.label }}
+        </h3>
+        <p class="function-desc" *ngIf="(selectedFunctionSignature || selectedFunctionMeta)?.description">
+          {{ (selectedFunctionSignature || selectedFunctionMeta)?.description }}
         </p>
+        <div class="function-meta">
+          <span class="return-type">Returns: {{ (selectedFunctionSignature || selectedFunctionMeta)?.returnType }}</span>
+          <span class="category-info" *ngIf="(selectedFunctionSignature || selectedFunctionMeta)?.category">
+            Category: {{ (selectedFunctionSignature || selectedFunctionMeta)?.category }}
+          </span>
+        </div>
       </div>
     </div>
     
@@ -95,7 +114,7 @@
       <h4 class="section-title">
         <i class="config-icon">⚙</i>
         Parameters
-        <span class="param-count">({{ selectedFunctionMeta.params.length }})</span>
+        <span class="param-count">({{ parameterControls.length }})</span>
       </h4>
       
       <div class="parameter-item" 
@@ -107,6 +126,9 @@
             {{ paramControl.get('name')?.value }}
             <span class="param-type">{{ paramControl.get('type')?.value }}</span>
             <span class="required-indicator" *ngIf="paramControl.get('required')?.value">*</span>
+            <span class="param-order" *ngIf="paramControl.get('order')?.value !== undefined">
+              #{{ paramControl.get('order')?.value + 1 }}
+            </span>
           </label>
           
           <button type="button" 
@@ -118,9 +140,20 @@
           </button>
         </div>
         
+        <!-- Parameter Help Text from Database -->
         <div class="param-description" 
-             *ngIf="paramControl.get('description')?.value">
-          {{ paramControl.get('description')?.value }}
+             *ngIf="getParameterHelpText(i)">
+          <i class="pi pi-info-circle"></i>
+          {{ getParameterHelpText(i) }}
+        </div>
+
+        <!-- Validation Rules Summary -->
+        <div class="param-validation-info" 
+             *ngIf="hasParameterValidationRules(i)">
+          <small class="validation-rules">
+            <i class="pi pi-shield"></i>
+            {{ getValidationRulesSummary(i) }}
+          </small>
         </div>
         
         <!-- Parameter Input -->
@@ -158,41 +191,99 @@
                  [placeholder]="'Select ' + paramControl.get('name')?.value">
         </div>
         
-        <!-- Parameter Error -->
-        <small class="param-error" 
-               *ngIf="paramControl.get('value')?.invalid && paramControl.get('value')?.touched">
-          {{ getParameterErrorMessage(i) }}
-        </small>
+        <!-- Enhanced Parameter Validation Display -->
+        <div class="param-validation-status" *ngIf="paramControl.get('value')?.touched">
+          <!-- Validation Error -->
+          <small class="param-error" 
+                 *ngIf="!getParameterValidationStatus(i).isValid">
+            <i class="pi pi-exclamation-triangle"></i>
+            {{ getParameterValidationStatus(i).errorMessage }}
+          </small>
+          
+          <!-- Validation Warning -->
+          <small class="param-warning" 
+                 *ngIf="getParameterValidationStatus(i).isValid && getParameterValidationStatus(i).hasWarnings">
+            <i class="pi pi-info-circle"></i>
+            Parameter has warnings - check configuration
+          </small>
+          
+          <!-- Validation Success -->
+          <small class="param-success" 
+                 *ngIf="getParameterValidationStatus(i).isValid && !getParameterValidationStatus(i).hasWarnings && paramControl.get('value')?.value">
+            <i class="pi pi-check-circle"></i>
+            Valid parameter value
+          </small>
+        </div>
       </div>
       
       <!-- No Parameters -->
-      <div class="no-parameters" *ngIf="selectedFunctionMeta.params.length === 0">
+      <div class="no-parameters" *ngIf="parameterControls.length === 0">
         <i class="pi pi-info-circle"></i>
         <span>This function has no parameters</span>
       </div>
     </div>
     
-    <!-- Function Preview -->
+    <!-- Function Preview with Validation Status -->
     <div class="function-preview" *ngIf="previewText">
       <h4 class="section-title">
         <i class="pi pi-eye"></i>
         Preview
+        <span class="validation-status" [class.valid]="getValidationStatus().isValid" [class.invalid]="!getValidationStatus().isValid">
+          <i class="pi pi-check-circle" *ngIf="getValidationStatus().isValid"></i>
+          <i class="pi pi-exclamation-triangle" *ngIf="!getValidationStatus().isValid"></i>
+          {{ getValidationStatus().isValid ? 'Valid' : 'Invalid' }}
+        </span>
       </h4>
+      
       <div class="preview-content">
         <code class="preview-code">{{ previewText }}</code>
       </div>
+      
+      <!-- Validation Summary -->
+      <div class="validation-summary" *ngIf="getValidationStatus().errorCount > 0 || getValidationStatus().warningCount > 0">
+        <div class="validation-errors" *ngIf="getValidationStatus().errorCount > 0">
+          <i class="pi pi-times-circle"></i>
+          <span>{{ getValidationStatus().errorCount }} validation error(s)</span>
+        </div>
+        <div class="validation-warnings" *ngIf="getValidationStatus().warningCount > 0">
+          <i class="pi pi-exclamation-triangle"></i>
+          <span>{{ getValidationStatus().warningCount }} warning(s)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Function Output Format -->
+    <div class="function-output-format" *ngIf="getFunctionOutputFormat()">
+      <h4 class="section-title">
+        <i class="pi pi-arrow-right"></i>
+        Expected Output Format
+      </h4>
+      <div class="output-format-content">
+        <pre class="output-format-text">{{ getFunctionOutputFormat() }}</pre>
+      </div>
     </div>
     
-    <!-- Examples -->
-    <div class="function-examples" *ngIf="selectedFunctionMeta.examples && selectedFunctionMeta.examples.length > 0">
+    <!-- Examples from Database -->
+    <div class="function-examples" *ngIf="hasFunctionExamples()">
       <h4 class="section-title">
         <i class="book-icon">📖</i>
-        Examples
+        Examples from Database
       </h4>
       <div class="example-list">
-        <div class="example-item" *ngFor="let example of selectedFunctionMeta.examples">
+        <div class="example-item" *ngFor="let example of getFunctionExamples()">
           <code class="example-code">{{ example }}</code>
         </div>
+      </div>
+    </div>
+
+    <!-- SQL Template Info -->
+    <div class="sql-template-info" *ngIf="(selectedFunctionSignature || selectedFunctionMeta)?.sqlTemplate">
+      <h4 class="section-title">
+        <i class="pi pi-code"></i>
+        SQL Template
+      </h4>
+      <div class="sql-template">
+        <code class="sql-code">{{ (selectedFunctionSignature || selectedFunctionMeta)?.sqlTemplate }}</code>
       </div>
     </div>
   </form>
@@ -217,9 +308,13 @@
     
     <button type="button" 
             class="confirm-btn"
-            [disabled]="!isValid"
+            [disabled]="!isConfigurationComplete()"
+            [title]="isConfigurationComplete() ? 'Apply function configuration' : 'Complete all required parameters and fix validation errors'"
             (click)="onConfirm()">
       Apply Function
+      <span class="config-status" *ngIf="!isConfigurationComplete()">
+        ({{ getValidationStatus().errorCount }} errors)
+      </span>
     </button>
   </ng-container>
 </div>

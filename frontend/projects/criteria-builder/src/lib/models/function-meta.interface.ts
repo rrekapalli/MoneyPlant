@@ -43,6 +43,7 @@ export interface FunctionMetaResp {
   description: string;
   examples: string[];
   paramCount: number;
+  deprecated?: boolean;
 }
 
 /**
