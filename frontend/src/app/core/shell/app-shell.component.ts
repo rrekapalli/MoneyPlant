@@ -51,9 +51,6 @@ export class AppShellComponent implements OnInit, OnDestroy {
   }
 
   onRouterOutletActivate(component: any): void {
-    console.log('Router outlet activated:', component.constructor.name);
-    console.log('Current URL:', this.router.url);
-    
     // Force cleanup of any lingering components
     this.cleanupLingeringComponents(component.constructor.name);
   }
@@ -66,8 +63,6 @@ export class AppShellComponent implements OnInit, OnDestroy {
         const siblings = Array.from(mainRouterOutlet.parentElement.children)
           .filter(el => el.tagName !== 'ROUTER-OUTLET' && !el.classList.contains('loading-container'));
         
-        console.log(`Found ${siblings.length} sibling components`);
-        
         // Convert component name to expected tag name
         // e.g., "_ScreenersComponent" -> "app-screeners"
         let componentName = activeComponentName.toLowerCase();
@@ -78,7 +73,6 @@ export class AppShellComponent implements OnInit, OnDestroy {
         // Remove 'component' suffix
         componentName = componentName.replace('component', '');
         const expectedTagName = 'app-' + componentName;
-        console.log(`Looking for active component with tag: ${expectedTagName}`);
         
         // Only remove components if there are more than 1 sibling
         if (siblings.length > 1) {
@@ -87,24 +81,15 @@ export class AppShellComponent implements OnInit, OnDestroy {
             const isActiveComponent = siblingTagName === expectedTagName;
             
             if (!isActiveComponent) {
-              console.log(`Removing lingering component: ${sibling.tagName}`);
               sibling.remove();
-            } else {
-              console.log(`Keeping active component: ${sibling.tagName}`);
             }
           });
-        } else {
-          console.log('Only one component found, keeping it');
         }
       }
     }, 50);
   }
 
   onRouterOutletDeactivate(component: any): void {
-    console.log('Router outlet deactivated:', component.constructor.name);
-    console.log('Current URL after deactivation:', this.router.url);
-    
-    // Don't do aggressive cleanup on deactivation - let the activation cleanup handle it
-    // This prevents removing components too early
+    // Component cleanup is handled by activation event
   }
 }
