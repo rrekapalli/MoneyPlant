@@ -49,7 +49,7 @@ export class ScreenersComponent implements OnInit, OnDestroy {
   publicScreeners: ScreenerResp[] = [];
   starredScreeners: ScreenerResp[] = [];
   filteredScreeners: ScreenerResp[] = [];
-  loading = false;
+  loading = true;
   error: string | null = null;  
   searchQuery = '';
   dataLoaded = false;
@@ -139,7 +139,6 @@ export class ScreenersComponent implements OnInit, OnDestroy {
     this.loadStaticFields();
     this.setupStaticFieldsForCriteriaBuilder();
     this.loadInitialData();
-    this.updateFilteredScreeners();
   }
 
   ngOnDestroy() {
@@ -166,8 +165,8 @@ export class ScreenersComponent implements OnInit, OnDestroy {
       this.error = error;
       this.pagination = pagination;
       
-      // Only mark data as loaded when we actually have data and not loading
-      if (!loading && screeners.length >= 0) {
+      // Mark data as loaded when we're not loading and have received the first response
+      if (!loading) {
         this.dataLoaded = true;
       }
       
