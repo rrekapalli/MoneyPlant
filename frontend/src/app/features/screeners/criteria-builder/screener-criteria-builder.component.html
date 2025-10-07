@@ -1,0 +1,86 @@
+<div class="screener-criteria-builder">
+  <!-- Logic Operator Selection (only show if multiple rules) -->
+  <div *ngIf="criteria.rules.length > 1" class="logic-operator">
+    <label>Combine conditions using:</label>
+    <p-select 
+      [(ngModel)]="criteria.condition"
+      [options]="logicOptions"
+      (onChange)="onCriteriaChange()"
+      class="logic-select">
+    </p-select>
+  </div>
+
+  <!-- Rules List -->
+  <div class="rules-container">
+    <div *ngFor="let rule of criteria.rules; let i = index" class="rule-row">
+      <!-- Field Selection -->
+      <p-select 
+        [(ngModel)]="rule.field"
+        [options]="fieldOptions"
+        placeholder="Select field"
+        (onChange)="onRuleChange(i)"
+        class="field-select">
+      </p-select>
+
+      <!-- Operator Selection -->
+      <p-select 
+        [(ngModel)]="rule.operator"
+        [options]="getOperatorOptions(rule.field)"
+        placeholder="Operator"
+        (onChange)="onRuleChange(i)"
+        class="operator-select">
+      </p-select>
+
+      <!-- Value Input -->
+      <input 
+        *ngIf="getFieldType(rule.field) === 'string'"
+        type="text"
+        pInputText
+        [(ngModel)]="rule.value"
+        (ngModelChange)="onRuleChange(i)"
+        placeholder="Enter value"
+        class="value-input">
+
+      <p-inputNumber 
+        *ngIf="getFieldType(rule.field) === 'number'"
+        [(ngModel)]="rule.value"
+        (onInput)="onRuleChange(i)"
+        placeholder="Enter number"
+        class="value-input">
+      </p-inputNumber>
+
+      <!-- Remove Rule Button -->
+      <button 
+        pButton 
+        icon="pi pi-times" 
+        (click)="removeRule(i)"
+        class="p-button-text p-button-sm remove-btn"
+        [disabled]="criteria.rules.length === 1">
+      </button>
+    </div>
+
+    <!-- Empty State -->
+    <div *ngIf="criteria.rules.length === 0" class="empty-state">
+      <p>No conditions defined. Click "Add Condition" to get started.</p>
+    </div>
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="actions">
+    <button 
+      pButton 
+      label="Add Condition" 
+      icon="pi pi-plus" 
+      (click)="addRule()"
+      class="p-button-outlined p-button-sm">
+    </button>
+    <button 
+      *ngIf="criteria.rules.length > 0"
+      pButton 
+      label="Clear All" 
+      icon="pi pi-trash" 
+      (click)="clearAll()"
+      class="p-button-text p-button-sm p-button-danger">
+    </button>
+  </div>
+</div>

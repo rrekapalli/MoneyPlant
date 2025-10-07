@@ -26,11 +26,23 @@
 
   .form-content {
     flex: 1;
+    /* Updated layout for condensed form */
 
     .form-grid {
       display: flex;
       flex-direction: column;
       gap: 1.5rem;
+
+      .form-row {
+        display: grid !important;
+        grid-template-columns: 2fr 1.5fr 1fr !important;
+        gap: 1rem !important;
+        align-items: start !important;
+        width: 100% !important;
+        background-color: #f0f8ff !important; // Temporary debug background
+        padding: 1rem !important;
+        border-radius: 4px !important;
+      }
 
       .form-group {
         display: flex;
@@ -64,15 +76,26 @@
 
         textarea {
           resize: vertical;
-          min-height: 100px;
+          min-height: 80px;
         }
 
         &.checkbox-group {
+          .checkbox-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+          }
+
           .help-text {
             color: #7f8c8d;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             margin-top: 0.25rem;
           }
+        }
+
+        &.form-group-flex {
+          min-width: 0; // Prevent flex items from overflowing
+          border: 1px solid transparent; // Debug border
         }
       }
     }
@@ -250,6 +273,13 @@
     }
 
     .form-content {
+      .form-grid {
+        .form-row {
+          grid-template-columns: 1fr;
+          gap: 1rem;
+        }
+      }
+
       .form-actions {
         flex-direction: column;
         align-items: stretch;
@@ -332,6 +362,17 @@
 @media (max-width: 1024px) and (min-width: 769px) {
   .screener-form-container {
     .form-content {
+      .form-grid {
+        .form-row {
+          grid-template-columns: 1fr 1fr;
+          gap: 1rem;
+          
+          .form-group:last-child {
+            grid-column: 1 / -1;
+          }
+        }
+      }
+
       .criteria-builder-container {
         .screener-criteria-builder {
           ac-criteria-builder {

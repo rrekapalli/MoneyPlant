@@ -26,6 +26,8 @@ import { INDICATOR_FIELDS } from '../../services/entities/indicators.entities';
 import { CriteriaBuilderModule } from '@projects/criteria-builder';
 import { CriteriaDSL, BuilderConfig, FieldMeta, FieldType, Operator, Group, Condition, FieldRef, Literal } from '@projects/criteria-builder';
 import { CriteriaApiService } from '@projects/criteria-builder';
+import { ScreenersOverviewComponent } from './overview';
+import { ScreenersConfigureComponent } from './configure';
 
 @Component({
   selector: 'app-screeners',
@@ -34,7 +36,7 @@ import { CriteriaApiService } from '@projects/criteria-builder';
     CommonModule, RouterModule, FormsModule, ButtonModule, TableModule, CardModule,
     TabsModule, DialogModule, ConfirmDialogModule, ToastModule, InputTextModule,
     PaginatorModule, TagModule, TooltipModule, CheckboxModule, MessageModule,
-    SelectModule, CriteriaBuilderModule
+    SelectModule, CriteriaBuilderModule, ScreenersOverviewComponent, ScreenersConfigureComponent
   ],
   providers: [ConfirmationService, MessageService],
   templateUrl: './screeners.component.html',
@@ -100,6 +102,10 @@ export class ScreenersComponent implements OnInit, OnDestroy {
   };
   
   staticFields: FieldMeta[] = [];
+
+  // Basic Info Edit State
+  isEditingBasicInfo = false;
+  originalBasicInfo: Partial<ScreenerCreateReq> = {};
 
   // Universe Options
   universeOptions = [
@@ -300,6 +306,10 @@ private loadInitialData() {
       criteria: screener.criteria
     };
     
+    // Initialize edit state
+    this.isEditingBasicInfo = false;
+    this.originalBasicInfo = {};
+    
     if (screener.criteria) {
       this._criteriaDSL = this.convertScreenerCriteriaToDsl(screener.criteria);
     } else {
@@ -319,6 +329,10 @@ private loadInitialData() {
       criteria: undefined
     };
     this._criteriaDSL = null;
+    
+    // Reset edit state
+    this.isEditingBasicInfo = false;
+    this.originalBasicInfo = {};
   }
 
   deleteScreener(screener: ScreenerResp) {
@@ -348,14 +362,21 @@ private loadInitialData() {
     });
   }
 
-  saveScreener() {
-    if (!this.screenerForm.name.trim()) {
+  saveScreener(screenerData?: ScreenerCreateReq) {
+    const formData = screenerData || this.screenerForm;
+    
+    if (!formData.name.trim()) {
       this.messageService.add({
         severity: 'warn',
         summary: 'Validation Error',
         detail: 'Screener name is required'
       });
       return;
+    }
+
+    // Update the main form data if provided from child component
+    if (screenerData) {
+      this.screenerForm = { ...screenerData };
     }
 
     if (this.selectedScreener) {
@@ -453,6 +474,54 @@ private loadInitialData() {
     this.screenerForm.isPublic = event.target.checked;
   }
 
+  // Basic Info Edit Methods
+  toggleBasicInfoEdit() {
+    if (this.isEditingBasicInfo) {
+      // Save changes
+      if (this.hasBasicInfoChanges()) {
+        this.saveBasicInfoChanges();
+      }
+      this.isEditingBasicInfo = false;
+    } else {
+      // Enter edit mode
+      this.isEditingBasicInfo = true;
+      this.storeOriginalBasicInfo();
+    }
+  }
+
+  private storeOriginalBasicInfo() {
+    this.originalBasicInfo = {
+      name: this.screenerForm.name,
+      description: this.screenerForm.description,
+      defaultUniverse: this.screenerForm.defaultUniverse,
+      isPublic: this.screenerForm.isPublic
+    };
+  }
+
+  hasBasicInfoChanges(): boolean {
+    return (
+      this.screenerForm.name !== this.originalBasicInfo.name ||
+      this.screenerForm.description !== this.originalBasicInfo.description ||
+      this.screenerForm.defaultUniverse !== this.originalBasicInfo.defaultUniverse ||
+      this.screenerForm.isPublic !== this.originalBasicInfo.isPublic
+    );
+  }
+
+  private saveBasicInfoChanges() {
+    if (this.selectedScreener) {
+      // Update existing screener
+      this.updateScreener();
+    } else {
+      // For new screeners, just show a message that changes are saved locally
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Changes Saved',
+        detail: 'Basic information updated locally. Save the screener to persist changes.',
+        life: 3000
+      });
+    }
+  }
+
   addRule() {
     // This will be handled by the criteria-builder component itself
   }
@@ -483,26 +552,7 @@ private loadInitialData() {
     }
   }
 
-  generateSQL(): string {
-    if (this.screenerForm.criteria) {
-      return 'SELECT * FROM stocks WHERE ' + this.generateWhereClause(this.screenerForm.criteria);
-    }
-    return 'SELECT * FROM stocks WHERE 1=1;';
-  }
 
-  getGeneratedWhereCondition(): string {
-    if (this.screenerForm.criteria) {
-      return this.generateWhereClause(this.screenerForm.criteria);
-    }
-    return '1=1';
-  }
-
-  private generateWhereClause(criteria: ScreenerCriteria): string {
-    if (!criteria || !criteria.rules || criteria.rules.length === 0) {
-      return '1=1';
-    }
-    return '1=1';
-  }
 
 
 

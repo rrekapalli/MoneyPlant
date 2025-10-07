@@ -90,234 +90,9 @@
 
   // Tab-specific styles
   .screener-tabs {
-    .overview-content {
-      .filter-section {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 2rem;
-        padding: 1rem;
-        background: #f8f9fa;
-        border-radius: 8px;
-        flex-wrap: wrap;
-        gap: 1rem;
 
-        .search-container {
-          display: flex;
-          gap: 0.5rem;
-          align-items: center;
-          min-width: 300px;
 
-          .search-input {
-            flex: 1;
-            min-width: 200px;
-          }
-        }
 
-        .filter-options {
-          display: flex;
-          gap: 1rem;
-          align-items: center;
-          flex-wrap: wrap;
-
-          .visibility-filter,
-          .category-filter {
-            min-width: 150px;
-          }
-        }
-      }
-
-      .screeners-list {
-        .screener-item {
-          background: white;
-          border: 1px solid #e9ecef;
-          border-radius: 8px;
-          margin-bottom: 1rem;
-          padding: 1.5rem;
-          transition: all 0.2s ease;
-
-          &:hover {
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            border-color: #007bff;
-          }
-
-          .screener-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 1rem;
-
-            .screener-info {
-              flex: 1;
-
-              .screener-name {
-                margin: 0 0 0.5rem 0;
-                color: #2c3e50;
-                font-size: 1.25rem;
-                font-weight: 600;
-              }
-
-              .screener-description {
-                margin: 0 0 1rem 0;
-                color: #6c757d;
-                font-size: 0.95rem;
-                line-height: 1.4;
-              }
-
-              .screener-meta {
-                display: flex;
-                gap: 1.5rem;
-                flex-wrap: wrap;
-
-                .meta-item {
-                  display: flex;
-                  align-items: center;
-                  gap: 0.5rem;
-                  color: #6c757d;
-                  font-size: 0.875rem;
-
-                  i {
-                    color: #007bff;
-                  }
-                }
-              }
-            }
-
-            .screener-actions {
-              display: flex;
-              gap: 0.5rem;
-              flex-wrap: wrap;
-
-              .star-button {
-                margin-right: 0.5rem;
-              }
-            }
-          }
-
-          .screener-details {
-            display: flex;
-            gap: 2rem;
-            padding-top: 1rem;
-            border-top: 1px solid #e9ecef;
-            flex-wrap: wrap;
-
-            .detail-item {
-              display: flex;
-              align-items: center;
-              gap: 0.5rem;
-
-              .detail-label {
-                font-weight: 600;
-                color: #495057;
-                font-size: 0.875rem;
-              }
-
-              .detail-value {
-                color: #6c757d;
-                font-size: 0.875rem;
-              }
-            }
-          }
-        }
-
-        .empty-message {
-          text-align: center;
-          padding: 3rem;
-          color: #7f8c8d;
-
-          i {
-            margin-bottom: 1rem;
-            display: block;
-          }
-
-          p {
-            margin: 0 0 1rem 0;
-            font-size: 1.1rem;
-          }
-
-          button {
-            margin-top: 1rem;
-          }
-        }
-      }
-    }
-
-    .configure-content {
-      .no-selection {
-        text-align: center;
-        padding: 3rem;
-        color: #7f8c8d;
-
-        i {
-          margin-bottom: 1rem;
-          display: block;
-        }
-
-        p {
-          margin: 0 0 1rem 0;
-          font-size: 1.1rem;
-        }
-
-        button {
-          margin-top: 1rem;
-        }
-      }
-
-      .screener-config {
-        background: white;
-        border: 1px solid #e9ecef;
-        border-radius: 8px;
-        padding: 2rem;
-
-        .config-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 2rem;
-          padding-bottom: 1rem;
-          border-bottom: 1px solid #e9ecef;
-
-          h3 {
-            margin: 0;
-            color: #2c3e50;
-            font-size: 1.5rem;
-            font-weight: 600;
-          }
-        }
-
-        .config-form {
-          .form-group {
-            margin-bottom: 1.5rem;
-
-            label {
-              display: block;
-              margin-bottom: 0.5rem;
-              font-weight: 600;
-              color: #2c3e50;
-              font-size: 0.9rem;
-            }
-
-            input,
-            textarea {
-              width: 100%;
-            }
-
-            p-checkbox {
-              margin-top: 0.5rem;
-            }
-          }
-
-          .form-actions {
-            display: flex;
-            gap: 1rem;
-            justify-content: flex-end;
-            margin-top: 2rem;
-            padding-top: 1rem;
-            border-top: 1px solid #e9ecef;
-          }
-        }
-      }
-    }
   }
 
   .screener-form {
@@ -421,16 +196,15 @@
           padding: 1rem;
 
           .config-form {
-            .form-actions {
-              flex-direction: column;
-              align-items: stretch;
-            }
+
           }
         }
       }
     }
   }
 }
+
+
 
 // PrimeNG table customizations
 :host ::ng-deep {
@@ -559,12 +333,12 @@
 
   // Configuration Section Styles
   .config-section {
-    margin-bottom: 2rem;
+    margin-bottom: 1rem;
     
     .section-title {
-      margin: 0 0 0.75rem 0;
+      margin: 0 0 0.5rem 0;
       color: #2c3e50;
-      font-size: 1.1rem;
+      font-size: 1rem;
       font-weight: 600;
       padding-bottom: 0.25rem;
       border-bottom: 1px solid #e0e0e0;
@@ -572,11 +346,72 @@
   }
 
   .config-form {
+    .basic-info-container {
+      background-color: #f8f9fa !important;
+      border: 1px solid #e9ecef !important;
+      border-radius: 6px !important;
+      padding: 1rem !important;
+      margin-bottom: 1rem !important;
+    }
+
     .form-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1rem;
-      margin-bottom: 0.5rem;
+      display: grid !important;
+      grid-template-columns: 2fr 1.5fr 1.5fr !important;
+      gap: 1rem !important;
+      align-items: start !important;
+      margin-bottom: 1rem !important;
+    }
+
+    .form-group {
+      margin-bottom: 0.75rem !important;
+
+      &.form-group-flex {
+        min-width: 0; // Prevent flex items from overflowing
+      }
+
+      label {
+        margin-bottom: 0.25rem !important;
+        font-size: 0.85rem !important;
+      }
+
+      .visibility-controls {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        
+        .toggle-switch {
+          flex: 1;
+        }
+        
+        .edit-save-btn {
+          flex-shrink: 0;
+          min-width: 70px !important;
+          height: 32px !important;
+          font-size: 0.8rem !important;
+          
+          &.p-button-success {
+            background-color: #28a745 !important;
+            border-color: #28a745 !important;
+          }
+          
+          &:disabled {
+            opacity: 0.6 !important;
+            cursor: not-allowed !important;
+          }
+        }
+      }
+
+      input[readonly], textarea[readonly] {
+        background-color: #f8f9fa !important;
+        border-color: #e9ecef !important;
+        color: #6c757d !important;
+        cursor: default !important;
+      }
+
+      p-select[disabled] {
+        opacity: 0.6 !important;
+        pointer-events: none !important;
+      }
     }
 
     .form-group {
@@ -651,7 +486,7 @@
 
   // Criteria Builder Styles
   .criteria-header {
-    margin-bottom: 1rem;
+    margin-bottom: 0.75rem;
     
     .criteria-description {
       color: #7f8c8d;
@@ -661,35 +496,7 @@
     }
   }
 
-  // SQL Query Display
-  .sql-query-display {
-    margin-bottom: 1rem;
-    
-    h5 {
-      margin: 0 0 0.5rem 0;
-      color: #2c3e50;
-      font-size: 0.9rem;
-      font-weight: 600;
-    }
-    
-    .sql-query-box {
-      background-color: #f8f9fa;
-      border: 1px solid #e9ecef;
-      border-radius: 4px;
-      padding: 0.75rem 1rem;
-      font-family: 'Courier New', monospace;
-      
-      code {
-        color: #495057;
-        font-size: 1rem;
-        line-height: 1.4;
-        word-break: break-all;
-        white-space: pre-wrap;
-        font-weight: bold;
-        font-style: italic;
-      }
-    }
-  }
+
 
   .config-actions {
     display: flex;

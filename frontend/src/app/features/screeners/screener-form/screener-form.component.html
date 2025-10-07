@@ -30,28 +30,36 @@
           <p-card>
             <form (ngSubmit)="saveScreener()" #form="ngForm">
               <div class="form-grid">
-                <div class="form-group">
-                  <label for="name">Name *</label>
-                  <input type="text" id="name" pInputText [(ngModel)]="screenerForm.name" name="name"
-                    placeholder="Enter screener name" required class="w-full" />
+                <!-- Condensed row layout for better space utilization -->
+                <!-- Condensed row with Name, Default Universe, and Visibility -->
+                <div class="form-row">
+                  <div class="form-group form-group-flex">
+                    <label for="name">Name *</label>
+                    <input type="text" id="name" pInputText [(ngModel)]="screenerForm.name" name="name"
+                      placeholder="Enter screener name" required class="w-full" />
+                  </div>
+
+                  <div class="form-group form-group-flex">
+                    <label for="defaultUniverse">Default Universe</label>
+                    <input type="text" id="defaultUniverse" pInputText [(ngModel)]="screenerForm.defaultUniverse"
+                      name="defaultUniverse" placeholder="e.g., NSE, BSE" class="w-full" />
+                  </div>
+
+                  <div class="form-group form-group-flex checkbox-group">
+                    <label>Visibility</label>
+                    <div class="checkbox-wrapper">
+                      <p-checkbox [(ngModel)]="screenerForm.isPublic" name="isPublic" [binary]="true"
+                        label="Public"></p-checkbox>
+                      <small class="help-text">Viewable by other users</small>
+                    </div>
+                  </div>
                 </div>
 
+                <!-- Description in separate row -->
                 <div class="form-group">
                   <label for="description">Description</label>
                   <textarea id="description" [(ngModel)]="screenerForm.description" name="description"
-                    placeholder="Enter screener description" rows="3" class="w-full"></textarea>
-                </div>
-
-                <div class="form-group">
-                  <label for="defaultUniverse">Default Universe</label>
-                  <input type="text" id="defaultUniverse" pInputText [(ngModel)]="screenerForm.defaultUniverse"
-                    name="defaultUniverse" placeholder="Enter default universe (e.g., NSE, BSE)" class="w-full" />
-                </div>
-
-                <div class="form-group checkbox-group">
-                  <p-checkbox [(ngModel)]="screenerForm.isPublic" name="isPublic" [binary]="true"
-                    label="Make this screener public"></p-checkbox>
-                  <small class="help-text">Public screeners can be viewed and used by other users</small>
+                    placeholder="Enter screener description" rows="2" class="w-full"></textarea>
                 </div>
               </div>
 
