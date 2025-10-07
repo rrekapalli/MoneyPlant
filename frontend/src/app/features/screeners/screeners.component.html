@@ -6,11 +6,8 @@
         <h1 class="main-title">Screeners</h1>
         <p class="subtitle">Create and manage your custom stock screening criteria</p>
       </div>
-      <button pButton 
-              label="Create Screener" 
-              icon="pi pi-plus" 
-              class="p-button-primary create-btn"
-              (click)="createScreener()">
+      <button pButton label="Create Screener" icon="pi pi-plus" class="p-button-primary create-btn"
+        (click)="createScreener()">
       </button>
     </div>
     <div class="header-divider"></div>
@@ -49,7 +46,7 @@
   }
 
   @if (dataLoaded && filteredScreeners.length > 0) {
-  <p-tabs [(value)]="activeTab" class="screener-tabs" (valueChange)="onTabChange($event)">
+  <p-tabs [(value)]="activeTabIndex" class="screener-tabs" (valueChange)="onTabChange($event)">
     <p-tablist>
       <p-tab value="0">
         <i class="pi pi-chart-line"></i>
@@ -61,15 +58,10 @@
       </p-tab>
     </p-tablist>
     <p-tabpanels>
-
-      <!-- Overview Tab Panel -->
       <p-tabpanel value="0">
         <div class="overview-content">
           <!-- Screeners List -->
           <div class="screeners-list">
-
-            <!-- Screeners List -->
-            @if (dataLoaded && filteredScreeners.length > 0) {
             @for (screener of filteredScreeners; track trackScreenerById($index, screener)) {
             <div class="screener-item">
               <div class="screener-header">
@@ -120,12 +112,10 @@
               </div>
             </div>
             }
-            }
           </div>
         </div>
       </p-tabpanel>
 
-      <!-- Configure Tab Panel -->
       <p-tabpanel value="1">
         <div class="configure-content">
           @if (!selectedScreener) {

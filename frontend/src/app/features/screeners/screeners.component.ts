@@ -72,7 +72,7 @@ export class ScreenersComponent implements OnInit, OnDestroy {
     criteria: undefined
   };
 
-  activeTab: string = "0";
+  activeTabIndex: string = "0";
   
   // Criteria Builder Integration
   private _criteriaDSL: CriteriaDSL | null = null;
@@ -214,7 +214,12 @@ private loadInitialData() {
   }
 
   onTabChange(index: string | number): void {
-    this.activeTab = typeof index === 'string' ? index : index.toString();
+    this.activeTabIndex = typeof index === 'string' ? index : index.toString();
+    
+    // Clear selection when switching back to overview tab
+    if (this.activeTabIndex === "0") {
+      this.clearSelection();
+    }
   }
 
   updateFilteredScreeners(): void {
@@ -280,7 +285,7 @@ private loadInitialData() {
       criteria: undefined
     };
     this._criteriaDSL = null;
-    this.activeTab = "1";
+    this.activeTabIndex = "1";
   }
 
   configureScreener(screener: ScreenerResp) {
@@ -299,7 +304,7 @@ private loadInitialData() {
       this._criteriaDSL = null;
     }
     
-    this.activeTab = "1";
+    this.activeTabIndex = "1";
   }
   
   clearSelection(): void {
@@ -367,7 +372,7 @@ private loadInitialData() {
           detail: 'Screener created successfully'
         });
         this.loadScreeners();
-        this.activeTab = "0";
+        this.activeTabIndex = "0";
       },
       error: () => {
         this.messageService.add({
@@ -390,7 +395,7 @@ private loadInitialData() {
           detail: 'Screener updated successfully'
         });
         this.loadScreeners();
-        this.activeTab = "0";
+        this.activeTabIndex = "0";
       },
       error: () => {
         this.messageService.add({
