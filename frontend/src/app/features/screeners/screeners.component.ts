@@ -24,9 +24,9 @@ import { ScreenerStateService } from '../../services/state/screener.state';
 import { ScreenerApiService } from '../../services/apis/screener.api';
 import { ScreenerResp, ScreenerCreateReq, ScreenerCriteria, ScreenerCriteriaConfig } from '../../services/entities/screener.entities';
 import { INDICATOR_FIELDS } from '../../services/entities/indicators.entities';
-import { CriteriaBuilderModule } from 'criteria-builder';
-import { CriteriaDSL, BuilderConfig, FieldMeta, FieldType, Operator, Group, Condition, FieldRef, Literal } from 'criteria-builder';
-import { CriteriaApiService, FieldMetaResp } from 'criteria-builder';
+import { CriteriaBuilderModule } from '@projects/criteria-builder';
+import { CriteriaDSL, BuilderConfig, FieldMeta, FieldType, Operator, Group, Condition, FieldRef, Literal } from '@projects/criteria-builder';
+import { CriteriaApiService, FieldMetaResp } from '@projects/criteria-builder';
 
 
 
@@ -161,6 +161,7 @@ export class ScreenersComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
+    console.log('ScreenersComponent: ngOnInit called - Navigation fixed!');
     this.initializeSubscriptions();
     this.loadStaticFields();
     this.setupStaticFieldsForCriteriaBuilder();
@@ -170,8 +171,14 @@ export class ScreenersComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    console.log('ScreenersComponent: ngOnDestroy called - cleaning up subscriptions');
     this.destroy$.next();
     this.destroy$.complete();
+    
+    // Force cleanup of any remaining subscriptions
+    if (this.destroy$.observers.length > 0) {
+      console.warn('ScreenersComponent: Some subscriptions may not have been cleaned up properly');
+    }
   }
 
   private initializeSubscriptions() {

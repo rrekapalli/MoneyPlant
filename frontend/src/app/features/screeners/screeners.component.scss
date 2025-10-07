@@ -2,9 +2,10 @@
   padding: 2rem;
   max-width: 1400px;
   margin: 0 auto;
-  min-height: 100vh;
   display: flex;
   flex-direction: column;
+  height: 100%;
+  overflow: auto;
 
   .header {
     display: flex;

@@ -31,6 +31,44 @@
 .column-right {
   flex: 1;
   padding: 0.5rem;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Ensure router-outlet content takes full space and doesn't overlap */
+router-outlet {
+  display: contents; /* Make router-outlet transparent in layout */
+}
+
+/* Ensure routed components take full available space */
+.column-right > :not(router-outlet):not(.loading-container) {
+  flex: 1;
+  width: 100%;
+  overflow: auto;
+  background-color: var(--card-background);
+  margin: 0.5rem;
+  border-radius: 4px;
+}
+
+/* Ensure only one component is visible at a time */
+.column-right > :not(router-outlet):not(.loading-container):not(:last-child) {
+  display: none !important;
+}
+
+/* More aggressive cleanup - hide duplicate components */
+.column-right app-screeners:not(:last-of-type),
+.column-right app-portfolios:not(:last-of-type),
+.column-right app-strategies:not(:last-of-type),
+.column-right app-dashboard:not(:last-of-type),
+.column-right app-holdings:not(:last-of-type),
+.column-right app-positions:not(:last-of-type),
+.column-right app-market:not(:last-of-type) {
+  display: none !important;
+  visibility: hidden !important;
+  position: absolute !important;
+  left: -9999px !important;
 }
 
 .loading-container {

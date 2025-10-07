@@ -33,6 +33,10 @@
       "criteria-builder": [
         "./dist/criteria-builder"
       ],
+      "@projects/criteria-builder": [
+        "./dist/criteria-builder",
+        "./projects/criteria-builder/src/public-api"
+      ],
       "superset-integration": ["./dist/superset-integration", "./projects/superset-integration/src/public-api"],
       "superset-integration/*": ["./dist/superset-integration/*"],
       "@superset-integration/*": ["./projects/superset-integration/src/lib/*"],

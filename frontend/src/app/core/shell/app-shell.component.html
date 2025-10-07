@@ -20,7 +20,7 @@
       <div class="loading-container" *ngIf="loading">
         <p-progressSpinner styleClass="w-4rem h-4rem" strokeWidth="4" fill="var(--background-color)" animationDuration=".5s"></p-progressSpinner>
       </div>
-      <router-outlet></router-outlet>
+      <router-outlet (activate)="onRouterOutletActivate($event)" (deactivate)="onRouterOutletDeactivate($event)"></router-outlet>
     </main>
   </div>
 

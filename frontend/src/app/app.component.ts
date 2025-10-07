@@ -7,7 +7,15 @@ import { RouterOutlet } from '@angular/router';
   imports: [
     RouterOutlet
   ],
-  template: '<router-outlet></router-outlet>'
+  template: '<router-outlet></router-outlet>',
+  styles: [`
+    :host {
+      display: block;
+      width: 100%;
+      height: 100vh;
+      overflow: hidden;
+    }
+  `]
 })
 export class AppComponent {
   // Root component now only serves as an entry point for the router

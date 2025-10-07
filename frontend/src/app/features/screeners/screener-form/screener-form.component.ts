@@ -14,9 +14,9 @@ import { MessageService } from 'primeng/api';
 import { ScreenerStateService } from '../../../services/state/screener.state';
 import { ScreenerResp, ScreenerCreateReq, ScreenerCriteria, ScreenerRule } from '../../../services/entities/screener.entities';
 import { INDICATOR_FIELDS } from '../../../services/entities/indicators.entities';
-import { CriteriaBuilderModule } from 'criteria-builder';
-import { CriteriaDSL, BuilderConfig, FieldMeta, FieldType, Operator, Group, Condition, FieldRef, Literal } from 'criteria-builder';
-import { CriteriaApiService, FieldMetaResp } from 'criteria-builder';
+import { CriteriaBuilderModule } from '@projects/criteria-builder';
+import { CriteriaDSL, BuilderConfig, FieldMeta, FieldType, Operator, Group, Condition, FieldRef, Literal } from '@projects/criteria-builder';
+import { CriteriaApiService, FieldMetaResp } from '@projects/criteria-builder';
 
 /**
  * Static Field Configuration for Criteria Builder Integration
