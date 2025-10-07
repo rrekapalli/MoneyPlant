@@ -1725,20 +1725,16 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
       
       // If not found on widget, try to find it in DOM
       if (!chartInstance) {
-        console.log('🔄 Chart instance not on widget, searching in DOM...');
         chartInstance = this.findChartInstanceInDOM(candlestickWidget);
         if (chartInstance) {
-          console.log('✅ Found chart instance in DOM, attaching to widget');
           candlestickWidget.chartInstance = chartInstance;
         }
       }
       
       // Try to find chart instance using ngx-echarts directive
       if (!chartInstance) {
-        console.log('🔄 Chart instance not found, trying ngx-echarts directive...');
         chartInstance = this.findChartInstanceViaNgxEcharts(candlestickWidget);
         if (chartInstance) {
-          console.log('✅ Found chart instance via ngx-echarts, attaching to widget');
           candlestickWidget.chartInstance = chartInstance;
         }
       }
@@ -1766,17 +1762,14 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
             } : 'No data'
           });
           CandlestickChartBuilder.updateData(candlestickWidget, this.historicalData);
-          console.log('✅ Candlestick chart updated successfully');
           this.isUpdatingChart = false; // Reset flag
           return; // Success, exit retry loop
         } catch (error) {
           console.error('❌ Error updating candlestick chart:', error);
           
           // Try direct chart update as fallback
-          console.log('🔄 Trying direct chart update as fallback...');
           try {
             this.updateChartDirectly(chartInstance, this.historicalData);
-            console.log('✅ Direct chart update successful');
             this.isUpdatingChart = false; // Reset flag
             return;
           } catch (directError) {
@@ -1789,10 +1782,8 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
       // If we get here, the update failed or chart instance not ready
       if (retryCount < maxRetries - 1) {
         retryCount++;
-        console.log(`🔄 Retrying in ${retryDelay * retryCount}ms...`);
         setTimeout(attemptUpdate, retryDelay * retryCount);
       } else {
-        console.warn('⚠️ Max retries reached for candlestick chart update');
         this.isUpdatingChart = false; // Reset flag
         // Try one last resort: force widget recreation
         this.forceWidgetRecreation(candlestickWidgetIndex);
@@ -1815,7 +1806,6 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
    * @param widgetIndex The index of the widget to recreate
    */
   private forceWidgetRecreation(widgetIndex: number): void {
-    console.log('🔄 Forcing widget recreation at index:', widgetIndex);
     
     if (!this.dashboardConfig?.widgets || this.historicalData.length === 0) {
       console.warn('❌ Cannot recreate widget - no data or widgets');
@@ -1829,9 +1819,6 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
         console.warn('❌ Widget not found at index:', widgetIndex);
         return;
       }
-
-      console.log('🔄 Recreating candlestick widget with historical data');
-      console.log('📊 Sample historical data being used:', this.historicalData.slice(0, 3));
 
       // Create a new candlestick widget with the historical data
       const newCandlestickWidget = CandlestickChartBuilder.create()

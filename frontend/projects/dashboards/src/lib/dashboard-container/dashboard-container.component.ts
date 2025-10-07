@@ -258,8 +258,6 @@ export class DashboardContainerComponent {
   }
 
   async handleDataLoad(widget: IWidget) {
-    console.log('🔥 Dashboard container handleDataLoad called for widget:', widget.id, widget.config?.header?.title);
-    
     // Apply filters to widget if any exist
     if (this.filterValues && this.filterValues.length > 0) {
       this.applyFiltersToWidget(widget);

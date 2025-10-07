@@ -906,7 +906,6 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
       if (widget.chartInstance && this.historicalData.length > 0) {
         try {
           CandlestickChartBuilder.updateData(widget, this.historicalData);
-          console.log('✅ Direct chart update successful');
           return;
         } catch (error) {
           console.error('❌ Direct chart update failed:', error);
@@ -917,11 +916,9 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
       if (!widget.chartInstance && this.historicalData.length > 0) {
         const chartInstance = this.findChartInstanceViaNgxEcharts(widget) || this.findChartInstanceInDOM(widget);
         if (chartInstance) {
-          console.log('✅ Found chart instance, attaching to widget');
           widget.chartInstance = chartInstance;
           try {
             CandlestickChartBuilder.updateData(widget, this.historicalData);
-            console.log('✅ Chart update successful after finding instance');
             return;
           } catch (error) {
             console.error('❌ Chart update failed after finding instance:', error);
@@ -1067,11 +1064,6 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
       // Mark as fetched for this stock to prevent duplicates
       this.lastPrevDayFetchStock = stockName;
 
-      // Fetch previous-day data
-      // For now, we'll skip this functionality since we don't have a previous-day stock data service
-      // In the future, this could be implemented using StockService or a similar service
-      console.log(`Previous-day data fetch not implemented for stock: ${stockName}`);
-
       // Update metric tiles with current data
       this.updateMetricTilesWithFilters([]);
       this.cdr.detectChanges();
@@ -1119,11 +1111,9 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
       case 'Stock Historical Price Movement with Volume':
         // This is a candlestick chart - provide OHLCV data from historical data if available
         if (this.historicalData.length > 0) {
-          console.log('📊 getSummarizedDataByWidget: Using historical data:', this.historicalData.length, 'records');
           // Return the historical data directly as it already has the correct structure
           return this.historicalData;
         } else {
-          console.log('📊 getSummarizedDataByWidget: No historical data, using fallback');
           // Fallback to stock data - transform to match historical data structure
           const stockData = this.filteredDashboardData || this.dashboardData;
           if (!stockData || stockData.length === 0) {
@@ -1142,7 +1132,6 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
             symbol: stock.symbol || 'Unknown'
           }));
 
-          console.log('📊 getSummarizedDataByWidget: Transformed stock data:', transformedData.length, 'records');
           return transformedData;
         }
       default:
@@ -1212,12 +1201,10 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
       case 'Stock Historical Price Movement with Volume':
         // Use historical data for candlestick chart if available, otherwise use stock data
         if (this.historicalData.length > 0) {
-          console.log('📊 Using historical data for candlestick chart:', this.historicalData.length, 'records');
           // Return the historical data directly as it already has the correct structure
           // The CandlestickChartBuilder will handle the transformation
           return this.historicalData;
         } else {
-          console.log('📊 No historical data, using fallback stock data');
           // Fallback to stock data - transform to match historical data structure
           if (!sourceData) {
             console.warn('⚠️ No source data available for fallback');
@@ -1235,7 +1222,6 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
             symbol: stock.symbol || 'Unknown'
           }));
 
-          console.log('📊 Transformed stock data:', transformedData.length, 'records');
           return transformedData;
         }
 
@@ -1726,20 +1712,16 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
 
       // If not found on widget, try to find it in DOM
       if (!chartInstance) {
-        console.log('🔄 Chart instance not on widget, searching in DOM...');
         chartInstance = this.findChartInstanceInDOM(candlestickWidget);
         if (chartInstance) {
-          console.log('✅ Found chart instance in DOM, attaching to widget');
           candlestickWidget.chartInstance = chartInstance;
         }
       }
 
       // Try to find chart instance using ngx-echarts directive
       if (!chartInstance) {
-        console.log('🔄 Chart instance not found, trying ngx-echarts directive...');
         chartInstance = this.findChartInstanceViaNgxEcharts(candlestickWidget);
         if (chartInstance) {
-          console.log('✅ Found chart instance via ngx-echarts, attaching to widget');
           candlestickWidget.chartInstance = chartInstance;
         }
       }
@@ -1760,17 +1742,14 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
 
           try {
           CandlestickChartBuilder.updateData(candlestickWidget, this.historicalData);
-          console.log('✅ Candlestick chart updated successfully');
           this.isUpdatingChart = false; // Reset flag
           return; // Success, exit retry loop
         } catch (error) {
           console.error('❌ Error updating candlestick chart:', error);
 
           // Try direct chart update as fallback
-          console.log('🔄 Trying direct chart update as fallback...');
           try {
             this.updateChartDirectly(chartInstance, this.historicalData);
-            console.log('✅ Direct chart update successful');
             this.isUpdatingChart = false; // Reset flag
             return;
           } catch (directError) {
@@ -1781,10 +1760,8 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
       // If we get here, the update failed or chart instance not ready
       if (retryCount < maxRetries - 1) {
         retryCount++;
-        console.log(`🔄 Retrying in ${retryDelay * retryCount}ms...`);
         setTimeout(attemptUpdate, retryDelay * retryCount);
       } else {
-        console.warn('⚠️ Max retries reached for candlestick chart update');
         this.isUpdatingChart = false; // Reset flag
         // Try one last resort: force widget recreation
         this.forceWidgetRecreation(candlestickWidgetIndex);
@@ -1808,10 +1785,8 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
    * @param widgetIndex The index of the widget to recreate
    */
   private forceWidgetRecreation(widgetIndex: number): void {
-  console.log('🔄 Forcing widget recreation at index:', widgetIndex);
 
   if(!this.dashboardConfig?.widgets || this.historicalData.length === 0) {
-  console.warn('❌ Cannot recreate widget - no data or widgets');
   return;
 }
 
@@ -1819,12 +1794,8 @@ try {
   // Get the existing widget to preserve its position and configuration
   const existingWidget = this.dashboardConfig.widgets[widgetIndex];
   if (!existingWidget) {
-    console.warn('❌ Widget not found at index:', widgetIndex);
     return;
   }
-
-  console.log('🔄 Recreating candlestick widget with historical data');
-  console.log('📊 Sample historical data being used:', this.historicalData.slice(0, 3));
 
   // Create a new candlestick widget with the historical data
   const newCandlestickWidget = CandlestickChartBuilder.create()
@@ -1854,17 +1825,8 @@ try {
   newCandlestickWidget.height = existingWidget.height;
   newCandlestickWidget.id = 'candlestick-chart'; // Ensure consistent ID
 
-  console.log('🔄 New widget created:', {
-    id: newCandlestickWidget.id,
-    position: newCandlestickWidget.position,
-    height: newCandlestickWidget.height,
-    hasData: this.historicalData.length
-  });
-
   // Replace the widget in the dashboard configuration
   this.dashboardConfig.widgets[widgetIndex] = newCandlestickWidget;
-
-  console.log('✅ Widget replaced in dashboard configuration');
 
   // Force change detection to trigger re-render
   this.cdr.detectChanges();
@@ -1883,20 +1845,15 @@ try {
    * @param widgetIndex The index of the widget
    */
   private waitForChartInitialization(widget: any, widgetIndex: number): void {
-  console.log('🔄 Waiting for chart initialization...');
-
   const maxAttempts = 10; // Reduced attempts since we rely more on onDataLoad
   let attempt = 0;
 
   const checkInitialization = () => {
     if (attempt >= maxAttempts) {
-      console.warn('⚠️ Chart initialization timeout after maximum attempts');
-      console.log('🔄 Relying on onDataLoad event for chart update');
       return;
     }
 
     attempt++;
-    console.log(`🔄 Chart initialization attempt ${attempt}/${maxAttempts}`);
 
     // Check if the widget now has a chart instance
     if (widget.chartInstance && typeof widget.chartInstance.setOption === 'function') {
@@ -1926,9 +1883,8 @@ try {
    * @param widgetIndex The index of the widget
    */
   private tryFindAndAttachChartInstance(widget: any, widgetIndex: number): void {
-  console.log('🔄 Trying to find and attach chart instance to widget');
 
-  const maxAttempts = 10;
+    const maxAttempts = 10;
   let attempt = 0;
 
   const tryAttach = () => {
@@ -1938,12 +1894,10 @@ try {
     }
 
     attempt++;
-    console.log('🔄 Attempt', attempt, 'to find chart instance');
 
     // Try to find chart instance in DOM
     const chartInstance = this.findChartInstanceInDOM(widget);
     if (chartInstance) {
-      console.log('✅ Chart instance found and attached to widget');
       widget.chartInstance = chartInstance;
       CandlestickChartBuilder.updateData(widget, this.historicalData);
       return;
@@ -1952,10 +1906,8 @@ try {
     // Try to find chart instance by looking for the widget's DOM element
     const widgetElement = document.querySelector(`[data-widget-id="${widget.id}"]`);
     if (widgetElement) {
-      console.log('🔄 Found widget DOM element, checking for chart instance');
       const chartInstance = (widgetElement as any).__echarts_instance__;
       if (chartInstance) {
-        console.log('✅ Chart instance found on widget DOM element');
         widget.chartInstance = chartInstance;
         CandlestickChartBuilder.updateData(widget, this.historicalData);
         return;
@@ -1975,7 +1927,6 @@ try {
    * @param widget The candlestick widget to update
    */
   private updateChartDataDirectly(widget: any): void {
-  console.log('🔄 Updating chart data directly by modifying widget configuration');
 
   try {
     // Transform historical data to candlestick format
@@ -1992,12 +1943,6 @@ try {
     ]);
 
     const xAxisLabels = this.historicalData.map(item => item.date || '');
-
-    console.log('🔄 Transformed data:', {
-      candlestickData: transformedData.length,
-      volumeData: volumeData.length,
-      xAxisLabels: xAxisLabels.length
-    });
 
     // Update the widget's ECharts options directly
     if(widget.config && widget.config.options) {
@@ -2031,8 +1976,6 @@ try {
     }
   }
 
-  console.log('✅ Widget options updated with new data');
-
   // Force change detection to trigger re-render
   this.cdr.detectChanges();
 
@@ -2053,16 +1996,13 @@ try {
    * @param widget The widget to update
    */
   private tryUpdateChartInstanceAfterDataChange(widget: any): void {
-  console.log('🔄 Trying to update chart instance after data change');
 
   // Try to find chart instance in DOM
   const chartInstance = this.findChartInstanceInDOM(widget);
   if(chartInstance) {
-    console.log('✅ Chart instance found after data change, updating');
     widget.chartInstance = chartInstance;
     CandlestickChartBuilder.updateData(widget, this.historicalData);
   } else {
-    console.log('🔄 Chart instance still not found, trying to trigger chart initialization');
 
     // Try to trigger chart initialization by updating widget data
     widget.data = this.historicalData;
@@ -2072,7 +2012,6 @@ try {
     setTimeout(() => {
   const chartInstance2 = this.findChartInstanceInDOM(widget);
   if (chartInstance2) {
-    console.log('✅ Chart instance found on second attempt');
     widget.chartInstance = chartInstance2;
     CandlestickChartBuilder.updateData(widget, this.historicalData);
   } else {
@@ -2093,13 +2032,11 @@ try {
 
 // Prevent multiple simultaneous chart recreations
 if (this.isRecreatingChart) {
-  console.log('🔄 Chart recreation already in progress, skipping...');
+  ('🔄 Chart recreation already in progress, skipping...');
   return;
 }
 
 this.isRecreatingChart = true;
-console.log('🔄 Recreating candlestick chart with', this.historicalData.length, 'records');
-console.log('📊 Sample historical data being used:', this.historicalData.slice(0, 3));
 
 // Find the candlestick widget
 const candlestickWidgetIndex = this.dashboardConfig.widgets.findIndex(widget =>
@@ -2145,7 +2082,6 @@ newCandlestickChart.position = { x: 0, y: 3, cols: 8, rows: 12 };
 // Clear the old chart instance to force reinitialization
 const oldWidget = this.dashboardConfig.widgets[candlestickWidgetIndex];
 if (oldWidget.chartInstance) {
-  console.log('🔄 Disposing old chart instance');
   oldWidget.chartInstance.dispose();
   oldWidget.chartInstance = null;
 }
@@ -2153,14 +2089,11 @@ if (oldWidget.chartInstance) {
 // Replace the widget in the dashboard config
 this.dashboardConfig.widgets[candlestickWidgetIndex] = newCandlestickChart;
 
-console.log('✅ Candlestick chart recreated successfully');
-
 // Force change detection
 this.cdr.detectChanges();
 
 // Force the chart to reinitialize after a longer delay to ensure chart instance is created
 setTimeout(() => {
-  console.log('🔄 Forcing chart reinitialization...');
   this.cdr.detectChanges();
 
   // Wait for chart instance to be created and then update with data
@@ -2187,7 +2120,6 @@ const widget = this.dashboardConfig.widgets[widgetIndex];
 if (widget && widget.chartInstance) {
 
   if (this.historicalData.length > 0) {
-    console.log('🔄 Updating chart with historical data after recreation');
     CandlestickChartBuilder.updateData(widget, this.historicalData);
   }
   this.isRecreatingChart = false;
@@ -2195,21 +2127,17 @@ if (widget && widget.chartInstance) {
   // Try to find chart instance in DOM and attach it to widget
   const chartInstance = this.findChartInstanceInDOM(widget);
   if (chartInstance) {
-    console.log('✅ Chart instance found in DOM, attaching to widget');
     widget.chartInstance = chartInstance;
 
     if (this.historicalData.length > 0) {
-      console.log('🔄 Updating chart with historical data after DOM discovery');
       CandlestickChartBuilder.updateData(widget, this.historicalData);
     }
     this.isRecreatingChart = false;
     return;
   }
-  console.log('🔄 Chart instance not ready, attempt', attempt + 1, 'of', maxAttempts);
 
   // Force change detection every few attempts to trigger chart initialization
   if (attempt % 5 === 0) {
-    console.log('🔄 Forcing change detection to trigger chart initialization');
     this.cdr.detectChanges();
   }
 
@@ -2241,7 +2169,6 @@ if (widget && widget.chartInstance) {
 
     for (const selector of selectors) {
       const elements = document.querySelectorAll(selector);
-      console.log('🔍 Found', elements.length, 'elements with selector:', selector);
 
       for (let i = 0; i < elements.length; i++) {
         const element = elements[i];
@@ -2249,7 +2176,6 @@ if (widget && widget.chartInstance) {
         // Check for chart instance on the element
         const chartInstance = (element as any).__echarts_instance__;
         if (chartInstance && chartInstance.getOption) {
-          console.log('🔍 Found chart instance in DOM with selector:', selector, chartInstance);
           return chartInstance;
         }
 
@@ -2258,7 +2184,6 @@ if (widget && widget.chartInstance) {
         while (parent && parent !== document.body) {
           const parentChartInstance = (parent as any).__echarts_instance__;
           if (parentChartInstance && parentChartInstance.getOption) {
-            console.log('🔍 Found chart instance in parent element:', parentChartInstance);
             return parentChartInstance;
           }
           parent = parent.parentElement;
@@ -2268,13 +2193,10 @@ if (widget && widget.chartInstance) {
 
     // If widget has an ID, try to find it specifically
     if (widget && widget.id) {
-      console.log('🔍 Looking for widget with ID:', widget.id);
       const widgetElement = document.querySelector(`[data-widget-id="${widget.id}"]`);
       if (widgetElement) {
-        console.log('🔍 Found widget element for ID:', widget.id);
         const chartInstance = (widgetElement as any).__echarts_instance__;
         if (chartInstance && chartInstance.getOption) {
-          console.log('🔍 Found chart instance on widget element:', chartInstance);
           return chartInstance;
         }
 
@@ -2284,7 +2206,6 @@ if (widget && widget.chartInstance) {
           const child = childElements[i];
           const chartInstance = (child as any).__echarts_instance__;
           if (chartInstance && chartInstance.getOption) {
-            console.log('🔍 Found chart instance in widget child element:', chartInstance);
             return chartInstance;
           }
         }
@@ -2293,13 +2214,11 @@ if (widget && widget.chartInstance) {
 
     // Look for any element with __echarts_instance__ property
     const allElements = document.querySelectorAll('*');
-    console.log('🔍 Checking all', allElements.length, 'elements for chart instances');
 
     for (let i = 0; i < Math.min(allElements.length, 100); i++) { // Limit to first 100 elements for performance
       const element = allElements[i];
       const chartInstance = (element as any).__echarts_instance__;
       if (chartInstance && chartInstance.getOption) {
-        console.log('🔍 Found chart instance in element:', element.tagName, chartInstance);
         return chartInstance;
       }
     }
@@ -2320,7 +2239,6 @@ if (widget && widget.chartInstance) {
   try {
     // Look for ngx-echarts directive instances
     const ngxEchartsElements = document.querySelectorAll('ngx-echarts');
-    console.log('🔍 Found', ngxEchartsElements.length, 'ngx-echarts elements');
 
     for (let i = 0; i < ngxEchartsElements.length; i++) {
       const element = ngxEchartsElements[i];
@@ -2328,7 +2246,6 @@ if (widget && widget.chartInstance) {
       // Check for chart instance on the element
       const chartInstance = (element as any).__echarts_instance__;
       if (chartInstance && chartInstance.getOption) {
-        console.log('🔍 Found chart instance on ngx-echarts element:', chartInstance);
         return chartInstance;
       }
 
@@ -2338,7 +2255,6 @@ if (widget && widget.chartInstance) {
         const child = childElements[j];
         const chartInstance = (child as any).__echarts_instance__;
         if (chartInstance && chartInstance.getOption) {
-          console.log('🔍 Found chart instance in ngx-echarts child element:', chartInstance);
           return chartInstance;
         }
       }
@@ -2346,13 +2262,11 @@ if (widget && widget.chartInstance) {
 
     // Look for any element with echarts directive
     const echartsElements = document.querySelectorAll('[echarts]');
-    console.log('🔍 Found', echartsElements.length, 'elements with echarts directive');
 
     for (let i = 0; i < echartsElements.length; i++) {
       const element = echartsElements[i];
       const chartInstance = (element as any).__echarts_instance__;
       if (chartInstance && chartInstance.getOption) {
-        console.log('🔍 Found chart instance on echarts directive element:', chartInstance);
         return chartInstance;
       }
     }
@@ -2370,11 +2284,8 @@ if (widget && widget.chartInstance) {
    */
   private findAllChartInstances(): any {
   try {
-    console.log('🔍 Searching all elements for chart instances...');
-
     // Get all elements in the document
     const allElements = document.querySelectorAll('*');
-    console.log('🔍 Total elements to check:', allElements.length);
 
     // Check first 200 elements for performance
     const maxElements = Math.min(allElements.length, 200);
@@ -2385,7 +2296,6 @@ if (widget && widget.chartInstance) {
       // Check for chart instance on the element
       const chartInstance = (element as any).__echarts_instance__;
       if (chartInstance && chartInstance.getOption && chartInstance.setOption) {
-        console.log('🔍 Found chart instance on element:', element.tagName, element.className, chartInstance);
         return chartInstance;
       }
 
@@ -2395,17 +2305,14 @@ if (widget && widget.chartInstance) {
         if (prop.includes('echarts') || prop.includes('chart')) {
           const value = (element as any)[prop];
           if (value && typeof value === 'object' && value.getOption && value.setOption) {
-            console.log('🔍 Found chart instance in property:', prop, value);
             return value;
           }
         }
       }
     }
 
-    console.log('🔍 No chart instances found in first', maxElements, 'elements');
     return null;
   } catch (error) {
-    console.error('Error finding all chart instances:', error);
     return null;
   }
 }
@@ -2543,26 +2450,15 @@ if (chartInstance && typeof chartInstance.setOption === 'function') {
    * Debug method to log current chart state
    */
   private debugChartState(): void {
-  console.log('🔍 === CHART STATE DEBUG ===');
-  console.log('🔍 Current selected stock:', this.currentSelectedStockData?.symbol);
-  console.log('🔍 Historical data length:', this.historicalData.length);
-  console.log('🔍 Historical data sample:', this.historicalData.slice(0, 2));
-
+  
   const candlestickWidget = this.dashboardConfig?.widgets?.find(widget =>
     widget.config?.header?.title === 'Stock Historical Price Movement with Volume'
   );
 
   if(candlestickWidget) {
-    console.log('🔍 Widget found:', !!candlestickWidget);
-    console.log('🔍 Widget chart instance:', !!candlestickWidget.chartInstance);
-    console.log('🔍 Widget data:', candlestickWidget.data);
-
     if (candlestickWidget.chartInstance) {
       try {
         const currentOptions = candlestickWidget.chartInstance.getOption();
-        console.log('🔍 Current chart options:', currentOptions);
-        console.log('🔍 Chart series data length:', (currentOptions as any)?.series?.[0]?.data?.length || 0);
-        console.log('🔍 Chart series sample:', (currentOptions as any)?.series?.[0]?.data?.slice(0, 2));
       } catch (error) {
         console.log('🔍 Error getting chart options:', error);
       }
@@ -2570,7 +2466,6 @@ if (chartInstance && typeof chartInstance.setOption === 'function') {
   } else {
     console.log('🔍 Candlestick widget not found');
   }
-    console.log('🔍 === END CHART STATE DEBUG ===');
 }
 
   /**
@@ -2587,7 +2482,6 @@ if (chartInstance && typeof chartInstance.setOption === 'function') {
     );
 
     if (!candlestickWidget) {
-      console.log('🔥 Candlestick widget not found for direct update');
       return;
     }
 
@@ -2603,7 +2497,6 @@ if (chartInstance && typeof chartInstance.setOption === 'function') {
     if (chartInstance && typeof chartInstance.setOption === 'function') {
       try {
         this.updateChartDirectly(chartInstance, this.historicalData);
-        console.log('✅ Direct chart update successful');
       } catch (error) {
         console.error('❌ Direct chart update failed:', error);
       }
@@ -2619,12 +2512,8 @@ if (chartInstance && typeof chartInstance.setOption === 'function') {
    */
   private updateChartDirectly(chartInstance: any, data: any[]): void {
   if(!chartInstance || !data || data.length === 0) {
-  console.warn('⚠️ Cannot update chart directly - no instance or data');
   return;
 }
-
-console.log('🔄 Updating chart directly with', data.length, 'records');
-console.log('📊 Sample data:', data.slice(0, 2));
 
 try {
   // Transform data to candlestick format
@@ -2696,9 +2585,7 @@ try {
     ]
   };
 
-  console.log('🔄 Setting chart options:', chartOptions);
   chartInstance.setOption(chartOptions, true);
-  console.log('✅ Chart updated directly with new options');
 
 } catch (error) {
   console.error('❌ Error updating chart directly:', error);
@@ -2727,9 +2614,6 @@ try {
       volume: stock.totalTradedVolume || 0,
       symbol: stock.symbol || 'Unknown'
     }));
-
-    console.log('Created transformed data:', transformedData.length, 'items');
-    console.log('Sample transformed data:', transformedData.slice(0, 3));
 
     // Update the widget with transformed data using CandlestickChartBuilder
     CandlestickChartBuilder.updateData(candlestickWidget, transformedData);
@@ -2787,7 +2671,6 @@ try {
   };
 
   candlestickWidget.chartInstance.setOption(newOptions, true);
-  console.log('Added line series to candlestick chart');
 }
   }
 
@@ -2921,7 +2804,6 @@ try {
     try {
       // For now, we'll skip WebSocket subscription since stock-specific methods don't exist
       // In the future, this could be implemented when stock WebSocket services are available
-      console.log(`Stock WebSocket subscription not implemented for ${webSocketStockName}`);
 
       // Mark this topic as subscribed to prevent repeated attempts
       this.subscribedTopics.add(topicName);
@@ -2936,7 +2818,6 @@ try {
     console.warn('WebSocket still not connected - skipping real-time subscription for', webSocketStockName);
   }
 } catch (error) {
-  console.warn(`WebSocket subscription failed for ${webSocketStockName} - continuing without real-time data:`, (error as Error).message || error);
   // Don't clear currentSelectedStockData on WebSocket connection failures to prevent tile from reverting
   this.cdr.detectChanges();
 } finally {
@@ -3164,7 +3045,6 @@ try {
    * Public method to force tile refresh (called from dashboard header)
    */
   public forceTileRefresh(): void {
-  console.log('🔄 Manual tile refresh triggered from dashboard header');
 
   // Safe refresh: update tiles and trigger change detection
   this.updateMetricTilesWithFilters([]);
@@ -3173,7 +3053,6 @@ try {
 
   setTimeout(() => {
   this.cdr.detectChanges();
-  console.log('🔄 Manual tile refresh completed');
 }, 100);
   }
 
@@ -3284,8 +3163,6 @@ try {
    * @param stockSymbol The stock symbol from route parameter
    */
   private loadStockDataForRoute(stockSymbol: string): void {
-  console.log('🔥 loadStockDataForRoute called for:', stockSymbol);
-
   // Update dashboard title
   this.dashboardTitle = `${stockSymbol} - Stock Insights Dashboard`;
 
@@ -3313,10 +3190,6 @@ try {
   console.warn('Invalid stock symbol provided');
   return;
 }
-
-console.log(`🔥 Switching to stock: ${stockSymbol}`);
-console.log(`🔥 Dashboard config exists:`, !!this.dashboardConfig);
-console.log(`🔥 Dashboard widgets count:`, this.dashboardConfig?.widgets?.length || 0);
 
 // Update dashboard title
 this.dashboardTitle = `${stockSymbol} - Stock Insights Dashboard`;
@@ -3348,8 +3221,6 @@ if (this.dashboardConfig?.widgets) {
   );
 
   if (candlestickWidgetIndex >= 0) {
-    console.log('🔥 Force recreating chart widget for stock switch');
-
     // Dispose old chart instance
     const oldWidget = this.dashboardConfig.widgets[candlestickWidgetIndex];
     if (oldWidget.chartInstance) {
@@ -3366,10 +3237,8 @@ if (this.dashboardConfig?.widgets) {
       .setHeader('Stock Historical Price Movement with Volume')
       .setId('candlestick-chart')
       .setEvents((widget, chart) => {
-        console.log('🔥 New chart events setup - chart instance:', !!chart);
         if (chart) {
           widget.chartInstance = chart;
-          console.log('🔥 New chart instance attached to widget');
         }
       })
       .build();
@@ -3380,8 +3249,6 @@ if (this.dashboardConfig?.widgets) {
 
     // Replace the widget
     this.dashboardConfig.widgets[candlestickWidgetIndex] = newCandlestickWidget;
-
-    console.log('✅ Chart widget completely recreated');
   }
 }
 
@@ -3410,10 +3277,6 @@ setTimeout(() => {
   return;
 }
 
-console.log('🔥 Force chart recreation called');
-console.log('📊 Historical data length:', this.historicalData.length);
-console.log('📊 Current selected stock:', this.currentSelectedStockData?.symbol);
-
 // Find the candlestick widget
 const candlestickWidgetIndex = this.dashboardConfig.widgets.findIndex(widget =>
   widget.config?.header?.title === 'Stock Historical Price Movement with Volume'
@@ -3424,7 +3287,6 @@ if (candlestickWidgetIndex === -1) {
   return;
 }
 
-console.log('🔥 Recreating candlestick widget at index:', candlestickWidgetIndex);
 
 // Create a new candlestick widget with the current historical data
 const newCandlestickWidget = CandlestickChartBuilder.create()
@@ -3432,17 +3294,13 @@ const newCandlestickWidget = CandlestickChartBuilder.create()
   .setHeader('Stock Historical Price Movement with Volume')
   .setId('candlestick-chart')
   .setEvents((widget, chart) => {
-    console.log('🔥 Chart events setup for recreated chart');
     if (chart) {
       widget.chartInstance = chart;
-      console.log('🔥 Chart instance attached to recreated widget');
 
       // Try immediate update with current data
       if (this.historicalData.length > 0) {
-        console.log('🔥 Immediate update of recreated chart');
         try {
           CandlestickChartBuilder.updateData(widget, this.historicalData);
-          console.log('✅ Recreated chart updated successfully');
         } catch (error) {
           console.error('❌ Error updating recreated chart:', error);
         }
@@ -3459,14 +3317,11 @@ newCandlestickWidget.height = existingWidget.height;
 // Replace the widget in the dashboard configuration
 this.dashboardConfig.widgets[candlestickWidgetIndex] = newCandlestickWidget;
 
-console.log('✅ Chart widget recreated successfully');
-
 // Force change detection to trigger re-render
 this.cdr.detectChanges();
 
 // Wait for the chart to be initialized and then update
 setTimeout(() => {
-  console.log('🔥 Final update of recreated chart');
   this.updateCandlestickChartWithRetry();
 }, 500);
   }
@@ -3525,16 +3380,9 @@ setTimeout(() => {
    * @param timeRange The selected time range (1D, 5D, 1M, 3M, 6M, YTD, 1Y, 3Y, 5Y, MAX)
    */
   public onTimeRangeChange(timeRange: string): void {
-  console.log('🔥 onTimeRangeChange called with:', timeRange);
-  console.log('🔥 currentSelectedStockData:', this.currentSelectedStockData);
-  console.log('🔥 currentSelectedStockData?.symbol:', this.currentSelectedStockData?.symbol);
-
   if(!this.currentSelectedStockData?.symbol) {
-  console.warn('🔥 No current selected stock data, cannot make API call');
   return;
 }
-
-console.log(`🔥 Time range changed to: ${timeRange}`);
 
 // Update the selected time range
 this.selectedTimeRange = timeRange as TimeRange;
@@ -3555,12 +3403,6 @@ const endDate = new Date();
 const maxAvailableDate = this.getMaxAvailableDate();
 let startDate: Date;
 
-console.log('🔥 Date calculation debug:');
-console.log('🔥 Current endDate:', endDate.toISOString().split('T')[0]);
-console.log('🔥 Current year:', endDate.getFullYear());
-console.log('🔥 Current month:', endDate.getMonth());
-console.log('🔥 Current day:', endDate.getDate());
-
 switch (timeRange) {
   case '1D':
     // For 1D, we'll use intraday data if available, otherwise show last trading day
@@ -3572,26 +3414,14 @@ switch (timeRange) {
   case '1M':
     // Fix: Use proper month calculation to avoid future dates
     startDate = new Date(endDate.getFullYear(), endDate.getMonth() - 1, endDate.getDate());
-    console.log('🔥 1M calculation:');
-    console.log('🔥 Original month:', endDate.getMonth());
-    console.log('🔥 Calculated month:', endDate.getMonth() - 1);
-    console.log('🔥 Calculated startDate:', startDate.toISOString().split('T')[0]);
     break;
   case '3M':
     // Fix: Use proper month calculation to avoid future dates
     startDate = new Date(endDate.getFullYear(), endDate.getMonth() - 3, endDate.getDate());
-    console.log('🔥 3M calculation:');
-    console.log('🔥 Original month:', endDate.getMonth());
-    console.log('🔥 Calculated month:', endDate.getMonth() - 3);
-    console.log('🔥 Calculated startDate:', startDate.toISOString().split('T')[0]);
     break;
   case '6M':
     // Fix: Use proper month calculation to avoid future dates
     startDate = new Date(endDate.getFullYear(), endDate.getMonth() - 6, endDate.getDate());
-    console.log('🔥 6M calculation:');
-    console.log('🔥 Original month:', endDate.getMonth());
-    console.log('🔥 Calculated month:', endDate.getMonth() - 6);
-    console.log('🔥 Calculated startDate:', startDate.toISOString().split('T')[0]);
     break;
   case 'YTD':
     startDate = new Date(endDate.getFullYear(), 0, 1); // January 1st of current year
@@ -3616,23 +3446,16 @@ switch (timeRange) {
 // Ensure start date is not before the maximum available date
 if (startDate < maxAvailableDate) {
   startDate = maxAvailableDate;
-  console.log(`Adjusted start date to maximum available date: ${maxAvailableDate.toISOString().split('T')[0]}`);
 }
 
 // Format dates as yyyy-MM-dd strings (backend expected format)
 const startDateStr = startDate.toISOString().split('T')[0];
 const endDateStr = endDate.toISOString().split('T')[0];
 
-console.log(`Loading historical data for ${this.currentSelectedStockData.symbol} from ${startDateStr} to ${endDateStr} (${timeRange})`);
-console.log(`Maximum available date: ${maxAvailableDate.toISOString().split('T')[0]}`);
-
 // Load historical data for the new time range
 this.stockService.getStockHistory(this.currentSelectedStockData.symbol, startDateStr, endDateStr).subscribe({
   next: (historicalData: StockHistoricalData[]) => {
-    console.log('📊 API Response received:', historicalData?.length || 0, 'records');
-    console.log('📊 Sample API data:', historicalData?.slice(0, 3));
     this.historicalData = historicalData || [];
-    console.log('📊 Updated historicalData length:', this.historicalData.length);
     this.updateCandlestickChartWithRetry();
     this.cdr.detectChanges();
   },
@@ -3650,15 +3473,7 @@ this.stockService.getStockHistory(this.currentSelectedStockData.symbol, startDat
    * @param event The time range filter event
    */
   private handleTimeRangeChange(event: TimeRangeFilterEvent): void {
-  console.log('🔥 === TIME RANGE FILTER EVENT RECEIVED ===');
-  console.log('🔥 Event type:', event.type);
-  console.log('🔥 Selected range:', event.range);
-  console.log('🔥 Widget ID:', event.widgetId);
-  console.log('🔥 Current selected stock:', this.currentSelectedStockData?.symbol);
-  console.log('🔥 ========================================');
-
   if(event.type === 'timeRangeChange') {
-  console.log('🔥 Calling onTimeRangeChange with range:', event.range);
   this.onTimeRangeChange(event.range);
 } else {
   console.warn('🔥 Unknown event type:', event.type);

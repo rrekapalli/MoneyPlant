@@ -526,49 +526,32 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
    * @param callback Function to handle time range filter changes
    */
   setTimeRangeChangeCallback(callback: (event: TimeRangeFilterEvent) => void): this {
-    console.log('🔥 setTimeRangeChangeCallback called with callback:', !!callback);
-    
     // Store the callback directly
     this.timeRangeChangeCallback = callback;
-    console.log('🔥 Stored timeRangeChangeCallback:', !!this.timeRangeChangeCallback);
     
     // Also use the generalized filter change callback
     this.setFilterChangeCallback((event: ChartFilterEvent) => {
-      console.log('🔥 Filter change callback triggered:', event);
       if (event.type === 'customFilter' && event.filterType === 'timeRange') {
         const timeRangeEvent: TimeRangeFilterEvent = {
           type: 'timeRangeChange',
           range: event.value as TimeRange,
           widgetId: event.widgetId
         };
-        console.log('🔥 Calling time range callback with event:', timeRangeEvent);
         callback(timeRangeEvent);
       }
     });
     
     // Set up the event handler
     this.setEvents((widget, chart) => {
-      console.log('🔥 Setting up event handler in setTimeRangeChangeCallback');
-      console.log('🔥 Widget:', widget);
-      console.log('🔥 Chart instance:', chart);
       if (chart) {
-        console.log('🔥 Chart instance available, setting up click handler');
         // Set up event handling for time range filters
         chart.off('click');
         chart.on('click', (params: any) => {
-          console.log('🔥 Chart click detected:', params);
-          console.log('🔥 Component type:', params.componentType);
-          console.log('🔥 Component sub type:', params.componentSubType);
-          console.log('🔥 Data:', params.data);
-          console.log('🔥 Component index:', params.componentIndex);
           
           // Check if the click is on a graphic element (time range filter)
           if (params.componentType === 'graphic') {
-            console.log('🔥 Graphic element clicked:', params);
-            
             // Get the graphic element from the chart options
             const chartOptions = chart.getOption();
-            console.log('🔥 Chart options structure:', chartOptions);
             
             // Try different ways to access graphic elements
             let graphicElements = [];
@@ -586,35 +569,21 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
               }
             }
             
-            console.log('🔥 Graphic elements found:', graphicElements);
-            console.log('🔥 Component index:', params.componentIndex);
-            console.log('🔥 Graphic elements length:', graphicElements.length);
-            
             let clickedElement = graphicElements[params.componentIndex];
             
             // Fallback: use stored graphic elements if chart options don't work
             if (!clickedElement || !clickedElement.range) {
-              console.log('🔥 Using fallback: stored graphic elements');
-              console.log('🔥 Stored graphic elements:', this.graphicElements);
               clickedElement = this.graphicElements[params.componentIndex];
             }
             
-            console.log('🔥 Clicked graphic element:', clickedElement);
-            console.log('🔥 Element range:', clickedElement?.range);
-            console.log('🔥 Element filterType:', clickedElement?.filterType);
-            console.log('🔥 Element filterValue:', clickedElement?.filterValue);
-            
             if (clickedElement && (clickedElement.range || clickedElement.filterValue)) {
               const range = clickedElement.range || clickedElement.filterValue;
-              console.log('🔥 Time range filter graphic clicked:', range);
               
               // Update selected time range
               this.selectedTimeRange = range;
-              console.log('🔥 Updated selectedTimeRange to:', this.selectedTimeRange);
               
               // Trigger filter change event
               if (this.filterChangeCallback) {
-                console.log('🔥 Triggering filter change callback');
                 this.filterChangeCallback({
                   type: 'customFilter',
                   filterType: 'timeRange',
@@ -626,7 +595,6 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
               }
               
               if (this.timeRangeChangeCallback) {
-                console.log('🔥 Triggering time range change callback with range:', range);
                 this.timeRangeChangeCallback({
                   type: 'timeRangeChange',
                   range: range,
@@ -638,7 +606,6 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
               
               // Also trigger global function as fallback
               if (typeof window !== 'undefined' && (window as any).handleTimeRangeFilterClick) {
-                console.log('🔥 Triggering global fallback function');
                 (window as any).handleTimeRangeFilterClick(range);
               } else {
                 console.warn('🔥 Global fallback function not available!');
@@ -943,15 +910,6 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
 
     // If time range filters are enabled, add them as graphic elements to the chart
     if (this.timeRangeFilters.length > 0) {
-      console.log('Creating time range filters:', this.timeRangeFilters);
-      console.log('Selected time range:', this.selectedTimeRange);
-      console.log('Time range filter details:', this.timeRangeFilters.map((range, i) => ({
-        index: i,
-        range: range,
-        charCode: range.charCodeAt(0),
-        length: range.length,
-        hex: Array.from(range).map(c => c.charCodeAt(0).toString(16)).join(' ')
-      })));
       // Add time range filters as graphic elements positioned in top left corner
       const timeRangeButtons = this.timeRangeFilters.map((range, index) => ({
         type: 'rect',
@@ -983,7 +941,6 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
       const timeRangeTexts = this.timeRangeFilters.map((range, index) => {
         // Debug logging for "Y" specifically
         if (range === '1Y') {
-          console.log('Creating Y text element at index:', index, 'position:', 10 + (index * 40) + 17.5, 'top:', 10 + 14);
         }
         return {
           type: 'text',
@@ -1029,18 +986,6 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
       
       // Add graphics to chart options
       (this.chartOptions as any).graphic = this.graphicElements;
-      
-      // Debug: Log the chart container width
-      console.log('Chart grid configuration:', (this.chartOptions as any).grid);
-      console.log('Chart container width should accommodate:', this.timeRangeFilters.length * 45 + 10, 'px');
-      console.log('Time range filters created:', this.timeRangeFilters.length, 'filters');
-      console.log('Time range filter positions:', timeRangeButtons.map((btn, i) => `${this.timeRangeFilters[i]}: left=${btn.left}, width=${btn.width}`));
-      console.log('All time range filters:', this.timeRangeFilters);
-      console.log('1Y filter index:', this.timeRangeFilters.indexOf('1Y'));
-      console.log('Selected time range:', this.selectedTimeRange);
-      console.log('Total width needed:', this.timeRangeFilters.length * 40 + 10, 'px');
-      console.log('1Y button position:', timeRangeButtons.find((btn, i) => this.timeRangeFilters[i] === '1Y'));
-      console.log('1Y text position:', timeRangeTexts.find((txt, i) => this.timeRangeFilters[i] === '1Y'));
     }
 
     // Prepare final options with conditional legend and data zoom
@@ -1049,15 +994,8 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
       series: series,
     };
     
-    console.log('🔧 Final series data:', {
-      candlestickData: series[0]?.data?.length || 0,
-      volumeData: series[1]?.data?.length || 0,
-      areaData: series[2]?.data?.length || 0
-    });
-
     // CRITICAL FIX: Ensure dual-axis configuration is always present when volume is enabled
     if (this.showVolume) {
-      console.log('🔧 Building chart with volume enabled - ensuring dual-axis configuration');
       // Ensure we have proper dual-axis configuration with more space for volume
       finalOptions.grid = [
         {
@@ -1114,13 +1052,6 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
           splitLine: { show: false }
         }
       ];
-      
-      console.log('🔧 Dual-axis configuration applied:', {
-        gridCount: finalOptions.grid?.length,
-        xAxisCount: finalOptions.xAxis?.length,
-        yAxisCount: finalOptions.yAxis?.length,
-        seriesCount: finalOptions.series?.length
-      });
     } else {
       console.log('🔧 Building chart without volume - single-axis configuration');
     }
@@ -1174,15 +1105,6 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
     // Set a reasonable height for the candlestick chart (12 rows = 600px)
     baseWidget.height = 600;
     
-    console.log('🔧 Candlestick chart widget height set to:', baseWidget.height);
-    console.log('🔧 Chart options being set:', {
-      seriesCount: finalOptions.series?.length || 0,
-      xAxisCount: finalOptions.xAxis?.length || 0,
-      yAxisCount: finalOptions.yAxis?.length || 0,
-      gridCount: finalOptions.grid?.length || 0,
-      hasData: finalOptions.series?.[0]?.data?.length || 0
-    });
-
     // Add time range filters data to the widget for external access
     if (this.timeRangeFilters.length > 0) {
       (baseWidget as any).timeRangeFilters = {
@@ -1241,7 +1163,6 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
         filterValue: range,
         // Add onclick handler
         onclick: () => {
-          console.log('Time range filter clicked:', range);
           if (callback) {
             callback({
               type: 'timeRangeChange',
@@ -1279,7 +1200,6 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
         filterValue: range,
         // Add onclick handler
         onclick: () => {
-          console.log('Time range filter text clicked:', range);
           if (callback) {
             callback({
               type: 'timeRangeChange',
@@ -1348,32 +1268,16 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
    * Enhanced updateData with retry mechanism
    */
   static override updateData(widget: IWidget, data: any): void {
-    console.log('🔄 CandlestickChartBuilder.updateData called with:', data?.length || 0, 'records');
-    console.log('🔄 Sample data:', data?.slice(0, 2));
-    console.log('🔄 Data date range:', data?.length > 0 ? {
-      first: data[0]?.date,
-      last: data[data.length - 1]?.date
-    } : 'No data');
-    
     const maxRetries = 3;
     let retryCount = 0;
 
     const updateWithRetry = () => {
       try {
         if (widget.chartInstance) {
-          console.log('✅ Chart instance found, updating data');
-          console.log('🔄 Chart instance type:', typeof widget.chartInstance);
-          console.log('🔄 Chart instance methods:', Object.getOwnPropertyNames(widget.chartInstance));
-          
           // Check if chart is properly initialized
           if (!widget.chartInstance.getOption) {
-            console.warn('⚠️ Chart instance getOption not available, but trying direct update...');
-            console.log('🔄 Chart instance properties:', Object.getOwnPropertyNames(widget.chartInstance));
-            console.log('🔄 Chart instance prototype:', Object.getPrototypeOf(widget.chartInstance));
-            
             // Try direct update even without getOption
             if (widget.chartInstance.setOption) {
-              console.log('🔄 Attempting direct setOption update...');
               try {
                 // Create basic options structure
                 const basicOptions = {
@@ -1396,7 +1300,6 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
                 };
                 
                 widget.chartInstance.setOption(basicOptions, true);
-                console.log('✅ Direct setOption update successful');
                 return;
               } catch (error) {
                 console.error('❌ Direct setOption update failed:', error);
@@ -1408,19 +1311,16 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
               setTimeout(updateWithRetry, 100 * retryCount);
               return;
             } else {
-              console.error('❌ Chart instance never properly initialized after max retries');
               return;
             }
           }
           
-          console.log('🔄 Chart instance is properly initialized, proceeding with data update');
           // Transform data if needed
           let transformedData = data;
           let volumeData: number[][] = [];
           let xAxisLabels: string[] = [];
           
           if (Array.isArray(data) && data.length > 0 && typeof data[0] === 'object') {
-            console.log('🔄 Transforming object data to candlestick format');
             transformedData = data.map(item => [
               Number(item.open) || 0,
               Number(item.close) || 0,
@@ -1430,7 +1330,6 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
             
             // Extract volume data if available
             if (data[0].volume !== undefined) {
-              console.log('🔄 Extracting volume data');
               volumeData = data.map(item => [
                 item.date || '',
                 Number(item.volume) || 0
@@ -1439,25 +1338,12 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
             
             // Extract x-axis labels
             xAxisLabels = data.map(item => item.date || '');
-            console.log('🔄 Transformed data:', transformedData.length, 'candlesticks,', volumeData.length, 'volume records');
           } else {
             console.log('🔄 Data is already in array format or empty');
           }
 
           const currentOptions = widget.chartInstance.getOption();
-          console.log('🔄 Current chart options:', {
-            hasXAxis: !!(currentOptions as any).xAxis,
-            xAxisCount: (currentOptions as any).xAxis?.length || 0,
-            hasYAxis: !!(currentOptions as any).yAxis,
-            yAxisCount: (currentOptions as any).yAxis?.length || 0,
-            hasGrid: !!(currentOptions as any).grid,
-            gridCount: (currentOptions as any).grid?.length || 0,
-            seriesCount: (currentOptions as any).series?.length || 0,
-            seriesNames: (currentOptions as any).series?.map((s: any) => s.name) || []
-          });
-          
-          console.log('🔄 Full current options structure:', currentOptions);
-          
+
           // Validate current options structure
           if (!currentOptions || typeof currentOptions !== 'object') {
             console.error('❌ Invalid chart options structure:', currentOptions);
@@ -1466,7 +1352,6 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
           
           // If chart options are completely empty, create a basic structure
           if (!(currentOptions as any)['series'] && !(currentOptions as any)['xAxis'] && !(currentOptions as any)['yAxis']) {
-            console.log('🔄 Chart options are empty, creating basic structure');
             const basicOptions = {
               series: [{
                 name: 'Candlestick',
@@ -1498,7 +1383,6 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
               }]
             };
             
-            console.log('🔄 Setting basic chart options');
             widget.chartInstance.setOption(basicOptions, true);
             return;
           }
@@ -1538,7 +1422,6 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
           
           // Add volume series if it exists and we have volume data
           if (existingSeries[1]?.name === 'Volume' && volumeData.length > 0) {
-            console.log('🔄 Adding volume series with data:', volumeData.length, 'records');
             newSeries.push({
               ...existingSeries[1],
               data: volumeData,
@@ -1641,26 +1524,11 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
             grid: newGrid
           };
 
-          console.log('🔄 Updating chart with new options:', {
-            seriesCount: newSeries.length,
-            xAxisLabelsCount: xAxisLabels.length,
-            candlestickDataCount: transformedData.length,
-            volumeDataCount: volumeData.length
-          });
-          
-          console.log('🔄 New options structure:', newOptions);
-          console.log('🔄 New series data:', newSeries);
-
           widget.chartInstance.setOption(newOptions, true);
-          console.log('✅ Chart updated successfully');
           
           // Verify the update worked
           const updatedOptions = widget.chartInstance.getOption();
-          console.log('🔄 Verification - Updated chart options:', {
-            seriesCount: (updatedOptions as any).series?.length || 0,
-            seriesNames: (updatedOptions as any).series?.map((s: any) => s.name) || [],
-            xAxisDataCount: (updatedOptions as any).xAxis?.[0]?.data?.length || 0
-          });
+
         } else if (retryCount < maxRetries) {
           retryCount++;
           setTimeout(updateWithRetry, 100 * retryCount);
@@ -1726,23 +1594,13 @@ export class CandlestickChartBuilder extends ApacheEchartBuilder<CandlestickChar
    * Set chart events
    */
   override setEvents(callback: (widget: IWidget, chart: any) => void): this {
-    console.log('🔥 setEvents called with callback:', !!callback);
-    console.log('🔥 Current timeRangeChangeCallback:', !!this.timeRangeChangeCallback);
-    console.log('🔥 Current filterChangeCallback:', !!this.filterChangeCallback);
-    
     // Create a wrapper callback that includes immediate data update
     const wrappedCallback = (widget: IWidget, chart: any) => {
-      console.log('🔥 Setting up events for recreated chart');
-      console.log('🔥 Current data length:', this.data?.length || 0);
-      console.log('🔥 Sample data:', this.data?.slice(0, 2));
-      
       if (chart) {
-        console.log('🔥 Chart instance available in events:', chart);
         widget.chartInstance = chart;
         
         // Only update data if we have valid data
         if (this.data && this.data.length > 0) {
-          console.log('🔥 Updating chart data immediately after instance is set');
           CandlestickChartBuilder.updateData(widget, this.data);
         } else {
           console.log('🔥 No data available for immediate update, skipping');

@@ -53,11 +53,7 @@ const validationResponse = await fetch('/api/screeners/validate-criteria', {
 });
 
 const validation = await validationResponse.json();
-if (validation.valid) {
-  console.log('Criteria is valid');
-} else {
-  console.error('Validation errors:', validation.errors);
-}
+
 ```
 
 ### Multiple Conditions with AND

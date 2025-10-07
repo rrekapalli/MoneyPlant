@@ -181,10 +181,8 @@ export class AcCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
       .subscribe({
         next: (fields) => {
           this.fields$.next(fields);
-          console.log('Loaded fields:', fields.length);
         },
         error: (error) => {
-          console.error('Failed to load fields:', error);
           this.handleApiError('Failed to load fields');
         }
       });
@@ -195,7 +193,6 @@ export class AcCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
       .subscribe({
         next: (functions) => {
           this.functions$.next(functions);
-          console.log('Loaded functions:', functions.length);
         },
         error: (error) => {
           console.error('Failed to load functions:', error);
@@ -209,7 +206,6 @@ export class AcCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
       .subscribe({
         next: (operators) => {
           this.operators$.next(operators);
-          console.log('Loaded operators:', operators.length);
           this.isLoading = false;
         },
         error: (error) => {

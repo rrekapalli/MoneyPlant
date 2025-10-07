@@ -311,10 +311,6 @@ export function demonstrateTileUpdates(): void {
   const exportData = TileBuilder.exportData(tile);
   const headers = TileBuilder.getExportHeaders(tile);
   const sheetName = TileBuilder.getExportSheetName(tile);
-
-  console.log('Export Data:', exportData);
-  console.log('Headers:', headers);
-  console.log('Sheet Name:', sheetName);
 }
 
 /**
@@ -337,8 +333,6 @@ export function createTileWithEventsExample(): IWidget {
     .setBorder('#c4b5fd', 1, 12)
     .setPosition({ x: 0, y: 0, cols: 2, rows: 2 })
     .setEvents((widget: IWidget, data?: any) => {
-      console.log('Tile data loaded:', data);
-      console.log('Custom properties:', widget.data);
       // Handle data loading events
     })
     .setProperty('clickable', true)

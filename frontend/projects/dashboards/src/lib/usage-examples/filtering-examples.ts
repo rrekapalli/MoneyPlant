@@ -25,9 +25,7 @@ export function createBarChartWithCategoryFilter() {
     ])
     .setHeader('Sales by Category')
     .setFilterChangeCallback((event: ChartFilterEvent) => {
-      console.log('Bar chart filter event:', event);
       if (event.type === 'customFilter' && event.filterType === 'category') {
-        console.log('Category selected:', event.value);
         // Handle category filter logic here
       }
     })
@@ -95,9 +93,7 @@ export function createPieChartWithSectorFilter() {
     ])
     .setHeader('Portfolio Allocation')
     .setFilterChangeCallback((event: ChartFilterEvent) => {
-      console.log('Pie chart filter event:', event);
       if (event.type === 'customFilter' && event.filterType === 'sector') {
-        console.log('Sector selected:', event.value);
         // Handle sector filter logic here
       }
     })
@@ -165,9 +161,7 @@ export function createLineChartWithDateRangeFilter() {
     ])
     .setHeader('Monthly Trends')
     .setFilterChangeCallback((event: ChartFilterEvent) => {
-      console.log('Line chart filter event:', event);
       if (event.type === 'customFilter' && event.filterType === 'dateRange') {
-        console.log('Date range selected:', event.value);
         // Handle date range filter logic here
       }
     })
@@ -231,7 +225,6 @@ export function createCandlestickChartWithTimeRangeFilter() {
     .setHeader('Stock Price Movement')
     .enableTimeRangeFilters()
     .setTimeRangeChangeCallback((event: TimeRangeFilterEvent) => {
-      console.log('Candlestick time range event:', event);
       // Handle time range filter logic here
     })
     .build();
@@ -245,34 +238,21 @@ export function createCandlestickChartWithTimeRangeFilter() {
 export function createGenericFilterHandler() {
   return {
     handleFilterChange: (event: ChartFilterEvent) => {
-      console.log('=== GENERIC FILTER EVENT HANDLER ===');
-      console.log('Event type:', event.type);
-      console.log('Filter type:', event.filterType);
-      console.log('Filter value:', event.value);
-      console.log('Widget ID:', event.widgetId);
-      console.log('Metadata:', event.metadata);
-      console.log('====================================');
-
       // Handle different filter types
       switch (event.filterType) {
         case 'category':
-          console.log('Handling category filter:', event.value);
           // Implement category filtering logic
           break;
         case 'sector':
-          console.log('Handling sector filter:', event.value);
           // Implement sector filtering logic
           break;
         case 'dateRange':
-          console.log('Handling date range filter:', event.value);
           // Implement date range filtering logic
           break;
         case 'timeRange':
-          console.log('Handling time range filter:', event.value);
           // Implement time range filtering logic
           break;
         default:
-          console.log('Unknown filter type:', event.filterType);
       }
     }
   };

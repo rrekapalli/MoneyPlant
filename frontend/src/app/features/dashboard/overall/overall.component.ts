@@ -847,7 +847,6 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
             params.event?.stop?.();
             // For historical data, we don't filter by symbol since it's all the same index
             // Just log the click for debugging
-            console.log('Candlestick chart clicked:', params);
             return false;
           });
         }
@@ -2612,8 +2611,6 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
    * Public method to force tile refresh (called from dashboard header)
    */
   public forceTileRefresh(): void {
-    console.log('🔄 Manual tile refresh triggered from dashboard header');
-    
     // Safe refresh: update tiles and trigger change detection
     this.updateMetricTilesWithFilters([]);
     this.cdr.markForCheck();
@@ -2621,7 +2618,6 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
     
     setTimeout(() => {
       this.cdr.detectChanges();
-      console.log('🔄 Manual tile refresh completed');
     }, 100);
   }
 
@@ -2688,8 +2684,6 @@ export class OverallComponent extends BaseDashboardComponent<StockDataDto> {
    * @param event TimeRangeFilterEvent containing the selected time range
    */
   private handleTimeRangeChange(event: TimeRangeFilterEvent): void {
-    console.log('Time range changed to:', event.range);
-    
     // Store the selected time range
     this.selectedTimeRange = event.range;
     
