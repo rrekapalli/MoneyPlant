@@ -135,16 +135,11 @@ export class ScreenersComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
-    this.loading = false;
     this.initializeSubscriptions();
     this.loadStaticFields();
     this.setupStaticFieldsForCriteriaBuilder();
     this.loadInitialData();
     this.updateFilteredScreeners();
-    
-    setTimeout(() => {
-      this.loading = false;
-    }, 3000);
   }
 
   ngOnDestroy() {
@@ -170,7 +165,12 @@ export class ScreenersComponent implements OnInit, OnDestroy {
       this.loading = loading;
       this.error = error;
       this.pagination = pagination;
-      this.dataLoaded = true;
+      
+      // Only mark data as loaded when we actually have data and not loading
+      if (!loading && screeners.length >= 0) {
+        this.dataLoaded = true;
+      }
+      
       this.updateFilteredScreeners();
     });
   }  

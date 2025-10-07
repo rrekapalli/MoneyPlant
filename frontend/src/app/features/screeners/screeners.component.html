@@ -1,19 +1,21 @@
 <div class="screeners-container">
   <div class="header">
     <h1>Stock Screeners</h1>
-    <button pButton label="Create Screener" icon="pi pi-plus" class="create-button"></button>
+    <button pButton label="Create Screener" icon="pi pi-plus" class="create-button" (click)="createScreener()"></button>
   </div>
 
   <!-- Loading State -->
-  <div *ngIf="loading" class="loading-card">
-    <div class="loading-message">
-      <i class="pi pi-spin pi-spinner" style="font-size: 2rem"></i>
-      <p>Loading screeners...</p>
+  @if (loading && !dataLoaded) {
+    <div class="loading-card">
+      <div class="loading-message">
+        <i class="pi pi-spin pi-spinner" style="font-size: 2rem"></i>
+        <p>Loading screeners...</p>
+      </div>
     </div>
-  </div>
+  }
 
   <!-- Main Content -->
-  <div *ngIf="!loading">
+  @if (!loading || dataLoaded) {
     <p-tabs [(value)]="activeTab" class="screener-tabs" (valueChange)="onTabChange($event)">
       <p-tablist>
         <p-tab value="0">
@@ -34,69 +36,77 @@
             <div class="screeners-list">
 
               <!-- Empty state -->
-              <div *ngIf="filteredScreeners.length === 0 && !loading" class="empty-message">
-                <div *ngIf="screeners.length === 0">
-                  <i class="pi pi-search" style="font-size: 3rem; color: #ccc;"></i>
-                  <p>No screeners found.</p>
-                  <button pButton label="Create Your First Screener" (click)="createScreener()"
-                    class="p-button-outlined"></button>
+              @if (filteredScreeners.length === 0 && !loading) {
+                <div class="empty-message">
+                  @if (screeners.length === 0) {
+                    <div>
+                      <i class="pi pi-search" style="font-size: 3rem; color: #ccc;"></i>
+                      <p>No screeners found.</p>
+                      <button pButton label="Create Your First Screener" (click)="createScreener()"
+                        class="p-button-outlined"></button>
+                    </div>
+                  }
+                  @if (screeners.length > 0) {
+                    <div>
+                      <i class="pi pi-filter" style="font-size: 3rem; color: #ccc;"></i>
+                      <p>No screeners match your current filters.</p>
+                      <button pButton label="Clear Filters" icon="pi pi-times" (click)="clearFilters()"
+                        class="p-button-outlined"></button>
+                    </div>
+                  }
                 </div>
-                <div *ngIf="screeners.length > 0">
-                  <i class="pi pi-filter" style="font-size: 3rem; color: #ccc;"></i>
-                  <p>No screeners match your current filters.</p>
-                  <button pButton label="Clear Filters" icon="pi pi-times" (click)="clearFilters()"
-                    class="p-button-outlined"></button>
-                </div>
-              </div>
+              }
 
-              <div *ngFor="let screener of filteredScreeners; trackBy: trackScreenerById" class="screener-item">
-                <div class="screener-header">
-                  <div class="screener-info">
-                    <h3 class="screener-name">{{ screener.name }}</h3>
-                    <p class="screener-description">{{ screener.description || 'No description available' }}</p>
-                    <div class="screener-meta">
-                      <span class="meta-item">
-                        <i class="pi pi-calendar"></i>
-                        Created: {{ formatDate(screener.createdAt) }}
-                      </span>
-                      <span class="meta-item">
-                        <i class="pi pi-clock"></i>
-                        Updated: {{ formatDate(screener.updatedAt) }}
-                      </span>
-                      <span class="meta-item">
-                        <i class="pi pi-users"></i>
-                        {{ screener.isPublic ? 'Public' : 'Private' }}
-                      </span>
+              @for (screener of filteredScreeners; track trackScreenerById($index, screener)) {
+                <div class="screener-item">
+                  <div class="screener-header">
+                    <div class="screener-info">
+                      <h3 class="screener-name">{{ screener.name }}</h3>
+                      <p class="screener-description">{{ screener.description || 'No description available' }}</p>
+                      <div class="screener-meta">
+                        <span class="meta-item">
+                          <i class="pi pi-calendar"></i>
+                          Created: {{ formatDate(screener.createdAt) }}
+                        </span>
+                        <span class="meta-item">
+                          <i class="pi pi-clock"></i>
+                          Updated: {{ formatDate(screener.updatedAt) }}
+                        </span>
+                        <span class="meta-item">
+                          <i class="pi pi-users"></i>
+                          {{ screener.isPublic ? 'Public' : 'Private' }}
+                        </span>
+                      </div>
+                    </div>
+                    <div class="screener-actions">
+                      <button pButton icon="pi pi-star"
+                        [class]="isStarred(screener) ? 'p-button-rounded p-button-sm p-button-warning' : 'p-button-rounded p-button-sm p-button-outlined'"
+                        (click)="toggleStar(screener)"
+                        [title]="isStarred(screener) ? 'Remove from starred' : 'Add to starred'"
+                        class="star-button"></button>
+                      <button pButton icon="pi pi-play" class="p-button-rounded p-button-sm p-button-success"
+                        (click)="runScreener(screener)" title="Run Screener"></button>
+                      <button pButton icon="pi pi-eye" class="p-button-rounded p-button-sm p-button-info"
+                        (click)="viewResults(screener)" title="View Results"></button>
+                      <button pButton icon="pi pi-pencil" class="p-button-rounded p-button-sm p-button-warning"
+                        (click)="configureScreener(screener)" title="Configure Screener"
+                        pTooltip="Configure Screener"></button>
+                      <button pButton icon="pi pi-trash" class="p-button-rounded p-button-sm p-button-danger"
+                        (click)="deleteScreener(screener)" title="Delete Screener"></button>
                     </div>
                   </div>
-                  <div class="screener-actions">
-                    <button pButton icon="pi pi-star"
-                      [class]="isStarred(screener) ? 'p-button-rounded p-button-sm p-button-warning' : 'p-button-rounded p-button-sm p-button-outlined'"
-                      (click)="toggleStar(screener)"
-                      [title]="isStarred(screener) ? 'Remove from starred' : 'Add to starred'"
-                      class="star-button"></button>
-                    <button pButton icon="pi pi-play" class="p-button-rounded p-button-sm p-button-success"
-                      (click)="runScreener(screener)" title="Run Screener"></button>
-                    <button pButton icon="pi pi-eye" class="p-button-rounded p-button-sm p-button-info"
-                      (click)="viewResults(screener)" title="View Results"></button>
-                    <button pButton icon="pi pi-pencil" class="p-button-rounded p-button-sm p-button-warning"
-                      (click)="configureScreener(screener)" title="Configure Screener"
-                      pTooltip="Configure Screener"></button>
-                    <button pButton icon="pi pi-trash" class="p-button-rounded p-button-sm p-button-danger"
-                      (click)="deleteScreener(screener)" title="Delete Screener"></button>
+                  <div class="screener-details">
+                    <div class="detail-item">
+                      <span class="detail-label">Default Universe:</span>
+                      <span class="detail-value">{{ screener.defaultUniverse || 'Not specified' }}</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-label">Status:</span>
+                      <p-tag value="Active" severity="success"></p-tag>
+                    </div>
                   </div>
                 </div>
-                <div class="screener-details">
-                  <div class="detail-item">
-                    <span class="detail-label">Default Universe:</span>
-                    <span class="detail-value">{{ screener.defaultUniverse || 'Not specified' }}</span>
-                  </div>
-                  <div class="detail-item">
-                    <span class="detail-label">Status:</span>
-                    <p-tag value="Active" severity="success"></p-tag>
-                  </div>
-                </div>
-              </div>
+              }
             </div>
           </div>
         </p-tabpanel>
@@ -104,99 +114,103 @@
         <!-- Configure Tab Panel -->
         <p-tabpanel value="1">
           <div class="configure-content">
-            <div *ngIf="!selectedScreener" class="no-selection">
-              <i class="pi pi-cog" style="font-size: 3rem; color: #ccc;"></i>
-              <p>Select a screener from the Overview tab to configure it, or create a new screener.</p>
-              <button pButton label="Create New Screener" icon="pi pi-plus" (click)="createScreener()"
-                class="p-button-primary"></button>
-            </div>
-
-            <div *ngIf="selectedScreener" class="screener-config">
-              <div class="config-header">
-                <h3>Configure Screener: {{ selectedScreener.name }}</h3>
-                <button pButton icon="pi pi-times" (click)="clearSelection()" class="p-button-text"
-                  title="Close Configuration"></button>
+            @if (!selectedScreener) {
+              <div class="no-selection">
+                <i class="pi pi-cog" style="font-size: 3rem; color: #ccc;"></i>
+                <p>Select a screener from the Overview tab to configure it, or create a new screener.</p>
+                <button pButton label="Create New Screener" icon="pi pi-plus" (click)="createScreener()"
+                  class="p-button-primary"></button>
               </div>
+            }
 
-              <!-- Basic Information Section -->
-              <div class="config-section">
-                <h4 class="section-title">Basic Information</h4>
-                <div class="config-form">
-                  <div class="form-group">
-                    <label for="configName">Name *</label>
-                    <input type="text" pInputText id="configName" [(ngModel)]="screenerForm.name"
-                      placeholder="Enter screener name" class="w-full" />
-                  </div>
+            @if (selectedScreener) {
+              <div class="screener-config">
+                <div class="config-header">
+                  <h3>Configure Screener: {{ selectedScreener.name }}</h3>
+                  <button pButton icon="pi pi-times" (click)="clearSelection()" class="p-button-text"
+                    title="Close Configuration"></button>
+                </div>
 
-                  <div class="form-group">
-                    <label for="configUniverse">Default Universe</label>
-                    <p-select id="configUniverse" [(ngModel)]="screenerForm.defaultUniverse" [options]="universeOptions"
-                      placeholder="Select default universe" class="w-full">
-                    </p-select>
-                  </div>
+                <!-- Basic Information Section -->
+                <div class="config-section">
+                  <h4 class="section-title">Basic Information</h4>
+                  <div class="config-form">
+                    <div class="form-group">
+                      <label for="configName">Name *</label>
+                      <input type="text" pInputText id="configName" [(ngModel)]="screenerForm.name"
+                        placeholder="Enter screener name" class="w-full" />
+                    </div>
 
-                  <div class="form-group">
-                    <label for="configDescription">Description</label>
-                    <textarea id="configDescription" [(ngModel)]="screenerForm.description"
-                      placeholder="Enter screener description" rows="2" class="w-full"></textarea>
-                  </div>
+                    <div class="form-group">
+                      <label for="configUniverse">Default Universe</label>
+                      <p-select id="configUniverse" [(ngModel)]="screenerForm.defaultUniverse" [options]="universeOptions"
+                        placeholder="Select default universe" class="w-full">
+                      </p-select>
+                    </div>
 
-                  <div class="form-group">
-                    <label for="configVisibility">Visibility</label>
-                    <div class="toggle-switch">
-                      <label class="switch">
-                        <input type="checkbox" id="configVisibility" [(ngModel)]="screenerForm.isPublic"
-                          (change)="onVisibilityChange($event)">
-                        <span class="slider"></span>
-                      </label>
-                      <span class="toggle-label">{{ screenerForm.isPublic ? 'Public' : 'Private' }}</span>
+                    <div class="form-group">
+                      <label for="configDescription">Description</label>
+                      <textarea id="configDescription" [(ngModel)]="screenerForm.description"
+                        placeholder="Enter screener description" rows="2" class="w-full"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                      <label for="configVisibility">Visibility</label>
+                      <div class="toggle-switch">
+                        <label class="switch">
+                          <input type="checkbox" id="configVisibility" [(ngModel)]="screenerForm.isPublic"
+                            (change)="onVisibilityChange($event)">
+                          <span class="slider"></span>
+                        </label>
+                        <span class="toggle-label">{{ screenerForm.isPublic ? 'Public' : 'Private' }}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              <!-- Screening Criteria Section -->
-              <div class="config-section">
-                <div class="criteria-header">
-                  <h4 class="section-title">Screening Criteria</h4>
-                  <p class="criteria-description">
-                    Define the technical indicators and conditions that stocks must meet to be included in this
-                    screener.
-                    You can combine multiple conditions using AND/OR logic.
-                  </p>
-                </div>
+                <!-- Screening Criteria Section -->
+                <div class="config-section">
+                  <div class="criteria-header">
+                    <h4 class="section-title">Screening Criteria</h4>
+                    <p class="criteria-description">
+                      Define the technical indicators and conditions that stocks must meet to be included in this
+                      screener.
+                      You can combine multiple conditions using AND/OR logic.
+                    </p>
+                  </div>
 
-                <!-- SQL Query Display -->
-                <div class="sql-query-display">
-                  <h5>Generated WHERE Condition:</h5>
-                  <div class="sql-query-box">
-                    <code>{{ getGeneratedWhereCondition() }}</code>
+                  <!-- SQL Query Display -->
+                  <div class="sql-query-display">
+                    <h5>Generated WHERE Condition:</h5>
+                    <div class="sql-query-box">
+                      <code>{{ getGeneratedWhereCondition() }}</code>
+                    </div>
+                  </div>
+
+                  <!-- Criteria Builder -->
+                  <div class="criteria-builder-container">
+                    <ac-criteria-builder [(ngModel)]="criteriaDSL" [config]="criteriaConfig"
+                      (validityChange)="onValidityChange($event)" class="screener-criteria-builder">
+                    </ac-criteria-builder>
                   </div>
                 </div>
 
-                <!-- Criteria Builder -->
-                <div class="criteria-builder-container">
-                  <ac-criteria-builder [(ngModel)]="criteriaDSL" [config]="criteriaConfig"
-                    (validityChange)="onValidityChange($event)" class="screener-criteria-builder">
-                  </ac-criteria-builder>
+                <!-- Action Buttons -->
+                <div class="config-actions">
+                  <div class="action-buttons-right">
+                    <button pButton label="Cancel" icon="pi pi-times" (click)="clearSelection()"
+                      class="p-button-text"></button>
+                    <button pButton label="Save Changes" icon="pi pi-check" (click)="saveScreener()"
+                      [disabled]="!screenerForm.name || loading" [loading]="loading"></button>
+                  </div>
                 </div>
               </div>
-
-              <!-- Action Buttons -->
-              <div class="config-actions">
-                <div class="action-buttons-right">
-                  <button pButton label="Cancel" icon="pi pi-times" (click)="clearSelection()"
-                    class="p-button-text"></button>
-                  <button pButton label="Save Changes" icon="pi pi-check" (click)="saveScreener()"
-                    [disabled]="!screenerForm.name || loading" [loading]="loading"></button>
-                </div>
-              </div>
-            </div>
+            }
           </div>
         </p-tabpanel>
       </p-tabpanels>
     </p-tabs>
-  </div>
+  }
 
   <!-- Toast Messages -->
   <p-toast></p-toast>
