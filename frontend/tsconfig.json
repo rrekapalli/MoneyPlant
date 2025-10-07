@@ -37,10 +37,7 @@
         "./dist/criteria-builder",
         "./projects/criteria-builder/src/public-api"
       ],
-      "superset-integration": ["./dist/superset-integration", "./projects/superset-integration/src/public-api"],
-      "superset-integration/*": ["./dist/superset-integration/*"],
-      "@superset-integration/*": ["./projects/superset-integration/src/lib/*"],
-      "@superset-integration/public-api": ["./projects/superset-integration/src/public-api"],
+
       "echarts": ["./src/types/echarts"]
     },
     "lib": [

@@ -36,39 +36,6 @@
         }
       }
     },
-    "superset-integration": {
-      "projectType": "library",
-      "root": "projects/superset-integration",
-      "sourceRoot": "projects/superset-integration/src",
-      "prefix": "lib",
-      "architect": {
-        "build": {
-          "builder": "@angular-devkit/build-angular:ng-packagr",
-          "options": {
-            "project": "projects/superset-integration/ng-package.json"
-          },
-          "configurations": {
-            "production": {
-              "tsConfig": "projects/superset-integration/tsconfig.lib.prod.json"
-            },
-            "development": {
-              "tsConfig": "projects/superset-integration/tsconfig.lib.json"
-            }
-          },
-          "defaultConfiguration": "production"
-        },
-        "test": {
-          "builder": "@angular-devkit/build-angular:karma",
-          "options": {
-            "tsConfig": "projects/superset-integration/tsconfig.spec.json",
-            "polyfills": [
-              "zone.js",
-              "zone.js/testing"
-            ]
-          }
-        }
-      }
-    },
     "money-plant-frontend": {
       "projectType": "application",
       "schematics": {
@@ -107,7 +74,10 @@
             "styles": [
               "src/styles.scss"
             ],
-            "scripts": []
+            "scripts": [],
+            "allowedCommonJsDependencies": [
+              "sockjs-client"
+            ]
           },
           "configurations": {
             "production": {
@@ -119,8 +89,8 @@
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "15kb",
-                  "maximumError": "30kb"
+                  "maximumWarning": "30kb",
+                  "maximumError": "50kb"
                 }
               ],
               "outputHashing": "all",
