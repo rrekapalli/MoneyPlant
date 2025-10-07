@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject, takeUntil, of } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -16,6 +16,7 @@ import { ScreenerResp, ScreenerCreateReq, ScreenerCriteria, ScreenerRule } from 
 import { INDICATOR_FIELDS } from '../../../services/entities/indicators.entities';
 import { CriteriaBuilderModule } from 'criteria-builder';
 import { CriteriaDSL, BuilderConfig, FieldMeta, FieldType, Operator, Group, Condition, FieldRef, Literal } from 'criteria-builder';
+import { CriteriaApiService, FieldMetaResp } from 'criteria-builder';
 
 /**
  * Static Field Configuration for Criteria Builder Integration
@@ -115,23 +116,23 @@ const BASIC_OPERATORS: Record<FieldType, Operator[]> = {
 export class ScreenerFormComponent implements OnInit, OnDestroy {
   /** Subscription management for component cleanup */
   private destroy$ = new Subject<void>();
-  
+
   // === Component State ===
-  
+
   /** Current screener being edited (null for new screeners) */
   screener: ScreenerResp | null = null;
-  
+
   /** Loading state for async operations */
   loading = false;
-  
+
   /** Error message for display to user */
   error: string | null = null;
-  
+
   /** Whether component is in edit mode (true) or create mode (false) */
   isEdit = false;
-  
+
   // === Form Data ===
-  
+
   /** 
    * Main form data structure for screener creation/editing
    * This maintains the existing ScreenerCreateReq format for backend compatibility
@@ -145,16 +146,16 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
   };
 
   // === Criteria Builder Integration ===
-  
+
   /** Current active tab in the form interface */
   activeTab = 'basic';
-  
+
   /** 
    * Internal storage for CriteriaDSL data
    * This is the format used by the criteria-builder component
    */
   private _criteriaDSL: CriteriaDSL | null = null;
-  
+
   /** 
    * Getter for criteriaDSL with proper typing
    * @returns Current CriteriaDSL or null if no criteria defined
@@ -162,7 +163,7 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
   get criteriaDSL(): CriteriaDSL | null {
     return this._criteriaDSL;
   }
-  
+
   /** 
    * Setter for criteriaDSL that triggers data conversion
    * Automatically converts DSL to ScreenerCriteria format when set
@@ -172,13 +173,24 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
     this._criteriaDSL = value;
     this.onCriteriaChange(value);
   }
-  
+
   /** 
    * Configuration for the criteria builder component
    * Set up with MVP settings - basic functionality only
    */
-  criteriaConfig: BuilderConfig = {};
-  
+  criteriaConfig: BuilderConfig = {
+    allowGrouping: true,
+    maxDepth: 2, // Reduced depth for simplicity
+    enableAdvancedFunctions: false,
+    showSqlPreview: false,
+    compactMode: true, // Enable compact mode for simpler UI
+    enablePartialValidation: true,
+    autoSave: false,
+    debounceMs: 300,
+    locale: 'en',
+    theme: 'light'
+  };
+
   /** 
    * Static field configuration for criteria builder
    * Converted from INDICATOR_FIELDS to FieldMeta format
@@ -190,13 +202,15 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private screenerState: ScreenerStateService,
-    private messageService: MessageService
-  ) {}
+    private messageService: MessageService,
+    private criteriaApiService: CriteriaApiService
+  ) { }
 
   ngOnInit() {
     this.initializeSubscriptions();
     this.initializeCriteriaConfig();
     this.loadStaticFields();
+    this.setupStaticFieldsForCriteriaBuilder();
     this.loadScreener();
   }
 
@@ -228,7 +242,7 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
               defaultUniverse: screener.defaultUniverse || '',
               criteria: screener.criteria
             };
-            
+
             // Handle criteria conversion on load
             this.initializeCriteriaFromScreener(screener);
           } else {
@@ -261,10 +275,10 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
       try {
         // Add conversion from existing ScreenerCriteria to CriteriaDSL
         const convertedDSL = this.convertScreenerCriteriaToDsl(screener.criteria);
-        
+
         // Set criteriaDSL property for criteria builder initialization
         this._criteriaDSL = convertedDSL;
-        
+
         console.log('Initialized criteria from existing screener:', {
           originalCriteria: screener.criteria,
           convertedDSL: convertedDSL,
@@ -273,7 +287,7 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
       } catch (error) {
         console.error('Failed to convert existing criteria:', error);
         this.handleConversionError(error);
-        
+
         // Handle cases where existing screener has no criteria (fallback)
         this._criteriaDSL = null;
       }
@@ -296,7 +310,7 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
       defaultUniverse: '',
       criteria: undefined
     };
-    
+
     // Handle cases where existing screener has no criteria
     this._criteriaDSL = null;
     this.screener = null;
@@ -328,14 +342,14 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
       // Basic grouping configuration for MVP
       allowGrouping: true,
       maxDepth: 3,
-      
+
       // Disable advanced features for MVP - can be enabled incrementally
       enableAdvancedFunctions: false, // TODO: Enable when field metadata supports functions
       showSqlPreview: false,          // TODO: Enable for technical users
-      
+
       // UI settings for better visibility and usability
       compactMode: false,
-      
+
       // Performance and UX settings
       enablePartialValidation: true,  // Allow partial criteria while building
       autoSave: false,               // Manual save to prevent accidental changes
@@ -348,9 +362,9 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
   private loadScreener() {
     const screenerId = this.route.snapshot.paramMap.get('id');
     const isEdit = this.route.snapshot.url.some(segment => segment.path === 'edit');
-    
+
     this.isEdit = isEdit;
-    
+
     if (screenerId && isEdit) {
       this.screenerState.loadScreener(+screenerId).subscribe({
         error: () => {
@@ -433,6 +447,64 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Setup static fields for criteria builder by overriding API service
+   * This method provides our INDICATOR_FIELDS to the criteria-builder component
+   * by mocking the API service getFields method for MVP integration
+   */
+  private setupStaticFieldsForCriteriaBuilder() {
+    try {
+      // Convert our static fields to FieldMetaResp format expected by criteria-builder
+      const criteriaBuilderFields = this.staticFields.map(field => ({
+        id: field.id,
+        label: field.label,
+        dbColumn: field.dbColumn,
+        dataType: field.dataType,
+        category: field.category,
+        description: field.description,
+        example: field.example,
+        allowedOps: field.allowedOps,
+        validation: field.validation,
+        nullable: field.nullable
+      }));
+
+      // Override the API service methods to return our static data
+      this.criteriaApiService.getFields = () => {
+        console.log('Providing static fields to criteria-builder:', criteriaBuilderFields.length);
+        return of(criteriaBuilderFields);
+      };
+
+      // Override functions to return empty array for MVP
+      this.criteriaApiService.getFunctions = () => {
+        console.log('Providing empty functions array for MVP');
+        return of([]);
+      };
+
+      // Override operators to return basic operators
+      this.criteriaApiService.getAllOperators = () => {
+        console.log('Providing basic operators for MVP');
+        const basicOperators = [
+          { id: '=', label: 'Equals', description: 'Equal to', requiresRightSide: true, supportedTypes: ['string', 'number', 'integer', 'date', 'boolean'] as FieldType[] },
+          { id: '!=', label: 'Not Equals', description: 'Not equal to', requiresRightSide: true, supportedTypes: ['string', 'number', 'integer', 'date', 'boolean'] as FieldType[] },
+          { id: '>', label: 'Greater Than', description: 'Greater than', requiresRightSide: true, supportedTypes: ['number', 'integer', 'date'] as FieldType[] },
+          { id: '<', label: 'Less Than', description: 'Less than', requiresRightSide: true, supportedTypes: ['number', 'integer', 'date'] as FieldType[] },
+          { id: '>=', label: 'Greater Than or Equal', description: 'Greater than or equal to', requiresRightSide: true, supportedTypes: ['number', 'integer', 'date'] as FieldType[] },
+          { id: '<=', label: 'Less Than or Equal', description: 'Less than or equal to', requiresRightSide: true, supportedTypes: ['number', 'integer', 'date'] as FieldType[] }
+        ];
+        return of(basicOperators);
+      };
+
+      console.log('Successfully setup static fields for criteria-builder:', {
+        fieldCount: criteriaBuilderFields.length,
+        categories: [...new Set(criteriaBuilderFields.map(f => f.category))]
+      });
+
+    } catch (error) {
+      console.error('Failed to setup static fields for criteria-builder:', error);
+      this.handleCriteriaError(error, 'load');
+    }
+  }
+
+  /**
    * Load and configure static fields for the criteria builder
    * 
    * This method implements the static field configuration approach for the MVP.
@@ -460,20 +532,20 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
     try {
       // Convert INDICATOR_FIELDS to FieldMeta format for criteria builder
       this.staticFields = INDICATOR_FIELDS.map(field => this.convertIndicatorFieldToFieldMeta(field));
-      
+
       console.log(`Successfully loaded ${this.staticFields.length} static fields for criteria builder`, {
         fieldCount: this.staticFields.length,
         categories: [...new Set(this.staticFields.map(f => f.category))],
         fieldTypes: [...new Set(this.staticFields.map(f => f.dataType))]
       });
-      
+
     } catch (error) {
       console.error('Failed to load static fields:', error);
       this.handleCriteriaError(error, 'load');
-      
+
       // Provide fallback behavior (empty fields array)
       this.staticFields = [];
-      
+
       this.messageService.add({
         severity: 'warn',
         summary: 'Field Loading Error',
@@ -505,7 +577,7 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
   private convertIndicatorFieldToFieldMeta(field: any): FieldMeta {
     try {
       const dataType = this.mapFieldType(field.type);
-      
+
       return {
         id: field.value,
         label: field.name,
@@ -554,20 +626,20 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
    */
   private createValidationConfig(field: any): FieldMeta['validation'] {
     const validation: FieldMeta['validation'] = {};
-    
+
     if (field.min !== undefined) {
       validation.min = field.min;
     }
-    
+
     if (field.max !== undefined) {
       validation.max = field.max;
     }
-    
+
     // Add specific validation for certain field types
     if (field.type === 'number' || field.type === 'percent' || field.type === 'currency') {
       validation.required = false; // Technical indicators can be null
     }
-    
+
     return Object.keys(validation).length > 0 ? validation : undefined;
   }
 
@@ -613,7 +685,7 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
     try {
       // Update the internal DSL state
       this._criteriaDSL = dsl;
-      
+
       // Handle null/empty criteria cases gracefully
       if (!dsl || !this.hasValidCriteria(dsl)) {
         this.screenerForm.criteria = undefined;
@@ -623,19 +695,19 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
 
       // Add conversion from CriteriaDSL to ScreenerCriteria format
       const convertedCriteria = this.convertDslToScreenerCriteria(dsl);
-      
+
       // Update screenerForm.criteria with converted data
       this.screenerForm.criteria = convertedCriteria;
-      
+
       console.log('Criteria updated:', {
         dslConditions: this.getCriteriaCount(),
         convertedCriteria: convertedCriteria
       });
-      
+
     } catch (error) {
       console.error('Error in onCriteriaChange:', error);
       this.handleCriteriaError(error, 'change');
-      
+
       // Fallback to empty criteria on error
       this._criteriaDSL = null;
       this.screenerForm.criteria = undefined;
@@ -766,7 +838,7 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
     try {
       // Handle NOT operator by converting to AND with negated conditions
       const operator = group.operator === 'NOT' ? 'and' : group.operator.toLowerCase() as 'and' | 'or';
-      
+
       return {
         condition: operator,
         rules: group.children.map((child: Condition | Group) => {
@@ -794,13 +866,13 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
     try {
       // Extract field ID from FieldRef
       const fieldId = (condition.left as FieldRef).fieldId;
-      
+
       // Handle basic operator mapping between formats
       let operator = condition.op;
       if (isNegated) {
         operator = this.negateOperator(operator);
       }
-      
+
       // Extract value from right side (Literal or FieldRef)
       let value: any;
       if (condition.right) {
@@ -818,7 +890,7 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
         // Handle operators that don't require right side (IS NULL, IS NOT NULL)
         value = null;
       }
-      
+
       return {
         field: fieldId,
         operator: operator,
@@ -852,7 +924,7 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
       'BETWEEN': 'NOT BETWEEN',
       'NOT BETWEEN': 'BETWEEN'
     };
-    
+
     return negationMap[operator] || operator;
   }
 
@@ -902,17 +974,17 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
         if (value.trim().endsWith('%')) {
           return 'percent';
         }
-        
+
         // Check if it's a currency (starts with $ or other currency symbols)
         if (/^[\$€£¥₹]/.test(value.trim())) {
           return 'currency';
         }
-        
+
         // Check if it's an integer string
         if (Number.isInteger(numericValue) && !value.includes('.')) {
           return 'integer';
         }
-        
+
         return 'number';
       }
 
@@ -1016,9 +1088,9 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
       // Reset both criteriaDSL and screenerForm.criteria
       this._criteriaDSL = null;
       this.screenerForm.criteria = undefined;
-      
+
       console.log('Criteria cleared - both DSL and screener format reset');
-      
+
       // Show user feedback
       this.messageService.add({
         severity: 'info',
@@ -1026,7 +1098,7 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
         detail: 'All screening criteria have been removed.',
         life: 3000
       });
-      
+
     } catch (error) {
       console.error('Error clearing criteria:', error);
       this.handleCriteriaError(error, 'convert');
@@ -1042,10 +1114,10 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
     try {
       // Check if criteriaDSL exists and has valid criteria
       const hasValidDSL = this._criteriaDSL ? this.hasValidCriteria(this._criteriaDSL) : false;
-      
+
       // Check if screenerForm.criteria exists (for state synchronization)
       const hasScreenerCriteria = this.screenerForm.criteria !== undefined && this.screenerForm.criteria !== null;
-      
+
       // Ensure proper state synchronization between formats
       // Both should be in sync - if one exists, the other should too
       if (hasValidDSL !== hasScreenerCriteria) {
@@ -1055,7 +1127,7 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
           dslConditions: this.getCriteriaCount(),
           screenerCriteria: this.screenerForm.criteria
         });
-        
+
         // Try to resync by converting from the existing format
         try {
           if (hasValidDSL && !hasScreenerCriteria && this._criteriaDSL) {
@@ -1074,9 +1146,9 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
           return false;
         }
       }
-      
+
       return hasValidDSL;
-      
+
     } catch (error) {
       console.error('Error checking criteria existence:', error);
       // Return false on error to prevent issues
@@ -1129,7 +1201,7 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
    */
   private handleCriteriaError(error: any, context: string): void {
     console.error(`Criteria error in ${context}:`, error);
-    
+
     const userMessage = this.getBasicErrorMessage(context);
     this.messageService.add({
       severity: 'error',
@@ -1149,7 +1221,7 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
       'convert': 'There was an issue with the criteria format. Please recreate your criteria.',
       'change': 'Failed to process criteria changes. Please try again.'
     };
-    
+
     return contextMessages[context] || 'An unexpected error occurred. Please try again.';
   }
 }

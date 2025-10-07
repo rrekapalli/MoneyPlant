@@ -83,13 +83,23 @@
 
             <!-- Screeners List -->
             <div class="screeners-list">
-              <div *ngIf="getFilteredScreeners().length === 0" class="empty-message">
-                <i class="pi pi-search" style="font-size: 3rem; color: #ccc;"></i>
-                <p>No screeners found.</p>
-                <button pButton label="Create Your First Screener" (click)="createScreener()" class="p-button-outlined"></button>
+              
+              <!-- Empty state: show only when there are truly no screeners to display -->
+              <div *ngIf="filteredScreeners.length === 0 && !loading" class="empty-message">
+                <!-- Show different message based on whether screeners exist -->
+                <div *ngIf="screeners.length === 0">
+                  <i class="pi pi-search" style="font-size: 3rem; color: #ccc;"></i>
+                  <p>No screeners found.</p>
+                  <button pButton label="Create Your First Screener" (click)="createScreener()" class="p-button-outlined"></button>
+                </div>
+                <div *ngIf="screeners.length > 0">
+                  <i class="pi pi-filter" style="font-size: 3rem; color: #ccc;"></i>
+                  <p>No screeners match your current filters.</p>
+                  <button pButton label="Clear Filters" icon="pi pi-times" (click)="clearFilters()" class="p-button-outlined"></button>
+                </div>
               </div>
               
-              <div *ngFor="let screener of getFilteredScreeners(); trackBy: trackScreenerById" class="screener-item">
+              <div *ngFor="let screener of filteredScreeners; trackBy: trackScreenerById" class="screener-item">
                 <div class="screener-header">
                   <div class="screener-info">
                     <h3 class="screener-name">{{ screener.name }}</h3>
@@ -262,49 +272,14 @@
                   </div>
                 </div>
 
-                <!-- Query Builder with Custom Header Actions -->
-                <div class="query-builder-container">
-                  <div class="query-builder-header-custom">
-                    <h5>Query Builder</h5>
-                    <div class="query-builder-actions">
-                      <button 
-                        pButton 
-                        label="Add Rule" 
-                        icon="pi pi-plus" 
-                        (click)="addRule()" 
-                        class="p-button-outlined p-button-success p-button-sm"
-                      ></button>
-                      <button 
-                        pButton 
-                        label="Add Group" 
-                        icon="pi pi-layer-group" 
-                        (click)="addGroup()" 
-                        class="p-button-outlined p-button-success p-button-sm"
-                      ></button>
-                      <button 
-                        pButton 
-                        label="Clear All Criteria" 
-                        icon="pi pi-trash" 
-                        (click)="clearCriteria()" 
-                        class="p-button-outlined p-button-danger p-button-sm"
-                        [disabled]="!hasCriteria()"
-                      ></button>
-                    </div>
-                  </div>
-                  
-                  <!-- TODO: Update to use criteria-builder - app-query-builder removed -->
-                  <div class="criteria-placeholder">
-                    <p>Criteria builder functionality needs to be updated to use criteria-builder component.</p>
-                    <p>This component is currently disabled as query-builder has been removed.</p>
-                  </div>
-                  <!-- 
-                  <app-query-builder
-                    [query]="criteriaQuery"
+                <!-- Criteria Builder -->
+                <div class="criteria-builder-container">
+                  <ac-criteria-builder
+                    [(ngModel)]="criteriaDSL"
                     [config]="criteriaConfig"
-                    [hideHeader]="true"
-                    (queryChange)="onCriteriaChange($event)">
-                  </app-query-builder>
-                  -->
+                    (validityChange)="onValidityChange($event)"
+                    class="screener-criteria-builder">
+                  </ac-criteria-builder>
                 </div>
               </div>
 

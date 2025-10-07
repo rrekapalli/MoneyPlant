@@ -2,7 +2,7 @@
   padding: 2rem;
   max-width: 1400px;
   margin: 0 auto;
-  height: 100%;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
 
@@ -748,12 +748,140 @@
     }
   }
 
-  // Query Builder customizations
-  .query-builder-container {
-    .app-query-builder {
-      .query-builder {
+  // Criteria Builder customizations - Simplified UI
+  .criteria-builder-container {
+    min-height: 400px;
+    max-height: 600px;
+    overflow-y: auto;
+    padding: 1rem;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    background: #fafafa;
+    
+    .screener-criteria-builder {
+      ac-criteria-builder {
         border: none;
         background: transparent;
+        
+        // Hide unnecessary toolbar elements
+        .ac-builder-toolbar {
+          display: none !important;
+        }
+        
+        // Hide complex mode switcher
+        .mode-switcher {
+          display: none !important;
+        }
+        
+        // Hide SQL preview
+        .ac-sql-preview {
+          display: none !important;
+        }
+        
+        // Hide error banner for cleaner look
+        .ac-error-banner {
+          display: none !important;
+        }
+        
+        // Simplify token display - remove hover effects and complex interactions
+        .ac-token-query-display {
+          // Remove hover effects on tokens
+          .token {
+            transition: none !important;
+            
+            &:hover {
+              background-color: transparent !important;
+              border-color: inherit !important;
+              box-shadow: none !important;
+            }
+            
+            // Remove unnecessary icons and decorations
+            .token-icon {
+              display: none !important;
+            }
+            
+            .token-decoration {
+              display: none !important;
+            }
+            
+            // Simplify token appearance
+            border: 1px solid #ddd !important;
+            background: white !important;
+            padding: 0.5rem !important;
+            margin: 0.25rem !important;
+            border-radius: 4px !important;
+          }
+          
+          // Remove complex interaction overlays
+          .interaction-overlay {
+            display: none !important;
+          }
+          
+          // Remove context menus
+          .context-menu {
+            display: none !important;
+          }
+        }
+        
+        // Simplify empty state
+        .empty-state {
+          padding: 2rem !important;
+          text-align: center !important;
+          
+          .empty-state-content {
+            h3 {
+              font-size: 1.1rem !important;
+              color: #666 !important;
+              margin-bottom: 0.5rem !important;
+            }
+            
+            p {
+              font-size: 0.9rem !important;
+              color: #888 !important;
+              margin-bottom: 1rem !important;
+            }
+            
+            .add-first-condition-btn {
+              background-color: #3498db !important;
+              color: white !important;
+              border: none !important;
+              padding: 0.75rem 1.5rem !important;
+              border-radius: 4px !important;
+              font-size: 0.9rem !important;
+              cursor: pointer !important;
+              
+              &:hover {
+                background-color: #2980b9 !important;
+              }
+            }
+          }
+        }
+        
+        // Remove loading overlay complexity
+        .loading-overlay {
+          background: rgba(255, 255, 255, 0.8) !important;
+          
+          .loading-spinner {
+            i {
+              font-size: 1.5rem !important;
+              color: #3498db !important;
+            }
+            
+            span {
+              font-size: 0.9rem !important;
+              color: #666 !important;
+            }
+          }
+        }
+        
+        // Simplify accessibility features (keep functionality but reduce visual noise)
+        .accessibility-panel {
+          display: none !important;
+        }
+        
+        .live-announcer {
+          display: none !important;
+        }
       }
     }
   }
