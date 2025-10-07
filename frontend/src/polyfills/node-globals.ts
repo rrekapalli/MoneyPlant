@@ -136,6 +136,6 @@ if (typeof (window as any).crypto !== 'undefined') {
   }
 }
 
-console.log('Node.js globals polyfill loaded for sockjs-client compatibility');
+
 
 export {}; 

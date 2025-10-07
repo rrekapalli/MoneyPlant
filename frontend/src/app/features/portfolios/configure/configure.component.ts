@@ -102,10 +102,8 @@ export class PortfolioConfigureComponent implements OnInit {
     this.stockService.getAllStocks().subscribe({
       next: (stocks: Stock[]) => {
         this.allStocks = stocks || [];
-        console.log('Loaded stocks for search:', this.allStocks.length);
       },
       error: (error) => {
-        console.error('Error loading stocks for search:', error);
         this.allStocks = [];
       }
     });
@@ -146,7 +144,6 @@ export class PortfolioConfigureComponent implements OnInit {
         this.loadMarketDataForHoldings(holdings);
       },
       error: (error) => {
-        console.error('Error loading portfolio holdings:', error);
         this.isLoadingHoldings = false;
         this.portfolioHoldings = [];
       }
@@ -312,21 +309,15 @@ export class PortfolioConfigureComponent implements OnInit {
     this.stockSearchResults = [];
     this.stockSearchQuery = '';
     
-    console.log('Stock selected:', stock);
-    
     // Try multiple API endpoints to get stock details
     this.tryMultipleStockApis(stock);
   }
 
   // Try multiple API endpoints to get stock details
   private tryMultipleStockApis(stock: any): void {
-    console.log('Trying multiple APIs for stock:', stock.symbol);
-    
     // Try StockService.getStockBySymbol first (now has comprehensive data)
     this.stockService.getStockBySymbol(stock.symbol).subscribe({
       next: (stockData: Stock) => {
-        console.log('API response from getStockBySymbol:', stockData);
-        
         // Map updated Stock interface with nested tickDetails and stockDetails structure
         this.selectedStockDetails = {
           // Basic info from stockDetails
@@ -363,7 +354,6 @@ export class PortfolioConfigureComponent implements OnInit {
         };
         
         this.isLoadingStockDetails = false;
-        console.log('Stock details loaded from StockService:', this.selectedStockDetails);
       },
       error: (error) => {
         console.error('StockService failed, trying IndicesService:', error);
@@ -371,8 +361,6 @@ export class PortfolioConfigureComponent implements OnInit {
         // Try IndicesService.getIndexBySymbol as fallback
         this.indicesService.getIndexBySymbol(stock.symbol).subscribe({
           next: (indexData: IndexResponseDto) => {
-            console.log('API response from getIndexBySymbol:', indexData);
-            
             // Map IndexResponseDto to our expected format
             this.selectedStockDetails = {
               symbol: indexData.indexSymbol || stock.symbol,
@@ -399,7 +387,6 @@ export class PortfolioConfigureComponent implements OnInit {
             };
             
             this.isLoadingStockDetails = false;
-            console.log('Stock details loaded from IndicesService:', this.selectedStockDetails);
           },
           error: (error2) => {
             console.error('IndicesService also failed, trying MarketService:', error2);
@@ -407,8 +394,6 @@ export class PortfolioConfigureComponent implements OnInit {
             // Try MarketService.getStockDetails as last resort
             this.marketService.getStockDetails(stock.symbol).subscribe({
               next: (marketData: any) => {
-                console.log('API response from getStockDetails:', marketData);
-                
                 // Map MarketData to our expected format
                 this.selectedStockDetails = {
                   symbol: marketData.symbol || stock.symbol,
@@ -435,7 +420,6 @@ export class PortfolioConfigureComponent implements OnInit {
                 };
                 
                 this.isLoadingStockDetails = false;
-                console.log('Stock details loaded from MarketService:', this.selectedStockDetails);
               },
               error: (error3) => {
                 console.error('All APIs failed:', error3);
@@ -473,15 +457,8 @@ export class PortfolioConfigureComponent implements OnInit {
       realizedPnl: 0
     };
 
-    console.log('Adding stock with PUT endpoint:', {
-      portfolioId: this.editingPortfolio.id,
-      symbol: targetSymbol,
-      request: holdingRequest
-    });
-
     this.portfolioApiService.putHolding(this.editingPortfolio.id, targetSymbol, holdingRequest).subscribe({
       next: (newHolding) => {
-        console.log('Stock added successfully:', newHolding);
         // Refresh holdings list
         this.loadPortfolioHoldings(this.editingPortfolio!.id);
         this.closeAddStockDialog();
@@ -511,7 +488,6 @@ export class PortfolioConfigureComponent implements OnInit {
   removeHolding(holding: PortfolioHoldingDto): void {
     if (confirm(`Are you sure you want to remove ${holding.symbol} from this portfolio?`)) {
       // TODO: Implement remove holding functionality
-      console.log('Remove holding:', holding.symbol);
       // For now, just remove from local array
       this.portfolioHoldings = this.portfolioHoldings.filter(h => h.id !== holding.id);
     }
@@ -569,16 +545,10 @@ export class PortfolioConfigureComponent implements OnInit {
           userId: parseInt(currentUser.id, 10) // Convert string ID to number
         };
 
-        console.log('=== PORTFOLIO CREATION DEBUG ===');
-        console.log('Current user:', currentUser);
-        console.log('User ID (string):', currentUser.id);
-        console.log('User ID (parsed):', parseInt(currentUser.id, 10));
-        console.log('Creating portfolio with request:', JSON.stringify(createRequest, null, 2));
-        console.log('================================');
+
 
         this.portfolioApiService.createPortfolio(createRequest).subscribe({
           next: (createdPortfolio) => {
-            console.log('Portfolio created successfully:', createdPortfolio);
             // Update the local portfolio with the created one
             this.editingPortfolio = { ...this.editingPortfolio, ...createdPortfolio };
             this.isEditing = false;
@@ -609,7 +579,6 @@ export class PortfolioConfigureComponent implements OnInit {
             }
             
             // Fallback: save locally and emit
-            console.log('Falling back to local save for new portfolio');
             this.isEditing = false;
             this.isSaving = false;
             if (this.editingPortfolio) {
@@ -625,16 +594,10 @@ export class PortfolioConfigureComponent implements OnInit {
           riskProfile: this.editingPortfolio.riskProfile
         };
 
-        console.log('=== PORTFOLIO UPDATE DEBUG ===');
-        console.log('Portfolio ID:', this.editingPortfolio.id);
-        console.log('Update Request:', JSON.stringify(updateRequest, null, 2));
-        console.log('Full editing portfolio data:', JSON.stringify(this.editingPortfolio, null, 2));
-        console.log('Original portfolio data:', JSON.stringify(this.selectedPortfolio, null, 2));
-        console.log('================================');
+
 
         this.portfolioApiService.updatePortfolio(this.editingPortfolio.id, updateRequest).subscribe({
           next: (updatedPortfolio) => {
-            console.log('Portfolio updated successfully:', updatedPortfolio);
             // Update the local portfolio with the updated one
             this.editingPortfolio = { ...this.editingPortfolio, ...updatedPortfolio };
             this.isEditing = false;
@@ -653,7 +616,6 @@ export class PortfolioConfigureComponent implements OnInit {
             });
             
             // Fallback: save locally and emit
-            console.log('Falling back to local save for existing portfolio');
             this.isEditing = false;
             this.isSaving = false;
             if (this.editingPortfolio) {
@@ -686,7 +648,6 @@ export class PortfolioConfigureComponent implements OnInit {
     this.isEditing = false;
     this.isSaving = false;
     // Stay on the same page - don't navigate to overview
-    console.log('Cancel editing - staying on configure page');
   }
 
   onCancel(): void {

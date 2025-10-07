@@ -62,7 +62,6 @@ export class FeatureFlagService {
    * It will still make an API call, but changes won't be reflected in the static array.
    */
   createFeatureFlag(featureFlag: Omit<FeatureFlag, 'id'>): Observable<FeatureFlag> {
-    console.warn('createFeatureFlag: This method is not functional with the static array approach');
     return this.apiService.post<FeatureFlag>(this.endpoint, featureFlag);
   }
 
@@ -76,7 +75,6 @@ export class FeatureFlagService {
    * It will still make an API call, but changes won't be reflected in the static array.
    */
   updateFeatureFlag(id: string, featureFlag: Partial<FeatureFlag>): Observable<FeatureFlag> {
-    console.warn('updateFeatureFlag: This method is not functional with the static array approach');
     return this.apiService.put<FeatureFlag>(`${this.endpoint}/${id}`, featureFlag);
   }
 
@@ -89,7 +87,6 @@ export class FeatureFlagService {
    * It will still make an API call, but changes won't be reflected in the static array.
    */
   deleteFeatureFlag(id: string): Observable<void> {
-    console.warn('deleteFeatureFlag: This method is not functional with the static array approach');
     return this.apiService.delete<void>(`${this.endpoint}/${id}`);
   }
 
@@ -102,7 +99,6 @@ export class FeatureFlagService {
    * It will still make an API call, but changes won't be reflected in the static array.
    */
   enableFeatureFlag(id: string): Observable<FeatureFlag> {
-    console.warn('enableFeatureFlag: This method is not functional with the static array approach');
     return this.apiService.put<FeatureFlag>(`${this.endpoint}/${id}/enable`, {});
   }
 
@@ -115,7 +111,6 @@ export class FeatureFlagService {
    * It will still make an API call, but changes won't be reflected in the static array.
    */
   disableFeatureFlag(id: string): Observable<FeatureFlag> {
-    console.warn('disableFeatureFlag: This method is not functional with the static array approach');
     return this.apiService.put<FeatureFlag>(`${this.endpoint}/${id}/disable`, {});
   }
 }

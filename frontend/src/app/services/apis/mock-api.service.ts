@@ -56,8 +56,6 @@ export class MockApiService {
    * @returns An Observable that emits the mock response
    */
   post<T>(url: string, body: any, headers?: HttpHeaders): Observable<T> {
-    console.log(`MockApiService: POST ${url}`, { body, headers });
-    
     // Simulate a successful response with the posted data
     // In a real implementation, you might modify the data before returning it
     return of(body as T).pipe(delay(this.delay));
@@ -71,8 +69,6 @@ export class MockApiService {
    * @returns An Observable that emits the mock response
    */
   put<T>(url: string, body: any, headers?: HttpHeaders): Observable<T> {
-    console.log(`MockApiService: PUT ${url}`, { body, headers });
-    
     // Simulate a successful response with the updated data
     return of(body as T).pipe(delay(this.delay));
   }
@@ -84,8 +80,6 @@ export class MockApiService {
    * @returns An Observable that emits the mock response
    */
   delete<T>(url: string, headers?: HttpHeaders): Observable<T> {
-    console.log(`MockApiService: DELETE ${url}`, { headers });
-    
     // Simulate a successful response
     return of({} as T).pipe(delay(this.delay));
   }
@@ -98,8 +92,6 @@ export class MockApiService {
    * @returns An Observable that emits the mock response
    */
   patch<T>(url: string, body: any, headers?: HttpHeaders): Observable<T> {
-    console.log(`MockApiService: PATCH ${url}`, { body, headers });
-    
     // Simulate a successful response with the patched data
     return of(body as T).pipe(delay(this.delay));
   }

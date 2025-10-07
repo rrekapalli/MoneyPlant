@@ -548,7 +548,6 @@ private loadInitialData() {
         detail: 'All screening criteria have been cleared'
       });
     } catch (error) {
-      console.error('Error clearing criteria:', error);
     }
   }
 
@@ -561,7 +560,6 @@ private loadInitialData() {
     try {
       this.staticFields = INDICATOR_FIELDS.map(field => this.convertIndicatorFieldToFieldMeta(field));
     } catch (error) {
-      console.error('Failed to load static fields:', error);
       this.staticFields = [];
     }
   }  
@@ -602,7 +600,6 @@ private loadInitialData() {
       };
 
     } catch (error) {
-      console.error('Failed to setup static fields for criteria-builder:', error);
     }
   }  
   private convertIndicatorFieldToFieldMeta(field: any): FieldMeta {
@@ -622,7 +619,6 @@ private loadInitialData() {
         nullable: true
       };
     } catch (error) {
-      console.error('Error converting field:', field, error);
       return {
         id: field.value || 'unknown',
         label: field.name || 'Unknown Field',
@@ -709,7 +705,6 @@ private loadInitialData() {
         root: this.convertScreenerGroup(criteria)
       };
     } catch (error) {
-      console.error('Failed to convert ScreenerCriteria to DSL:', error);
       return this.createEmptyDSL();
     }
   }
@@ -727,7 +722,6 @@ private loadInitialData() {
         })
       };
     } catch (error) {
-      console.error('Failed to convert screener group:', error);
       throw error;
     }
   }
@@ -753,7 +747,6 @@ private loadInitialData() {
         })()
       };
     } catch (error) {
-      console.error('Failed to convert screener rule:', error);
       throw error;
     }
   }  
@@ -813,7 +806,6 @@ private loadInitialData() {
     try {
       return this.convertDslGroup(dsl.root);
     } catch (error) {
-      console.error('Failed to convert DSL to ScreenerCriteria:', error);
       return undefined;
     }
   }

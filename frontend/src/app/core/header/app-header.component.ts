@@ -299,7 +299,6 @@ export class AppHeaderComponent implements OnInit, OnDestroy {
         icon: 'pi pi-user',
         command: () => {
           // Navigate to profile page or show profile modal
-          console.log('Profile clicked');
         }
       },
       {

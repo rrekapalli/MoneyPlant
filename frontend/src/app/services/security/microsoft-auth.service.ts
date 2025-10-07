@@ -127,7 +127,6 @@ export class MicrosoftAuthService {
       
       const account = this.msalService.instance.getActiveAccount();
       const result = account !== null;
-      console.log('MicrosoftAuthService.isLoggedIn() - account:', account, 'result:', result);
       return result;
     } catch (error) {
       console.error('Error checking login status:', error);
@@ -149,7 +148,6 @@ export class MicrosoftAuthService {
         picture: undefined // MSAL doesn't provide picture by default
       };
       this.currentUserSubject.next(user);
-      console.log('Microsoft user authenticated:', user);
     }
   }
 

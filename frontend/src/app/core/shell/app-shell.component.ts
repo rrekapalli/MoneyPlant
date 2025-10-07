@@ -37,14 +37,12 @@ export class AppShellComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    console.log('AppShellComponent: ngOnInit called');
     this.toastSubscription = this.toastService.toast$.subscribe(toast => {
       this.messageService.add(toast);
     });
   }
 
   ngOnDestroy(): void {
-    console.log('AppShellComponent: ngOnDestroy called');
     if (this.toastSubscription) {
       this.toastSubscription.unsubscribe();
     }

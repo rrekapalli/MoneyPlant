@@ -148,22 +148,18 @@ export class StrategiesComponent implements OnInit {
   }
 
   createStrategy() {
-    console.log('Create strategy');
     // Implementation for creating a new strategy would go here
   }
 
   editStrategy(strategy: any) {
-    console.log('Edit strategy', strategy);
     // Implementation for editing a strategy would go here
   }
 
   deleteStrategy(strategy: any) {
-    console.log('Delete strategy', strategy);
     // Implementation for deleting a strategy would go here
   }
 
   toggleStrategyStatus(strategy: any) {
-    console.log('Toggle strategy status', strategy);
     // Implementation for toggling strategy status would go here
     if (strategy.status === 'Active') {
       strategy.status = 'Paused';

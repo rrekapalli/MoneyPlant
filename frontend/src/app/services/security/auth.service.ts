@@ -66,11 +66,9 @@ export class AuthService {
     ).subscribe({
       next: (response) => {
         if (response && response.success) {
-          console.log('Token refreshed successfully');
         }
       },
       error: (error) => {
-        console.error('Token refresh failed:', error);
         this.logout();
       }
     });
@@ -83,7 +81,6 @@ export class AuthService {
     const error = urlParams.get('error');
 
     if (error) {
-      console.error('OAuth2 error:', error);
       this.logout();
       return;
     }
@@ -102,7 +99,6 @@ export class AuthService {
           this.router.navigate(['/dashboard']);
         },
         error: (error) => {
-          console.error('AuthService - Token validation failed:', error);
           this.logout();
         }
       });
@@ -120,7 +116,6 @@ export class AuthService {
             this.startTokenRefreshTimer();
           },
           error: (error) => {
-            console.error('AuthService - Existing token validation failed:', error);
             this.logout();
           }
         });
@@ -163,7 +158,6 @@ export class AuthService {
           }
         }),
         catchError(error => {
-          console.error('Login error:', error);
           // Handle different error response formats
           let errorMessage = 'Login failed. Please try again.';
           if (error.error?.message) {

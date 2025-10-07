@@ -80,7 +80,6 @@ export class PortfoliosComponent implements OnInit, OnDestroy {
   constructor(private portfolioApiService: PortfolioApiService) {}
 
   ngOnInit(): void {
-    console.log('PortfoliosComponent initialized with activeTab:', this.activeTab);
     // Check if user has a valid token
     if (!this.hasValidToken()) {
       this.goToLogin();
@@ -129,7 +128,6 @@ export class PortfoliosComponent implements OnInit, OnDestroy {
             this.portfolios = this.enhancePortfoliosWithMetrics(data);
             this.applyFilters();
           } else {
-            console.error('API response is not an array:', data);
             this.error = 'Invalid data format received from API';
           }
         },
@@ -141,7 +139,6 @@ export class PortfoliosComponent implements OnInit, OnDestroy {
             localStorage.removeItem('auth_token');
           } else {
             // For demo purposes, create mock portfolios when API fails
-            console.log('Creating mock portfolios for demonstration');
             this.portfolios = this.createMockPortfolios();
             this.applyFilters();
           }
@@ -338,7 +335,6 @@ export class PortfoliosComponent implements OnInit, OnDestroy {
 
   // Action methods
   createPortfolio(): void {
-    console.log('Create portfolio clicked');
     // Create a new empty portfolio for creation mode
     this.selectedPortfolio = {
       id: 0, // Temporary ID for new portfolio
@@ -363,33 +359,24 @@ export class PortfoliosComponent implements OnInit, OnDestroy {
     };
     // Switch to Configure tab for new portfolio creation
     this.activeTab = "1";
-    console.log('Switched to Configure tab for new portfolio creation');
   }
 
   selectPortfolio(portfolio: PortfolioWithMetrics): void {
-    console.log('Select portfolio:', portfolio);
     // TODO: Navigate to portfolio details
   }
 
   editPortfolio(portfolio: PortfolioWithMetrics): void {
-    console.log('Edit portfolio:', portfolio);
     // TODO: Implement portfolio editing
   }
 
   configurePortfolio(portfolio: PortfolioWithMetrics): void {
-    console.log('Configure portfolio:', portfolio);
-    console.log('Current activeTab before switch:', this.activeTab);
     this.selectedPortfolio = portfolio;
     this.activeTab = "1"; // Switch to Configure tab
-    console.log('ActiveTab after switch to Configure:', this.activeTab);
   }
 
   optimizePortfolio(portfolio: PortfolioWithMetrics): void {
-    console.log('Optimize portfolio:', portfolio);
-    console.log('Current activeTab before switch:', this.activeTab);
     this.selectedPortfolio = portfolio;
     this.activeTab = "2"; // Switch to Optimize tab
-    console.log('ActiveTab after switch to Optimize:', this.activeTab);
   }
 
   // Method to reset to Overview tab
@@ -401,18 +388,15 @@ export class PortfoliosComponent implements OnInit, OnDestroy {
   // Method to handle tab changes
   onTabChange(index: string | number | undefined): void {
     if (index !== undefined) {
-      console.log('Tab changed to:', index);
       this.activeTab = typeof index === 'string' ? index : index.toString();
     }
   }
 
   viewPortfolioData(portfolio: PortfolioWithMetrics): void {
-    console.log('View portfolio data:', portfolio);
     // TODO: Navigate to portfolio data view
   }
 
   viewPortfolioInsights(portfolio: PortfolioWithMetrics): void {
-    console.log('View portfolio insights:', portfolio);
     // TODO: Navigate to portfolio insights
   }
 
@@ -550,11 +534,8 @@ export class PortfoliosComponent implements OnInit, OnDestroy {
 
   // Methods for child component communication
   onSaveChanges(portfolio: PortfolioWithMetrics): void {
-    console.log('Save changes for portfolio:', portfolio);
-    
     if (portfolio.id === 0) {
       // This is a new portfolio creation
-      console.log('Creating new portfolio:', portfolio.name);
       // TODO: Implement API call to create portfolio
       // For now, simulate creation by adding to local array
       const newPortfolio = {
@@ -563,18 +544,15 @@ export class PortfoliosComponent implements OnInit, OnDestroy {
         inceptionDate: new Date().toISOString().split('T')[0]
       };
       this.portfolios.push(newPortfolio);
-      console.log('New portfolio added:', newPortfolio);
       
       // For new portfolios, navigate to Overview to see the created portfolio
       this.resetToOverview();
     } else {
       // This is an existing portfolio update
-      console.log('Updating existing portfolio:', portfolio.name);
       // TODO: Implement API call to update portfolio
       const index = this.portfolios.findIndex(p => p.id === portfolio.id);
       if (index !== -1) {
         this.portfolios[index] = { ...portfolio };
-        console.log('Portfolio updated:', this.portfolios[index]);
       }
       
       // For existing portfolio updates, stay on Configure tab to see the changes
@@ -583,7 +561,6 @@ export class PortfoliosComponent implements OnInit, OnDestroy {
   }
 
   onCancel(): void {
-    console.log('Cancel configuration');
     // TODO: Implement cancel logic
     // Don't automatically navigate to Overview - let user decide where to go
     // Just clear the selected portfolio to exit edit mode
@@ -591,7 +568,6 @@ export class PortfoliosComponent implements OnInit, OnDestroy {
   }
 
   onApplyOptimization(portfolio: PortfolioWithMetrics): void {
-    console.log('Apply optimization for portfolio:', portfolio);
     // TODO: Implement optimization logic
     // Don't automatically navigate to Overview - let user decide where to go
     // Just clear the selected portfolio to exit optimization mode
@@ -599,7 +575,6 @@ export class PortfoliosComponent implements OnInit, OnDestroy {
   }
 
   goToOverview(): void {
-    console.log('Navigating to Overview tab');
     this.activeTab = "0";
     this.selectedPortfolio = null;
   }

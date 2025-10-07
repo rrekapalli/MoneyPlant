@@ -596,7 +596,6 @@ export class IndicesComponent implements OnInit, OnDestroy {
   onIndexSelectionChange(selectedOption: any): void {
     // Extract the actual index from the option object
     const selectedIndex = selectedOption?.value || selectedOption;
-    console.log('Index selection changed:', selectedIndex);
     this.selectedIndexForStocks.set(selectedIndex);
     this.loadStocksForIndex(selectedIndex);
   }
@@ -611,16 +610,13 @@ export class IndicesComponent implements OnInit, OnDestroy {
       return;
     }
 
-    console.log('Loading stocks for index:', index.indexName);
     this.isLoadingStocks.set(true);
     
     // Convert index name to URL-friendly format
     const urlFriendlyIndexName = index.indexName.replace(/\s+/g, '-');
-    console.log('URL-friendly index name:', urlFriendlyIndexName);
     
     this.stockTicksService.getStockTicksByIndex(urlFriendlyIndexName).subscribe({
       next: (stockData: StockDataDto[]) => {
-        console.log('Received stock data:', stockData?.length || 0, 'stocks');
         this.stockListData.set(stockData || []);
         this.filteredStockListData.set(stockData || []);
         this.isLoadingStocks.set(false);
@@ -643,8 +639,6 @@ export class IndicesComponent implements OnInit, OnDestroy {
    * Initialize the stock list dashboard widget
    */
   private initializeStockListDashboard(): void {
-    console.log('Initializing stock list dashboard with data:', this.filteredStockListData().length, 'stocks');
-    
     const stockListWidget = StockListChartBuilder.create()
       .setData(this.filteredStockListData())
       .setStockPerformanceConfiguration()
@@ -664,17 +658,13 @@ export class IndicesComponent implements OnInit, OnDestroy {
         if (chart) {
           const chartContainer = chart.getDom();
           if (chartContainer) {
-            console.log('Adding global click handler to chart container');
             chartContainer.addEventListener('dblclick', (event: Event) => {
-              console.log('Global double-click on chart container:', event);
               // Try to find the clicked element and extract stock symbol
               const target = event.target as HTMLElement;
               if (target) {
-                console.log('Clicked element:', target);
                 // Look for text content that might be a stock symbol
                 const textContent = target.textContent || target.innerText;
                 if (textContent && textContent.length <= 10) {
-                  console.log('Potential stock symbol from text:', textContent);
                   this.navigateToStockInsights(textContent.trim());
                 }
               }
@@ -688,7 +678,6 @@ export class IndicesComponent implements OnInit, OnDestroy {
     stockListWidget.position = { x: 0, y: 0, cols: 12, rows: 16 };
 
     this.dashboardConfig = [stockListWidget];
-    console.log('Dashboard config created:', this.dashboardConfig);
     
     // Add click handlers after dashboard is rendered
     this.addDashboardClickHandlers();
@@ -745,8 +734,6 @@ export class IndicesComponent implements OnInit, OnDestroy {
       return;
     }
 
-    console.log('Navigating to stock insights for:', stockSymbol);
-    
     // Navigate to stock insights dashboard with the stock symbol
     this.router.navigate(['/dashboard/stock-insights', stockSymbol]);
   }
@@ -760,19 +747,11 @@ export class IndicesComponent implements OnInit, OnDestroy {
     setTimeout(() => {
       const dashboardContainer = document.querySelector('[data-dashboard-id="indices-stock-list"]');
       if (dashboardContainer) {
-        console.log('Adding click handlers to dashboard container');
-        
         // Add double-click handler to the entire dashboard
         dashboardContainer.addEventListener('dblclick', (event: Event) => {
-          console.log('Dashboard double-click event:', event);
-          
           // Find the clicked element
           const target = event.target as HTMLElement;
           if (target) {
-            console.log('Clicked element:', target);
-            console.log('Element text:', target.textContent);
-            console.log('Element classes:', target.className);
-            
             // Look for stock symbol in the clicked element or its parents
             let currentElement = target;
             while (currentElement && currentElement !== dashboardContainer) {
@@ -780,7 +759,6 @@ export class IndicesComponent implements OnInit, OnDestroy {
               if (textContent && textContent.length <= 10 && textContent.length >= 2) {
                 // Check if it looks like a stock symbol (letters and numbers)
                 if (/^[A-Z0-9]+$/.test(textContent.trim())) {
-                  console.log('Found potential stock symbol:', textContent.trim());
                   this.navigateToStockInsights(textContent.trim());
                   return;
                 }
@@ -809,14 +787,12 @@ export class IndicesComponent implements OnInit, OnDestroy {
     );
 
     if (nifty50Index) {
-      console.log('Auto-selecting NIFTY 50 index:', nifty50Index);
       this.selectedIndexForStocks.set(nifty50Index);
       this.loadStocksForIndex(nifty50Index);
     } else {
       console.warn('NIFTY 50 index not found in loaded indices');
       // If NIFTY 50 is not found, select the first available index
       if (indices.length > 0) {
-        console.log('Selecting first available index:', indices[0]);
         this.selectedIndexForStocks.set(indices[0]);
         this.loadStocksForIndex(indices[0]);
       }
