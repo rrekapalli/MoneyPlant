@@ -172,12 +172,12 @@ export class StrategiesComponent implements OnInit {
     }
   }
 
-  getStatusSeverity(status: string): string {
+  getStatusSeverity(status: string): "success" | "secondary" | "info" | "warn" | "danger" | "contrast" {
     switch (status) {
       case 'Active':
         return 'success';
       case 'Paused':
-        return 'warning';
+        return 'warn';
       case 'Inactive':
         return 'danger';
       default:

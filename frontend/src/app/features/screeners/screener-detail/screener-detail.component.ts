@@ -314,7 +314,7 @@ export class ScreenerDetailComponent implements OnInit, OnDestroy {
     return new Date(dateString).toLocaleString();
   }
 
-  getStatusSeverity(status: string): string {
+  getStatusSeverity(status: string): "success" | "secondary" | "info" | "warn" | "danger" | "contrast" {
     switch (status) {
       case 'SUCCESS':
         return 'success';
@@ -323,18 +323,18 @@ export class ScreenerDetailComponent implements OnInit, OnDestroy {
       case 'FAILED':
         return 'danger';
       case 'PENDING':
-        return 'warning';
+        return 'warn';
       default:
         return 'info';
     }
   }
 
-  getVersionStatusSeverity(status: string): string {
+  getVersionStatusSeverity(status: string): "success" | "secondary" | "info" | "warn" | "danger" | "contrast" {
     switch (status) {
       case 'ACTIVE':
         return 'success';
       case 'DRAFT':
-        return 'warning';
+        return 'warn';
       case 'ARCHIVED':
         return 'danger';
       default:

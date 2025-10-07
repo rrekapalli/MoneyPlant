@@ -93,8 +93,10 @@ export class IndicesComponent implements OnInit, OnDestroy {
 
   
   // Method to update active tab (for two-way binding)
-  updateActiveTab(value: string | number): void {
-    this.activeTab.set(value.toString());
+  updateActiveTab(value: string | number | undefined): void {
+    if (value !== undefined) {
+      this.activeTab.set(value.toString());
+    }
   }
   
   // Method to update global filter value (for two-way binding)

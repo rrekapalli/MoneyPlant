@@ -213,12 +213,14 @@ private loadInitialData() {
     this.loadScreeners();
   }
 
-  onTabChange(index: string | number): void {
-    this.activeTabIndex = typeof index === 'string' ? index : index.toString();
-    
-    // Clear selection when switching back to overview tab
-    if (this.activeTabIndex === "0") {
-      this.clearSelection();
+  onTabChange(index: string | number | undefined): void {
+    if (index !== undefined) {
+      this.activeTabIndex = typeof index === 'string' ? index : index.toString();
+      
+      // Clear selection when switching back to overview tab
+      if (this.activeTabIndex === "0") {
+        this.clearSelection();
+      }
     }
   }
 

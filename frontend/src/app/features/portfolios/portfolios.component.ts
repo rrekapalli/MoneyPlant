@@ -399,9 +399,11 @@ export class PortfoliosComponent implements OnInit, OnDestroy {
   }
 
   // Method to handle tab changes
-  onTabChange(index: string | number): void {
-    console.log('Tab changed to:', index);
-    this.activeTab = typeof index === 'string' ? index : index.toString();
+  onTabChange(index: string | number | undefined): void {
+    if (index !== undefined) {
+      console.log('Tab changed to:', index);
+      this.activeTab = typeof index === 'string' ? index : index.toString();
+    }
   }
 
   viewPortfolioData(portfolio: PortfolioWithMetrics): void {
