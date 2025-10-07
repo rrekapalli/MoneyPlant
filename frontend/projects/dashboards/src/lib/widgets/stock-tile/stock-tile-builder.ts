@@ -269,7 +269,6 @@ export class StockTileBuilder {
    */
   static updateData(widget: IWidget, data: Partial<StockTileData>): void {
     if (widget.config?.component !== 'stock-tile') {
-      console.warn('Attempting to update non-stock-tile widget');
       return;
     }
 
@@ -303,7 +302,6 @@ export class StockTileBuilder {
    */
   static setDataEvent(widget: IWidget, onDataEvent: (widget: IWidget, data?: any) => void): void {
     if (widget.config?.component !== 'stock-tile') {
-      console.warn('Attempting to set data event on non-stock-tile widget');
       return;
     }
 

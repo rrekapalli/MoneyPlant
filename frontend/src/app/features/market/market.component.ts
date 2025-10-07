@@ -54,7 +54,6 @@ export class MarketComponent implements OnInit {
       error: (err) => {
         this.error = 'Failed to load market summary';
         this.loading = false;
-        console.error(err);
       }
     });
 
@@ -64,7 +63,7 @@ export class MarketComponent implements OnInit {
         this.topGainers = data;
       },
       error: (err) => {
-        console.error('Failed to load top gainers:', err);
+        // Failed to load top gainers
       }
     });
 
@@ -74,7 +73,7 @@ export class MarketComponent implements OnInit {
         this.topLosers = data;
       },
       error: (err) => {
-        console.error('Failed to load top losers:', err);
+        // Failed to load top losers
       }
     });
 
@@ -84,7 +83,7 @@ export class MarketComponent implements OnInit {
         this.mostActive = data;
       },
       error: (err) => {
-        console.error('Failed to load most active stocks:', err);
+        // Failed to load most active stocks
       }
     });
   }
@@ -99,7 +98,6 @@ export class MarketComponent implements OnInit {
       error: (err) => {
         this.error = `Failed to load details for ${symbol}`;
         this.loading = false;
-        console.error(err);
       }
     });
   }

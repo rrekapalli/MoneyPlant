@@ -41,20 +41,9 @@ export class EchartComponent {
   onChartInit(instance: any) {
     this.widget.chartInstance = instance;
     
-    // Debug logging for chart height
-    console.log('🔧 ECharts component initialized:', {
-      widgetHeight: this.widget?.height,
-      widgetId: this.widget?.id,
-      widgetPosition: this.widget?.position,
-      chartInstance: !!instance
-    });
-    
     // Check if there are event handlers to set up
     if (this.widget.config?.events?.onChartOptions) {
-      console.log('🔥 Setting up event handler from widget config');
       this.widget.config.events.onChartOptions(this.widget, instance);
-    } else {
-      console.log('🔥 No event handler found in widget config');
     }
     
     setTimeout(() => {
@@ -245,7 +234,6 @@ export class EchartComponent {
    */
   forceChartResize(): void {
     if (this.widget.chartInstance) {
-      console.log('🔧 Forcing chart resize to height:', this.widget?.height);
       this.widget.chartInstance.resize();
     }
   }

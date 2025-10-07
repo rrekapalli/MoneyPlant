@@ -290,7 +290,7 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
       
       super.ngOnInit?.();
     } catch (error) {
-      console.error('Error in StockInsightsComponent ngOnInit:', error);
+      // Error in StockInsightsComponent ngOnInit
     }
   }
 
@@ -340,7 +340,7 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
         this.onTimeRangeChange(range);
       };
     } catch (error) {
-      console.error('Error in StockInsightsComponent onChildInit:', error);
+      // Error in StockInsightsComponent onChildInit
     }
   }
 
@@ -480,7 +480,7 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
           this.cdr.detectChanges();
         },
         error: (error: any) => {
-          console.warn('Failed to load stock ticks data for index:', indexName, ':', error);
+          // Failed to load stock ticks data for index
           this.dashboardData = [];
           this.filteredDashboardData = [];
           this.appliedFilters = [];
@@ -525,7 +525,7 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
           }, 500);
         },
         error: (error: any) => {
-          console.warn('❌ Failed to load historical data for', stockSymbol, ':', error);
+          // Failed to load historical data
           this.historicalData = [];
           
           // Still try to update chart even with empty data
@@ -618,7 +618,7 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
       
       // Subscribe to WebSocket updates for the selected stock
       this.subscribeToStockWebSocket(stockName).catch(error => {
-        console.error('Failed to subscribe to WebSocket:', error);
+        // Failed to subscribe to WebSocket
       });
     }
     
@@ -891,7 +891,7 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
       
 
     } catch (error) {
-      console.error('Error initializing dashboard config:', error);
+      // Error initializing dashboard config
     }
   }
 
@@ -906,10 +906,9 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
       if (widget.chartInstance && this.historicalData.length > 0) {
         try {
           CandlestickChartBuilder.updateData(widget, this.historicalData);
-          console.log('✅ Direct chart update successful');
           return;
         } catch (error) {
-          console.error('❌ Direct chart update failed:', error);
+          // Direct chart update failed
         }
       }
       
@@ -917,14 +916,12 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
       if (!widget.chartInstance && this.historicalData.length > 0) {
         const chartInstance = this.findChartInstanceViaNgxEcharts(widget) || this.findChartInstanceInDOM(widget);
         if (chartInstance) {
-          console.log('✅ Found chart instance, attaching to widget');
           widget.chartInstance = chartInstance;
           try {
             CandlestickChartBuilder.updateData(widget, this.historicalData);
-            console.log('✅ Chart update successful after finding instance');
             return;
           } catch (error) {
-            console.error('❌ Chart update failed after finding instance:', error);
+            // Chart update failed after finding instance
           }
         }
       }
@@ -1055,9 +1052,7 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
       // Skip if offline (no point calling backend without internet)
       try {
         if (typeof navigator !== 'undefined' && 'onLine' in navigator && navigator.onLine === false) {
-          if (this.enableDebugLogging) {
-            console.warn('Offline detected, skipping previous-day fetch');
-          }
+
           return;
         }
       } catch { /* no-op */ }
@@ -1070,7 +1065,7 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
       // Fetch previous-day data
       // For now, we'll skip this functionality since we don't have a previous-day stock data service
       // In the future, this could be implemented using StockService or a similar service
-      console.log(`Previous-day data fetch not implemented for stock: ${stockName}`);
+
       
       // Update metric tiles with current data
       this.updateMetricTilesWithFilters([]);
@@ -1120,15 +1115,15 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
       case 'Stock Historical Price Movement with Volume':
         // This is a candlestick chart - provide OHLCV data from historical data if available
         if (this.historicalData.length > 0) {
-          console.log('📊 getSummarizedDataByWidget: Using historical data:', this.historicalData.length, 'records');
+
           // Return the historical data directly as it already has the correct structure
           return this.historicalData;
         } else {
-          console.log('📊 getSummarizedDataByWidget: No historical data, using fallback');
+
           // Fallback to stock data - transform to match historical data structure
           const stockData = this.filteredDashboardData || this.dashboardData;
           if (!stockData || stockData.length === 0) {
-            console.warn('⚠️ No stock data available for fallback');
+
             return [];
           }
           
@@ -1143,7 +1138,7 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
             symbol: stock.symbol || 'Unknown'
           }));
           
-          console.log('📊 getSummarizedDataByWidget: Transformed stock data:', transformedData.length, 'records');
+
           return transformedData;
         }
       default:
@@ -1213,15 +1208,15 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
       case 'Stock Historical Price Movement with Volume':
         // Use historical data for candlestick chart if available, otherwise use stock data
         if (this.historicalData.length > 0) {
-          console.log('📊 Using historical data for candlestick chart:', this.historicalData.length, 'records');
+
           // Return the historical data directly as it already has the correct structure
           // The CandlestickChartBuilder will handle the transformation
           return this.historicalData;
         } else {
-          console.log('📊 No historical data, using fallback stock data');
+
           // Fallback to stock data - transform to match historical data structure
           if (!sourceData) {
-            console.warn('⚠️ No source data available for fallback');
+
             return [];
           }
           
@@ -1236,7 +1231,7 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
             symbol: stock.symbol || 'Unknown'
           }));
           
-          console.log('📊 Transformed stock data:', transformedData.length, 'records');
+
           return transformedData;
         }
 
@@ -1689,7 +1684,7 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
   private updateCandlestickChartWithRetry(): void {
     // Prevent multiple simultaneous updates
     if (this.isUpdatingChart) {
-      console.log('🔄 Chart update already in progress, skipping...');
+
       return;
     }
 
@@ -1701,7 +1696,7 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
     const attemptUpdate = () => {
       
       if (!this.dashboardConfig?.widgets) {
-        console.warn('❌ No dashboard config widgets found');
+
         this.isUpdatingChart = false; // Reset flag
         return;
       }
@@ -1713,7 +1708,7 @@ export class StockInsightsComponent extends BaseDashboardComponent<StockDataDto>
       const candlestickWidget = candlestickWidgetIndex >= 0 ? this.dashboardConfig.widgets[candlestickWidgetIndex] : null;
 
       if (!candlestickWidget) {
-        console.warn('⚠️ Candlestick widget not found');
+
         if (retryCount < maxRetries - 1) {
           retryCount++;
           setTimeout(attemptUpdate, retryDelay * retryCount);

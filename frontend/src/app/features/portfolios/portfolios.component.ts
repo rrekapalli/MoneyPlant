@@ -106,7 +106,6 @@ export class PortfoliosComponent implements OnInit, OnDestroy {
       const currentTime = Date.now() / 1000;
       return payload.exp > currentTime;
     } catch (error) {
-      console.error('Error parsing token:', error);
       return false;
     }
   }
@@ -132,7 +131,6 @@ export class PortfoliosComponent implements OnInit, OnDestroy {
           }
         },
         error: (error) => {
-          console.error('Error loading portfolios:', error);
           if (error.status === 401) {
             this.error = 'Authentication expired. Please log in again.';
             // Clear invalid token

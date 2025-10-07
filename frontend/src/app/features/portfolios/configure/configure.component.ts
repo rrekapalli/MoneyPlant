@@ -185,7 +185,6 @@ export class PortfolioConfigureComponent implements OnInit {
         this.isLoadingMarketData = false;
       },
       error: (error) => {
-        console.error(`Error loading market data for ${symbol}:`, error);
         // Set default values for failed requests
         this.holdingsMarketData[symbol] = {
           name: symbol + ' Limited',
@@ -356,8 +355,6 @@ export class PortfolioConfigureComponent implements OnInit {
         this.isLoadingStockDetails = false;
       },
       error: (error) => {
-        console.error('StockService failed, trying IndicesService:', error);
-        
         // Try IndicesService.getIndexBySymbol as fallback
         this.indicesService.getIndexBySymbol(stock.symbol).subscribe({
           next: (indexData: IndexResponseDto) => {
@@ -389,8 +386,6 @@ export class PortfolioConfigureComponent implements OnInit {
             this.isLoadingStockDetails = false;
           },
           error: (error2) => {
-            console.error('IndicesService also failed, trying MarketService:', error2);
-            
             // Try MarketService.getStockDetails as last resort
             this.marketService.getStockDetails(stock.symbol).subscribe({
               next: (marketData: any) => {
@@ -422,7 +417,6 @@ export class PortfolioConfigureComponent implements OnInit {
                 this.isLoadingStockDetails = false;
               },
               error: (error3) => {
-                console.error('All APIs failed:', error3);
                 this.isLoadingStockDetails = false;
                 
                 // Show error message to user
@@ -465,13 +459,7 @@ export class PortfolioConfigureComponent implements OnInit {
         this.isAddingStock = false;
       },
       error: (error) => {
-        console.error('Error adding stock:', error);
-        console.error('Error details:', {
-          status: error.status,
-          statusText: error.statusText,
-          message: error.message,
-          error: error.error
-        });
+
         alert('Failed to add stock to portfolio. Please try again.');
         this.isAddingStock = false;
       }
@@ -557,13 +545,7 @@ export class PortfolioConfigureComponent implements OnInit {
             this.saveChanges.emit(this.editingPortfolio);
           },
           error: (error) => {
-            console.error('Error creating portfolio:', error);
-            console.error('Error details:', {
-              status: error.status,
-              statusText: error.statusText,
-              message: error.message,
-              error: error.error
-            });
+
             
             // Show user-friendly error message
             if (error.status === 500) {
@@ -606,14 +588,7 @@ export class PortfolioConfigureComponent implements OnInit {
             this.saveChanges.emit(this.editingPortfolio);
           },
           error: (error) => {
-            console.error('Error updating portfolio:', error);
-            console.error('Error details:', {
-              status: error.status,
-              statusText: error.statusText,
-              message: error.message,
-              error: error.error,
-              url: error.url
-            });
+
             
             // Fallback: save locally and emit
             this.isEditing = false;

@@ -2,14 +2,10 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-console.log('Building Angular app with chunking model configuration...');
-
 try {
   // Run Angular build with production configuration
   // Angular 20 uses a different build command syntax
-  console.log('Running Angular build with production configuration for Angular 20...');
   execSync('npx ng build --configuration=production --project=money-plant-frontend', { stdio: 'inherit' });
-  console.log('Build completed successfully');
 
   // Get the output directory path (Angular 20 uses a browser subdirectory)
   const distDir = path.resolve('./dist/money-plant-frontend/browser');
@@ -17,7 +13,6 @@ try {
   if (fs.existsSync(distDir)) {
     // List all JS files in the dist directory
     const jsFiles = fs.readdirSync(distDir).filter(file => file.endsWith('.js'));
-    console.log('JS files in dist directory:', jsFiles);
 
     // Update index.html to reference the chunked files
     const indexPath = path.join(distDir, 'index.html');
@@ -34,10 +29,7 @@ try {
       });
 
       fs.writeFileSync(indexPath, indexContent);
-      console.log('Updated index.html to use chunked files with type="module"');
     }
-  } else {
-    console.log('Dist directory not found:', distDir);
   }
 } catch (error) {
   console.error('Build failed:', error);

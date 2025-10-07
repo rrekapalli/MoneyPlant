@@ -148,11 +148,9 @@ export class IndicesComponent implements OnInit, OnDestroy {
     try {
       // Check if services are properly injected
       if (!this.indicesService) {
-        console.error('IndicesService is not available');
         return;
       }
       if (!this.componentCommunicationService) {
-        console.error('ComponentCommunicationService is not available');
         return;
       }
       
@@ -162,7 +160,7 @@ export class IndicesComponent implements OnInit, OnDestroy {
       // Load indices directly from the indices API
       this.loadIndicesLists();
     } catch (error) {
-      console.error('Error in ngOnInit:', error);
+      // Error in ngOnInit
     }
   }
 
@@ -240,26 +238,22 @@ export class IndicesComponent implements OnInit, OnDestroy {
                       this.updateIndicesLists();
                     }
                   }, 100); // 100ms debounce
-                } else {
-                  console.warn('WebSocket received data but no valid indices found:', indicesData);
                 }
               } catch (error) {
-                console.error('Error processing received indices data:', error);
+                // Error processing received indices data
               }
             },
             error: (error: any) => {
-              console.warn('WebSocket subscription error for all indices:', error.message || error);
+              // WebSocket subscription error for all indices
             },
             complete: () => {
               // WebSocket subscription completed
             }
           });
           
-      } else {
-        console.warn('WebSocket not connected - skipping real-time subscription');
       }
     } catch (error) {
-      console.warn('WebSocket subscription failed for all indices - continuing without real-time data:', (error as Error).message || error);
+      // WebSocket subscription failed for all indices - continuing without real-time data
     }
   }
 
@@ -606,7 +600,6 @@ export class IndicesComponent implements OnInit, OnDestroy {
    */
   private loadStocksForIndex(index: IndexResponseDto): void {
     if (!index || !index.indexName) {
-      console.warn('Invalid index provided to loadStocksForIndex:', index);
       return;
     }
 
@@ -626,7 +619,6 @@ export class IndicesComponent implements OnInit, OnDestroy {
         this.cdr.detectChanges();
       },
       error: (error: any) => {
-        console.error('Failed to load stocks for index:', index.indexName, error);
         this.stockListData.set([]);
         this.filteredStockListData.set([]);
         this.isLoadingStocks.set(false);
@@ -730,7 +722,6 @@ export class IndicesComponent implements OnInit, OnDestroy {
    */
   private navigateToStockInsights(stockSymbol: string): void {
     if (!stockSymbol || stockSymbol.trim() === '') {
-      console.warn('Invalid stock symbol for navigation:', stockSymbol);
       return;
     }
 
@@ -767,8 +758,6 @@ export class IndicesComponent implements OnInit, OnDestroy {
             }
           }
         });
-      } else {
-        console.warn('Dashboard container not found for click handlers');
       }
     }, 1000); // Wait 1 second for dashboard to render
   }
@@ -790,7 +779,6 @@ export class IndicesComponent implements OnInit, OnDestroy {
       this.selectedIndexForStocks.set(nifty50Index);
       this.loadStocksForIndex(nifty50Index);
     } else {
-      console.warn('NIFTY 50 index not found in loaded indices');
       // If NIFTY 50 is not found, select the first available index
       if (indices.length > 0) {
         this.selectedIndexForStocks.set(indices[0]);
@@ -843,7 +831,6 @@ export class IndicesComponent implements OnInit, OnDestroy {
           this.cdr.detectChanges();
         },
         error: (error: any) => {
-          console.error('Failed to load indices:', error);
           this.isLoadingIndices.set(false);
           
           // If there's an error, use empty indices list
@@ -865,7 +852,7 @@ export class IndicesComponent implements OnInit, OnDestroy {
         }
       });
     } catch (error) {
-      console.error('Error in loadIndicesLists:', error);
+      // Error in loadIndicesLists
       this.isLoadingIndices.set(false);
       
       // If there's an error, use empty indices list

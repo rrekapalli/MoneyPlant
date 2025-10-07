@@ -94,9 +94,7 @@ export class WidgetBuilder {
   }
 
   setEvents(onChartOptions: (widget: IWidget, chart?: ECharts, filters?: string | IFilterValues[]) => void) {
-    console.log('🔥 WidgetBuilder.setEvents called with callback:', !!onChartOptions);
     this.widget.config.events = { onChartOptions };
-    console.log('🔥 Event handler stored in widget config:', !!this.widget.config.events);
     return this;
   }
 
@@ -136,15 +134,6 @@ export class WidgetBuilder {
     
     this.widget.height = calculatedHeight;
     
-    // Debug logging
-    console.log('🔧 Widget height calculation:', {
-      rows: rows,
-      cellHeight: cellHeight,
-      margin: margin,
-      minHeightPerRow: minHeightPerRow,
-      calculatedHeight: this.widget.height,
-      position: this.widget.position
-    });
     
     return this;
   }

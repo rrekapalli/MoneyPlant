@@ -82,7 +82,7 @@ export class ExcelExportService {
             includeWidgetTitles
           });
         } catch (error) {
-          console.error(`Error exporting widget ${widget.id} to Excel:`, error);
+          // Error exporting widget to Excel
           // Continue with next widget
         }
       }
