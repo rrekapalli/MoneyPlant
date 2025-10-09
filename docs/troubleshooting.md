@@ -17,6 +17,34 @@ This document provides solutions for common issues you might encounter when work
 
 ## General Issues
 
+### Permission denied when running scripts on Linux/Mac
+
+Symptoms:
+- Running a script like ./start-backend.sh results in: sudo-rs: cannot execute '.../start-backend.sh': Permission denied (os error 13)
+- Or: Permission denied when invoking any .sh launcher
+
+Cause:
+- The script file is not marked as executable after a cross-OS checkout or recent changes.
+
+Solutions:
+- Do not use sudo to run project scripts. Run them as your normal user.
+- Make scripts executable once:
+  ```bash
+  chmod +x ./start-backend.sh ./start-frontend.sh ./start-engines.sh ./start-application.sh
+  chmod -R +x scripts/linux/*.sh scripts/linux/*/*.sh engines/scripts/*.sh
+  ```
+- Alternatively, invoke via bash without changing permissions:
+  ```bash
+  bash ./start-backend.sh
+  ```
+- If you still see issues related to line endings (e.g., /bin/bash^M), convert line endings:
+  ```bash
+  dos2unix ./start-backend.sh
+  ```
+
+Note:
+- Using sudo to execute repo scripts can trigger unrelated errors from the sudo utility (e.g., internal error: entered unreachable code). Always run as a normal user unless absolutely necessary.
+
 ### Application Won't Start
 
 **Symptoms:**
