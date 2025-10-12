@@ -1,7 +1,16 @@
-<div class="strategies-container">
-  <div class="header">
-    <h1>Trading Strategies</h1>
-    <button pButton label="Create Strategy" icon="pi pi-plus" (click)="createStrategy()"></button>
+<div class="page-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="title-section">
+        <h1 class="main-title">Trading Strategies</h1>
+        <p class="subtitle">Create and manage your automated trading strategies</p>
+      </div>
+      <button pButton label="Create Strategy" icon="pi pi-plus" class="p-button-primary create-btn"
+        (click)="createStrategy()">
+      </button>
+    </div>
+    <div class="header-divider"></div>
   </div>
 
   <div class="content">

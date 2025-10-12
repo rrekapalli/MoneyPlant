@@ -54,7 +54,7 @@ import { StockDataDto } from '../../services/entities/stock-ticks';
     TabsModule,
     TooltipModule,
     SelectModule,
-    DashboardContainerComponent
+    DashboardContainerComponent,
   ],
   templateUrl: './indices.component.html',
   styleUrls: ['./indices.component.scss'],

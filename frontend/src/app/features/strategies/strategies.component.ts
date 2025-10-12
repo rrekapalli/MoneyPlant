@@ -17,7 +17,7 @@ import { TagModule } from 'primeng/tag';
     TableModule,
     CardModule,
     ChartModule,
-    TagModule
+    TagModule,
   ],
   templateUrl: './strategies.component.html',
   styleUrl: './strategies.component.scss'

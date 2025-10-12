@@ -12,7 +12,7 @@ import { IndicesComponent } from '../../features/indices/indices.component';
 import { filter } from 'rxjs/operators';
 
 @Component({
-  selector: 'app-shell',
+  selector: 'app-shell-two-column',
   standalone: true,
     imports: [
         CommonModule,
@@ -23,11 +23,11 @@ import { filter } from 'rxjs/operators';
         ToastModule,
         IndicesComponent
     ],
-  templateUrl: './app-shell.component.html',
-  styleUrl: './app-shell.component.scss',
+  templateUrl: './app-shell-two-column.component.html',
+  styleUrl: './app-shell-two-column.component.scss',
   providers: [MessageService]
 })
-export class AppShellComponent implements OnInit, OnDestroy {
+export class AppShellTwoColumnComponent implements OnInit, OnDestroy {
   loading = false; // This will be used to control the loading spinner visibility
   private toastSubscription: Subscription | undefined;
   private routerSubscription: Subscription | undefined;

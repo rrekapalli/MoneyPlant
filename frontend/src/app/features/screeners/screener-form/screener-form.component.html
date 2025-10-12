@@ -1,7 +1,13 @@
-<div class="screener-form-container">
-  <div class="form-header">
-    <button pButton icon="pi pi-arrow-left" (click)="cancel()" class="p-button-text back-button"></button>
-    <h1>{{ isEdit ? 'Edit Screener' : 'Create Screener' }}</h1>
+<div class="page-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="title-section">
+        <h1 class="main-title">{{ isEdit ? 'Edit Screener' : 'Create Screener' }}</h1>
+        <p class="subtitle">{{ isEdit ? 'Modify your existing screener configuration' : 'Create a new stock screener with custom criteria' }}</p>
+      </div>
+    </div>
+    <div class="header-divider"></div>
   </div>
 
   <div class="form-content">

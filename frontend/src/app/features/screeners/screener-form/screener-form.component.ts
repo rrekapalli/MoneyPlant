@@ -107,7 +107,7 @@ const BASIC_OPERATORS: Record<FieldType, Operator[]> = {
     CheckboxModule,
     ToastModule,
     TabsModule,
-    CriteriaBuilderModule // Criteria Builder integration - replaces QueryBuilderModule
+    CriteriaBuilderModule, // Criteria Builder integration - replaces QueryBuilderModule
   ],
   providers: [MessageService],
   templateUrl: './screener-form.component.html',

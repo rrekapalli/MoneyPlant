@@ -31,7 +31,7 @@ interface Position {
     TabsModule,
     ChartModule,
     DividerModule,
-    TagModule
+    TagModule,
   ],
   templateUrl: './positions.component.html',
   styleUrls: ['./positions.component.scss']

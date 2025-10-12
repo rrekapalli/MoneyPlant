@@ -1,4 +1,4 @@
-.app-shell {
+.app-shell-two-column {
   display: flex;
   flex-direction: column;
   height: 100vh;
@@ -87,14 +87,14 @@ router-outlet {
 /* Responsive adjustments */
 /* Tablet form factor */
 @media screen and (max-width: 992px) {
-  .app-shell {
+  .app-shell-two-column {
     max-width: 768px;
   }
 }
 
 /* Mobile form factor */
 @media screen and (max-width: 768px) {
-  .app-shell {
+  .app-shell-two-column {
     max-width: 100%;
     box-shadow: none;
   }

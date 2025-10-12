@@ -1,21 +1,4 @@
-.strategies-container {
-  padding: var(--spacing-xl);
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--spacing-xl);
-
-  h1 {
-    margin: 0;
-    font-size: 1.5rem;
-  }
-}
+/* Container, header, and summary card styles are now global in styles.scss */
 
 .content {
   flex: 1;

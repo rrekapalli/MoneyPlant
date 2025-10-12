@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { AppShellComponent } from './core/shell/app-shell.component';
+import { AppShellSingleComponent } from './core/shell/app-shell-single.component';
 import { featureFlagGuard, authGuard } from './core/guards';
 
 // Import all components eagerly for single bundle
@@ -32,7 +32,7 @@ export const routes: Routes = [
   },
   {
     path: '',
-    component: AppShellComponent,
+    component: AppShellSingleComponent,
     canActivate: [authGuard],
     children: [
       {
