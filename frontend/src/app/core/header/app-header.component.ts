@@ -281,6 +281,12 @@ export class AppHeaderComponent implements OnInit, OnDestroy {
         command: updateStylesAfterClick
       },
       {
+        label: 'Indices',
+        //icon: 'pi pi-chart-bar',
+        routerLink: ['/indices'],
+        command: updateStylesAfterClick
+      },
+      {
         label: 'Strategies',
         //icon: 'pi pi-sitemap',
         routerLink: ['/strategies'],
@@ -410,6 +416,10 @@ export class AppHeaderComponent implements OnInit, OnDestroy {
       type = NotificationType.INFO;
       title = 'Stock Screeners';
       message = 'Stock screeners have been loaded with the latest market data.';
+    } else if (routeName === 'indices') {
+      type = NotificationType.INFO;
+      title = 'Market Indices';
+      message = 'Market indices have been loaded with real-time data.';
     } else if (routeName === 'strategies') {
       type = NotificationType.INFO;
       title = 'Trading Strategies';

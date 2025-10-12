@@ -77,6 +77,7 @@ export class IndicesComponent implements OnInit, OnDestroy {
   
   // Loading states as signals
   isLoadingIndices = signal<boolean>(true); // Start with loading true
+  errorIndices = signal<string | null>(null);
   isSearching = signal<boolean>(false);
   isLoadingStocks = signal<boolean>(false);
   
@@ -148,9 +149,11 @@ export class IndicesComponent implements OnInit, OnDestroy {
     try {
       // Check if services are properly injected
       if (!this.indicesService) {
+        console.error('IndicesService not properly injected');
         return;
       }
       if (!this.componentCommunicationService) {
+        console.error('ComponentCommunicationService not properly injected');
         return;
       }
       
@@ -160,7 +163,10 @@ export class IndicesComponent implements OnInit, OnDestroy {
       // Load indices directly from the indices API
       this.loadIndicesLists();
     } catch (error) {
-      // Error in ngOnInit
+      console.error('Error in IndicesComponent ngOnInit:', error);
+      // Set error state to show user-friendly message
+      this.isLoadingIndices.set(false);
+      this.errorIndices.set('Failed to initialize indices component');
     }
   }
 
@@ -184,6 +190,12 @@ export class IndicesComponent implements OnInit, OnDestroy {
     
     // Disconnect WebSockets
     this.webSocketService.disconnect();
+  }
+
+  retryIndices(): void {
+    this.errorIndices.set(null);
+    this.isLoadingIndices.set(true);
+    this.ngOnInit();
   }
 
   /**

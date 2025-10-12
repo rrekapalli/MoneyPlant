@@ -1,0 +1,151 @@
+.screeners-container {
+  padding: 1rem;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.header-section {
+  margin-bottom: 1.5rem;
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.title-section {
+  .main-title {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-color);
+  }
+
+  .subtitle {
+    margin: 0.25rem 0 0 0;
+    color: var(--text-color-secondary);
+    font-size: 0.875rem;
+  }
+}
+
+.create-btn {
+  height: 2.5rem;
+}
+
+.header-divider {
+  height: 1px;
+  background-color: var(--surface-border);
+}
+
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.summary-card {
+  background: var(--surface-card);
+  border: 1px solid var(--surface-border);
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.2s ease;
+
+  &:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+  }
+}
+
+.card-content {
+  .card-value {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: 0.25rem;
+  }
+
+  .card-label {
+    font-size: 0.75rem;
+    color: var(--text-color-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+}
+
+.card-icon {
+  color: var(--primary-color);
+  font-size: 1.5rem;
+}
+
+.loading-card {
+  background: var(--surface-card);
+  border: 1px solid var(--surface-border);
+  border-radius: 8px;
+  padding: 2rem;
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.loading-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+
+  p {
+    margin: 0;
+    color: var(--text-color-secondary);
+  }
+}
+
+.empty-message {
+  background: var(--surface-card);
+  border: 1px solid var(--surface-border);
+  border-radius: 8px;
+  padding: 3rem;
+  text-align: center;
+  margin-bottom: 1.5rem;
+
+  div {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+
+    p {
+      margin: 0;
+      color: var(--text-color-secondary);
+      font-size: 1rem;
+    }
+  }
+}
+
+.screener-tabs {
+  background: var(--surface-card);
+  border: 1px solid var(--surface-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .header-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .summary-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .screeners-container {
+    padding: 0.5rem;
+  }
+}

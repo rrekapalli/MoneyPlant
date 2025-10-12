@@ -22,13 +22,12 @@ public class CurrentUserService {
     /**
      * Gets the current user ID from the security context.
      * 
-     * @return the current user ID
-     * @throws IllegalStateException if no user is authenticated
+     * @return the current user ID, or null if no authenticated user
      */
     public Long getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
-            throw new IllegalStateException("No authenticated user found");
+            return null;
         }
         
         // Handle different principal types based on which authentication filter was used
@@ -42,12 +41,13 @@ public class CurrentUserService {
             String principalStr = (String) principal;
             // Handle anonymous user case
             if ("anonymousUser".equals(principalStr)) {
-                throw new IllegalStateException("Anonymous user not allowed");
+                return null;
             }
             try {
                 return Long.parseLong(principalStr);
             } catch (NumberFormatException e) {
-                throw new IllegalStateException("Invalid user ID format: " + principal);
+                log.warn("Invalid user ID format: {}", principal);
+                return null;
             }
         } else if (principal instanceof UserDetails) {
             // Core JwtAuthenticationFilter sets UserDetails as principal
@@ -59,13 +59,19 @@ public class CurrentUserService {
             } catch (NumberFormatException e) {
                 // Username is not a number, assume it's an email and look up user ID
                 log.debug("Looking up user ID for email: {}", username);
-                User user = userRepository.findByEmail(username)
-                    .orElseThrow(() -> new IllegalStateException("User not found with email: " + username));
-                log.debug("Found user ID {} for email: {}", user.getId(), username);
-                return user.getId();
+                try {
+                    User user = userRepository.findByEmail(username)
+                        .orElseThrow(() -> new IllegalStateException("User not found with email: " + username));
+                    log.debug("Found user ID {} for email: {}", user.getId(), username);
+                    return user.getId();
+                } catch (Exception ex) {
+                    log.warn("Failed to lookup user for email: {}", username, ex);
+                    return null;
+                }
             }
         } else {
-            throw new IllegalStateException("Unexpected principal type: " + principal.getClass());
+            log.warn("Unexpected principal type: {}", principal.getClass());
+            return null;
         }
     }
 

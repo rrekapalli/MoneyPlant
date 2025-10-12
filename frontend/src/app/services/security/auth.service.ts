@@ -56,7 +56,8 @@ export class AuthService {
 
   private startTokenRefreshTimer(): void {
     // Refresh token every 8 hours (assuming 9-hour token expiration)
-    interval(8 * 60 * 60 * 1000).pipe(
+    // But also check every 30 minutes to catch any issues early
+    interval(30 * 60 * 1000).pipe(
       switchMap(() => {
         if (this.isLoggedIn() && !this.isTokenExpired()) {
           return this.refreshToken();
@@ -66,9 +67,11 @@ export class AuthService {
     ).subscribe({
       next: (response) => {
         if (response && response.success) {
+          console.log('Token refreshed successfully');
         }
       },
       error: (error) => {
+        console.error('Token refresh failed:', error);
         this.logout();
       }
     });
@@ -205,9 +208,9 @@ export class AuthService {
       return false;
     }
     
-    // Check the current authentication state
-    const result = this.isAuthenticatedSubject.value;
-    return result;
+    // If we have a valid token, consider user logged in
+    // The authentication state is secondary to token validity
+    return true;
   }
 
   // Method to wait for authentication check to complete
@@ -236,7 +239,9 @@ export class AuthService {
       // Decode the JWT token to check expiration
       const payload = JSON.parse(atob(token.split('.')[1]));
       const currentTime = Date.now() / 1000;
-      return payload.exp < currentTime;
+      // Add 5 minute buffer to avoid edge cases
+      const bufferTime = 5 * 60; // 5 minutes in seconds
+      return payload.exp <= (currentTime + bufferTime);
     } catch (error) {
       console.error('Error parsing token:', error);
       return true;
@@ -271,7 +276,12 @@ export class AuthService {
         tap(response => {
           if (response.success && response.token) {
             this.setToken(response.token);
+            console.log('Token refreshed successfully');
           }
+        }),
+        catchError(error => {
+          console.error('Token refresh failed:', error);
+          return of({ success: false, message: 'Token refresh failed' });
         })
       );
   }

@@ -51,6 +51,13 @@ public class ScreenerRateLimitingFilter extends OncePerRequestFilter {
         }
 
         try {
+            // Check if user is authenticated first
+            if (!currentUserService.isAuthenticated()) {
+                // No authenticated user, skip rate limiting
+                filterChain.doFilter(request, response);
+                return;
+            }
+
             // Get user ID from security context (set by ScreenerJwtAuthenticationFilter)
             Long userId = currentUserService.getCurrentUserId();
             if (userId == null) {

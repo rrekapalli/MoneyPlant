@@ -6,6 +6,7 @@ import { featureFlagGuard, authGuard } from './core/guards';
 import { LoginComponent } from './features/login/login.component';
 import { PortfoliosComponent } from './features/portfolios/portfolios.component';
 import { ScreenersComponent } from './features/screeners/screeners.component';
+import { ScreenersListComponent } from './features/screeners/screeners-list/screeners-list.component';
 import { ScreenerFormComponent } from './features/screeners/screener-form/screener-form.component';
 import { ScreenerDetailComponent } from './features/screeners/screener-detail/screener-detail.component';
 import { StrategiesComponent } from './features/strategies/strategies.component';
@@ -55,7 +56,19 @@ export const routes: Routes = [
         path: 'screeners',
         component: ScreenersComponent,
         title: 'Stock Screeners - MoneyPlant',
-        canActivate: [featureFlagGuard('screeners')]
+        canActivate: [featureFlagGuard('screeners')],
+        children: [
+          {
+            path: '',
+            redirectTo: 'list',
+            pathMatch: 'full'
+          },
+          {
+            path: 'list',
+            component: ScreenersListComponent,
+            title: 'Screeners List - MoneyPlant'
+          }
+        ]
       },
       {
         path: 'screeners/new',
