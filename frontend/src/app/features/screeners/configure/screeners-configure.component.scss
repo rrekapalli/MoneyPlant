@@ -192,8 +192,13 @@
             }
           }
           
-          .edit-save-btn {
+          .edit-buttons {
+            display: flex;
+            gap: 0.5rem;
             flex-shrink: 0;
+          }
+
+          .edit-save-btn {
             min-width: 70px;
             height: 32px;
             font-size: 0.8rem;
@@ -206,6 +211,20 @@
             &:disabled {
               opacity: 0.6;
               cursor: not-allowed;
+            }
+          }
+
+          .cancel-btn {
+            min-width: 70px;
+            height: 32px;
+            font-size: 0.8rem;
+            color: #dc3545;
+            position: relative;
+            z-index: 1;
+            
+            &:hover {
+              background-color: #f8f9fa;
+              color: #c82333;
             }
           }
         }
@@ -270,8 +289,15 @@
           align-items: stretch;
           gap: 0.5rem;
           
-          .edit-save-btn {
+          .edit-buttons {
             width: 100%;
+            justify-content: center;
+          }
+          
+          .edit-save-btn,
+          .cancel-btn {
+            flex: 1;
+            min-width: auto;
           }
         }
       }
@@ -307,7 +333,12 @@
         }
 
         .visibility-controls {
-          .edit-save-btn {
+          .edit-buttons {
+            gap: 0.25rem;
+          }
+          
+          .edit-save-btn,
+          .cancel-btn {
             min-width: 60px;
           }
         }

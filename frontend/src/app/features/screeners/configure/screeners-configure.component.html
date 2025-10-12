@@ -47,14 +47,23 @@
                   </label>
                   <span class="toggle-label">{{ screenerForm.isPublic ? 'Public' : 'Private' }}</span>
                 </div>
-                <button pButton 
-                  [icon]="isEditingBasicInfo ? 'pi pi-check' : 'pi pi-pencil'"
-                  [label]="isEditingBasicInfo ? 'Save' : 'Edit'"
-                  (click)="toggleBasicInfoEdit()"
-                  class="p-button-sm edit-save-btn"
-                  [class.p-button-success]="isEditingBasicInfo && hasBasicInfoChanges()"
-                  [disabled]="isEditingBasicInfo && !hasBasicInfoChanges()">
-                </button>
+                <div class="edit-buttons">
+                  <button pButton 
+                    [icon]="isEditingBasicInfo ? 'pi pi-check' : 'pi pi-pencil'"
+                    [label]="isEditingBasicInfo ? 'Save' : 'Edit'"
+                    (click)="toggleBasicInfoEdit()"
+                    class="p-button-sm edit-save-btn"
+                    [class.p-button-success]="isEditingBasicInfo && hasBasicInfoChanges()"
+                    [disabled]="isEditingBasicInfo && !hasBasicInfoChanges()">
+                  </button>
+                  <button pButton 
+                    icon="pi pi-times"
+                    label="Cancel"
+                    (click)="cancelBasicInfoEdit()"
+                    class="p-button-sm p-button-text cancel-btn"
+                    [disabled]="!isEditingBasicInfo">
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -99,4 +108,5 @@
     </div>
   </div>
   }
+
 </div>

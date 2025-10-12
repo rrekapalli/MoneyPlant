@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChanges, ChangeDetectorRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
@@ -28,6 +28,13 @@ export class ScreenersConfigureComponent implements OnInit, OnChanges {
   @Input() loading = false;
   @Input() universeOptions: any[] = [];
   @Input() criteriaConfig: BuilderConfig = {} as BuilderConfig;
+
+
+
+
+  constructor(
+    private cdr: ChangeDetectorRef
+  ) {}
 
   @Output() createScreener = new EventEmitter<void>();
   @Output() clearSelection = new EventEmitter<void>();
@@ -159,5 +166,22 @@ export class ScreenersConfigureComponent implements OnInit, OnChanges {
   private saveBasicInfoChanges(): void {
     // Emit the save event to parent component
     this.onSaveScreener();
+  }
+
+  cancelBasicInfoEdit(): void {
+    // Simple approach: always discard changes and exit edit mode
+    this.discardBasicInfoChanges();
+  }
+
+  private discardBasicInfoChanges(): void {
+    // Restore original values
+    this.screenerForm.name = this.originalBasicInfo.name || '';
+    this.screenerForm.description = this.originalBasicInfo.description || '';
+    this.screenerForm.defaultUniverse = this.originalBasicInfo.defaultUniverse || '';
+    this.screenerForm.isPublic = this.originalBasicInfo.isPublic || false;
+    
+    // Exit edit mode
+    this.isEditingBasicInfo = false;
+    this.originalBasicInfo = {};
   }
 }
