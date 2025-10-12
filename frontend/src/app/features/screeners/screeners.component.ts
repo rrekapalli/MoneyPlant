@@ -114,9 +114,30 @@ export class ScreenersComponent implements OnInit, OnDestroy {
     { label: 'NIFTY 200', value: 'NIFTY 200' },
     { label: 'NIFTY 500', value: 'NIFTY 500' }
   ]; 
- // Filter options
+  // Filter options
   selectedVisibility: string | null = null;
   selectedCategory: string | null = null;
+
+  // Summary statistics
+  get totalScreeners(): number {
+    return this.screeners.length;
+  }
+
+  get activeScreeners(): number {
+    return this.screeners.length; // Assuming all screeners are active for now
+  }
+
+  get publicScreenersCount(): number {
+    return this.screeners.filter(s => s.isPublic).length;
+  }
+
+  get privateScreeners(): number {
+    return this.screeners.filter(s => !s.isPublic).length;
+  }
+
+  get starredScreenersCount(): number {
+    return this.starredScreeners.length;
+  }
   
   visibilityOptions = [
     { label: 'All Visibility', value: null },

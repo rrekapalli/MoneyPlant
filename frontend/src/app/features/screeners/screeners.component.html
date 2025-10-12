@@ -13,6 +13,59 @@
     <div class="header-divider"></div>
   </div>
 
+  <!-- Summary Cards Section -->
+  <div class="summary-cards">
+    <div class="summary-card">
+      <div class="card-content">
+        <div class="card-value">{{ totalScreeners }}</div>
+        <div class="card-label">Total Screeners</div>
+      </div>
+      <div class="card-icon">
+        <i class="pi pi-search"></i>
+      </div>
+    </div>
+
+    <div class="summary-card">
+      <div class="card-content">
+        <div class="card-value">{{ activeScreeners }}</div>
+        <div class="card-label">Active Screeners</div>
+      </div>
+      <div class="card-icon">
+        <i class="pi pi-check-circle"></i>
+      </div>
+    </div>
+
+    <div class="summary-card">
+      <div class="card-content">
+        <div class="card-value">{{ publicScreenersCount }}</div>
+        <div class="card-label">Public</div>
+      </div>
+      <div class="card-icon">
+        <i class="pi pi-globe"></i>
+      </div>
+    </div>
+
+    <div class="summary-card">
+      <div class="card-content">
+        <div class="card-value">{{ privateScreeners }}</div>
+        <div class="card-label">Private</div>
+      </div>
+      <div class="card-icon">
+        <i class="pi pi-lock"></i>
+      </div>
+    </div>
+
+    <div class="summary-card">
+      <div class="card-content">
+        <div class="card-value">{{ starredScreenersCount }}</div>
+        <div class="card-label">Starred</div>
+      </div>
+      <div class="card-icon">
+        <i class="pi pi-star"></i>
+      </div>
+    </div>
+  </div>
+
   <!-- Loading State -->
   @if (loading && !dataLoaded) {
   <div class="loading-card">
