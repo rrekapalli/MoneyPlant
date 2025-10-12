@@ -1,17 +1,12 @@
 <div class="page-container">
   <!-- Page Header -->
-  <div class="page-header">
-    <div class="header-content">
-      <div class="title-section">
-        <h1 class="main-title">Positions</h1>
-        <p class="subtitle">Track your current stock positions and analyze performance</p>
-      </div>
-      <button pButton label="Add Position" icon="pi pi-plus" class="p-button-primary create-btn"
-        (click)="addPosition()">
-      </button>
-    </div>
-    <div class="header-divider"></div>
-  </div>
+  <app-page-header
+    title="Positions"
+    subtitle="Track your current stock positions and analyze performance"
+    actionButtonLabel="Add Position"
+    actionButtonIcon="pi pi-plus"
+    (actionButtonClick)="addPosition()">
+  </app-page-header>
 
   <div class="grid">
     <div class="col-12">

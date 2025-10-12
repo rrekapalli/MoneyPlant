@@ -4,11 +4,12 @@ import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { MarketStateService } from '../../services/state/market.state';
 import { MarketData } from '../../services/entities/market-data';
 import { MarketSummary } from '../../services/entities/market-summary';
+import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
 
 @Component({
   selector: 'app-market',
   standalone: true,
-  imports: [CommonModule, RouterModule, DecimalPipe],
+  imports: [CommonModule, RouterModule, DecimalPipe, PageHeaderComponent],
   templateUrl: './market.component.html',
   styleUrls: ['./market.component.scss']
 })

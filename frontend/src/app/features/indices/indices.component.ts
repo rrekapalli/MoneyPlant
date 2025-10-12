@@ -34,6 +34,7 @@ import { ComponentCommunicationService, SelectedIndexData } from '../../services
 import { WebSocketService, IndexDataDto, IndicesDto } from '../../services/websockets';
 import { StockTicksService } from '../../services/apis/stock-ticks.api';
 import { StockDataDto } from '../../services/entities/stock-ticks';
+import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
 
 @Component({
   selector: 'app-indices',
@@ -55,6 +56,7 @@ import { StockDataDto } from '../../services/entities/stock-ticks';
     TooltipModule,
     SelectModule,
     DashboardContainerComponent,
+    PageHeaderComponent,
   ],
   templateUrl: './indices.component.html',
   styleUrls: ['./indices.component.scss'],

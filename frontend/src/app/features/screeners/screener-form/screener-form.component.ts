@@ -16,6 +16,7 @@ import { ScreenerResp, ScreenerCreateReq, ScreenerCriteria, ScreenerRule } from 
 import { INDICATOR_FIELDS } from '../../../services/entities/indicators.entities';
 import { CriteriaBuilderModule } from '@projects/criteria-builder';
 import { CriteriaDSL, BuilderConfig, FieldMeta, FieldType, Operator, Group, Condition, FieldRef, Literal } from '@projects/criteria-builder';
+import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { CriteriaApiService, FieldMetaResp } from '@projects/criteria-builder';
 
 /**
@@ -108,6 +109,7 @@ const BASIC_OPERATORS: Record<FieldType, Operator[]> = {
     ToastModule,
     TabsModule,
     CriteriaBuilderModule, // Criteria Builder integration - replaces QueryBuilderModule
+    PageHeaderComponent,
   ],
   providers: [MessageService],
   templateUrl: './screener-form.component.html',

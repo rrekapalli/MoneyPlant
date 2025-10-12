@@ -1,14 +1,10 @@
 <div class="page-container">
   <!-- Page Header -->
-  <div class="page-header">
-    <div class="header-content">
-      <div class="title-section">
-        <h1 class="main-title">{{ isEdit ? 'Edit Screener' : 'Create Screener' }}</h1>
-        <p class="subtitle">{{ isEdit ? 'Modify your existing screener configuration' : 'Create a new stock screener with custom criteria' }}</p>
-      </div>
-    </div>
-    <div class="header-divider"></div>
-  </div>
+  <app-page-header
+    [title]="isEdit ? 'Edit Screener' : 'Create Screener'"
+    [subtitle]="isEdit ? 'Modify your existing screener configuration' : 'Create a new stock screener with custom criteria'"
+    [showActionButton]="false">
+  </app-page-header>
 
   <div class="form-content">
     <p-tabs [(value)]="activeTab" (valueChange)="onTabChange($event)">

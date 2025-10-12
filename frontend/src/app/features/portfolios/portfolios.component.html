@@ -1,17 +1,12 @@
 <div class="page-container">
-  <!-- Header Section -->
-  <div class="page-header">
-    <div class="header-content">
-      <div class="title-section">
-        <h1 class="main-title">Portfolios</h1>
-        <p class="subtitle">Configure and manage your investment portfolios</p>
-      </div>
-      <button pButton label="Create Portfolio" icon="pi pi-plus" class="p-button-primary create-btn"
-        (click)="createPortfolio()">
-      </button>
-    </div>
-    <div class="header-divider"></div>
-  </div>
+  <!-- Page Header -->
+  <app-page-header
+    title="Portfolios"
+    subtitle="Configure and manage your investment portfolios"
+    actionButtonLabel="Create Portfolio"
+    actionButtonIcon="pi pi-plus"
+    (actionButtonClick)="createPortfolio()">
+  </app-page-header>
 
   <!-- Summary Cards Section -->
   <div class="summary-cards">

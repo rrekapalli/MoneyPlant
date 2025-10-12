@@ -1,17 +1,12 @@
 <div class="page-container">
   <!-- Page Header -->
-  <div class="page-header">
-    <div class="header-content">
-      <div class="title-section">
-        <h1 class="main-title">Trading Strategies</h1>
-        <p class="subtitle">Create and manage your automated trading strategies</p>
-      </div>
-      <button pButton label="Create Strategy" icon="pi pi-plus" class="p-button-primary create-btn"
-        (click)="createStrategy()">
-      </button>
-    </div>
-    <div class="header-divider"></div>
-  </div>
+  <app-page-header
+    title="Trading Strategies"
+    subtitle="Create and manage your automated trading strategies"
+    actionButtonLabel="Create Strategy"
+    actionButtonIcon="pi pi-plus"
+    (actionButtonClick)="createStrategy()">
+  </app-page-header>
 
   <div class="content">
     <p-card *ngIf="loading" styleClass="loading-card">

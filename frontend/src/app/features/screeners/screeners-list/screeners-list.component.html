@@ -1,17 +1,12 @@
 <div class="page-container">
-  <!-- Header Section -->
-  <div class="page-header">
-    <div class="header-content">
-      <div class="title-section">
-        <h1 class="main-title">Screeners</h1>
-        <p class="subtitle">Create and manage your custom stock screening criteria</p>
-      </div>
-      <button pButton label="Create Screener" icon="pi pi-plus" class="p-button-primary create-btn"
-        (click)="createScreener()">
-      </button>
-    </div>
-    <div class="header-divider"></div>
-  </div>
+  <!-- Page Header -->
+  <app-page-header
+    title="Screeners"
+    subtitle="Create and manage your custom stock screening criteria"
+    actionButtonLabel="Create Screener"
+    actionButtonIcon="pi pi-plus"
+    (actionButtonClick)="createScreener()">
+  </app-page-header>
 
   <!-- Summary Cards Section -->
   <div class="summary-cards">

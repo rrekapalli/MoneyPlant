@@ -1,17 +1,12 @@
 <div class="page-container">
   <!-- Page Header -->
-  <div class="page-header">
-    <div class="header-content">
-      <div class="title-section">
-        <h1 class="main-title">Holdings</h1>
-        <p class="subtitle">Manage your investment holdings and track performance</p>
-      </div>
-      <button pButton label="New Holding" icon="pi pi-plus" class="p-button-primary create-btn"
-        (click)="onNewHolding()">
-      </button>
-    </div>
-    <div class="header-divider"></div>
-  </div>
+  <app-page-header
+    title="Holdings"
+    subtitle="Manage your investment holdings and track performance"
+    actionButtonLabel="New Holding"
+    actionButtonIcon="pi pi-plus"
+    (actionButtonClick)="onNewHolding()">
+  </app-page-header>
 
   <div class="grid">
     <div class="col-12">

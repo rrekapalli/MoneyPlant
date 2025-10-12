@@ -24,6 +24,7 @@ import { ScreenerApiService } from '../../../services/apis/screener.api';
 import { ScreenerResp } from '../../../services/entities/screener.entities';
 import { ScreenersOverviewComponent } from '../overview';
 import { ScreenersConfigureComponent } from '../configure';
+import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 
 @Component({
   selector: 'app-screeners-list',
@@ -32,7 +33,7 @@ import { ScreenersConfigureComponent } from '../configure';
     CommonModule, RouterModule, FormsModule, ButtonModule, TableModule, CardModule,
     TabsModule, DialogModule, ConfirmDialogModule, ToastModule, InputTextModule,
     PaginatorModule, TagModule, TooltipModule, CheckboxModule, MessageModule,
-    SelectModule, ScreenersOverviewComponent, ScreenersConfigureComponent
+    SelectModule, ScreenersOverviewComponent, ScreenersConfigureComponent, PageHeaderComponent
   ],
   providers: [ConfirmationService, MessageService],
   templateUrl: './screeners-list.component.html',

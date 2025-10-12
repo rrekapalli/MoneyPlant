@@ -6,6 +6,7 @@ import { TableModule } from 'primeng/table';
 import { CardModule } from 'primeng/card';
 import { ChartModule } from 'primeng/chart';
 import { TagModule } from 'primeng/tag';
+import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
 
 @Component({
   selector: 'app-strategies',
@@ -18,6 +19,7 @@ import { TagModule } from 'primeng/tag';
     CardModule,
     ChartModule,
     TagModule,
+    PageHeaderComponent,
   ],
   templateUrl: './strategies.component.html',
   styleUrl: './strategies.component.scss'

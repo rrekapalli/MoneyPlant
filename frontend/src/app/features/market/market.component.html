@@ -1,14 +1,10 @@
 <div class="page-container">
   <!-- Page Header -->
-  <div class="page-header">
-    <div class="header-content">
-      <div class="title-section">
-        <h1 class="main-title">Markets</h1>
-        <p class="subtitle">Track market performance and analyze stock movements</p>
-      </div>
-    </div>
-    <div class="header-divider"></div>
-  </div>
+  <app-page-header 
+    title="Markets"
+    subtitle="Track market performance and analyze stock movements"
+    [showActionButton]="false">
+  </app-page-header>
 
   <!-- Loading indicator -->
   @if (loading) {

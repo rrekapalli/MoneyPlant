@@ -20,6 +20,7 @@ import { PortfolioWithMetrics } from './portfolio.types';
 import { PortfolioOverviewComponent } from './overview/overview.component';
 import { PortfolioConfigureComponent } from './configure/configure.component';
 import { PortfolioOptimizeComponent } from './optimize/optimize.component';
+import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
 
 @Component({
   selector: 'app-portfolios',
@@ -40,7 +41,8 @@ import { PortfolioOptimizeComponent } from './optimize/optimize.component';
     FormsModule,
     PortfolioOverviewComponent,
     PortfolioConfigureComponent,
-    PortfolioOptimizeComponent
+    PortfolioOptimizeComponent,
+    PageHeaderComponent
   ],
   templateUrl: './portfolios.component.html',
   styleUrls: ['./portfolios.component.scss']

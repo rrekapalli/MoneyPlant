@@ -1,14 +1,10 @@
 <div class="page-container">
   <!-- Page Header -->
-  <div class="page-header">
-    <div class="header-content">
-      <div class="title-section">
-        <h1 class="main-title">Indices</h1>
-        <p class="subtitle">Monitor market indices and track performance</p>
-      </div>
-    </div>
-    <div class="header-divider"></div>
-  </div>
+  <app-page-header 
+    title="Indices"
+    subtitle="Monitor market indices and track performance"
+    [showActionButton]="false">
+  </app-page-header>
 
   <!-- Error Display -->
   @if (errorIndices()) {
