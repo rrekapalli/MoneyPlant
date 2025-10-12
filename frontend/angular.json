@@ -93,11 +93,16 @@
                   "maximumError": "50kb"
                 }
               ],
-              "outputHashing": "all",
-              "optimization": true,
+              "optimization": {
+                "scripts": true,
+                "styles": true,
+                "fonts": true
+              },
+              "outputHashing": "none",
               "namedChunks": false,
               "verbose": true,
-              "sourceMap": false
+              "sourceMap": false,
+              "extractLicenses": false,
             },
             "development": {
               "optimization": false,

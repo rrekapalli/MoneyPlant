@@ -62,26 +62,15 @@ public class WebConfig implements WebMvcConfigurer {
         String indexPath;
         boolean isDevelopment = isDevelopmentMode();
         
-        if (isDevelopment) {
-            // Check for Angular 20+ browser subdirectory first, then fallback to regular dist
-            Path browserPath = Paths.get(DEVELOPMENT_BROWSER_PATH);
-            if (Files.exists(browserPath) && Files.isDirectory(browserPath)) {
-                resourceLocation = "file:" + DEVELOPMENT_BROWSER_PATH;
-                indexPath = DEVELOPMENT_BROWSER_PATH + "index.html";
-            } else {
-                resourceLocation = "file:" + DEVELOPMENT_DIST_PATH;
-                indexPath = DEVELOPMENT_DIST_PATH + "index.html";
-            }
-        } else {
-            resourceLocation = PRODUCTION_STATIC_PATH;
-            indexPath = "/static/index.html";
-        }
+        // Always use static resources for embedded frontend
+        resourceLocation = PRODUCTION_STATIC_PATH;
+        indexPath = "/static/index.html";
 
         final String finalIndexPath = indexPath;
         final boolean finalIsDevelopment = isDevelopment;
 
         // Handle static resources (excluding API paths)
-        registry.addResourceHandler("/static/**", "/assets/**", "/*.js", "/*.css", "/*.html", "/*.ico", "/*.png", "/*.jpg", "/*.jpeg", "/*.gif", "/*.svg", "/*.woff", "/*.woff2", "/*.ttf", "/*.eot")
+        registry.addResourceHandler("/static/**", "/*.js", "/*.css", "/*.html", "/*.ico", "/*.png", "/*.jpg", "/*.jpeg", "/*.gif", "/*.svg", "/*.woff", "/*.woff2", "/*.ttf", "/*.eot")
                 .addResourceLocations(resourceLocation)
                 .resourceChain(true);
 
@@ -108,16 +97,7 @@ public class WebConfig implements WebMvcConfigurer {
                         }
 
                         // If the resource doesn't exist, return index.html for client-side routing
-                        if (finalIsDevelopment) {
-                            Path indexFilePath = Paths.get(finalIndexPath);
-                            if (Files.exists(indexFilePath)) {
-                                return new FileSystemResource(indexFilePath);
-                            }
-                        } else {
-                            return new ClassPathResource(finalIndexPath);
-                        }
-                        
-                        return null;
+                        return new ClassPathResource(finalIndexPath);
                     }
                 });
     }

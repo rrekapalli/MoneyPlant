@@ -23,6 +23,7 @@ import org.springframework.security.oauth2.core.oidc.IdTokenClaimNames;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfigurationSource;
+import jakarta.servlet.http.HttpServletResponse;
 
 @Configuration
 @EnableWebSecurity
@@ -69,15 +70,32 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            // Exclude screener endpoints from this security filter chain
-            .securityMatcher(request -> !request.getRequestURI().startsWith("/api/screeners"))
             .csrf(AbstractHttpConfigurer::disable)
             .cors(cors -> cors.configurationSource(corsConfigurationSource))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
             .authorizeHttpRequests(authz -> authz
-                .requestMatchers("/api/public/**", "/oauth2/**", "/login/**", "/swagger-ui/**", "/v3/api-docs/**", "/actuator/**").permitAll()
-                .anyRequest().authenticated()
+                .requestMatchers("/api/public/**", "/api/auth/validate", "/oauth2/**", "/login/**", "/swagger-ui/**", "/v3/api-docs/**", "/actuator/**").permitAll()
+                .requestMatchers("/", "/dashboard/**", "/portfolios/**", "/screeners/**", "/strategies/**", "/watchlists/**", "/indices/**", "/holdings/**", "/positions/**", "/market/**").permitAll()
+                .requestMatchers("/assets/**", "/favicon.ico", "/main.js", "/polyfills.js", "/styles.css", "/index.html").permitAll()
+                .requestMatchers("/static/**", "/*.js", "/*.css", "/*.html", "/*.ico", "/*.png", "/*.jpg", "/*.jpeg", "/*.gif", "/*.svg", "/*.woff", "/*.woff2", "/*.ttf", "/*.eot").permitAll()
+                .requestMatchers("/api/**").authenticated()
+                .anyRequest().permitAll()
             );
+
+        http.exceptionHandling(exceptions -> exceptions
+            .authenticationEntryPoint((request, response, authException) -> {
+                String requestURI = request.getRequestURI();
+                System.out.println("Authentication required for: " + requestURI);
+                
+                // For API requests, redirect to OAuth2
+                if (requestURI.startsWith("/api/")) {
+                    response.sendRedirect("/oauth2/authorization/microsoft");
+                } else {
+                    // For frontend routes, serve the frontend (let AuthController handle it)
+                    response.sendRedirect("/");
+                }
+            })
+        );
 
         http.oauth2Login(oauth2 -> oauth2
             .userInfoEndpoint(userInfo -> userInfo
@@ -134,7 +152,7 @@ public class SecurityConfig {
                 System.out.println("OAuth2 Success - Redirect URL: " + redirectUrl);
                 System.out.println("OAuth2 Success - Authentication: " + authentication.getName());
                 if (redirectUrl == null || redirectUrl.isBlank()) {
-                    redirectUrl = "http://localhost:4200/login"; // default to login page
+                    redirectUrl = "http://localhost:8080/login"; // default to login page
                 }
                 // Append token as query param; frontend should store it
                 String sep = redirectUrl.contains("?") ? "&" : "?";
@@ -147,7 +165,7 @@ public class SecurityConfig {
                 System.out.println("OAuth2 Failure - Redirect URL: " + redirectUrl);
                 System.out.println("OAuth2 Failure - Exception: " + exception.getMessage());
                 if (redirectUrl == null || redirectUrl.isBlank()) {
-                    redirectUrl = "http://localhost:4200/login";
+                    redirectUrl = "http://localhost:8080/login";
                 }
                 String sep = redirectUrl.contains("?") ? "&" : "?";
                 String finalUrl = redirectUrl + sep + "error=" + java.net.URLEncoder.encode(exception.getMessage(), java.nio.charset.StandardCharsets.UTF_8);

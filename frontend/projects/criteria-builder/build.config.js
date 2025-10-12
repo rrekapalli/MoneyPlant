@@ -12,15 +12,13 @@ module.exports = {
       sourceMap: true,
       optimization: false,
       extractLicenses: false,
-      namedChunks: true,
-      vendorChunk: true
+      namedChunks: true
     },
     production: {
       sourceMap: false,
       optimization: true,
       extractLicenses: true,
       namedChunks: false,
-      vendorChunk: false,
       budgets: [
         {
           type: 'initial',

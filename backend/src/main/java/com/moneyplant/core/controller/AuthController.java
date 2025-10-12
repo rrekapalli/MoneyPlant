@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.core.io.ClassPathResource;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -71,27 +72,6 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Fallback controller for client-side routing.
-     * This redirects frontend routes to the frontend app running on port 4200.
-     * Note: This excludes API paths (starting with /api/) to avoid interfering with API endpoints.
-     */
-    @GetMapping({"/portfolios", "/portfolios/**", 
-                 "/holdings", "/holdings/**", "/positions", "/positions/**",  "/screener", "/screener/**",
-                 "/market", "/market/**", "/strategies", "/strategies/**",
-                 "/watchlists", "/watchlists/**", "/dashboard", "/dashboard/**"})
-    public ResponseEntity<Void> handleClientSideRouting(HttpServletRequest request) {
-        // Skip API requests - let them be handled by API controllers
-        String requestUri = request.getRequestURI();
-        if (requestUri.startsWith("/api/") || requestUri.startsWith("/actuator/")) {
-            return ResponseEntity.notFound().build();
-        }
-        
-        // Redirect to frontend app running on port 4200
-        return ResponseEntity.status(302)
-                .header("Location", "http://localhost:4200" + requestUri)
-                .build();
-    }
 
     @GetMapping("/auth/validate")
     public ResponseEntity<Map<String, Object>> validateToken() {

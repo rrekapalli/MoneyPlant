@@ -8,18 +8,16 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        // Create a single bundle by disabling code splitting
-        manualChunks: () => 'app.js',
-        // Ensure all assets are included in the main bundle
-        assetFileNames: 'assets/[name][extname]',
-        // Use a single entry point
-        entryFileNames: 'app.js',
+        // Simple single bundle approach
+        manualChunks: () => 'main',
+        entryFileNames: 'main.js',
+        chunkFileNames: 'main.js',
+        assetFileNames: 'assets/[name][extname]'
       },
     },
-    // Minimize the output
     minify: true,
-    // Disable source maps in production
     sourcemap: false,
+    target: 'es2020',
   },
   plugins: [
     angular()
