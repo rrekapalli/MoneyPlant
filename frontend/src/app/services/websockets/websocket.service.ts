@@ -31,8 +31,19 @@ export class WebSocketService {
   // Active subscriptions
   private activeSubscriptions = new Map<string, any>();
   
+  // Track which components are using WebSocket subscriptions
+  private activeComponents = new Set<string>();
+  
   // Connection state tracking
   private isConnected: boolean = false;
+  
+  // Retry mechanism
+  private retryCount: number = 0;
+  private maxRetries: number = 3;
+  private retryTimeout?: any;
+  private baseRetryDelay: number = 1000; // 1 second base delay
+  private maxRetryDelay: number = 10000; // 10 seconds max delay
+  private isRetrying: boolean = false;
 
   constructor() {
     this.client = this.createStompClient();
@@ -51,39 +62,139 @@ export class WebSocketService {
         // Debug logging disabled for production
       },
       heartbeatIncoming: 4000,
-      heartbeatOutgoing: 4000
+      heartbeatOutgoing: 4000,
+      // Allow normal reconnection behavior for continuous streaming
+      reconnectDelay: 5000
     });
 
     // Set up connection callbacks
     client.onConnect = (frame: IFrame) => {
       this.connectionState$.next(WebSocketConnectionState.CONNECTED);
       this.isConnected = true;
+      this.retryCount = 0; // Reset retry count on successful connection
+      this.isRetrying = false;
+      this.clearRetryTimeout();
     };
 
     client.onDisconnect = (frame: IFrame) => {
       this.connectionState$.next(WebSocketConnectionState.DISCONNECTED);
       this.isConnected = false;
       this.clearSubscriptions();
+      // Allow normal reconnection for continuous streaming
     };
 
     client.onStompError = (frame: IFrame) => {
       this.errors$.next(`STOMP Error: ${frame.headers['message']}`);
       this.connectionState$.next(WebSocketConnectionState.ERROR);
       this.isConnected = false;
+      // Only limit retries on actual error responses from server
+      this.handleServerErrorResponse(frame);
     };
 
     client.onWebSocketError = (error: any) => {
       this.errors$.next(`WebSocket Error: ${error.message || error}`);
       this.connectionState$.next(WebSocketConnectionState.ERROR);
       this.isConnected = false;
+      // Only limit retries on actual error responses from server
+      this.handleServerErrorResponse(error);
     };
 
     client.onWebSocketClose = (event: CloseEvent) => {
       this.connectionState$.next(WebSocketConnectionState.DISCONNECTED);
       this.isConnected = false;
+      // Allow normal reconnection unless it's an error response
+      if (event.code >= 4000) { // Server error codes
+        this.handleServerErrorResponse(event);
+      }
     };
 
     return client;
+  }
+
+  /**
+   * Handle server error responses with limited retry logic
+   */
+  private handleServerErrorResponse(error: any): void {
+    // Only limit retries on actual server error responses
+    if (this.isServerErrorResponse(error)) {
+      this.retryCount++;
+      
+      if (this.retryCount <= this.maxRetries) {
+        this.scheduleRetry();
+      } else {
+        this.connectionState$.next(WebSocketConnectionState.ERROR);
+        this.isRetrying = false;
+        this.disconnect(); // Stop all WebSocket activity
+      }
+    }
+  }
+
+  /**
+   * Check if the response is a server error that should limit retries
+   */
+  private isServerErrorResponse(error: any): boolean {
+    // Check for HTTP error status codes
+    if (error && typeof error === 'object') {
+      // STOMP error with error message
+      if (error.headers && error.headers['message'] && 
+          (error.headers['message'].includes('error') || 
+           error.headers['message'].includes('Error') ||
+           error.headers['message'].includes('ERROR'))) {
+        return true;
+      }
+      
+      // WebSocket close with error code
+      if (error.code && error.code >= 4000) {
+        return true;
+      }
+      
+      // Generic error object
+      if (error.message && error.message.toLowerCase().includes('error')) {
+        return true;
+      }
+    }
+    
+    return false;
+  }
+
+  /**
+   * Schedule a retry attempt with exponential backoff
+   */
+  private scheduleRetry(): void {
+    this.isRetrying = true;
+    
+    // Calculate delay with exponential backoff
+    const delay = Math.min(
+      this.baseRetryDelay * Math.pow(2, this.retryCount - 1),
+      this.maxRetryDelay
+    );
+    
+    this.retryTimeout = setTimeout(() => {
+      if (this.isRetrying) {
+        this.connect().catch(error => {
+          this.handleServerErrorResponse(error);
+        });
+      }
+    }, delay);
+  }
+
+  /**
+   * Clear retry timeout
+   */
+  private clearRetryTimeout(): void {
+    if (this.retryTimeout) {
+      clearTimeout(this.retryTimeout);
+      this.retryTimeout = undefined;
+    }
+  }
+
+  /**
+   * Reset retry state
+   */
+  private resetRetryState(): void {
+    this.retryCount = 0;
+    this.isRetrying = false;
+    this.clearRetryTimeout();
   }
 
   /**
@@ -119,6 +230,8 @@ export class WebSocketService {
       await this.client.activate();
       await new Promise(resolve => setTimeout(resolve, 100));
     } catch (error) {
+      // Only limit retries on server error responses
+      this.handleServerErrorResponse(error);
       throw error;
     }
   }
@@ -128,6 +241,9 @@ export class WebSocketService {
    */
   disconnect(): void {
     try {
+      // Stop any ongoing retry attempts
+      this.resetRetryState();
+      
       this.clearSubscriptions();
       
       if (this.client && this.client.connected) {
@@ -247,6 +363,9 @@ export class WebSocketService {
       subscription.unsubscribe();
       this.activeSubscriptions.delete('all-indices');
       this.allIndicesData$.next(null);
+      
+      // Send unsubscribe message to backend
+      this.sendMessage('/app/unsubscribe-indices', {});
     }
   }
 
@@ -263,6 +382,10 @@ export class WebSocketService {
       if (this.specificIndicesData.has(indexName)) {
         this.specificIndicesData.get(indexName)?.next(null);
       }
+      
+      // Send unsubscribe message to backend
+      const webSocketIndexName = indexName.replace(/\s+/g, '-').toLowerCase();
+      this.sendMessage(`/app/unsubscribe-indices/${webSocketIndexName}`, {});
     }
   }
 
@@ -295,6 +418,65 @@ export class WebSocketService {
     this.specificIndicesData.forEach((subject, indexName) => {
       subject.next(null);
     });
+  }
+
+  /**
+   * Register a component as using WebSocket subscriptions
+   */
+  public registerComponent(componentName: string): void {
+    this.activeComponents.add(componentName);
+  }
+
+  /**
+   * Unregister a component from WebSocket subscriptions
+   */
+  public unregisterComponent(componentName: string): void {
+    this.activeComponents.delete(componentName);
+    
+    // If no components are active, cleanup all subscriptions
+    if (this.activeComponents.size === 0) {
+      this.unsubscribeFromAll();
+    }
+  }
+
+  /**
+   * Get retry status for debugging
+   */
+  public getRetryStatus(): { retryCount: number; maxRetries: number; isRetrying: boolean } {
+    return {
+      retryCount: this.retryCount,
+      maxRetries: this.maxRetries,
+      isRetrying: this.isRetrying
+    };
+  }
+
+  /**
+   * Get list of active components
+   */
+  public getActiveComponents(): string[] {
+    return Array.from(this.activeComponents);
+  }
+
+  /**
+   * Unsubscribe from all active subscriptions (public method for external cleanup)
+   */
+  public unsubscribeFromAll(): void {
+    // Send unsubscribe messages to backend for all active subscriptions
+    this.activeSubscriptions.forEach((subscription, key) => {
+      try {
+        if (key === 'all-indices') {
+          this.sendMessage('/app/unsubscribe-indices', {});
+        } else if (key.startsWith('index-')) {
+          const indexName = key.replace('index-', '');
+          const webSocketIndexName = indexName.replace(/\s+/g, '-').toLowerCase();
+          this.sendMessage(`/app/unsubscribe-indices/${webSocketIndexName}`, {});
+        }
+      } catch (error) {
+        // Silent error handling
+      }
+    });
+    
+    this.clearSubscriptions();
   }
 
   /**
@@ -368,6 +550,7 @@ export class WebSocketService {
    * Cleanup on service destruction
    */
   ngOnDestroy(): void {
+    this.resetRetryState();
     this.disconnect();
     this.destroy$.next();
     this.destroy$.complete();
