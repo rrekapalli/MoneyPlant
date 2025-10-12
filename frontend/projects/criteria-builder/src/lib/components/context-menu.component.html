@@ -1,0 +1,16 @@
+<!-- Context menu is typically handled by PrimeNG's p-contextMenu -->
+<!-- This component serves as a configuration wrapper -->
+<div class="context-menu-wrapper">
+  <!-- Menu items are configured in the component and passed to parent -->
+  <!-- The actual rendering is done by p-contextMenu in the parent component -->
+  
+  <!-- Debug info (only shown in development) -->
+  <div class="menu-debug" *ngIf="false">
+    <h4>Context Menu Items:</h4>
+    <ul>
+      <li *ngFor="let item of menuItems">
+        {{ item.label }} - {{ item.icon }}
+      </li>
+    </ul>
+  </div>
+</div>

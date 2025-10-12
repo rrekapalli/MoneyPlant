@@ -60,9 +60,7 @@ const getFallbackIndexData = async (
       return previousDayData.indices[0];
     }
   } catch (error) {
-    if (DEBUG_LOGGING) {
-      console.warn(`Failed to get fallback data for index ${indexName}:`, error);
-    }
+    // Failed to get fallback data for index
   }
   return null;
 };

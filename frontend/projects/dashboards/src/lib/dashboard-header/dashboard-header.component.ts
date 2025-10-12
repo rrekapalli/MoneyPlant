@@ -61,27 +61,22 @@ export class DashboardHeaderComponent implements OnInit, OnChanges {
 
   // Create bound methods to avoid context issues
   private boundExportToExcel = () => {
-    console.log('Dashboard header: Export to Excel clicked (bound method)');
     this.exportToExcel();
   };
 
   private boundToggleHighlighting = () => {
-    console.log('Dashboard header: Toggle highlighting clicked (bound method)');
     this.toggleHighlighting();
   };
 
   private boundSetSubtle = () => {
-    console.log('Dashboard header: Set subtle preset (bound method)');
     this.setHighlightingPreset('subtle');
   };
 
   private boundSetMedium = () => {
-    console.log('Dashboard header: Set medium preset (bound method)');
     this.setHighlightingPreset('medium');
   };
 
   private boundSetStrong = () => {
-    console.log('Dashboard header: Set strong preset (bound method)');
     this.setHighlightingPreset('strong');
   };
 
@@ -104,7 +99,6 @@ export class DashboardHeaderComponent implements OnInit, OnChanges {
     items.push({
       label: 'Export to Excel', 
       command: () => {
-        console.log('EXCEL EXPORT CLICKED!');
         this.exportToExcel();
       }
     });
@@ -179,18 +173,15 @@ export class DashboardHeaderComponent implements OnInit, OnChanges {
 
   // Test method for split button
   testMainAction() {
-    console.log('SPLIT BUTTON MAIN ACTION CLICKED!');
     alert('Split button main action works!');
   }
 
   // Custom menu methods
   toggleCustomMenu() {
-    console.log('Custom menu toggle clicked');
     this.showCustomMenu = !this.showCustomMenu;
   }
 
   testCustomClick(action: string) {
-    console.log('CUSTOM MENU ITEM CLICKED:', action);
     this.showCustomMenu = false; // Close menu
 
     switch (action) {

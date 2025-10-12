@@ -143,8 +143,6 @@ export abstract class ApacheEchartBuilder<T extends EChartsOption = EChartsOptio
    * @param event The filter change event
    */
   protected triggerFilterChange(event: ChartFilterEvent): void {
-    console.log('Filter change event triggered:', event);
-    
     if (this.filterChangeCallback) {
       this.filterChangeCallback(event);
     } else {
@@ -163,7 +161,6 @@ export abstract class ApacheEchartBuilder<T extends EChartsOption = EChartsOptio
   protected createGlobalFilterFunction(): void {
     if (typeof window !== 'undefined' && !(window as any).handleChartFilterChange) {
       (window as any).handleChartFilterChange = (event: ChartFilterEvent) => {
-        console.log('Global chart filter change:', event);
         if (this.filterChangeCallback) {
           this.filterChangeCallback(event);
         }

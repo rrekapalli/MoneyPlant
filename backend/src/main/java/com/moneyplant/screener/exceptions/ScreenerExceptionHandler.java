@@ -117,6 +117,45 @@ public class ScreenerExceptionHandler {
     }
 
     /**
+     * Handles criteria validation errors.
+     */
+    @ExceptionHandler(CriteriaValidationException.class)
+    public ResponseEntity<ProblemDetail> handleCriteriaValidation(CriteriaValidationException ex, WebRequest request) {
+        log.warn("Criteria validation error: {}", ex.getMessage());
+        
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST, ex.getMessage());
+        problemDetail.setType(URI.create("https://api.moneyplant.com/problems/criteria-validation-error"));
+        problemDetail.setTitle("Criteria Validation Error");
+        problemDetail.setProperty("timestamp", OffsetDateTime.now());
+        problemDetail.setProperty("path", request.getDescription(false).replace("uri=", ""));
+        
+        // Include validation errors if available
+        if (!ex.getValidationErrors().isEmpty()) {
+            problemDetail.setProperty("validationErrors", ex.getValidationErrors());
+        }
+
+        return ResponseEntity.badRequest().body(problemDetail);
+    }
+
+    /**
+     * Handles SQL generation errors.
+     */
+    @ExceptionHandler(SqlGenerationException.class)
+    public ResponseEntity<ProblemDetail> handleSqlGeneration(SqlGenerationException ex, WebRequest request) {
+        log.warn("SQL generation error: {}", ex.getMessage());
+        
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST, ex.getMessage());
+        problemDetail.setType(URI.create("https://api.moneyplant.com/problems/sql-generation-error"));
+        problemDetail.setTitle("SQL Generation Error");
+        problemDetail.setProperty("timestamp", OffsetDateTime.now());
+        problemDetail.setProperty("path", request.getDescription(false).replace("uri=", ""));
+
+        return ResponseEntity.badRequest().body(problemDetail);
+    }
+
+    /**
      * Handles illegal state errors.
      */
     @ExceptionHandler(IllegalStateException.class)

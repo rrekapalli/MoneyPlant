@@ -9,6 +9,7 @@ import { TabsModule } from 'primeng/tabs';
 import { ChartModule } from 'primeng/chart';
 import { DividerModule } from 'primeng/divider';
 import { TagModule } from 'primeng/tag';
+import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
 
 interface Position {
   id: string;
@@ -31,7 +32,8 @@ interface Position {
     TabsModule,
     ChartModule,
     DividerModule,
-    TagModule
+    TagModule,
+    PageHeaderComponent,
   ],
   templateUrl: './positions.component.html',
   styleUrls: ['./positions.component.scss']

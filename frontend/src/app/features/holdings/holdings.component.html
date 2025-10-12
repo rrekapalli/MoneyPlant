@@ -1,14 +1,18 @@
-<div class="grid">
-  <div class="col-12">
-    <p-card>
-      <!-- List View -->
-      <ng-container *ngIf="!selectedHoldingId">
-        <ng-template pTemplate="header">
-          <div class="flex justify-content-between align-items-center p-3">
-            <h2 class="m-0">Holdings</h2>
-            <p-button label="New Holding" icon="pi pi-plus" (onClick)="onNewHolding()"></p-button>
-          </div>
-        </ng-template>
+<div class="page-container">
+  <!-- Page Header -->
+  <app-page-header
+    title="Holdings"
+    subtitle="Manage your investment holdings and track performance"
+    actionButtonLabel="New Holding"
+    actionButtonIcon="pi pi-plus"
+    (actionButtonClick)="onNewHolding()">
+  </app-page-header>
+
+  <div class="grid">
+    <div class="col-12">
+      <p-card>
+        <!-- List View -->
+        <ng-container *ngIf="!selectedHoldingId">
         
         <p-table [value]="holdings" [paginator]="true" [rows]="10" [showCurrentPageReport]="true"
           currentPageReportTemplate="Showing {first} to {last} of {totalRecords} holdings"

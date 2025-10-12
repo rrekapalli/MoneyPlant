@@ -8,6 +8,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { TextareaModule } from 'primeng/textarea';
 import { DividerModule } from 'primeng/divider';
 import { FormsModule } from '@angular/forms';
+import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
 
 interface Holding {
   symbol: string;
@@ -39,7 +40,8 @@ interface HoldingGroup {
     InputTextModule,
     TextareaModule,
     DividerModule,
-    FormsModule
+    FormsModule,
+    PageHeaderComponent
   ],
   templateUrl: './holdings.component.html',
   styleUrls: ['./holdings.component.scss']

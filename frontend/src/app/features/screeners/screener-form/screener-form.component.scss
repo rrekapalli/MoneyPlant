@@ -1,36 +1,25 @@
+/* Container, header, and summary card styles are now global in styles.scss */
+
 .screener-form-container {
-  padding: 2rem;
-  max-width: 800px;
-  margin: 0 auto;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-
-  .form-header {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    margin-bottom: 2rem;
-
-    .back-button {
-      margin-top: 0.5rem;
-    }
-
-    h1 {
-      margin: 0;
-      color: #2c3e50;
-      font-size: 2rem;
-      font-weight: 300;
-    }
-  }
-
   .form-content {
     flex: 1;
+    /* Updated layout for condensed form */
 
     .form-grid {
       display: flex;
       flex-direction: column;
       gap: 1.5rem;
+
+      .form-row {
+        display: grid !important;
+        grid-template-columns: 2fr 1.5fr 1fr !important;
+        gap: 1rem !important;
+        align-items: start !important;
+        width: 100% !important;
+        background-color: #f0f8ff !important; // Temporary debug background
+        padding: 1rem !important;
+        border-radius: 4px !important;
+      }
 
       .form-group {
         display: flex;
@@ -64,15 +53,26 @@
 
         textarea {
           resize: vertical;
-          min-height: 100px;
+          min-height: 80px;
         }
 
         &.checkbox-group {
+          .checkbox-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+          }
+
           .help-text {
             color: #7f8c8d;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             margin-top: 0.25rem;
           }
+        }
+
+        &.form-group-flex {
+          min-width: 0; // Prevent flex items from overflowing
+          border: 1px solid transparent; // Debug border
         }
       }
     }
@@ -109,12 +109,73 @@
       }
     }
 
-    .query-builder-container {
+    .criteria-builder-container {
       margin-bottom: 2rem;
       padding: 1.5rem;
       border: 1px solid #e0e0e0;
       border-radius: 8px;
       background-color: #fafafa;
+      min-height: 400px;
+      max-height: 600px;
+      overflow-y: auto;
+      
+      // Ensure criteria builder fits within existing layout
+      .screener-criteria-builder {
+        width: 100%;
+        
+        // Override any fixed widths from criteria builder
+        ac-criteria-builder {
+          width: 100% !important;
+          max-width: 100% !important;
+          
+          // Ensure consistent spacing with existing form elements
+          .criteria-builder-root {
+            padding: 0;
+            margin: 0;
+          }
+          
+          // Match existing form element spacing
+          .criteria-group, .criteria-condition {
+            margin-bottom: 1rem;
+          }
+          
+          // Ensure buttons match existing button styling
+          .criteria-button {
+            font-size: 0.875rem;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+          }
+          
+          // Ensure input fields match existing form styling
+          .criteria-input {
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+            
+            &:focus {
+              outline: none;
+              border-color: #3498db;
+              box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+            }
+          }
+          
+          // Ensure select dropdowns match existing styling
+          .criteria-select {
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+            background-color: white;
+            
+            &:focus {
+              outline: none;
+              border-color: #3498db;
+              box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+            }
+          }
+        }
+      }
     }
 
     .criteria-actions {
@@ -189,12 +250,123 @@
     }
 
     .form-content {
+      .form-grid {
+        .form-row {
+          grid-template-columns: 1fr;
+          gap: 1rem;
+        }
+      }
+
       .form-actions {
         flex-direction: column;
         align-items: stretch;
 
         button {
           min-width: auto;
+        }
+      }
+      
+      // Responsive criteria builder adjustments
+      .criteria-builder-container {
+        padding: 1rem;
+        min-height: 250px;
+        
+        .screener-criteria-builder {
+          ac-criteria-builder {
+            // Adjust for smaller screens
+            .criteria-group, .criteria-condition {
+              margin-bottom: 0.75rem;
+            }
+            
+            // Stack form elements vertically on mobile
+            .criteria-condition-row {
+              flex-direction: column;
+              gap: 0.5rem;
+            }
+            
+            // Ensure buttons are touch-friendly
+            .criteria-button {
+              min-height: 44px;
+              padding: 0.75rem 1rem;
+            }
+            
+            // Make inputs full width on mobile
+            .criteria-input, .criteria-select {
+              width: 100%;
+              min-height: 44px;
+            }
+          }
+        }
+      }
+      
+      .criteria-actions {
+        flex-direction: column;
+        gap: 1rem;
+        
+        button {
+          min-width: auto;
+          width: 100%;
+        }
+      }
+    }
+    
+    // Responsive badge adjustments
+    :host ::ng-deep .p-tabs .p-tablist .p-tab {
+      .criteria-badge {
+        font-size: 0.65rem;
+        min-width: 1rem;
+        height: 1rem;
+        padding: 0.2rem 0.4rem;
+        margin-left: 0.25rem;
+      }
+      
+      .criteria-preview {
+        padding: 1rem;
+        
+        .criteria-summary {
+          .summary-item {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.25rem;
+          }
+        }
+      }
+    }
+  }
+}
+
+// Tablet responsive adjustments
+@media (max-width: 1024px) and (min-width: 769px) {
+  .screener-form-container {
+    .form-content {
+      .form-grid {
+        .form-row {
+          grid-template-columns: 1fr 1fr;
+          gap: 1rem;
+          
+          .form-group:last-child {
+            grid-column: 1 / -1;
+          }
+        }
+      }
+
+      .criteria-builder-container {
+        .screener-criteria-builder {
+          ac-criteria-builder {
+            // Adjust spacing for tablet
+            .criteria-group, .criteria-condition {
+              margin-bottom: 0.875rem;
+            }
+            
+            // Ensure adequate touch targets
+            .criteria-button {
+              min-height: 40px;
+            }
+            
+            .criteria-input, .criteria-select {
+              min-height: 40px;
+            }
+          }
         }
       }
     }
@@ -240,17 +412,206 @@
           display: inline-flex;
           align-items: center;
           justify-content: center;
+          transition: all 0.2s ease;
+          
+          // Style badge consistently with existing UI patterns
+          &.criteria-badge-active {
+            background-color: #27ae60;
+            animation: pulse 2s infinite;
+          }
+          
+          &.criteria-badge-warning {
+            background-color: #f39c12;
+          }
+          
+          &.criteria-badge-error {
+            background-color: #e74c3c;
+          }
+        }
+        
+        // Enhance tab appearance when criteria exist
+        &.p-tab-active {
+          .criteria-badge {
+            background-color: #2980b9;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+          }
+        }
+        
+        // Hover effects for better UX
+        &:hover {
+          .criteria-badge {
+            transform: scale(1.05);
+            box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+          }
         }
       }
     }
   }
 
-  // Query Builder customizations
-  .query-builder-container {
-    .app-query-builder {
-      .query-builder {
+  // Criteria Builder customizations - Simplified UI
+  .criteria-builder-container {
+    .screener-criteria-builder {
+      ac-criteria-builder {
         border: none;
         background: transparent;
+        
+        // Hide unnecessary toolbar elements
+        .ac-builder-toolbar {
+          display: none !important;
+        }
+        
+        // Hide complex mode switcher
+        .mode-switcher {
+          display: none !important;
+        }
+        
+        // Hide SQL preview
+        .ac-sql-preview {
+          display: none !important;
+        }
+        
+        // Hide error banner for cleaner look
+        .ac-error-banner {
+          display: none !important;
+        }
+        
+        // Simplify token display - remove hover effects and complex interactions
+        .ac-token-query-display {
+          // Remove hover effects on tokens
+          .token {
+            transition: none !important;
+            
+            &:hover {
+              background-color: transparent !important;
+              border-color: inherit !important;
+              box-shadow: none !important;
+            }
+            
+            // Remove unnecessary icons and decorations
+            .token-icon {
+              display: none !important;
+            }
+            
+            .token-decoration {
+              display: none !important;
+            }
+            
+            // Simplify token appearance
+            border: 1px solid #ddd !important;
+            background: white !important;
+            padding: 0.5rem !important;
+            margin: 0.25rem !important;
+            border-radius: 4px !important;
+          }
+          
+          // Remove complex interaction overlays
+          .interaction-overlay {
+            display: none !important;
+          }
+          
+          // Remove context menus
+          .context-menu {
+            display: none !important;
+          }
+        }
+        
+        // Simplify empty state
+        .empty-state {
+          padding: 2rem !important;
+          text-align: center !important;
+          
+          .empty-state-content {
+            h3 {
+              font-size: 1.1rem !important;
+              color: #666 !important;
+              margin-bottom: 0.5rem !important;
+            }
+            
+            p {
+              font-size: 0.9rem !important;
+              color: #888 !important;
+              margin-bottom: 1rem !important;
+            }
+            
+            .add-first-condition-btn {
+              background-color: #3498db !important;
+              color: white !important;
+              border: none !important;
+              padding: 0.75rem 1.5rem !important;
+              border-radius: 4px !important;
+              font-size: 0.9rem !important;
+              cursor: pointer !important;
+              
+              &:hover {
+                background-color: #2980b9 !important;
+              }
+            }
+          }
+        }
+        
+        // Ensure criteria builder integrates with PrimeNG theme
+        .p-button {
+          font-family: inherit;
+          
+          &.p-button-sm {
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem;
+          }
+        }
+        
+        .p-dropdown, .p-inputtext {
+          font-family: inherit;
+          border-color: #ddd;
+          
+          &:focus {
+            border-color: #3498db;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+          }
+        }
+        
+        // Match PrimeNG card styling for nested groups
+        .criteria-group-container {
+          background: white;
+          border: 1px solid #e0e0e0;
+          border-radius: 6px;
+          padding: 1rem;
+          margin: 0.5rem 0;
+        }
+        
+        // Ensure proper spacing matches form elements
+        .criteria-row {
+          margin-bottom: 1rem;
+          
+          &:last-child {
+            margin-bottom: 0;
+          }
+        }
+        
+        // Remove loading overlay complexity
+        .loading-overlay {
+          background: rgba(255, 255, 255, 0.8) !important;
+          
+          .loading-spinner {
+            i {
+              font-size: 1.5rem !important;
+              color: #3498db !important;
+            }
+            
+            span {
+              font-size: 0.9rem !important;
+              color: #666 !important;
+            }
+          }
+        }
+        
+        // Simplify accessibility features (keep functionality but reduce visual noise)
+        .accessibility-panel {
+          display: none !important;
+        }
+        
+        .live-announcer {
+          display: none !important;
+        }
       }
     }
   }
@@ -262,5 +623,20 @@
   }
   to {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
   }
 }

@@ -6,6 +6,7 @@ import { TableModule } from 'primeng/table';
 import { CardModule } from 'primeng/card';
 import { ChartModule } from 'primeng/chart';
 import { TagModule } from 'primeng/tag';
+import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
 
 @Component({
   selector: 'app-strategies',
@@ -17,7 +18,8 @@ import { TagModule } from 'primeng/tag';
     TableModule,
     CardModule,
     ChartModule,
-    TagModule
+    TagModule,
+    PageHeaderComponent,
   ],
   templateUrl: './strategies.component.html',
   styleUrl: './strategies.component.scss'
@@ -148,22 +150,18 @@ export class StrategiesComponent implements OnInit {
   }
 
   createStrategy() {
-    console.log('Create strategy');
     // Implementation for creating a new strategy would go here
   }
 
   editStrategy(strategy: any) {
-    console.log('Edit strategy', strategy);
     // Implementation for editing a strategy would go here
   }
 
   deleteStrategy(strategy: any) {
-    console.log('Delete strategy', strategy);
     // Implementation for deleting a strategy would go here
   }
 
   toggleStrategyStatus(strategy: any) {
-    console.log('Toggle strategy status', strategy);
     // Implementation for toggling strategy status would go here
     if (strategy.status === 'Active') {
       strategy.status = 'Paused';
@@ -172,12 +170,12 @@ export class StrategiesComponent implements OnInit {
     }
   }
 
-  getStatusSeverity(status: string): string {
+  getStatusSeverity(status: string): "success" | "secondary" | "info" | "warn" | "danger" | "contrast" {
     switch (status) {
       case 'Active':
         return 'success';
       case 'Paused':
-        return 'warning';
+        return 'warn';
       case 'Inactive':
         return 'danger';
       default:

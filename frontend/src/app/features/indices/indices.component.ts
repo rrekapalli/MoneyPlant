@@ -34,6 +34,7 @@ import { ComponentCommunicationService, SelectedIndexData } from '../../services
 import { WebSocketService, IndexDataDto, IndicesDto } from '../../services/websockets';
 import { StockTicksService } from '../../services/apis/stock-ticks.api';
 import { StockDataDto } from '../../services/entities/stock-ticks';
+import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
 
 @Component({
   selector: 'app-indices',
@@ -54,7 +55,8 @@ import { StockDataDto } from '../../services/entities/stock-ticks';
     TabsModule,
     TooltipModule,
     SelectModule,
-    DashboardContainerComponent
+    DashboardContainerComponent,
+    PageHeaderComponent,
   ],
   templateUrl: './indices.component.html',
   styleUrls: ['./indices.component.scss'],
@@ -77,6 +79,7 @@ export class IndicesComponent implements OnInit, OnDestroy {
   
   // Loading states as signals
   isLoadingIndices = signal<boolean>(true); // Start with loading true
+  errorIndices = signal<string | null>(null);
   isSearching = signal<boolean>(false);
   isLoadingStocks = signal<boolean>(false);
   
@@ -93,8 +96,10 @@ export class IndicesComponent implements OnInit, OnDestroy {
 
   
   // Method to update active tab (for two-way binding)
-  updateActiveTab(value: string | number): void {
-    this.activeTab.set(value.toString());
+  updateActiveTab(value: string | number | undefined): void {
+    if (value !== undefined) {
+      this.activeTab.set(value.toString());
+    }
   }
   
   // Method to update global filter value (for two-way binding)
@@ -146,11 +151,11 @@ export class IndicesComponent implements OnInit, OnDestroy {
     try {
       // Check if services are properly injected
       if (!this.indicesService) {
-        console.error('IndicesService is not available');
+        console.error('IndicesService not properly injected');
         return;
       }
       if (!this.componentCommunicationService) {
-        console.error('ComponentCommunicationService is not available');
+        console.error('ComponentCommunicationService not properly injected');
         return;
       }
       
@@ -160,7 +165,10 @@ export class IndicesComponent implements OnInit, OnDestroy {
       // Load indices directly from the indices API
       this.loadIndicesLists();
     } catch (error) {
-      console.error('Error in ngOnInit:', error);
+      console.error('Error in IndicesComponent ngOnInit:', error);
+      // Set error state to show user-friendly message
+      this.isLoadingIndices.set(false);
+      this.errorIndices.set('Failed to initialize indices component');
     }
   }
 
@@ -184,6 +192,12 @@ export class IndicesComponent implements OnInit, OnDestroy {
     
     // Disconnect WebSockets
     this.webSocketService.disconnect();
+  }
+
+  retryIndices(): void {
+    this.errorIndices.set(null);
+    this.isLoadingIndices.set(true);
+    this.ngOnInit();
   }
 
   /**
@@ -238,26 +252,22 @@ export class IndicesComponent implements OnInit, OnDestroy {
                       this.updateIndicesLists();
                     }
                   }, 100); // 100ms debounce
-                } else {
-                  console.warn('WebSocket received data but no valid indices found:', indicesData);
                 }
               } catch (error) {
-                console.error('Error processing received indices data:', error);
+                // Error processing received indices data
               }
             },
             error: (error: any) => {
-              console.warn('WebSocket subscription error for all indices:', error.message || error);
+              // WebSocket subscription error for all indices
             },
             complete: () => {
               // WebSocket subscription completed
             }
           });
           
-      } else {
-        console.warn('WebSocket not connected - skipping real-time subscription');
       }
     } catch (error) {
-      console.warn('WebSocket subscription failed for all indices - continuing without real-time data:', (error as Error).message || error);
+      // WebSocket subscription failed for all indices - continuing without real-time data
     }
   }
 
@@ -594,7 +604,6 @@ export class IndicesComponent implements OnInit, OnDestroy {
   onIndexSelectionChange(selectedOption: any): void {
     // Extract the actual index from the option object
     const selectedIndex = selectedOption?.value || selectedOption;
-    console.log('Index selection changed:', selectedIndex);
     this.selectedIndexForStocks.set(selectedIndex);
     this.loadStocksForIndex(selectedIndex);
   }
@@ -605,20 +614,16 @@ export class IndicesComponent implements OnInit, OnDestroy {
    */
   private loadStocksForIndex(index: IndexResponseDto): void {
     if (!index || !index.indexName) {
-      console.warn('Invalid index provided to loadStocksForIndex:', index);
       return;
     }
 
-    console.log('Loading stocks for index:', index.indexName);
     this.isLoadingStocks.set(true);
     
     // Convert index name to URL-friendly format
     const urlFriendlyIndexName = index.indexName.replace(/\s+/g, '-');
-    console.log('URL-friendly index name:', urlFriendlyIndexName);
     
     this.stockTicksService.getStockTicksByIndex(urlFriendlyIndexName).subscribe({
       next: (stockData: StockDataDto[]) => {
-        console.log('Received stock data:', stockData?.length || 0, 'stocks');
         this.stockListData.set(stockData || []);
         this.filteredStockListData.set(stockData || []);
         this.isLoadingStocks.set(false);
@@ -628,7 +633,6 @@ export class IndicesComponent implements OnInit, OnDestroy {
         this.cdr.detectChanges();
       },
       error: (error: any) => {
-        console.error('Failed to load stocks for index:', index.indexName, error);
         this.stockListData.set([]);
         this.filteredStockListData.set([]);
         this.isLoadingStocks.set(false);
@@ -641,8 +645,6 @@ export class IndicesComponent implements OnInit, OnDestroy {
    * Initialize the stock list dashboard widget
    */
   private initializeStockListDashboard(): void {
-    console.log('Initializing stock list dashboard with data:', this.filteredStockListData().length, 'stocks');
-    
     const stockListWidget = StockListChartBuilder.create()
       .setData(this.filteredStockListData())
       .setStockPerformanceConfiguration()
@@ -662,17 +664,13 @@ export class IndicesComponent implements OnInit, OnDestroy {
         if (chart) {
           const chartContainer = chart.getDom();
           if (chartContainer) {
-            console.log('Adding global click handler to chart container');
             chartContainer.addEventListener('dblclick', (event: Event) => {
-              console.log('Global double-click on chart container:', event);
               // Try to find the clicked element and extract stock symbol
               const target = event.target as HTMLElement;
               if (target) {
-                console.log('Clicked element:', target);
                 // Look for text content that might be a stock symbol
                 const textContent = target.textContent || target.innerText;
                 if (textContent && textContent.length <= 10) {
-                  console.log('Potential stock symbol from text:', textContent);
                   this.navigateToStockInsights(textContent.trim());
                 }
               }
@@ -686,7 +684,6 @@ export class IndicesComponent implements OnInit, OnDestroy {
     stockListWidget.position = { x: 0, y: 0, cols: 12, rows: 16 };
 
     this.dashboardConfig = [stockListWidget];
-    console.log('Dashboard config created:', this.dashboardConfig);
     
     // Add click handlers after dashboard is rendered
     this.addDashboardClickHandlers();
@@ -739,12 +736,9 @@ export class IndicesComponent implements OnInit, OnDestroy {
    */
   private navigateToStockInsights(stockSymbol: string): void {
     if (!stockSymbol || stockSymbol.trim() === '') {
-      console.warn('Invalid stock symbol for navigation:', stockSymbol);
       return;
     }
 
-    console.log('Navigating to stock insights for:', stockSymbol);
-    
     // Navigate to stock insights dashboard with the stock symbol
     this.router.navigate(['/dashboard/stock-insights', stockSymbol]);
   }
@@ -758,19 +752,11 @@ export class IndicesComponent implements OnInit, OnDestroy {
     setTimeout(() => {
       const dashboardContainer = document.querySelector('[data-dashboard-id="indices-stock-list"]');
       if (dashboardContainer) {
-        console.log('Adding click handlers to dashboard container');
-        
         // Add double-click handler to the entire dashboard
         dashboardContainer.addEventListener('dblclick', (event: Event) => {
-          console.log('Dashboard double-click event:', event);
-          
           // Find the clicked element
           const target = event.target as HTMLElement;
           if (target) {
-            console.log('Clicked element:', target);
-            console.log('Element text:', target.textContent);
-            console.log('Element classes:', target.className);
-            
             // Look for stock symbol in the clicked element or its parents
             let currentElement = target;
             while (currentElement && currentElement !== dashboardContainer) {
@@ -778,7 +764,6 @@ export class IndicesComponent implements OnInit, OnDestroy {
               if (textContent && textContent.length <= 10 && textContent.length >= 2) {
                 // Check if it looks like a stock symbol (letters and numbers)
                 if (/^[A-Z0-9]+$/.test(textContent.trim())) {
-                  console.log('Found potential stock symbol:', textContent.trim());
                   this.navigateToStockInsights(textContent.trim());
                   return;
                 }
@@ -787,8 +772,6 @@ export class IndicesComponent implements OnInit, OnDestroy {
             }
           }
         });
-      } else {
-        console.warn('Dashboard container not found for click handlers');
       }
     }, 1000); // Wait 1 second for dashboard to render
   }
@@ -807,14 +790,11 @@ export class IndicesComponent implements OnInit, OnDestroy {
     );
 
     if (nifty50Index) {
-      console.log('Auto-selecting NIFTY 50 index:', nifty50Index);
       this.selectedIndexForStocks.set(nifty50Index);
       this.loadStocksForIndex(nifty50Index);
     } else {
-      console.warn('NIFTY 50 index not found in loaded indices');
       // If NIFTY 50 is not found, select the first available index
       if (indices.length > 0) {
-        console.log('Selecting first available index:', indices[0]);
         this.selectedIndexForStocks.set(indices[0]);
         this.loadStocksForIndex(indices[0]);
       }
@@ -865,7 +845,6 @@ export class IndicesComponent implements OnInit, OnDestroy {
           this.cdr.detectChanges();
         },
         error: (error: any) => {
-          console.error('Failed to load indices:', error);
           this.isLoadingIndices.set(false);
           
           // If there's an error, use empty indices list
@@ -887,7 +866,7 @@ export class IndicesComponent implements OnInit, OnDestroy {
         }
       });
     } catch (error) {
-      console.error('Error in loadIndicesLists:', error);
+      // Error in loadIndicesLists
       this.isLoadingIndices.set(false);
       
       // If there's an error, use empty indices list

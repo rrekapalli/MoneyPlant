@@ -2,6 +2,7 @@ import { HttpInterceptorFn, HttpRequest, HttpHandlerFn, HttpErrorResponse } from
 import { inject } from '@angular/core';
 import { Observable, throwError, BehaviorSubject } from 'rxjs';
 import { catchError, filter, take, switchMap } from 'rxjs/operators';
+import { HttpClient } from '@angular/common/http';
 
 let isRefreshing = false;
 const refreshTokenSubject = new BehaviorSubject<any>(null);
@@ -59,7 +60,9 @@ function isTokenExpired(token: string): boolean {
     // Decode the JWT token to check expiration
     const payload = JSON.parse(atob(token.split('.')[1]));
     const currentTime = Date.now() / 1000;
-    return payload.exp < currentTime;
+    // Add 5 minute buffer to avoid edge cases
+    const bufferTime = 5 * 60; // 5 minutes in seconds
+    return payload.exp <= (currentTime + bufferTime);
   } catch (error) {
     console.error('Error parsing token:', error);
     return true;
@@ -71,10 +74,23 @@ function handle401Error(request: HttpRequest<unknown>, next: HttpHandlerFn): Obs
     isRefreshing = true;
     refreshTokenSubject.next(null);
 
-    // For now, just redirect to login instead of trying to refresh
-    // This avoids the circular dependency issue
-    window.location.href = '/login';
-    return throwError(() => new Error('Authentication required'));
+    // Try to refresh the token
+    return refreshToken().pipe(
+      switchMap((newToken: string) => {
+        isRefreshing = false;
+        refreshTokenSubject.next(newToken);
+        return next(addToken(request, newToken));
+      }),
+      catchError((error) => {
+        isRefreshing = false;
+        refreshTokenSubject.next(null);
+        // Clear invalid token and redirect to login
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('refresh_token');
+        window.location.href = '/login';
+        return throwError(() => error);
+      })
+    );
   } else {
     return refreshTokenSubject.pipe(
       filter(token => token !== null),
@@ -82,6 +98,28 @@ function handle401Error(request: HttpRequest<unknown>, next: HttpHandlerFn): Obs
       switchMap(token => next(addToken(request, token)))
     );
   }
+}
+
+function refreshToken(): Observable<string> {
+  const currentToken = localStorage.getItem('auth_token');
+  if (!currentToken) {
+    return throwError(() => new Error('No token available for refresh'));
+  }
+
+  const http = inject(HttpClient);
+  return http.post<{ success: boolean; token: string; user: any }>('/api/auth/refresh', {
+    token: currentToken
+  }).pipe(
+    switchMap(response => {
+      if (response.success && response.token) {
+        // Store new token
+        localStorage.setItem('auth_token', response.token);
+        return [response.token];
+      } else {
+        throw new Error('Token refresh failed');
+      }
+    })
+  );
 }
 
 function addToken(request: HttpRequest<unknown>, token: string): HttpRequest<unknown> {

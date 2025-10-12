@@ -92,7 +92,6 @@ export class WatchlistComponent implements OnInit {
         this.loadWatchlists();
       },
       error: (error: any): void => {
-        console.error('Failed to load NSE equities:', error);
         this.isLoadingNseEquities = false;
 
         // Even if NSE equities fail to load, still load the watchlists
@@ -168,7 +167,6 @@ export class WatchlistComponent implements OnInit {
     const currentWatchlistIndex = this.getCurrentWatchlistIndex();
     if (currentWatchlistIndex === 0) {
       // Can't add to the NSE equities watchlist
-      console.log('Cannot add stocks to the NSE equities watchlist');
       return;
     }
 
@@ -178,7 +176,6 @@ export class WatchlistComponent implements OnInit {
 
     const stockExists = currentWatchlist.items.some((item: { symbol: any; }) => item.symbol === stock.symbol);
     if (stockExists) {
-      console.log(`Stock ${stock.symbol} is already in the watchlist`);
       return;
     }
 
@@ -221,8 +218,6 @@ export class WatchlistComponent implements OnInit {
         this.activeTab = '0';
       },
       error: (error: any) => {
-        console.error('Failed to load stocks:', error);
-        
         // If there's an error, use empty watchlist
         const emptyWatchlist = {
           id: 'nse-equities',

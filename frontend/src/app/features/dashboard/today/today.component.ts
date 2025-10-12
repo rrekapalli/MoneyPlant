@@ -526,7 +526,6 @@ export class TodayComponent extends BaseDashboardComponent<DashboardDataRow> {
         
       // case 'candlestick':
       //   // This is a candlestick chart - provide sample OHLC data
-      //   console.log('Detected candlestick widget, providing sample OHLC data');
       //   // Sample OHLC data based on totalValue from dashboard data
       //   const stockData = [];
       //   const dateLabels = [];
@@ -547,7 +546,6 @@ export class TodayComponent extends BaseDashboardComponent<DashboardDataRow> {
       //   return { data: stockData, xAxisData: dateLabels };
         
       default:
-        console.warn(`Unknown chart type: ${seriesType}`);
         return null;
     }
   }
@@ -687,7 +685,6 @@ export class TodayComponent extends BaseDashboardComponent<DashboardDataRow> {
         return testData;
         
       default:
-        console.warn(`Unknown widget title: ${widgetTitle}`);
         return null;
     }
   }

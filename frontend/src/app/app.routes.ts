@@ -1,17 +1,38 @@
 import { Routes } from '@angular/router';
-import { AppShellComponent } from './core/shell/app-shell.component';
+import { AppShellSingleComponent } from './core/shell/app-shell-single.component';
 import { featureFlagGuard, authGuard } from './core/guards';
+
+// Import all components eagerly for single bundle
+import { LoginComponent } from './features/login/login.component';
+import { PortfoliosComponent } from './features/portfolios/portfolios.component';
+import { ScreenersComponent } from './features/screeners/screeners.component';
+import { ScreenersListComponent } from './features/screeners/screeners-list/screeners-list.component';
+import { ScreenerFormComponent } from './features/screeners/screener-form/screener-form.component';
+import { ScreenerDetailComponent } from './features/screeners/screener-detail/screener-detail.component';
+import { StrategiesComponent } from './features/strategies/strategies.component';
+import { WatchlistComponent } from './features/watchlists/watchlist.component';
+import { IndicesComponent } from './features/indices/indices.component';
+import { DashboardComponent } from './features/dashboard/dashboard.component';
+import { OverallComponent } from './features/dashboard/overall/overall.component';
+import { StockInsightsComponent } from './features/dashboard/stock-insights/stock-insights.component';
+import { TodayComponent } from './features/dashboard/today/today.component';
+import { ThisWeekComponent } from './features/dashboard/this-week/this-week.component';
+import { ThisMonthComponent } from './features/dashboard/this-month/this-month.component';
+import { ThisYearComponent } from './features/dashboard/this-year/this-year.component';
+import { HoldingsComponent } from './features/holdings/holdings.component';
+import { PositionsComponent } from './features/positions/positions.component';
+import { MarketComponent } from './features/market/market.component';
+import { NotFoundComponent } from './features/not-found/not-found.component';
 
 export const routes: Routes = [
   {
     path: 'login',
-    loadComponent: () => import('./features/login/login.component')
-      .then(m => m.LoginComponent),
+    component: LoginComponent,
     title: 'Login - MoneyPlant'
   },
   {
     path: '',
-    component: AppShellComponent,
+    component: AppShellSingleComponent,
     canActivate: [authGuard],
     children: [
       {
@@ -21,92 +42,91 @@ export const routes: Routes = [
       },
       {
         path: 'portfolios',
-        loadComponent: () => import('./features/portfolios/portfolios.component')
-          .then(m => m.PortfoliosComponent),
+        component: PortfoliosComponent,
         title: 'Portfolios - MoneyPlant',
         canActivate: [featureFlagGuard('portfolios')]
       },
       {
         path: 'portfolios/:id',
-        loadComponent: () => import('./features/portfolios/portfolios.component')
-          .then(m => m.PortfoliosComponent),
+        component: PortfoliosComponent,
         title: 'Portfolio Details - MoneyPlant',
         canActivate: [featureFlagGuard('portfolios')]
       },
       {
         path: 'screeners',
-        loadComponent: () => import('./features/screeners/screeners.component')
-          .then(m => m.ScreenersComponent),
+        component: ScreenersComponent,
         title: 'Stock Screeners - MoneyPlant',
-        canActivate: [featureFlagGuard('screeners')]
-      },
-      {
-        path: 'screeners/:id',
-        loadComponent: () => import('./features/screeners/screener-detail/screener-detail.component')
-          .then(m => m.ScreenerDetailComponent),
-        title: 'Screener Details - MoneyPlant',
-        canActivate: [featureFlagGuard('screeners')]
-      },
-      {
-        path: 'screeners/:id/edit',
-        loadComponent: () => import('./features/screeners/screener-form/screener-form.component')
-          .then(m => m.ScreenerFormComponent),
-        title: 'Edit Screener - MoneyPlant',
-        canActivate: [featureFlagGuard('screeners')]
+        canActivate: [featureFlagGuard('screeners')],
+        children: [
+          {
+            path: '',
+            redirectTo: 'list',
+            pathMatch: 'full'
+          },
+          {
+            path: 'list',
+            component: ScreenersListComponent,
+            title: 'Screeners List - MoneyPlant'
+          }
+        ]
       },
       {
         path: 'screeners/new',
-        loadComponent: () => import('./features/screeners/screener-form/screener-form.component')
-          .then(m => m.ScreenerFormComponent),
+        component: ScreenerFormComponent,
         title: 'Create Screener - MoneyPlant',
         canActivate: [featureFlagGuard('screeners')]
       },
       {
+        path: 'screeners/:id/edit',
+        component: ScreenerFormComponent,
+        title: 'Edit Screener - MoneyPlant',
+        canActivate: [featureFlagGuard('screeners')]
+      },
+      {
+        path: 'screeners/:id',
+        component: ScreenerDetailComponent,
+        title: 'Screener Details - MoneyPlant',
+        canActivate: [featureFlagGuard('screeners')]
+      },
+      {
         path: 'strategies',
-        loadComponent: () => import('./features/strategies/strategies.component')
-          .then(m => m.StrategiesComponent),
+        component: StrategiesComponent,
         title: 'Trading Strategies - MoneyPlant',
         canActivate: [featureFlagGuard('strategies')]
       },
       {
         path: 'strategies/:id',
-        loadComponent: () => import('./features/strategies/strategies.component')
-          .then(m => m.StrategiesComponent),
+        component: StrategiesComponent,
         title: 'Strategy Details - MoneyPlant',
         canActivate: [featureFlagGuard('strategies')]
       },
       {
         path: 'watchlists',
-        loadComponent: () => import('./features/watchlists/watchlist.component')
-          .then(m => m.WatchlistComponent),
+        component: WatchlistComponent,
         title: 'Watchlists - MoneyPlant',
         canActivate: [featureFlagGuard('watchlist')]
       },
       {
         path: 'watchlists/:id',
-        loadComponent: () => import('./features/watchlists/watchlist.component')
-          .then(m => m.WatchlistComponent),
+        component: WatchlistComponent,
         title: 'Watchlist Details - MoneyPlant',
         canActivate: [featureFlagGuard('watchlist')]
       },
       {
         path: 'indices',
-        loadComponent: () => import('./features/indices/indices.component')
-          .then(m => m.IndicesComponent),
+        component: IndicesComponent,
         title: 'Indices - MoneyPlant',
         canActivate: [featureFlagGuard('indices')]
       },
       {
         path: 'indices/:id',
-        loadComponent: () => import('./features/indices/indices.component')
-          .then(m => m.IndicesComponent),
+        component: IndicesComponent,
         title: 'Indices Details - MoneyPlant',
         canActivate: [featureFlagGuard('indices')]
       },
       {
         path: 'dashboard',
-        loadComponent: () => import('./features/dashboard/dashboard.component')
-          .then(m => m.DashboardComponent),
+        component: DashboardComponent,
         title: 'Dashboard - MoneyPlant',
         canActivate: [featureFlagGuard('dashboard')],
         children: [
@@ -117,50 +137,43 @@ export const routes: Routes = [
           },
           {
             path: 'overall',
-            loadComponent: () => import('./features/dashboard/overall/overall.component')
-              .then(m => m.OverallComponent),
+            component: OverallComponent,
             title: 'Overall Dashboard - MoneyPlant',
             canActivate: [featureFlagGuard('dashboard-overall')]
           },
           {
             path: 'stock-insights',
-            loadComponent: () => import('./features/dashboard/stock-insights/stock-insights.component')
-              .then(m => m.StockInsightsComponent),
+            component: StockInsightsComponent,
             title: 'Stock Insights Dashboard - MoneyPlant',
             canActivate: [featureFlagGuard('dashboard-stock-insights')]
           },
           {
             path: 'stock-insights/:symbol',
-            loadComponent: () => import('./features/dashboard/stock-insights/stock-insights.component')
-              .then(m => m.StockInsightsComponent),
+            component: StockInsightsComponent,
             title: 'Stock Insights Dashboard - MoneyPlant',
             canActivate: [featureFlagGuard('dashboard-stock-insights')]
           },
           {
             path: 'today',
-            loadComponent: () => import('./features/dashboard/today/today.component')
-              .then(m => m.TodayComponent),
+            component: TodayComponent,
             title: 'Today Dashboard - MoneyPlant',
             canActivate: [featureFlagGuard('dashboard-today')]
           },
           {
             path: 'week',
-            loadComponent: () => import('./features/dashboard/this-week/this-week.component')
-              .then(m => m.ThisWeekComponent),
+            component: ThisWeekComponent,
             title: 'This Week Dashboard - MoneyPlant',
             canActivate: [featureFlagGuard('dashboard-week')]
           },
           {
             path: 'month',
-            loadComponent: () => import('./features/dashboard/this-month/this-month.component')
-              .then(m => m.ThisMonthComponent),
+            component: ThisMonthComponent,
             title: 'This Month Dashboard - MoneyPlant',
             canActivate: [featureFlagGuard('dashboard-month')]
           },
           {
             path: 'year',
-            loadComponent: () => import('./features/dashboard/this-year/this-year.component')
-              .then(m => m.ThisYearComponent),
+            component: ThisYearComponent,
             title: 'This Year Dashboard - MoneyPlant',
             canActivate: [featureFlagGuard('dashboard-year')]
           }
@@ -168,43 +181,37 @@ export const routes: Routes = [
       },
       {
         path: 'holdings',
-        loadComponent: () => import('./features/holdings/holdings.component')
-          .then(m => m.HoldingsComponent),
+        component: HoldingsComponent,
         title: 'Holdings - MoneyPlant',
         canActivate: [featureFlagGuard('holdings')]
       },
       {
         path: 'holdings/:id',
-        loadComponent: () => import('./features/holdings/holdings.component')
-          .then(m => m.HoldingsComponent),
+        component: HoldingsComponent,
         title: 'Holdings Details - MoneyPlant',
         canActivate: [featureFlagGuard('holdings')]
       },
       {
         path: 'positions',
-        loadComponent: () => import('./features/positions/positions.component')
-          .then(m => m.PositionsComponent),
+        component: PositionsComponent,
         title: 'Positions - MoneyPlant',
         canActivate: [featureFlagGuard('positions')]
       },
       {
         path: 'positions/:id',
-        loadComponent: () => import('./features/positions/positions.component')
-          .then(m => m.PositionsComponent),
+        component: PositionsComponent,
         title: 'Position Details - MoneyPlant',
         canActivate: [featureFlagGuard('positions')]
       },
       {
         path: 'market',
-        loadComponent: () => import('./features/market/market.component')
-          .then(m => m.MarketComponent),
+        component: MarketComponent,
         title: 'Market - MoneyPlant',
         canActivate: [featureFlagGuard('market')]
       },
       {
         path: 'market/:id',
-        loadComponent: () => import('./features/market/market.component')
-          .then(m => m.MarketComponent),
+        component: MarketComponent,
         title: 'Market Details - MoneyPlant',
         canActivate: [featureFlagGuard('market')]
       }
@@ -212,8 +219,7 @@ export const routes: Routes = [
   },
   {
     path: '**',
-    loadComponent: () => import('./features/not-found/not-found.component')
-      .then(m => m.NotFoundComponent),
+    component: NotFoundComponent,
     title: 'Page Not Found - MoneyPlant'
   }
 ];

@@ -4,11 +4,12 @@ import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { MarketStateService } from '../../services/state/market.state';
 import { MarketData } from '../../services/entities/market-data';
 import { MarketSummary } from '../../services/entities/market-summary';
+import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
 
 @Component({
   selector: 'app-market',
   standalone: true,
-  imports: [CommonModule, RouterModule, DecimalPipe],
+  imports: [CommonModule, RouterModule, DecimalPipe, PageHeaderComponent],
   templateUrl: './market.component.html',
   styleUrls: ['./market.component.scss']
 })
@@ -54,7 +55,6 @@ export class MarketComponent implements OnInit {
       error: (err) => {
         this.error = 'Failed to load market summary';
         this.loading = false;
-        console.error(err);
       }
     });
 
@@ -64,7 +64,7 @@ export class MarketComponent implements OnInit {
         this.topGainers = data;
       },
       error: (err) => {
-        console.error('Failed to load top gainers:', err);
+        // Failed to load top gainers
       }
     });
 
@@ -74,7 +74,7 @@ export class MarketComponent implements OnInit {
         this.topLosers = data;
       },
       error: (err) => {
-        console.error('Failed to load top losers:', err);
+        // Failed to load top losers
       }
     });
 
@@ -84,7 +84,7 @@ export class MarketComponent implements OnInit {
         this.mostActive = data;
       },
       error: (err) => {
-        console.error('Failed to load most active stocks:', err);
+        // Failed to load most active stocks
       }
     });
   }
@@ -99,7 +99,6 @@ export class MarketComponent implements OnInit {
       error: (err) => {
         this.error = `Failed to load details for ${symbol}`;
         this.loading = false;
-        console.error(err);
       }
     });
   }

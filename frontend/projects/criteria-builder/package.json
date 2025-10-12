@@ -1,0 +1,69 @@
+{
+  "name": "@projects/criteria-builder",
+  "version": "0.0.1",
+  "description": "An Angular v20 library that provides a sophisticated visual form control for building complex filtering criteria through interactive tokens and clickable elements",
+  "keywords": [
+    "angular",
+    "criteria",
+    "filter",
+    "form-control",
+    "ui-library",
+    "typescript",
+    "primeng",
+    "accessibility",
+    "sql-generation"
+  ],
+  "author": "Criteria Builder Contributors",
+  "license": "MIT",
+  "homepage": "https://github.com/your-org/criteria-builder-ui#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-org/criteria-builder-ui.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-org/criteria-builder-ui/issues"
+  },
+  "main": "bundles/criteria-builder.umd.js",
+  "module": "fesm2022/criteria-builder.mjs",
+  "typings": "index.d.ts",
+
+  "peerDependencies": {
+    "@angular/common": "^20.0.0",
+    "@angular/core": "^20.0.0",
+    "@angular/forms": "^20.0.0",
+    "@angular/cdk": "^20.0.0",
+    "primeng": "^20.0.0",
+    "primeicons": "^7.0.0",
+    "primeflex": "^4.0.0",
+    "rxjs": "~7.8.0"
+  },
+  "dependencies": {
+    "tslib": "^2.3.0"
+  },
+  "scripts": {
+    "build": "node scripts/build.js production",
+    "build:dev": "node scripts/build.js development",
+    "test": "node scripts/test.js",
+    "test:watch": "node scripts/test.js --watch",
+    "test:coverage": "node scripts/test.js --coverage",
+    "test:build": "node scripts/test.js --build-test",
+    "validate": "node scripts/validate-package.js",
+    "lint": "ng lint criteria-builder",
+    "pack": "npm pack ../../dist/criteria-builder",
+    "deploy": "node scripts/deploy.js",
+    "deploy:dry-run": "node scripts/deploy.js --dry-run",
+    "prepublishOnly": "npm run build && npm run validate && npm run test:build",
+    "version": "npm run build && npm run validate"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "sideEffects": false,
+  "ng-update": {
+    "migrations": "./migrations/migration-collection.json"
+  },
+  "ng-add": {
+    "save": "dependencies"
+  }
+}

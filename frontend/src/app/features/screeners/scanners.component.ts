@@ -98,29 +98,24 @@ export class ScreenersComponent implements OnInit {
   }
 
   runScreener(screener: any) {
-    console.log('Running screener', screener);
     // Implementation for running a screener would go here
     screener.lastRun = new Date();
   }
 
   viewResults(screener: any) {
-    console.log('Viewing results for screener', screener);
     this.selectedScreener = screener;
     // Implementation for viewing screener results would go here
   }
 
   createScreener() {
-    console.log('Create screener');
     // Implementation for creating a new screener would go here
   }
 
   editScreener(screener: any) {
-    console.log('Edit screener', screener);
     // Implementation for editing a screener would go here
   }
 
   deleteScreener(screener: any) {
-    console.log('Delete screener', screener);
     // Implementation for deleting a screener would go here
   }
 }

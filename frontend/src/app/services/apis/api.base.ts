@@ -31,7 +31,6 @@ export class ApiService {
       
       return headers;
     } catch (error) {
-      console.warn('Error getting auth token, proceeding without authentication:', error);
       return new HttpHeaders();
     }
   }
@@ -117,7 +116,6 @@ export class ApiService {
    * @returns An Observable with the error
    */
   private handleError(error: any): Observable<never> {
-    console.error('API error', error);
     return throwError(() => error);
   }
 }

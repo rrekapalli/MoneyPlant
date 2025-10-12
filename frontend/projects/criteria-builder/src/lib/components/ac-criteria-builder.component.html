@@ -1,0 +1,145 @@
+<div class="ac-criteria-builder" 
+     [class.disabled]="disabled"
+     [class.loading]="isLoading"
+     [class.compact]="config.compactMode"
+     [class.high-contrast]="(accessibilityService.highContrastMode | async)"
+     [class.colorblind-mode]="(accessibilityService.colorBlindMode | async)"
+     [class.screen-reader-mode]="(accessibilityService.screenReaderMode | async)"
+     role="application"
+     [attr.aria-label]="'Criteria Builder'"
+     [attr.aria-describedby]="'criteria-builder-description'"
+     acAccessibilityKeyboard
+     [enableGlobalShortcuts]="true"
+     [enableTokenNavigation]="true"
+     (addCondition)="addCondition()"
+     (addGroup)="addGroup()"
+     (focusNext)="focusNextToken()"
+     (focusPrevious)="focusPreviousToken()"
+     (focusFirst)="focusFirstToken()"
+     (focusLast)="focusLastToken()">
+  
+  <!-- Hidden description for screen readers -->
+  <div id="criteria-builder-description" class="sr-only">
+    Interactive criteria builder for creating database queries. Use keyboard shortcuts: Ctrl+Enter to add condition, Ctrl+Shift+Enter to add group, arrow keys to navigate between tokens.
+  </div>
+  
+  <!-- Live announcer for screen reader updates -->
+  <ac-live-announcer></ac-live-announcer>
+  
+  <!-- Accessibility settings panel (can be toggled) -->
+  <ac-accessibility-settings 
+    *ngIf="showAccessibilitySettings"
+    class="accessibility-panel">
+  </ac-accessibility-settings>
+  
+  <!-- Loading State -->
+  @if (isLoading) {
+    <div class="loading-overlay" 
+         role="status" 
+         aria-live="polite"
+         [attr.aria-label]="'Loading criteria builder'">
+      <div class="loading-spinner">
+        <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+        <span>Loading criteria builder...</span>
+      </div>
+    </div>
+  }
+  
+  <!-- API Error Banner -->
+  @if (hasApiError) {
+    <div class="api-error-banner" 
+         role="alert"
+         [attr.aria-label]="'API Error: ' + apiErrorMessage">
+      <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+      <span>{{ apiErrorMessage }}. Using fallback data.</span>
+    </div>
+  }
+  
+  <!-- Builder Toolbar -->
+  <ac-builder-toolbar
+    [currentDSL]="currentDSL$ | async"
+    [mode]="mode$ | async"
+    [config]="config"
+    (modeChange)="setMode($event)"
+    (clearAll)="clearAll()"
+    (addCondition)="addCondition()"
+    (importDSL)="onImportDSL($event)"
+    (exportDSL)="onExportDSL()"
+    (sqlPreviewToggle)="onSqlPreviewToggle($event)">
+  </ac-builder-toolbar>
+  
+  <!-- Error Banner for Validation -->
+  <ac-error-banner
+    [validationResult]="validationResult$ | async"
+    [showDetails]="getCurrentMode() === 'advanced'"
+    [enablePartialValidation]="config.enablePartialValidation || true"
+    [debounceMs]="config.debounceMs || 200"
+    (errorHighlight)="onErrorHighlight($event)"
+    (warningHighlight)="onWarningHighlight($event)"
+    (clearHighlight)="onClearHighlight()"
+    (detailsToggle)="onErrorDetailsToggle($event)">
+  </ac-error-banner>
+  
+  <!-- Main Query Display Area -->
+  <div class="query-display-area" 
+       role="main"
+       [attr.aria-label]="'Query construction area'"
+       [attr.aria-describedby]="'query-help'">
+    
+    <!-- Hidden help text for screen readers -->
+    <div id="query-help" class="sr-only">
+      Use arrow keys to navigate between tokens. Press Enter or Space to edit a token. Press Delete to remove a token. Press F2 to open advanced editing.
+    </div>
+    
+    <ac-token-query-display
+      [dsl]="currentDSL$ | async"
+      [fields]="(fields$ | async) || []"
+      [functions]="(functions$ | async) || []"
+      [operators]="(operators$ | async) || []"
+      [config]="config"
+      [mode]="(mode$ | async) || 'simple'"
+      [disabled]="disabled"
+      (dslChange)="onDslChange($event)"
+      (tokenSelect)="onTokenSelect($event)"
+      (tokenEdit)="onTokenEdit($event)"
+      (tokenDelete)="onTokenDelete($event)"
+      (overlayOpen)="onOverlayOpen($event)">
+    </ac-token-query-display>
+    
+    <!-- Empty State Placeholder -->
+    @if ((tokenizedQuery$ | async)?.length === 0 && !isLoading) {
+      <div class="empty-state" 
+           role="region"
+           [attr.aria-label]="'Empty query state'">
+        <div class="empty-state-content">
+          <i class="pi pi-plus-circle" aria-hidden="true"></i>
+          <h3>No conditions defined</h3>
+          <p>Click the button below or press Ctrl+Enter to add your first condition</p>
+          <button type="button" 
+                  class="add-first-condition-btn"
+                  [disabled]="disabled"
+                  [attr.aria-describedby]="'add-condition-help'"
+                  (click)="addCondition()">
+            <i class="pi pi-plus" aria-hidden="true"></i>
+            Add Condition
+          </button>
+          <div id="add-condition-help" class="sr-only">
+            Keyboard shortcut: Ctrl+Enter
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+  
+  <!-- SQL Preview Panel -->
+  @if (config.showSqlPreview) {
+    <ac-sql-preview
+      [dsl]="currentDSL$ | async"
+      [isValid]="isValid$ | async"
+      [collapsed]="getCurrentMode() === 'simple'"
+      role="complementary"
+      [attr.aria-label]="'Generated SQL preview'">
+    </ac-sql-preview>
+  }
+  
+</div>

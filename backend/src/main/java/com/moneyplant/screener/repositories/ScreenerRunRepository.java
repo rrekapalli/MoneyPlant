@@ -80,4 +80,12 @@ public interface ScreenerRunRepository extends JpaRepository<ScreenerRun, Long> 
      * Finds runs by user ID.
      */
     List<ScreenerRun> findByTriggeredByUserIdOrderByStartedAtDesc(Long userId);
+
+    /**
+     * Finds criteria-based runs by screener ID (runs with DSL JSON).
+     */
+    @Query(value = "SELECT sr FROM ScreenerRun sr WHERE sr.screener.screenerId = :screenerId AND " +
+           "sr.screenerVersion.dslJson IS NOT NULL ORDER BY sr.startedAt DESC")
+    List<ScreenerRun> findCriteriaRunsByScreenerId(@Param("screenerId") Long screenerId, 
+                                                   Pageable pageable);
 }

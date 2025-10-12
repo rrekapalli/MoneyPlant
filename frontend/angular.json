@@ -36,72 +36,6 @@
         }
       }
     },
-    "superset-integration": {
-      "projectType": "library",
-      "root": "projects/superset-integration",
-      "sourceRoot": "projects/superset-integration/src",
-      "prefix": "lib",
-      "architect": {
-        "build": {
-          "builder": "@angular-devkit/build-angular:ng-packagr",
-          "options": {
-            "project": "projects/superset-integration/ng-package.json"
-          },
-          "configurations": {
-            "production": {
-              "tsConfig": "projects/superset-integration/tsconfig.lib.prod.json"
-            },
-            "development": {
-              "tsConfig": "projects/superset-integration/tsconfig.lib.json"
-            }
-          },
-          "defaultConfiguration": "production"
-        },
-        "test": {
-          "builder": "@angular-devkit/build-angular:karma",
-          "options": {
-            "tsConfig": "projects/superset-integration/tsconfig.spec.json",
-            "polyfills": [
-              "zone.js",
-              "zone.js/testing"
-            ]
-          }
-        }
-      }
-    },
-    "query-builder": {
-      "projectType": "library",
-      "root": "projects/query-builder",
-      "sourceRoot": "projects/query-builder/src",
-      "prefix": "lib",
-      "architect": {
-        "build": {
-          "builder": "@angular-devkit/build-angular:ng-packagr",
-          "options": {
-            "project": "projects/query-builder/ng-package.json"
-          },
-          "configurations": {
-            "production": {
-              "tsConfig": "projects/query-builder/tsconfig.lib.prod.json"
-            },
-            "development": {
-              "tsConfig": "projects/query-builder/tsconfig.lib.json"
-            }
-          },
-          "defaultConfiguration": "production"
-        },
-        "test": {
-          "builder": "@angular-devkit/build-angular:karma",
-          "options": {
-            "tsConfig": "projects/query-builder/tsconfig.spec.json",
-            "polyfills": [
-              "zone.js",
-              "zone.js/testing"
-            ]
-          }
-        }
-      }
-    },
     "money-plant-frontend": {
       "projectType": "application",
       "schematics": {
@@ -140,7 +74,10 @@
             "styles": [
               "src/styles.scss"
             ],
-            "scripts": []
+            "scripts": [],
+            "allowedCommonJsDependencies": [
+              "sockjs-client"
+            ]
           },
           "configurations": {
             "production": {
@@ -152,15 +89,20 @@
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "15kb",
-                  "maximumError": "30kb"
+                  "maximumWarning": "30kb",
+                  "maximumError": "50kb"
                 }
               ],
-              "outputHashing": "all",
-              "optimization": true,
+              "optimization": {
+                "scripts": true,
+                "styles": true,
+                "fonts": true
+              },
+              "outputHashing": "none",
               "namedChunks": false,
               "verbose": true,
-              "sourceMap": false
+              "sourceMap": false,
+              "extractLicenses": false,
             },
             "development": {
               "optimization": false,
@@ -205,6 +147,48 @@
               "src/styles.scss"
             ],
             "scripts": []
+          }
+        }
+      }
+    },
+    "criteria-builder": {
+      "projectType": "library",
+      "root": "projects/criteria-builder",
+      "sourceRoot": "projects/criteria-builder/src",
+      "prefix": "mp",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-angular:ng-packagr",
+          "options": {
+            "project": "projects/criteria-builder/ng-package.json"
+          },
+          "configurations": {
+            "production": {
+              "tsConfig": "projects/criteria-builder/tsconfig.lib.prod.json"
+            },
+            "development": {
+              "tsConfig": "projects/criteria-builder/tsconfig.lib.json"
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "test": {
+          "builder": "@angular-devkit/build-angular:karma",
+          "options": {
+            "tsConfig": "projects/criteria-builder/tsconfig.spec.json",
+            "polyfills": [
+              "zone.js",
+              "zone.js/testing"
+            ]
+          }
+        },
+        "lint": {
+          "builder": "@angular-eslint/builder:lint",
+          "options": {
+            "lintFilePatterns": [
+              "projects/criteria-builder/**/*.ts",
+              "projects/criteria-builder/**/*.html"
+            ]
           }
         }
       }

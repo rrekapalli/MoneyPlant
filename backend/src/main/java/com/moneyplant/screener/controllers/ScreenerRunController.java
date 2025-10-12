@@ -3,42 +3,52 @@ package com.moneyplant.screener.controllers;
 import com.moneyplant.screener.dtos.PageResp;
 import com.moneyplant.screener.dtos.RunCreateReq;
 import com.moneyplant.screener.dtos.RunResp;
+import com.moneyplant.screener.services.CurrentUserService;
 import com.moneyplant.screener.services.ScreenerRunService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
  * REST controller for screener run management.
+ * Integrates with existing screener security infrastructure including JWT authentication,
+ * rate limiting, and audit logging.
  */
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Screener Runs", description = "Screener run management operations")
+@SecurityRequirement(name = "bearerAuth")
+@PreAuthorize("isAuthenticated()")
+@Tag(name = "Screener Runs", description = "Screener run management operations")
 public class ScreenerRunController {
 
     private final ScreenerRunService screenerRunService;
+    private final CurrentUserService currentUserService;
 
     /**
-     * Creates a new screener run.
+     * Creates a new screener run with criteria DSL support.
      */
     @PostMapping("/screeners/{id}/runs")
-    @Operation(summary = "Create screener run", description = "Creates and executes a new screener run")
+    @Operation(summary = "Create screener run with criteria", description = "Creates and executes a new screener run with criteria DSL re-validation and enhanced monitoring")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Screener run created successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid request data"),
+            @ApiResponse(responseCode = "400", description = "Invalid request data or criteria validation failed"),
             @ApiResponse(responseCode = "403", description = "Access denied"),
             @ApiResponse(responseCode = "404", description = "Screener not found"),
             @ApiResponse(responseCode = "401", description = "Unauthorized")
@@ -47,7 +57,9 @@ public class ScreenerRunController {
             @Parameter(description = "Screener ID") @PathVariable Long id,
             @Valid @RequestBody RunCreateReq request) {
         log.info("Creating run for screener: {}", id);
-        RunResp response = screenerRunService.createRun(id, request);
+        
+        // Use enhanced criteria validation and monitoring
+        RunResp response = screenerRunService.executeRunWithCriteriaMonitoring(id, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -154,5 +166,62 @@ public class ScreenerRunController {
         log.info("Getting runs by user: {}", userId);
         List<RunResp> response = screenerRunService.getRunsByUser(userId);
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Gets criteria-based runs for a screener with enhanced monitoring.
+     */
+    @GetMapping("/screeners/{id}/criteria-runs")
+    @Operation(summary = "Get criteria runs", description = "Gets criteria-based runs for a screener with performance monitoring")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Criteria runs retrieved successfully"),
+            @ApiResponse(responseCode = "403", description = "Access denied"),
+            @ApiResponse(responseCode = "404", description = "Screener not found"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    public ResponseEntity<List<RunResp>> getCriteriaRuns(
+            @Parameter(description = "Screener ID") @PathVariable Long id,
+            @Parameter(description = "Maximum number of runs to return") @RequestParam(defaultValue = "50") int limit) {
+        log.info("Getting criteria runs for screener: {}, limit: {}", id, limit);
+        List<RunResp> response = screenerRunService.getCriteriaRuns(id, limit);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Gets performance metrics for criteria-based runs.
+     */
+    @GetMapping("/screeners/{id}/criteria-metrics")
+    @Operation(summary = "Get criteria performance metrics", description = "Gets performance metrics for criteria-based runs with execution statistics")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Criteria metrics retrieved successfully"),
+            @ApiResponse(responseCode = "403", description = "Access denied"),
+            @ApiResponse(responseCode = "404", description = "Screener not found"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    public ResponseEntity<Map<String, Object>> getCriteriaPerformanceMetrics(
+            @Parameter(description = "Screener ID") @PathVariable Long id) {
+        log.info("Getting criteria performance metrics for screener: {}", id);
+        Map<String, Object> response = screenerRunService.getCriteriaPerformanceMetrics(id);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Creates a run with enhanced criteria validation and detailed error reporting.
+     */
+    @PostMapping("/screeners/{id}/runs/validate")
+    @Operation(summary = "Create run with validation", description = "Creates a screener run with enhanced criteria validation and detailed error reporting")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Screener run created successfully"),
+            @ApiResponse(responseCode = "400", description = "Criteria validation failed with detailed errors"),
+            @ApiResponse(responseCode = "403", description = "Access denied"),
+            @ApiResponse(responseCode = "404", description = "Screener not found"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    public ResponseEntity<RunResp> createRunWithValidation(
+            @Parameter(description = "Screener ID") @PathVariable Long id,
+            @Valid @RequestBody RunCreateReq request) {
+        log.info("Creating run with enhanced validation for screener: {}", id);
+        RunResp response = screenerRunService.createRunWithCriteriaValidation(id, request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 }

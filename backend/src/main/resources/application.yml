@@ -38,6 +38,20 @@ management:
         include: health,info,metrics
   endpoint:
     health:
-      show-details: always 
+      show-details: always
+  health:
+    criteria:
+      enabled: true
+
+# Screener Criteria Configuration
+screener:
+  criteria:
+    validation:
+      max-group-depth: 10
+      max-conditions: 100
+      max-function-params: 10
+      enable-performance-warnings: true
+      complexity-warning-threshold: 50
+      strict-mode: false
 
  

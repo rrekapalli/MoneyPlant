@@ -16,7 +16,6 @@ function supportsUnicodePropertyEscapes(): boolean {
 
 // If Unicode property escapes are not supported, provide a basic polyfill
 if (!supportsUnicodePropertyEscapes()) {
-  console.warn('Unicode property escapes are not supported in this environment. Using basic polyfill.');
   
   // Store the original RegExp constructor
   const OriginalRegExp = RegExp;

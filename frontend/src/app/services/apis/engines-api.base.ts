@@ -32,7 +32,6 @@ export class EnginesApiService {
       
       return headers;
     } catch (error) {
-      console.warn('Error getting auth token, proceeding without authentication:', error);
       return new HttpHeaders();
     }
   }
@@ -118,8 +117,6 @@ export class EnginesApiService {
    * @returns An Observable that throws the error
    */
   private handleError(error: any): Observable<never> {
-    console.error('Engines API error:', error);
-    
     let errorMessage = 'An error occurred';
     
     if (error.error instanceof ErrorEvent) {
