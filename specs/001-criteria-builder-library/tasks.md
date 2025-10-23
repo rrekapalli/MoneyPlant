@@ -121,34 +121,34 @@ This document provides a bare minimum implementation task list for creating an A
 **Independent Test**: Create nested groups like "(Close > 100 AND Volume > 1000000)" and verify proper nesting.
 
 ### T026: Create Group Badge Component
-- [ ] T026 [P] [US2] Create GroupBadgeComponent for displaying logical groups in frontend/projects/criteria-builder/src/lib/components/badges/group-badge.component.ts
+- [x] T026 [P] [US2] Create GroupBadgeComponent for displaying logical groups in frontend/projects/criteria-builder/src/lib/components/badges/group-badge.component.ts
 
 ### T027: Implement Group Creation
-- [ ] T027 [US2] Implement group creation with AND/OR/NOT operators in MpCriteriaBuilderComponent in frontend/projects/criteria-builder/src/lib/components/mp-criteria-builder.component.ts
+- [x] T027 [US2] Implement group creation with AND/OR/NOT operators in MpCriteriaBuilderComponent in frontend/projects/criteria-builder/src/lib/components/mp-criteria-builder.component.ts
 
 ### T028: Implement Curly Brace Toggle
-- [ ] T028 [P] [US2] Implement curly brace toggle functionality in GroupBadgeComponent in frontend/projects/criteria-builder/src/lib/components/badges/group-badge.component.ts
+- [x] T028 [P] [US2] Implement curly brace toggle functionality in GroupBadgeComponent in frontend/projects/criteria-builder/src/lib/components/badges/group-badge.component.ts
 
 ### T029: Extend DSL Generation for Groups
-- [ ] T029 [US2] Extend DSL generation to handle nested groups in frontend/projects/criteria-builder/src/lib/services/criteria-serializer.service.ts
+- [x] T029 [US2] Extend DSL generation to handle nested groups in frontend/projects/criteria-builder/src/lib/services/criteria-serializer.service.ts
 
 ### T030: Extend SQL Generation for Groups
-- [ ] T030 [US2] Extend SQL generation to handle logical operators and parentheses in frontend/projects/criteria-builder/src/lib/services/criteria-serializer.service.ts
+- [x] T030 [US2] Extend SQL generation to handle logical operators and parentheses in frontend/projects/criteria-builder/src/lib/services/criteria-serializer.service.ts
 
 ### T031: Implement Group Validation
-- [ ] T031 [US2] Implement group structure validation in CriteriaValidationService in frontend/projects/criteria-builder/src/lib/services/criteria-validation.service.ts
+- [x] T031 [US2] Implement group structure validation in CriteriaValidationService in frontend/projects/criteria-builder/src/lib/services/criteria-validation.service.ts
 
 ### T032: Add Group Styling
-- [ ] T032 [US2] Add CSS styling for group badges and nesting in frontend/projects/criteria-builder/src/lib/components/badges/group-badge.component.scss
+- [x] T032 [US2] Add CSS styling for group badges and nesting in frontend/projects/criteria-builder/src/lib/components/badges/group-badge.component.scss
 
 ### T033: Implement Group Template
-- [ ] T033 [US2] Update template to render nested groups in frontend/projects/criteria-builder/src/lib/components/mp-criteria-builder.component.html
+- [x] T033 [US2] Update template to render nested groups in frontend/projects/criteria-builder/src/lib/components/mp-criteria-builder.component.html
 
 ### T034: Add Group Tests
-- [ ] T034 [US2] Add unit tests for group functionality in frontend/projects/criteria-builder/src/lib/components/mp-criteria-builder.component.spec.ts
+- [x] T034 [US2] Add unit tests for group functionality in frontend/projects/criteria-builder/src/lib/components/mp-criteria-builder.component.spec.ts
 
 ### T035: Implement Nesting Depth Validation
-- [ ] T035 [US2] Implement nesting depth validation (max 10 levels) in CriteriaValidationService in frontend/projects/criteria-builder/src/lib/services/criteria-validation.service.ts
+- [x] T035 [US2] Implement nesting depth validation (max 10 levels) in CriteriaValidationService in frontend/projects/criteria-builder/src/lib/services/criteria-validation.service.ts
 
 ## Phase 5: User Story 3 - Function Integration and Parameter Editing
 
