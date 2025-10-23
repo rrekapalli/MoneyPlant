@@ -7,13 +7,14 @@
   <div class="criteria-container">
     
     <!-- Mode selection -->
-    <div class="mode-selection" *ngIf="!readonly">
+    <div class="mode-selection" *ngIf="!readonly" role="radiogroup" aria-label="Criteria builder mode selection">
       <label>
         <input type="radio" 
                name="mode" 
                value="field" 
                [checked]="!isFunctionMode"
-               (change)="toggleFunctionMode()">
+               (change)="toggleFunctionMode()"
+               aria-describedby="mode-description">
         Field Mode
       </label>
       <label>
@@ -21,9 +22,13 @@
                name="mode" 
                value="function" 
                [checked]="isFunctionMode"
-               (change)="toggleFunctionMode()">
+               (change)="toggleFunctionMode()"
+               aria-describedby="mode-description">
         Function Mode
       </label>
+      <div id="mode-description" class="sr-only">
+        Select between field mode for simple conditions or function mode for technical analysis functions
+      </div>
     </div>
 
     <!-- Field selection dropdown -->
@@ -31,13 +36,18 @@
       <label for="field-select">Select Field:</label>
       <select id="field-select"
               (change)="onFieldSelected($event.target.value)"
-              [disabled]="isDisabledState">
+              [disabled]="isDisabledState"
+              aria-describedby="field-help"
+              aria-required="true">
         <option value="">Choose a field...</option>
         <option *ngFor="let field of fields"
                 [value]="field.id">
           {{ field.label }} ({{ field.dataType }})
         </option>
       </select>
+      <div id="field-help" class="sr-only">
+        Select a field to create a condition. Available fields include price, volume, and other stock data.
+      </div>
     </div>
 
     <!-- Function selection dropdown -->
@@ -45,13 +55,18 @@
       <label for="function-select">Select Function:</label>
       <select id="function-select"
               (change)="onFunctionSelected($event.target.value)"
-              [disabled]="isDisabledState">
+              [disabled]="isDisabledState"
+              aria-describedby="function-help"
+              aria-required="true">
         <option value="">Choose a function...</option>
         <option *ngFor="let function of functions"
                 [value]="function.id">
           {{ function.name }} - {{ function.description }}
         </option>
       </select>
+      <div id="function-help" class="sr-only">
+        Select a technical analysis function to create a condition. Available functions include moving averages, RSI, and other indicators.
+      </div>
     </div>
 
     <!-- Operator selection dropdown -->
@@ -121,8 +136,13 @@
     </div>
 
     <!-- Criteria display area -->
-    <div class="criteria-display">
-      <div class="criteria-badges" *ngIf="state.dsl">
+    <div class="criteria-display" 
+         role="region" 
+         aria-label="Criteria builder workspace"
+         aria-live="polite"
+         aria-describedby="criteria-help">
+      
+      <div class="criteria-badges" *ngIf="state.dsl" role="group" aria-label="Current criteria">
         <!-- Render root group with nested structure -->
         <mp-group-badge 
           [group]="state.dsl.root"
@@ -130,7 +150,9 @@
           [nestingLevel]="0"
           [disabled]="isDisabledState"
           [readonly]="readonly"
-          (badgeAction)="onGroupBadgeAction($event)">
+          (badgeAction)="onGroupBadgeAction($event)"
+          role="group"
+          aria-label="Root criteria group">
           
           <!-- Render children recursively -->
           <ng-container *ngFor="let child of state.dsl.root.children; trackBy: trackByElementId">
@@ -144,20 +166,26 @@
                    (dragover)="onDragOver($event)"
                    (dragenter)="onDragEnter($event, child)"
                    (dragleave)="onDragLeave($event)"
-                   (drop)="onDrop($event, child)">
+                   (drop)="onDrop($event, child)"
+                   role="group"
+                   aria-label="Condition: {{ getFieldFromCondition(child)?.label }} {{ child.operator }} {{ child.right?.value }}">
                 
                 <mp-field-badge 
                   [field]="getFieldFromCondition(child)"
                   [disabled]="isDisabledState"
                   [readonly]="readonly"
-                  (badgeAction)="onBadgeAction($event)">
+                  (badgeAction)="onBadgeAction($event)"
+                  role="button"
+                  tabindex="0">
                 </mp-field-badge>
                 
                 <mp-operator-badge 
                   [operator]="child.operator"
                   [disabled]="isDisabledState"
                   [readonly]="readonly"
-                  (badgeAction)="onBadgeAction($event)">
+                  (badgeAction)="onBadgeAction($event)"
+                  role="button"
+                  tabindex="0">
                 </mp-operator-badge>
                 
                 <mp-value-badge 
@@ -165,7 +193,9 @@
                   [literal]="child.right"
                   [disabled]="isDisabledState"
                   [readonly]="readonly"
-                  (badgeAction)="onBadgeAction($event)">
+                  (badgeAction)="onBadgeAction($event)"
+                  role="button"
+                  tabindex="0">
                 </mp-value-badge>
               </div>
               
@@ -183,7 +213,9 @@
                 (dragover)="onDragOver($event)"
                 (dragenter)="onDragEnter($event, child)"
                 (dragleave)="onDragLeave($event)"
-                (drop)="onDrop($event, child)">
+                (drop)="onDrop($event, child)"
+                role="group"
+                [attr.aria-label]="'Nested ' + child.operator + ' group'">
                 
                 <!-- Recursively render nested group children -->
                 <ng-container *ngFor="let nestedChild of child.children; trackBy: trackByElementId">
@@ -197,20 +229,26 @@
                          (dragover)="onDragOver($event)"
                          (dragenter)="onDragEnter($event, nestedChild)"
                          (dragleave)="onDragLeave($event)"
-                         (drop)="onDrop($event, nestedChild)">
+                         (drop)="onDrop($event, nestedChild)"
+                         role="group"
+                         aria-label="Nested condition: {{ getFieldFromCondition(nestedChild)?.label }} {{ nestedChild.operator }} {{ nestedChild.right?.value }}">
                       
                       <mp-field-badge 
                         [field]="getFieldFromCondition(nestedChild)"
                         [disabled]="isDisabledState"
                         [readonly]="readonly"
-                        (badgeAction)="onBadgeAction($event)">
+                        (badgeAction)="onBadgeAction($event)"
+                        role="button"
+                        tabindex="0">
                       </mp-field-badge>
                       
                       <mp-operator-badge 
                         [operator]="nestedChild.operator"
                         [disabled]="isDisabledState"
                         [readonly]="readonly"
-                        (badgeAction)="onBadgeAction($event)">
+                        (badgeAction)="onBadgeAction($event)"
+                        role="button"
+                        tabindex="0">
                       </mp-operator-badge>
                       
                       <mp-value-badge 
@@ -218,7 +256,9 @@
                         [literal]="nestedChild.right"
                         [disabled]="isDisabledState"
                         [readonly]="readonly"
-                        (badgeAction)="onBadgeAction($event)">
+                        (badgeAction)="onBadgeAction($event)"
+                        role="button"
+                        tabindex="0">
                       </mp-value-badge>
                     </div>
                     
@@ -234,20 +274,25 @@
         </mp-group-badge>
       </div>
       
-      <div class="empty-state" *ngIf="!state.dsl">
+      <div class="empty-state" *ngIf="!state.dsl" role="status" aria-live="polite">
         <p>No criteria defined yet. Select a field, operator, and value to get started.</p>
+      </div>
+      
+      <div id="criteria-help" class="sr-only">
+        This is the criteria builder workspace. You can drag and drop elements to reorganize them. Use keyboard shortcuts for quick actions.
       </div>
     </div>
 
     <!-- Action buttons -->
-    <div class="action-buttons" *ngIf="!readonly">
+    <div class="action-buttons" *ngIf="!readonly" role="toolbar" aria-label="Criteria builder actions">
       <!-- Undo/Redo buttons -->
-      <div class="undo-redo-buttons" *ngIf="config.enableUndo">
+      <div class="undo-redo-buttons" *ngIf="config.enableUndo" role="group" aria-label="Undo and redo actions">
         <button type="button" 
                 (click)="undo()"
                 [disabled]="isDisabledState || !canUndo()"
                 class="btn btn-outline-secondary"
-                title="Undo (Ctrl+Z)">
+                title="Undo (Ctrl+Z)"
+                aria-label="Undo last action">
           ↶ Undo
         </button>
         
@@ -255,7 +300,8 @@
                 (click)="redo()"
                 [disabled]="isDisabledState || !canRedo()"
                 class="btn btn-outline-secondary"
-                title="Redo (Ctrl+Y)">
+                title="Redo (Ctrl+Y)"
+                aria-label="Redo last undone action">
           ↷ Redo
         </button>
       </div>
@@ -264,7 +310,8 @@
               (click)="addCondition()"
               [disabled]="isDisabledState || !selectedField || !selectedOperator || inputValue === null"
               class="btn btn-primary"
-              *ngIf="!isFunctionMode">
+              *ngIf="!isFunctionMode"
+              aria-label="Add condition with selected field, operator, and value">
         Add Condition
       </button>
       
@@ -272,35 +319,40 @@
               (click)="addFunctionCall()"
               [disabled]="isDisabledState || !selectedFunction"
               class="btn btn-primary"
-              *ngIf="isFunctionMode">
+              *ngIf="isFunctionMode"
+              aria-label="Add function call with configured parameters">
         Add Function Call
       </button>
       
       <button type="button" 
               (click)="addGroup('AND')"
               [disabled]="isDisabledState"
-              class="btn btn-info">
+              class="btn btn-info"
+              aria-label="Add AND group for combining conditions">
         Add AND Group
       </button>
       
       <button type="button" 
               (click)="addGroup('OR')"
               [disabled]="isDisabledState"
-              class="btn btn-warning">
+              class="btn btn-warning"
+              aria-label="Add OR group for alternative conditions">
         Add OR Group
       </button>
       
       <button type="button" 
               (click)="addGroup('NOT')"
               [disabled]="isDisabledState"
-              class="btn btn-danger">
+              class="btn btn-danger"
+              aria-label="Add NOT group for negating conditions">
         Add NOT Group
       </button>
       
       <button type="button" 
               (click)="clearCriteria()"
               [disabled]="isDisabledState || !state.dsl"
-              class="btn btn-secondary">
+              class="btn btn-secondary"
+              aria-label="Clear all criteria">
         Clear All
       </button>
     </div>
