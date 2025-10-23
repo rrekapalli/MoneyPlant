@@ -18,12 +18,13 @@ description: "Task list template for feature implementation"
 - **[Story]**: Which user story this task belongs to (e.g., US1, US2, US3)
 - Include exact file paths in descriptions
 
-## Path Conventions
+## Path Conventions (MoneyPlant Architecture)
 
-- **Single project**: `src/`, `tests/` at repository root
-- **Web app**: `backend/src/`, `frontend/src/`
-- **Mobile**: `api/src/`, `ios/src/` or `android/src/`
-- Paths shown below assume single project - adjust based on plan.md structure
+- **Backend**: `backend/src/main/java/com/moneyplant/{module}/`, `backend/src/test/java/`
+- **Engines**: `engines/src/main/java/com/moneyplant/engines/{service}/`, `engines/src/test/java/`
+- **Frontend**: `frontend/src/app/{feature}/`, `frontend/projects/dashboards/`
+- **Tests**: Module-specific test directories following Spring Boot conventions
+- **Configuration**: `backend/src/main/resources/`, `engines/src/main/resources/`
 
 <!-- 
   ============================================================================
@@ -60,14 +61,18 @@ description: "Task list template for feature implementation"
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-Examples of foundational tasks (adjust based on your project):
+Examples of foundational tasks for MoneyPlant (adjust based on your feature):
 
-- [ ] T004 Setup database schema and migrations framework
-- [ ] T005 [P] Implement authentication/authorization framework
-- [ ] T006 [P] Setup API routing and middleware structure
-- [ ] T007 Create base models/entities that all stories depend on
-- [ ] T008 Configure error handling and logging infrastructure
-- [ ] T009 Setup environment configuration management
+- [ ] T004 Setup Spring Boot Modulith module structure with package-info.java
+- [ ] T005 [P] Implement Microsoft OAuth2 authentication integration
+- [ ] T006 [P] Setup API routing with versioning (/api/v{version}/{module}/{resource})
+- [ ] T007 Create base entities extending BaseAuditEntity for audit trails
+- [ ] T008 Configure global exception handling and structured logging
+- [ ] T009 Setup environment configuration management (application.yml)
+- [ ] T010 [P] Configure OpenAPI/Swagger documentation for all endpoints
+- [ ] T011 Setup Kafka messaging for real-time data processing
+- [ ] T012 Configure PostgreSQL database with JPA/Hibernate
+- [ ] T013 Setup Redis caching layer for performance optimization
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
@@ -83,17 +88,20 @@ Examples of foundational tasks (adjust based on your project):
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T010 [P] [US1] Contract test for [endpoint] in tests/contract/test_[name].py
-- [ ] T011 [P] [US1] Integration test for [user journey] in tests/integration/test_[name].py
+- [ ] T010 [P] [US1] Unit test for [Service] in backend/src/test/java/com/moneyplant/[module]/services/[Service]Test.java
+- [ ] T011 [P] [US1] Integration test for [Controller] in backend/src/test/java/com/moneyplant/[module]/controllers/[Controller]IntegrationTest.java
+- [ ] T012 [P] [US1] Contract test for [endpoint] in backend/src/test/java/com/moneyplant/[module]/contracts/[Contract]Test.java
 
 ### Implementation for User Story 1
 
-- [ ] T012 [P] [US1] Create [Entity1] model in src/models/[entity1].py
-- [ ] T013 [P] [US1] Create [Entity2] model in src/models/[entity2].py
-- [ ] T014 [US1] Implement [Service] in src/services/[service].py (depends on T012, T013)
-- [ ] T015 [US1] Implement [endpoint/feature] in src/[location]/[file].py
-- [ ] T016 [US1] Add validation and error handling
-- [ ] T017 [US1] Add logging for user story 1 operations
+- [ ] T012 [P] [US1] Create [Entity1] entity in backend/src/main/java/com/moneyplant/[module]/entities/[Entity1].java
+- [ ] T013 [P] [US1] Create [Entity2] entity in backend/src/main/java/com/moneyplant/[module]/entities/[Entity2].java
+- [ ] T014 [US1] Implement [Service] in backend/src/main/java/com/moneyplant/[module]/services/[Service].java (depends on T012, T013)
+- [ ] T015 [US1] Implement [Controller] in backend/src/main/java/com/moneyplant/[module]/controllers/[Controller].java
+- [ ] T016 [US1] Add validation annotations and custom exception handling
+- [ ] T017 [US1] Add structured logging for user story 1 operations
+- [ ] T018 [US1] Create frontend service in frontend/src/app/services/[service].service.ts
+- [ ] T019 [US1] Implement Angular component in frontend/src/app/features/[feature]/[component].component.ts
 
 **Checkpoint**: At this point, User Story 1 should be fully functional and testable independently
 

@@ -31,7 +31,30 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+### Modular Monolith Compliance
+- [ ] Feature MUST fit within existing Spring Boot Modulith boundaries (core, portfolio, stock, transaction, watchlist, screener)
+- [ ] Module boundaries MUST be enforced through package-info.java annotations
+- [ ] Inter-module communication MUST use defined API contracts
+
+### Authentication & Security Compliance
+- [ ] Feature MUST integrate with Microsoft OAuth2 authentication
+- [ ] All API endpoints MUST validate JWT tokens
+- [ ] Sensitive data MUST be properly encrypted and secured
+
+### API Design Compliance
+- [ ] All endpoints MUST follow /api/v{version}/{module}/{resource} pattern
+- [ ] OpenAPI/Swagger documentation REQUIRED for all REST endpoints
+- [ ] Frontend integration MUST use dedicated service layers
+
+### Testing Compliance
+- [ ] Unit tests MUST achieve minimum 80% code coverage
+- [ ] Integration tests REQUIRED for all API endpoints
+- [ ] Contract tests REQUIRED for inter-module communication
+
+### Technology Stack Compliance
+- [ ] Backend: Java 21, Spring Boot 3.3.0, PostgreSQL, Kafka
+- [ ] Frontend: Angular 20, PrimeNG 20, Azure MSAL
+- [ ] Engines: Apache Spark, Hudi/Iceberg, Trino
 
 ## Project Structure
 
@@ -47,52 +70,43 @@ specs/[###-feature]/
 └── tasks.md             # Phase 2 output (/speckit.tasks command - NOT created by /speckit.plan)
 ```
 
-### Source Code (repository root)
-<!--
-  ACTION REQUIRED: Replace the placeholder tree below with the concrete layout
-  for this feature. Delete unused options and expand the chosen structure with
-  real paths (e.g., apps/admin, packages/something). The delivered plan must
-  not include Option labels.
--->
+### Source Code (MoneyPlant Architecture)
 
 ```text
-# [REMOVE IF UNUSED] Option 1: Single project (DEFAULT)
-src/
-├── models/
-├── services/
-├── cli/
-└── lib/
-
-tests/
-├── contract/
-├── integration/
-└── unit/
-
-# [REMOVE IF UNUSED] Option 2: Web application (when "frontend" + "backend" detected)
+# MoneyPlant Three-Tier Architecture
 backend/
-├── src/
-│   ├── models/
-│   ├── services/
-│   └── api/
-└── tests/
+├── src/main/java/com/moneyplant/
+│   ├── core/           # Authentication, security, common utilities
+│   ├── portfolio/      # Portfolio management and analytics
+│   ├── stock/          # Stock data and market information
+│   ├── transaction/    # Trade processing and validation
+│   ├── watchlist/      # User watchlist management
+│   ├── screener/       # Advanced stock screening
+│   └── index/          # Index data and operations
+├── src/test/java/      # Unit and integration tests
+└── src/main/resources/ # Configuration files
+
+engines/
+├── src/main/java/com/moneyplant/engines/
+│   ├── backtest/       # Strategy backtesting services
+│   ├── ingestion/      # Market data ingestion
+│   ├── query/          # Data querying and analytics
+│   ├── screener/       # Market screening services
+│   ├── storage/        # Data storage and management
+│   └── strategy/       # Strategy management services
+└── src/test/java/      # Engine-specific tests
 
 frontend/
-├── src/
-│   ├── components/
-│   ├── pages/
-│   └── services/
-└── tests/
-
-# [REMOVE IF UNUSED] Option 3: Mobile + API (when "iOS/Android" detected)
-api/
-└── [same as backend above]
-
-ios/ or android/
-└── [platform-specific structure: feature modules, UI flows, platform tests]
+├── src/app/
+│   ├── features/       # Feature modules (portfolio, stock, etc.)
+│   ├── services/       # API service layers
+│   ├── shared/         # Shared components and utilities
+│   └── core/           # Core application logic
+├── projects/dashboards/ # Dashboard-specific components
+└── src/assets/         # Static assets and configurations
 ```
 
-**Structure Decision**: [Document the selected structure and reference the real
-directories captured above]
+**Structure Decision**: MoneyPlant uses a three-tier architecture with Spring Boot Modulith backend, separate data processing engines, and Angular frontend. Each tier has clear responsibilities and communicates through well-defined APIs.
 
 ## Complexity Tracking
 
