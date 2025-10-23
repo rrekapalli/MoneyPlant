@@ -1,0 +1,104 @@
+<!-- MpCriteriaBuilderComponent Template -->
+<div class="mp-criteria-builder" 
+     [class.disabled]="isDisabledState"
+     [class.readonly]="readonly">
+  
+  <!-- Main criteria builder area -->
+  <div class="criteria-container">
+    
+    <!-- Field selection dropdown -->
+    <div class="field-selection" *ngIf="hasFields && !readonly">
+      <label for="field-select">Select Field:</label>
+      <select id="field-select" 
+              (change)="onFieldSelected($event.target.value)"
+              [disabled]="isDisabledState">
+        <option value="">Choose a field...</option>
+        <option *ngFor="let field of fields" 
+                [value]="field.id">
+          {{ field.label }}
+        </option>
+      </select>
+    </div>
+
+    <!-- Operator selection dropdown -->
+    <div class="operator-selection" *ngIf="hasFields && !readonly">
+      <label for="operator-select">Select Operator:</label>
+      <select id="operator-select" 
+              (change)="onOperatorSelected($event.target.value)"
+              [disabled]="isDisabledState">
+        <option value="">Choose an operator...</option>
+        <!-- TODO: Populate based on selected field type -->
+      </select>
+    </div>
+
+    <!-- Value input -->
+    <div class="value-input" *ngIf="hasFields && !readonly">
+      <label for="value-input">Enter Value:</label>
+      <input id="value-input" 
+             type="text"
+             (input)="onValueChanged($event.target.value)"
+             [disabled]="isDisabledState"
+             placeholder="Enter value...">
+    </div>
+
+    <!-- Criteria display area -->
+    <div class="criteria-display">
+      <div class="criteria-badges" *ngIf="state.dsl">
+        <!-- TODO: Render badges for field-operator-value combinations -->
+        <div class="badge-container">
+          <span class="badge-placeholder">Criteria will be displayed here</span>
+        </div>
+      </div>
+      
+      <div class="empty-state" *ngIf="!state.dsl">
+        <p>No criteria defined yet. Select a field, operator, and value to get started.</p>
+      </div>
+    </div>
+
+    <!-- Action buttons -->
+    <div class="action-buttons" *ngIf="!readonly">
+      <button type="button" 
+              (click)="addCondition()"
+              [disabled]="isDisabledState"
+              class="btn btn-primary">
+        Add Condition
+      </button>
+      
+      <button type="button" 
+              (click)="clearCriteria()"
+              [disabled]="isDisabledState || !state.dsl"
+              class="btn btn-secondary">
+        Clear All
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Validation status -->
+  <div class="validation-status" *ngIf="validationResult">
+    <div class="validation-errors" *ngIf="!validationResult.isValid">
+      <h4>Validation Errors:</h4>
+      <ul>
+        <li *ngFor="let error of validationResult.errors">
+          {{ error.message }}
+        </li>
+      </ul>
+    </div>
+    
+    <div class="validation-warnings" *ngIf="validationResult.warnings.length > 0">
+      <h4>Warnings:</h4>
+      <ul>
+        <li *ngFor="let warning of validationResult.warnings">
+          {{ warning.message }}
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- SQL Preview -->
+  <div class="sql-preview" *ngIf="config.showSqlPreview && sqlPreview">
+    <h4>SQL Preview:</h4>
+    <pre class="sql-code">{{ sqlPreview }}</pre>
+  </div>
+
+</div>
