@@ -359,6 +359,48 @@
 
   </div>
 
+  <!-- Error and success messages -->
+  <div class="message-container" *ngIf="hasErrors() || hasWarnings() || hasSuccess()">
+    
+    <!-- Error messages -->
+    <div class="error-messages" *ngIf="hasErrors()" role="alert" aria-live="assertive">
+      <h4>Errors:</h4>
+      <ul>
+        <li *ngFor="let error of getErrorMessages()" class="error-message">
+          {{ error }}
+        </li>
+      </ul>
+    </div>
+
+    <!-- Warning messages -->
+    <div class="warning-messages" *ngIf="hasWarnings()" role="alert" aria-live="polite">
+      <h4>Warnings:</h4>
+      <ul>
+        <li *ngFor="let warning of getWarningMessages()" class="warning-message">
+          {{ warning }}
+        </li>
+      </ul>
+    </div>
+
+    <!-- Success messages -->
+    <div class="success-messages" *ngIf="hasSuccess()" role="status" aria-live="polite">
+      <h4>Success:</h4>
+      <ul>
+        <li *ngFor="let success of getSuccessMessages()" class="success-message">
+          {{ success }}
+        </li>
+      </ul>
+    </div>
+
+    <!-- Clear messages button -->
+    <button type="button" 
+            (click)="clearMessages()"
+            class="btn btn-sm btn-outline-secondary"
+            aria-label="Clear all messages">
+      Clear Messages
+    </button>
+  </div>
+
   <!-- Validation status -->
   <div class="validation-status" *ngIf="validationResult">
     <div class="validation-errors" *ngIf="!validationResult.isValid">

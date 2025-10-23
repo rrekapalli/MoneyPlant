@@ -264,6 +264,92 @@ export class MpCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
     }, 500);
   }
 
+  // Error handling and user feedback
+  private errorMessages: string[] = [];
+  private warningMessages: string[] = [];
+  private successMessages: string[] = [];
+
+  addError(message: string): void {
+    this.errorMessages.push(message);
+    this.markForCheck();
+  }
+
+  addWarning(message: string): void {
+    this.warningMessages.push(message);
+    this.markForCheck();
+  }
+
+  addSuccess(message: string): void {
+    this.successMessages.push(message);
+    this.markForCheck();
+  }
+
+  clearMessages(): void {
+    this.errorMessages = [];
+    this.warningMessages = [];
+    this.successMessages = [];
+    this.markForCheck();
+  }
+
+  getErrorMessages(): string[] {
+    return [...this.errorMessages];
+  }
+
+  getWarningMessages(): string[] {
+    return [...this.warningMessages];
+  }
+
+  getSuccessMessages(): string[] {
+    return [...this.successMessages];
+  }
+
+  hasErrors(): boolean {
+    return this.errorMessages.length > 0;
+  }
+
+  hasWarnings(): boolean {
+    return this.warningMessages.length > 0;
+  }
+
+  hasSuccess(): boolean {
+    return this.successMessages.length > 0;
+  }
+
+  // Error handling for common operations
+  private handleError(error: any, context: string): void {
+    console.error(`Error in ${context}:`, error);
+    
+    let errorMessage = 'An unexpected error occurred';
+    
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    } else if (typeof error === 'string') {
+      errorMessage = error;
+    } else if (error?.message) {
+      errorMessage = error.message;
+    }
+    
+    this.addError(`${context}: ${errorMessage}`);
+  }
+
+  private handleValidationError(error: any): void {
+    if (error?.errors) {
+      error.errors.forEach((err: any) => {
+        this.addError(err.message || 'Validation error');
+      });
+    } else {
+      this.addError('Validation failed');
+    }
+  }
+
+  private handleNetworkError(error: any): void {
+    this.addError('Network error: Unable to connect to server');
+  }
+
+  private handleTimeoutError(error: any): void {
+    this.addError('Request timeout: Please try again');
+  }
+
   // ControlValueAccessor implementation
   writeValue(value: CriteriaDSL | null): void {
     this.state.dsl = value;
@@ -627,56 +713,72 @@ export class MpCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
 
   // Action methods
   addCondition(): void {
-    if (!this.selectedField || !this.selectedOperator || this.inputValue === null) {
-      return;
+    try {
+      if (!this.selectedField || !this.selectedOperator || this.inputValue === null) {
+        this.addWarning('Please select a field, operator, and value before adding a condition');
+        return;
+      }
+
+      // Save current state to undo stack
+      this.saveToUndoStack();
+
+      const condition: Condition = {
+        id: this.generateId(),
+        left: {
+          field: this.selectedField.id,
+          id: this.generateId()
+        } as FieldRef,
+        operator: this.selectedOperator as any,
+        right: this.createLiteralFromValue(this.inputValue, this.selectedField.dataType)
+      };
+
+      this.addConditionToDSL(condition);
+      this.clearCurrentSelection();
+      this.addSuccess('Condition added successfully');
+    } catch (error) {
+      this.handleError(error, 'Adding condition');
     }
-
-    // Save current state to undo stack
-    this.saveToUndoStack();
-
-    const condition: Condition = {
-      id: this.generateId(),
-      left: {
-        field: this.selectedField.id,
-        id: this.generateId()
-      } as FieldRef,
-      operator: this.selectedOperator as any,
-      right: this.createLiteralFromValue(this.inputValue, this.selectedField.dataType)
-    };
-
-    this.addConditionToDSL(condition);
-    this.clearCurrentSelection();
   }
 
   addGroup(operator: LogicalOperator = 'AND'): void {
-    // Save current state to undo stack
-    this.saveToUndoStack();
+    try {
+      // Save current state to undo stack
+      this.saveToUndoStack();
 
-    const newGroup = this.criteriaSerializer.createGroup(operator);
-    
-    if (!this.state.dsl) {
-      // Create new DSL with the group
-      this.state.dsl = this.criteriaSerializer.generateDSLFromGroup(newGroup);
-    } else {
-      // Add group to existing root
-      const updatedRoot = this.criteriaSerializer.addGroupToGroup(this.state.dsl.root, newGroup);
-      this.state.dsl = this.criteriaSerializer.generateDSLFromGroup(updatedRoot);
+      const newGroup = this.criteriaSerializer.createGroup(operator);
+      
+      if (!this.state.dsl) {
+        // Create new DSL with the group
+        this.state.dsl = this.criteriaSerializer.generateDSLFromGroup(newGroup);
+      } else {
+        // Add group to existing root
+        const updatedRoot = this.criteriaSerializer.addGroupToGroup(this.state.dsl.root, newGroup);
+        this.state.dsl = this.criteriaSerializer.generateDSLFromGroup(updatedRoot);
+      }
+
+      this.updateValidity();
+      this.emitChange();
+      this.requestValidation();
+      this.requestSQLPreview();
+      this.addSuccess(`${operator} group added successfully`);
+    } catch (error) {
+      this.handleError(error, 'Adding group');
     }
-
-    this.updateValidity();
-    this.emitChange();
-    this.requestValidation();
-    this.requestSQLPreview();
   }
 
   clearCriteria(): void {
-    // Save current state to undo stack
-    this.saveToUndoStack();
+    try {
+      // Save current state to undo stack
+      this.saveToUndoStack();
 
-    this.state.dsl = this.criteriaSerializer.generateDSL([]);
-    this.updateValidity();
-    this.emitChange();
-    this.clearCurrentSelection();
+      this.state.dsl = this.criteriaSerializer.generateDSL([]);
+      this.updateValidity();
+      this.emitChange();
+      this.clearCurrentSelection();
+      this.addSuccess('All criteria cleared');
+    } catch (error) {
+      this.handleError(error, 'Clearing criteria');
+    }
   }
 
   // Group manipulation methods
