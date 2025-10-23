@@ -157,25 +157,25 @@ This document provides a bare minimum implementation task list for creating an A
 **Independent Test**: Create function calls like "SMA(Close, 20) > 50" and verify parameter validation and SQL generation.
 
 ### T036: Create Function Badge Component
-- [ ] T036 [P] [US3] Create FunctionBadgeComponent for displaying function calls in frontend/projects/criteria-builder/src/lib/components/badges/function-badge.component.ts
+- [x] T036 [P] [US3] Create FunctionBadgeComponent for displaying function calls in frontend/projects/criteria-builder/src/lib/components/badges/function-badge.component.ts
 
 ### T037: Implement Function Selection
-- [ ] T037 [US3] Implement function selection dropdown in MpCriteriaBuilderComponent in frontend/projects/criteria-builder/src/lib/components/mp-criteria-builder.component.ts
+- [x] T037 [US3] Implement function selection dropdown in MpCriteriaBuilderComponent in frontend/projects/criteria-builder/src/lib/components/mp-criteria-builder.component.ts
 
 ### T038: Implement Parameter Configuration
-- [ ] T038 [US3] Implement parameter configuration for function calls in FunctionBadgeComponent in frontend/projects/criteria-builder/src/lib/components/badges/function-badge.component.ts
+- [x] T038 [US3] Implement parameter configuration for function calls in FunctionBadgeComponent in frontend/projects/criteria-builder/src/lib/components/badges/function-badge.component.ts
 
 ### T039: Extend DSL Generation for Functions
-- [ ] T039 [US3] Extend DSL generation to handle function calls in frontend/projects/criteria-builder/src/lib/services/criteria-serializer.service.ts
+- [x] T039 [US3] Extend DSL generation to handle function calls in frontend/projects/criteria-builder/src/lib/services/criteria-serializer.service.ts
 
 ### T040: Extend SQL Generation for Functions
-- [ ] T040 [US3] Extend SQL generation to handle function SQL templates in frontend/projects/criteria-builder/src/lib/services/criteria-serializer.service.ts
+- [x] T040 [US3] Extend SQL generation to handle function SQL templates in frontend/projects/criteria-builder/src/lib/services/criteria-serializer.service.ts
 
 ### T041: Implement Function Validation
-- [ ] T041 [US3] Implement function parameter validation in CriteriaValidationService in frontend/projects/criteria-builder/src/lib/services/criteria-validation.service.ts
+- [x] T041 [US3] Implement function parameter validation in CriteriaValidationService in frontend/projects/criteria-builder/src/lib/services/criteria-validation.service.ts
 
 ### T042: Add Function Tests
-- [ ] T042 [US3] Add unit tests for function functionality in frontend/projects/criteria-builder/src/lib/components/mp-criteria-builder.component.spec.ts
+- [x] T042 [US3] Add unit tests for function functionality in frontend/projects/criteria-builder/src/lib/components/mp-criteria-builder.component.spec.ts
 
 ## Phase 6: User Story 4 - Interactive Badge Management
 
