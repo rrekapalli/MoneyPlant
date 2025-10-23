@@ -3,12 +3,13 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 
 // Import interfaces and types
-import { CriteriaDSL, FieldMeta, FunctionMeta, ValidationResult, Condition, FieldRef, Literal } from '../models/criteria.models';
+import { CriteriaDSL, FieldMeta, FunctionMeta, ValidationResult, Condition, FieldRef, Literal, Group } from '../models/criteria.models';
 import { CriteriaConfig, CriteriaBuilderState } from '../models/config.models';
 import { CriteriaChangeEvent, BadgeActionEvent } from '../models/event.models';
 import { DEFAULT_CONFIG, OPERATORS_BY_FIELD_TYPE } from '../utils/constants';
 import { CriteriaSerializerService } from '../services/criteria-serializer.service';
 import { CriteriaValidationService } from '../services/criteria-validation.service';
+import { LogicalOperator } from '../types/criteria.types';
 
 @Component({
   selector: 'mp-criteria-builder',
@@ -163,11 +164,146 @@ export class MpCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
     this.clearCurrentSelection();
   }
 
+  addGroup(operator: LogicalOperator = 'AND'): void {
+    const newGroup = this.criteriaSerializer.createGroup(operator);
+    
+    if (!this.state.dsl) {
+      // Create new DSL with the group
+      this.state.dsl = this.criteriaSerializer.generateDSLFromGroup(newGroup);
+    } else {
+      // Add group to existing root
+      const updatedRoot = this.criteriaSerializer.addGroupToGroup(this.state.dsl.root, newGroup);
+      this.state.dsl = this.criteriaSerializer.generateDSLFromGroup(updatedRoot);
+    }
+
+    this.updateValidity();
+    this.emitChange();
+    this.requestValidation();
+    this.requestSQLPreview();
+  }
+
   clearCriteria(): void {
     this.state.dsl = this.criteriaSerializer.generateDSL([]);
     this.updateValidity();
     this.emitChange();
     this.clearCurrentSelection();
+  }
+
+  // Group manipulation methods
+  addConditionToGroup(groupId: string): void {
+    if (!this.selectedField || !this.selectedOperator || this.inputValue === null) {
+      return;
+    }
+
+    const condition: Condition = {
+      id: this.generateId(),
+      left: {
+        field: this.selectedField.id,
+        id: this.generateId()
+      } as FieldRef,
+      operator: this.selectedOperator as any,
+      right: this.createLiteralFromValue(this.inputValue, this.selectedField.dataType)
+    };
+
+    this.addConditionToSpecificGroup(groupId, condition);
+    this.clearCurrentSelection();
+  }
+
+  addGroupToGroup(parentGroupId: string, operator: LogicalOperator = 'AND'): void {
+    const newGroup = this.criteriaSerializer.createGroup(operator);
+    this.addGroupToSpecificGroup(parentGroupId, newGroup);
+  }
+
+  removeElement(elementId: string): void {
+    if (!this.state.dsl) return;
+
+    const updatedRoot = this.removeElementFromGroup(this.state.dsl.root, elementId);
+    this.state.dsl = this.criteriaSerializer.generateDSLFromGroup(updatedRoot);
+
+    this.updateValidity();
+    this.emitChange();
+    this.requestValidation();
+    this.requestSQLPreview();
+  }
+
+  toggleGroupCollapse(groupId: string): void {
+    // This would be handled by the GroupBadgeComponent directly
+    // The component can emit events that the parent can listen to
+  }
+
+  private addConditionToSpecificGroup(groupId: string, condition: Condition): void {
+    if (!this.state.dsl) return;
+
+    const updatedRoot = this.addConditionToGroupById(this.state.dsl.root, groupId, condition);
+    this.state.dsl = this.criteriaSerializer.generateDSLFromGroup(updatedRoot);
+
+    this.updateValidity();
+    this.emitChange();
+    this.requestValidation();
+    this.requestSQLPreview();
+  }
+
+  private addGroupToSpecificGroup(parentGroupId: string, childGroup: Group): void {
+    if (!this.state.dsl) return;
+
+    const updatedRoot = this.addGroupToGroupById(this.state.dsl.root, parentGroupId, childGroup);
+    this.state.dsl = this.criteriaSerializer.generateDSLFromGroup(updatedRoot);
+
+    this.updateValidity();
+    this.emitChange();
+    this.requestValidation();
+    this.requestSQLPreview();
+  }
+
+  private addConditionToGroupById(group: Group, targetGroupId: string, condition: Condition): Group {
+    if (group.id === targetGroupId) {
+      return this.criteriaSerializer.addConditionToGroup(group, condition);
+    }
+
+    return {
+      ...group,
+      children: (group.children || []).map(child => {
+        if (this.isGroup(child)) {
+          return this.addConditionToGroupById(child, targetGroupId, condition);
+        }
+        return child;
+      })
+    };
+  }
+
+  private addGroupToGroupById(group: Group, targetGroupId: string, childGroup: Group): Group {
+    if (group.id === targetGroupId) {
+      return this.criteriaSerializer.addGroupToGroup(group, childGroup);
+    }
+
+    return {
+      ...group,
+      children: (group.children || []).map(child => {
+        if (this.isGroup(child)) {
+          return this.addGroupToGroupById(child, targetGroupId, childGroup);
+        }
+        return child;
+      })
+    };
+  }
+
+  private removeElementFromGroup(group: Group, elementId: string): Group {
+    return {
+      ...group,
+      children: (group.children || []).map(child => {
+        if (child.id === elementId) {
+          return null; // Mark for removal
+        }
+        if (this.isGroup(child)) {
+          return this.removeElementFromGroup(child, elementId);
+        }
+        return child;
+      }).filter(child => child !== null) as (Condition | Group)[]
+    };
+  }
+
+  private isCondition(obj: any): obj is Condition {
+    return obj && typeof obj === 'object' && 'left' in obj && 'operator' in obj;
   }
 
   private addConditionToDSL(condition: Condition): void {
@@ -312,5 +448,51 @@ export class MpCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
       default:
         return 'Enter value...';
     }
+  }
+
+  // Template utility methods
+  trackByElementId(index: number, element: any): string {
+    return element.id || index.toString();
+  }
+
+  getElementType(element: any): string {
+    if (this.isCondition(element)) {
+      return 'condition';
+    } else if (this.isGroup(element)) {
+      return 'group';
+    }
+    return 'unknown';
+  }
+
+  getFieldFromCondition(condition: Condition): FieldMeta | null {
+    if (!condition.left || !this.isFieldRef(condition.left)) {
+      return null;
+    }
+    
+    return this.fields.find(f => f.id === condition.left.field) || null;
+  }
+
+  onGroupBadgeAction(event: BadgeActionEvent): void {
+    switch (event.action) {
+      case 'add':
+        if (event.data?.type === 'condition') {
+          this.addConditionToGroup(event.badgeId);
+        } else if (event.data?.type === 'group') {
+          this.addGroupToGroup(event.badgeId, 'AND');
+        }
+        break;
+      case 'delete':
+        this.removeElement(event.badgeId);
+        break;
+      case 'toggle':
+        // Handle group collapse/expand
+        break;
+      default:
+        this.badgeAction.emit(event);
+    }
+  }
+
+  private isFieldRef(obj: any): obj is FieldRef {
+    return obj && typeof obj === 'object' && 'field' in obj;
   }
 }

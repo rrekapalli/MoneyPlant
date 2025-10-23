@@ -47,10 +47,93 @@
     <!-- Criteria display area -->
     <div class="criteria-display">
       <div class="criteria-badges" *ngIf="state.dsl">
-        <!-- TODO: Render badges for field-operator-value combinations -->
-        <div class="badge-container">
-          <span class="badge-placeholder">Criteria will be displayed here</span>
-        </div>
+        <!-- Render root group with nested structure -->
+        <mp-group-badge 
+          [group]="state.dsl.root"
+          [isNested]="false"
+          [nestingLevel]="0"
+          [disabled]="isDisabledState"
+          [readonly]="readonly"
+          (badgeAction)="onGroupBadgeAction($event)">
+          
+          <!-- Render children recursively -->
+          <ng-container *ngFor="let child of state.dsl.root.children; trackBy: trackByElementId">
+            <ng-container [ngSwitch]="getElementType(child)">
+              
+              <!-- Render condition -->
+              <div *ngSwitchCase="'condition'" class="condition-container">
+                <mp-field-badge 
+                  [field]="getFieldFromCondition(child)"
+                  [disabled]="isDisabledState"
+                  [readonly]="readonly"
+                  (badgeAction)="onBadgeAction($event)">
+                </mp-field-badge>
+                
+                <mp-operator-badge 
+                  [operator]="child.operator"
+                  [disabled]="isDisabledState"
+                  [readonly]="readonly"
+                  (badgeAction)="onBadgeAction($event)">
+                </mp-operator-badge>
+                
+                <mp-value-badge 
+                  *ngIf="child.right"
+                  [literal]="child.right"
+                  [disabled]="isDisabledState"
+                  [readonly]="readonly"
+                  (badgeAction)="onBadgeAction($event)">
+                </mp-value-badge>
+              </div>
+              
+              <!-- Render nested group -->
+              <mp-group-badge 
+                *ngSwitchCase="'group'"
+                [group]="child"
+                [isNested]="true"
+                [nestingLevel]="1"
+                [disabled]="isDisabledState"
+                [readonly]="readonly"
+                (badgeAction)="onGroupBadgeAction($event)">
+                
+                <!-- Recursively render nested group children -->
+                <ng-container *ngFor="let nestedChild of child.children; trackBy: trackByElementId">
+                  <ng-container [ngSwitch]="getElementType(nestedChild)">
+                    
+                    <!-- Nested condition -->
+                    <div *ngSwitchCase="'condition'" class="condition-container">
+                      <mp-field-badge 
+                        [field]="getFieldFromCondition(nestedChild)"
+                        [disabled]="isDisabledState"
+                        [readonly]="readonly"
+                        (badgeAction)="onBadgeAction($event)">
+                      </mp-field-badge>
+                      
+                      <mp-operator-badge 
+                        [operator]="nestedChild.operator"
+                        [disabled]="isDisabledState"
+                        [readonly]="readonly"
+                        (badgeAction)="onBadgeAction($event)">
+                      </mp-operator-badge>
+                      
+                      <mp-value-badge 
+                        *ngIf="nestedChild.right"
+                        [literal]="nestedChild.right"
+                        [disabled]="isDisabledState"
+                        [readonly]="readonly"
+                        (badgeAction)="onBadgeAction($event)">
+                      </mp-value-badge>
+                    </div>
+                    
+                    <!-- Deeper nested groups would be handled recursively -->
+                    <!-- For now, limit to 2 levels for simplicity -->
+                    
+                  </ng-container>
+                </ng-container>
+              </mp-group-badge>
+              
+            </ng-container>
+          </ng-container>
+        </mp-group-badge>
       </div>
       
       <div class="empty-state" *ngIf="!state.dsl">
@@ -65,6 +148,27 @@
               [disabled]="isDisabledState"
               class="btn btn-primary">
         Add Condition
+      </button>
+      
+      <button type="button" 
+              (click)="addGroup('AND')"
+              [disabled]="isDisabledState"
+              class="btn btn-info">
+        Add AND Group
+      </button>
+      
+      <button type="button" 
+              (click)="addGroup('OR')"
+              [disabled]="isDisabledState"
+              class="btn btn-warning">
+        Add OR Group
+      </button>
+      
+      <button type="button" 
+              (click)="addGroup('NOT')"
+              [disabled]="isDisabledState"
+              class="btn btn-danger">
+        Add NOT Group
       </button>
       
       <button type="button" 
