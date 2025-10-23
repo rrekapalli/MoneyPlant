@@ -32,19 +32,19 @@ This document provides a bare minimum implementation task list for creating an A
 ## Phase 1: Setup (Project Initialization)
 
 ### T001: Create Angular Library Structure
-- [ ] T001 Create project structure in frontend/projects/criteria-builder per implementation plan
+- [x] T001 Create project structure in frontend/projects/criteria-builder per implementation plan
 
 ### T002: Configure ng-packagr
-- [ ] T002 Configure ng-packagr for library packaging in frontend/projects/criteria-builder/ng-package.json
+- [x] T002 Configure ng-packagr for library packaging in frontend/projects/criteria-builder/ng-package.json
 
 ### T003: Setup Package Dependencies
-- [ ] T003 Configure package.json with Angular 20, PrimeNG 20, Angular CDK dependencies in frontend/projects/criteria-builder/package.json
+- [x] T003 Configure package.json with Angular 20, PrimeNG 20, Angular CDK dependencies in frontend/projects/criteria-builder/package.json
 
 ### T004: Create Module Structure
-- [ ] T004 Create MpCriteriaBuilderModule with proper imports and exports in frontend/projects/criteria-builder/src/lib/criteria-builder.module.ts
+- [x] T004 Create MpCriteriaBuilderModule with proper imports and exports in frontend/projects/criteria-builder/src/lib/criteria-builder.module.ts
 
 ### T005: Setup Public API
-- [ ] T005 Create public-api.ts with component and interface exports in frontend/projects/criteria-builder/src/public-api.ts
+- [x] T005 Create public-api.ts with component and interface exports in frontend/projects/criteria-builder/src/public-api.ts
 
 ## Phase 2: Foundational (Blocking Prerequisites)
 
