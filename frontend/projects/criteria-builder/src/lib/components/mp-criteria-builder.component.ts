@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, forwardRef } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, forwardRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 
@@ -15,6 +15,7 @@ import { LogicalOperator } from '../types/criteria.types';
   selector: 'mp-criteria-builder',
   templateUrl: './mp-criteria-builder.component.html',
   styleUrls: ['./mp-criteria-builder.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,
@@ -82,7 +83,8 @@ export class MpCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
 
   constructor(
     private criteriaSerializer: CriteriaSerializerService,
-    private criteriaValidator: CriteriaValidationService
+    private criteriaValidator: CriteriaValidationService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -203,11 +205,71 @@ export class MpCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
     }
   }
 
+  // Performance optimization methods
+  private markForCheck(): void {
+    this.cdr.markForCheck();
+  }
+
+  private detectChanges(): void {
+    this.cdr.detectChanges();
+  }
+
+  private markDirty(): void {
+    this.cdr.markForCheck();
+  }
+
+  // Lazy loading and memoization
+  private fieldCache = new Map<string, FieldMeta>();
+  private functionCache = new Map<string, FunctionMeta>();
+
+  getFieldById(id: string): FieldMeta | undefined {
+    if (!this.fieldCache.has(id)) {
+      const field = this.fields.find(f => f.id === id);
+      if (field) {
+        this.fieldCache.set(id, field);
+      }
+    }
+    return this.fieldCache.get(id);
+  }
+
+  getFunctionById(id: string): FunctionMeta | undefined {
+    if (!this.functionCache.has(id)) {
+      const func = this.functions.find(f => f.id === id);
+      if (func) {
+        this.functionCache.set(id, func);
+      }
+    }
+    return this.functionCache.get(id);
+  }
+
+  // Debounced validation
+  private validationTimeout: any;
+  private debouncedValidation(): void {
+    if (this.validationTimeout) {
+      clearTimeout(this.validationTimeout);
+    }
+    this.validationTimeout = setTimeout(() => {
+      this.requestValidation();
+    }, 300);
+  }
+
+  // Debounced SQL preview
+  private sqlTimeout: any;
+  private debouncedSQLPreview(): void {
+    if (this.sqlTimeout) {
+      clearTimeout(this.sqlTimeout);
+    }
+    this.sqlTimeout = setTimeout(() => {
+      this.requestSQLPreview();
+    }, 500);
+  }
+
   // ControlValueAccessor implementation
   writeValue(value: CriteriaDSL | null): void {
     this.state.dsl = value;
     this.updateValidity();
     this.emitChange();
+    this.markForCheck();
   }
 
   registerOnChange(fn: (value: CriteriaDSL | null) => void): void {
@@ -220,6 +282,7 @@ export class MpCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
 
   setDisabledState(isDisabled: boolean): void {
     this.isDisabled = isDisabled;
+    this.markForCheck();
   }
 
   // Component methods
@@ -240,26 +303,31 @@ export class MpCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
       this.selectedField = null;
       this.selectedOperator = null;
       this.availableOperators = [];
+      this.markForCheck();
       return;
     }
 
-    this.selectedField = this.fields.find(f => f.id === fieldId) || null;
+    this.selectedField = this.getFieldById(fieldId) || null;
     if (this.selectedField) {
       this.availableOperators = OPERATORS_BY_FIELD_TYPE[this.selectedField.dataType] || [];
       this.selectedOperator = null; // Reset operator when field changes
     }
+    this.markForCheck();
   }
 
   onOperatorSelected(operator: string): void {
     this.selectedOperator = operator || null;
+    this.markForCheck();
   }
 
   onValueChanged(value: any): void {
     this.inputValue = value;
+    this.markForCheck();
   }
 
   onBadgeAction(event: BadgeActionEvent): void {
     this.badgeAction.emit(event);
+    this.markForCheck();
   }
 
   // Function selection methods
