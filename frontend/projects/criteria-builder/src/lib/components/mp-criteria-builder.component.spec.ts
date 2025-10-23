@@ -261,4 +261,169 @@ describe('MpCriteriaBuilderComponent', () => {
     component.setDisabledState(true);
     expect(component.isDisabledState).toBeTrue();
   });
+
+  // Group functionality tests
+  describe('Group Functionality', () => {
+    it('should add AND group', () => {
+      spyOn(component, 'emitChange');
+      spyOn(component, 'requestValidation');
+      spyOn(component, 'requestSQLPreview');
+      
+      component.addGroup('AND');
+      
+      expect(component.state.dsl).toBeTruthy();
+      expect(component.state.dsl?.root.operator).toBe('AND');
+      expect(component.state.dsl?.root.children).toEqual([]);
+      expect(component.emitChange).toHaveBeenCalled();
+    });
+
+    it('should add OR group', () => {
+      spyOn(component, 'emitChange');
+      
+      component.addGroup('OR');
+      
+      expect(component.state.dsl?.root.operator).toBe('OR');
+    });
+
+    it('should add NOT group', () => {
+      spyOn(component, 'emitChange');
+      
+      component.addGroup('NOT');
+      
+      expect(component.state.dsl?.root.operator).toBe('NOT');
+    });
+
+    it('should add condition to specific group', () => {
+      // Create initial group
+      component.addGroup('AND');
+      const groupId = component.state.dsl?.root.id;
+      
+      // Set up condition data
+      component.selectedField = mockFields[0];
+      component.selectedOperator = '>';
+      component.inputValue = '100';
+      
+      spyOn(component, 'emitChange');
+      
+      component.addConditionToGroup(groupId!);
+      
+      expect(component.state.dsl?.root.children.length).toBe(1);
+      expect(component.selectedField).toBeNull(); // Should be cleared
+    });
+
+    it('should add group to specific group', () => {
+      // Create initial group
+      component.addGroup('AND');
+      const parentGroupId = component.state.dsl?.root.id;
+      
+      spyOn(component, 'emitChange');
+      
+      component.addGroupToGroup(parentGroupId!, 'OR');
+      
+      expect(component.state.dsl?.root.children.length).toBe(1);
+      const childGroup = component.state.dsl?.root.children[0] as any;
+      expect(childGroup.operator).toBe('OR');
+    });
+
+    it('should remove element from group', () => {
+      // Create group with condition
+      component.addGroup('AND');
+      const groupId = component.state.dsl?.root.id;
+      
+      component.selectedField = mockFields[0];
+      component.selectedOperator = '>';
+      component.inputValue = '100';
+      component.addConditionToGroup(groupId!);
+      
+      const conditionId = component.state.dsl?.root.children[0].id;
+      
+      spyOn(component, 'emitChange');
+      
+      component.removeElement(conditionId!);
+      
+      expect(component.state.dsl?.root.children.length).toBe(0);
+    });
+
+    it('should handle group badge actions', () => {
+      component.addGroup('AND');
+      const groupId = component.state.dsl?.root.id;
+      
+      spyOn(component, 'addConditionToGroup');
+      spyOn(component, 'addGroupToGroup');
+      spyOn(component, 'removeElement');
+      
+      // Test add condition action
+      const addConditionEvent = {
+        action: 'add',
+        badgeId: groupId!,
+        badgeType: 'group-badge',
+        data: { type: 'condition', groupId: groupId }
+      };
+      
+      component.onGroupBadgeAction(addConditionEvent);
+      expect(component.addConditionToGroup).toHaveBeenCalledWith(groupId);
+      
+      // Test add group action
+      const addGroupEvent = {
+        action: 'add',
+        badgeId: groupId!,
+        badgeType: 'group-badge',
+        data: { type: 'group', groupId: groupId }
+      };
+      
+      component.onGroupBadgeAction(addGroupEvent);
+      expect(component.addGroupToGroup).toHaveBeenCalledWith(groupId, 'AND');
+      
+      // Test delete action
+      const deleteEvent = {
+        action: 'delete',
+        badgeId: groupId!,
+        badgeType: 'group-badge',
+        data: {}
+      };
+      
+      component.onGroupBadgeAction(deleteEvent);
+      expect(component.removeElement).toHaveBeenCalledWith(groupId);
+    });
+
+    it('should track elements by ID', () => {
+      const mockElement1 = { id: 'test1' };
+      const mockElement2 = { id: 'test2' };
+      
+      expect(component.trackByElementId(0, mockElement1)).toBe('test1');
+      expect(component.trackByElementId(1, mockElement2)).toBe('test2');
+    });
+
+    it('should detect element types correctly', () => {
+      const condition = { left: {}, operator: '>' };
+      const group = { operator: 'AND', children: [] };
+      const unknown = { someProperty: 'value' };
+      
+      expect(component.getElementType(condition)).toBe('condition');
+      expect(component.getElementType(group)).toBe('group');
+      expect(component.getElementType(unknown)).toBe('unknown');
+    });
+
+    it('should get field from condition', () => {
+      const condition = {
+        left: { field: 'close' },
+        operator: '>',
+        right: { value: 100, type: 'NUMBER' }
+      };
+      
+      const field = component.getFieldFromCondition(condition);
+      expect(field).toEqual(mockFields[0]);
+    });
+
+    it('should return null for invalid condition', () => {
+      const invalidCondition = {
+        left: null,
+        operator: '>',
+        right: { value: 100, type: 'NUMBER' }
+      };
+      
+      const field = component.getFieldFromCondition(invalidCondition);
+      expect(field).toBeNull();
+    });
+  });
 });
