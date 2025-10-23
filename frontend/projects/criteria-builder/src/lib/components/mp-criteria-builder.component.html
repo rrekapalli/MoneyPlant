@@ -15,30 +15,33 @@
         <option value="">Choose a field...</option>
         <option *ngFor="let field of fields" 
                 [value]="field.id">
-          {{ field.label }}
+          {{ field.label }} ({{ field.dataType }})
         </option>
       </select>
     </div>
 
     <!-- Operator selection dropdown -->
-    <div class="operator-selection" *ngIf="hasFields && !readonly">
+    <div class="operator-selection" *ngIf="hasFields && !readonly && selectedField">
       <label for="operator-select">Select Operator:</label>
       <select id="operator-select" 
               (change)="onOperatorSelected($event.target.value)"
               [disabled]="isDisabledState">
         <option value="">Choose an operator...</option>
-        <!-- TODO: Populate based on selected field type -->
+        <option *ngFor="let operator of availableOperators" 
+                [value]="operator">
+          {{ getOperatorLabel(operator) }}
+        </option>
       </select>
     </div>
 
     <!-- Value input -->
-    <div class="value-input" *ngIf="hasFields && !readonly">
+    <div class="value-input" *ngIf="hasFields && !readonly && selectedField && selectedOperator">
       <label for="value-input">Enter Value:</label>
       <input id="value-input" 
-             type="text"
+             [type]="getInputType(selectedField.dataType)"
              (input)="onValueChanged($event.target.value)"
              [disabled]="isDisabledState"
-             placeholder="Enter value...">
+             [placeholder]="getInputPlaceholder(selectedField.dataType)">
     </div>
 
     <!-- Criteria display area -->
