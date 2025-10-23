@@ -49,19 +49,19 @@ This document provides a bare minimum implementation task list for creating an A
 ## Phase 2: Foundational (Blocking Prerequisites)
 
 ### T006: Create Core Data Models
-- [ ] T006 Implement core data interfaces (CriteriaDSL, FieldMeta, FunctionMeta) in frontend/projects/criteria-builder/src/lib/models/criteria.models.ts
+- [x] T006 Implement core data interfaces (CriteriaDSL, FieldMeta, FunctionMeta) in frontend/projects/criteria-builder/src/lib/models/criteria.models.ts
 
 ### T007: Create Configuration Interfaces
-- [ ] T007 Implement configuration interfaces (CriteriaConfig, ValidationResult) in frontend/projects/criteria-builder/src/lib/models/config.models.ts
+- [x] T007 Implement configuration interfaces (CriteriaConfig, ValidationResult) in frontend/projects/criteria-builder/src/lib/models/config.models.ts
 
 ### T008: Create Event Interfaces
-- [ ] T008 Implement event interfaces (BadgeActionEvent, CriteriaChangeEvent) in frontend/projects/criteria-builder/src/lib/models/event.models.ts
+- [x] T008 Implement event interfaces (BadgeActionEvent, CriteriaChangeEvent) in frontend/projects/criteria-builder/src/lib/models/event.models.ts
 
 ### T009: Create Constants and Utilities
-- [ ] T009 Implement constants (DEFAULT_CONFIG, OPERATORS_BY_FIELD_TYPE) in frontend/projects/criteria-builder/src/lib/utils/constants.ts
+- [x] T009 Implement constants (DEFAULT_CONFIG, OPERATORS_BY_FIELD_TYPE) in frontend/projects/criteria-builder/src/lib/utils/constants.ts
 
 ### T010: Create Type Definitions
-- [ ] T010 Implement type definitions (FieldType, Operator, LogicalOperator) in frontend/projects/criteria-builder/src/lib/types/criteria.types.ts
+- [x] T010 Implement type definitions (FieldType, Operator, LogicalOperator) in frontend/projects/criteria-builder/src/lib/types/criteria.types.ts
 
 ## Phase 3: User Story 1 - Basic Criteria Creation (MVP)
 
