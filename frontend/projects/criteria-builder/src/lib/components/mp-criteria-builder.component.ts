@@ -11,6 +11,74 @@ import { CriteriaSerializerService } from '../services/criteria-serializer.servi
 import { CriteriaValidationService } from '../services/criteria-validation.service';
 import { LogicalOperator } from '../types/criteria.types';
 
+/**
+ * MpCriteriaBuilderComponent - A comprehensive criteria builder for creating complex screening conditions
+ * 
+ * This component provides a visual interface for building criteria using fields, operators, values,
+ * functions, and logical groupings (AND, OR, NOT). It supports both simple field-based conditions
+ * and complex technical analysis functions with parameter configuration.
+ * 
+ * Features:
+ * - Field-based condition creation (e.g., "close > 100")
+ * - Function-based condition creation (e.g., "SMA(close, 20) > 50")
+ * - Logical grouping with AND, OR, NOT operators
+ * - Drag and drop functionality for reorganizing criteria
+ * - Undo/redo support with keyboard shortcuts
+ * - Real-time validation and SQL preview generation
+ * - Accessibility support with ARIA labels and keyboard navigation
+ * - Performance optimizations with OnPush change detection
+ * - Comprehensive error handling and user feedback
+ * 
+ * @example
+ * ```html
+ * <mp-criteria-builder
+ *   [fields]="availableFields"
+ *   [functions]="availableFunctions"
+ *   [config]="criteriaConfig"
+ *   [initialValue]="existingCriteria"
+ *   [disabled]="false"
+ *   [readonly]="false"
+ *   (dslChange)="onCriteriaChange($event)"
+ *   (validityChange)="onValidityChange($event)"
+ *   (validationRequest)="onValidationRequest($event)"
+ *   (sqlRequest)="onSQLRequest($event)"
+ *   (badgeAction)="onBadgeAction($event)">
+ * </mp-criteria-builder>
+ * ```
+ * 
+ * @example
+ * ```typescript
+ * // Basic usage
+ * const criteriaConfig: CriteriaConfig = {
+ *   enableUndo: true,
+ *   maxNestingDepth: 10,
+ *   validationTimeout: 300,
+ *   sqlTimeout: 500
+ * };
+ * 
+ * const availableFields: FieldMeta[] = [
+ *   { id: 'close', label: 'Close Price', dataType: 'NUMBER' },
+ *   { id: 'volume', label: 'Volume', dataType: 'NUMBER' }
+ * ];
+ * 
+ * const availableFunctions: FunctionMeta[] = [
+ *   { 
+ *     id: 'SMA', 
+ *     name: 'Simple Moving Average', 
+ *     description: 'Calculate SMA',
+ *     parameters: [
+ *       { name: 'field', type: 'FIELD', optional: false },
+ *       { name: 'period', type: 'INTEGER', optional: false, min: 1, max: 200 }
+ *     ],
+ *     returnType: 'NUMBER'
+ *   }
+ * ];
+ * ```
+ * 
+ * @author MoneyPlant Team
+ * @version 1.0.0
+ * @since 2024-01-01
+ */
 @Component({
   selector: 'mp-criteria-builder',
   templateUrl: './mp-criteria-builder.component.html',
@@ -27,20 +95,44 @@ import { LogicalOperator } from '../types/criteria.types';
 export class MpCriteriaBuilderComponent implements ControlValueAccessor, OnInit, OnDestroy {
   
   // Input properties (all data from parent)
+  /** Available fields for creating conditions */
   @Input() fields: FieldMeta[] = [];
+  
+  /** Available functions for creating function-based conditions */
   @Input() functions: FunctionMeta[] = [];
+  
+  /** Current validation result from parent component */
   @Input() validationResult?: ValidationResult;
+  
+  /** SQL preview from parent component */
   @Input() sqlPreview?: string;
+  
+  /** Configuration options for the criteria builder */
   @Input() config: CriteriaConfig = DEFAULT_CONFIG;
+  
+  /** Initial value to populate the criteria builder */
   @Input() initialValue?: CriteriaDSL;
+  
+  /** Whether the component is disabled */
   @Input() disabled = false;
+  
+  /** Whether the component is in readonly mode */
   @Input() readonly = false;
 
   // Output events
+  /** Emitted when the DSL changes */
   @Output() dslChange = new EventEmitter<CriteriaDSL>();
+  
+  /** Emitted when the validity state changes */
   @Output() validityChange = new EventEmitter<boolean>();
+  
+  /** Emitted when validation is requested */
   @Output() validationRequest = new EventEmitter<CriteriaDSL>();
+  
+  /** Emitted when SQL preview is requested */
   @Output() sqlRequest = new EventEmitter<CriteriaDSL>();
+  
+  /** Emitted when a badge action occurs */
   @Output() badgeAction = new EventEmitter<BadgeActionEvent>();
 
   // Component state
@@ -81,12 +173,21 @@ export class MpCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
   private draggedElement: any = null;
   private dropTarget: any = null;
 
+  /**
+   * Constructor for MpCriteriaBuilderComponent
+   * @param criteriaSerializer - Service for serializing criteria to DSL
+   * @param criteriaValidator - Service for validating criteria
+   * @param cdr - Change detector reference for performance optimization
+   */
   constructor(
     private criteriaSerializer: CriteriaSerializerService,
     private criteriaValidator: CriteriaValidationService,
     private cdr: ChangeDetectorRef
   ) {}
 
+  /**
+   * Initialize the component and set up keyboard shortcuts
+   */
   ngOnInit(): void {
     // Initialize with initial value if provided
     if (this.initialValue) {
@@ -97,16 +198,26 @@ export class MpCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
     this.setupKeyboardShortcuts();
   }
 
+  /**
+   * Clean up resources when component is destroyed
+   */
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
   }
 
   // Keyboard shortcuts functionality
+  /**
+   * Set up global keyboard shortcuts for the criteria builder
+   */
   private setupKeyboardShortcuts(): void {
     document.addEventListener('keydown', (event) => this.handleKeyboardShortcut(event));
   }
 
+  /**
+   * Handle keyboard shortcuts for the criteria builder
+   * @param event - The keyboard event
+   */
   private handleKeyboardShortcut(event: KeyboardEvent): void {
     // Only handle shortcuts when component is focused or when Ctrl/Cmd is pressed
     if (!this.isComponentFocused() && !event.ctrlKey && !event.metaKey) {
@@ -174,22 +285,35 @@ export class MpCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
     }
   }
 
+  /**
+   * Check if the component is currently focused
+   * @returns True if the component is focused
+   */
   private isComponentFocused(): boolean {
     // Check if any element within the component is focused
     const componentElement = document.querySelector('mp-criteria-builder');
     return componentElement?.contains(document.activeElement) || false;
   }
 
+  /**
+   * Save the current criteria (placeholder for future implementation)
+   */
   private saveCriteria(): void {
     // Emit save event to parent
     this.dslChange.emit(this.state.dsl!);
   }
 
+  /**
+   * Select all criteria elements (placeholder for future implementation)
+   */
   private selectAll(): void {
     // Select all criteria elements
     this.state.selectedBadgeId = 'all';
   }
 
+  /**
+   * Duplicate the selected criteria element (placeholder for future implementation)
+   */
   private duplicateSelected(): void {
     // Duplicate selected criteria
     if (this.state.selectedBadgeId) {
@@ -198,6 +322,9 @@ export class MpCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
     }
   }
 
+  /**
+   * Delete the selected criteria element (placeholder for future implementation)
+   */
   private deleteSelected(): void {
     // Delete selected criteria
     if (this.state.selectedBadgeId && this.state.selectedBadgeId !== 'all') {
@@ -206,14 +333,23 @@ export class MpCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
   }
 
   // Performance optimization methods
+  /**
+   * Mark component for change detection
+   */
   private markForCheck(): void {
     this.cdr.markForCheck();
   }
 
+  /**
+   * Trigger change detection
+   */
   private detectChanges(): void {
     this.cdr.detectChanges();
   }
 
+  /**
+   * Mark component as dirty
+   */
   private markDirty(): void {
     this.cdr.markForCheck();
   }
@@ -222,6 +358,11 @@ export class MpCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
   private fieldCache = new Map<string, FieldMeta>();
   private functionCache = new Map<string, FunctionMeta>();
 
+  /**
+   * Get field by ID with memoization
+   * @param id - The field ID
+   * @returns The field metadata
+   */
   getFieldById(id: string): FieldMeta | undefined {
     if (!this.fieldCache.has(id)) {
       const field = this.fields.find(f => f.id === id);
@@ -232,6 +373,11 @@ export class MpCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
     return this.fieldCache.get(id);
   }
 
+  /**
+   * Get function by ID with memoization
+   * @param id - The function ID
+   * @returns The function metadata
+   */
   getFunctionById(id: string): FunctionMeta | undefined {
     if (!this.functionCache.has(id)) {
       const func = this.functions.find(f => f.id === id);
@@ -351,6 +497,10 @@ export class MpCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
   }
 
   // ControlValueAccessor implementation
+  /**
+   * Write value from form control
+   * @param value - The criteria DSL value
+   */
   writeValue(value: CriteriaDSL | null): void {
     this.state.dsl = value;
     this.updateValidity();
@@ -358,32 +508,54 @@ export class MpCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
     this.markForCheck();
   }
 
+  /**
+   * Register change callback
+   * @param fn - The change callback function
+   */
   registerOnChange(fn: (value: CriteriaDSL | null) => void): void {
     this.onChange = fn;
   }
 
+  /**
+   * Register touched callback
+   * @param fn - The touched callback function
+   */
   registerOnTouched(fn: () => void): void {
     this.onTouched = fn;
   }
 
+  /**
+   * Set disabled state
+   * @param isDisabled - Whether the component is disabled
+   */
   setDisabledState(isDisabled: boolean): void {
     this.isDisabled = isDisabled;
     this.markForCheck();
   }
 
   // Component methods
+  /**
+   * Update validity state
+   */
   private updateValidity(): void {
     // Basic validation - check if DSL has a root group
     this.state.isValid = this.state.dsl?.root ? true : false;
     this.validityChange.emit(this.state.isValid);
   }
 
+  /**
+   * Emit change event
+   */
   private emitChange(): void {
     this.onChange(this.state.dsl);
     this.dslChange.emit(this.state.dsl!);
   }
 
   // Event handlers
+  /**
+   * Handle field selection
+   * @param fieldId - The ID of the selected field
+   */
   onFieldSelected(fieldId: string): void {
     if (!fieldId) {
       this.selectedField = null;
@@ -401,22 +573,38 @@ export class MpCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
     this.markForCheck();
   }
 
+  /**
+   * Handle operator selection
+   * @param operator - The selected operator
+   */
   onOperatorSelected(operator: string): void {
     this.selectedOperator = operator || null;
     this.markForCheck();
   }
 
+  /**
+   * Handle value change
+   * @param value - The new value
+   */
   onValueChanged(value: any): void {
     this.inputValue = value;
     this.markForCheck();
   }
 
+  /**
+   * Handle badge action events
+   * @param event - The badge action event
+   */
   onBadgeAction(event: BadgeActionEvent): void {
     this.badgeAction.emit(event);
     this.markForCheck();
   }
 
   // Function selection methods
+  /**
+   * Handle function selection
+   * @param functionId - The ID of the selected function
+   */
   onFunctionSelected(functionId: string): void {
     if (!functionId) {
       this.selectedFunction = null;
@@ -433,6 +621,12 @@ export class MpCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
     }
   }
 
+  /**
+   * Handle function parameter change
+   * @param index - The index of the parameter
+   * @param value - The new value
+   * @param type - The type of the parameter
+   */
   onFunctionParameterChanged(index: number, value: any, type: 'field' | 'literal'): void {
     if (!this.selectedFunction || index >= this.selectedFunction.parameters.length) {
       return;
@@ -454,6 +648,9 @@ export class MpCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
     }
   }
 
+  /**
+   * Add a function call to the criteria
+   */
   addFunctionCall(): void {
     if (!this.selectedFunction || !this.isFunctionMode) {
       return;
@@ -490,6 +687,9 @@ export class MpCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
     this.clearFunctionSelection();
   }
 
+  /**
+   * Toggle function mode
+   */
   toggleFunctionMode(): void {
     this.isFunctionMode = !this.isFunctionMode;
     if (!this.isFunctionMode) {
@@ -497,6 +697,9 @@ export class MpCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
     }
   }
 
+  /**
+   * Initialize function parameters
+   */
   private initializeFunctionParameters(): void {
     if (!this.selectedFunction) return;
 
@@ -522,6 +725,9 @@ export class MpCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
     });
   }
 
+  /**
+   * Clear function selection
+   */
   private clearFunctionSelection(): void {
     this.selectedFunction = null;
     this.functionParameters = [];
@@ -547,6 +753,9 @@ export class MpCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
   }
 
   // Undo/Redo functionality
+  /**
+   * Undo the last action
+   */
   undo(): void {
     if (this.state.undoStack.length === 0) {
       return;
@@ -572,6 +781,9 @@ export class MpCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
     this.requestSQLPreview();
   }
 
+  /**
+   * Redo the last undone action
+   */
   redo(): void {
     if (this.state.redoStack.length === 0) {
       return;
@@ -597,14 +809,25 @@ export class MpCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
     this.requestSQLPreview();
   }
 
+  /**
+   * Check if undo is available
+   * @returns True if undo is available
+   */
   canUndo(): boolean {
     return this.state.undoStack.length > 0;
   }
 
+  /**
+   * Check if redo is available
+   * @returns True if redo is available
+   */
   canRedo(): boolean {
     return this.state.redoStack.length > 0;
   }
 
+  /**
+   * Save the current state to the undo stack
+   */
   private saveToUndoStack(): void {
     if (!this.state.dsl) return;
 
@@ -712,6 +935,9 @@ export class MpCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
   }
 
   // Action methods
+  /**
+   * Add a new condition to the criteria
+   */
   addCondition(): void {
     try {
       if (!this.selectedField || !this.selectedOperator || this.inputValue === null) {
@@ -740,6 +966,10 @@ export class MpCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
     }
   }
 
+  /**
+   * Add a new group to the criteria
+   * @param operator - The logical operator for the group
+   */
   addGroup(operator: LogicalOperator = 'AND'): void {
     try {
       // Save current state to undo stack
@@ -766,6 +996,9 @@ export class MpCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
     }
   }
 
+  /**
+   * Clear all criteria
+   */
   clearCriteria(): void {
     try {
       // Save current state to undo stack
@@ -782,6 +1015,10 @@ export class MpCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
   }
 
   // Group manipulation methods
+  /**
+   * Add a condition to a specific group
+   * @param groupId - The ID of the group to add the condition to
+   */
   addConditionToGroup(groupId: string): void {
     if (!this.selectedField || !this.selectedOperator || this.inputValue === null) {
       return;
@@ -801,11 +1038,20 @@ export class MpCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
     this.clearCurrentSelection();
   }
 
+  /**
+   * Add a group to a specific group
+   * @param parentGroupId - The ID of the parent group
+   * @param operator - The logical operator for the new group
+   */
   addGroupToGroup(parentGroupId: string, operator: LogicalOperator = 'AND'): void {
     const newGroup = this.criteriaSerializer.createGroup(operator);
     this.addGroupToSpecificGroup(parentGroupId, newGroup);
   }
 
+  /**
+   * Remove an element from the criteria
+   * @param elementId - The ID of the element to remove
+   */
   removeElement(elementId: string): void {
     if (!this.state.dsl) return;
 
@@ -897,10 +1143,19 @@ export class MpCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
     };
   }
 
+  /**
+   * Check if object is a Condition
+   * @param obj - The object to check
+   * @returns True if object is a Condition
+   */
   private isCondition(obj: any): obj is Condition {
     return obj && typeof obj === 'object' && 'left' in obj && 'operator' in obj;
   }
 
+  /**
+   * Add condition to DSL
+   * @param condition - The condition to add
+   */
   private addConditionToDSL(condition: Condition): void {
     if (!this.state.dsl) {
       this.state.dsl = this.criteriaSerializer.generateDSL([condition]);
@@ -951,6 +1206,9 @@ export class MpCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
     };
   }
 
+  /**
+   * Clear current selection
+   */
   private clearCurrentSelection(): void {
     this.selectedField = null;
     this.selectedOperator = null;
@@ -958,12 +1216,18 @@ export class MpCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
     this.availableOperators = [];
   }
 
+  /**
+   * Request validation with debouncing
+   */
   private requestValidation(): void {
     if (this.state.dsl) {
       this.validationRequest.emit(this.state.dsl);
     }
   }
 
+  /**
+   * Request SQL preview with debouncing
+   */
   private requestSQLPreview(): void {
     if (this.state.dsl) {
       this.sqlRequest.emit(this.state.dsl);
@@ -1067,6 +1331,11 @@ export class MpCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
     return this.fields.find(f => f.id === condition.left.field) || null;
   }
 
+  /**
+   * Get function parameter value
+   * @param index - The parameter index
+   * @returns The parameter value
+   */
   getFunctionParameterValue(index: number): any {
     const param = this.functionParameters[index];
     if (!param) return '';
@@ -1079,6 +1348,11 @@ export class MpCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
     return '';
   }
 
+  /**
+   * Get parameter placeholder text
+   * @param param - The parameter
+   * @returns The placeholder text
+   */
   getParameterPlaceholder(param: any): string {
     if (param.default !== undefined) {
       return `Default: ${param.default}`;
@@ -1099,10 +1373,20 @@ export class MpCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
     }
   }
 
+  /**
+   * Track by parameter name for ngFor
+   * @param index - The index
+   * @param param - The parameter
+   * @returns The parameter name
+   */
   trackByParameterName(index: number, param: any): string {
     return param.name;
   }
 
+  /**
+   * Handle group badge action events
+   * @param event - The badge action event
+   */
   onGroupBadgeAction(event: BadgeActionEvent): void {
     switch (event.action) {
       case 'add':
@@ -1123,6 +1407,11 @@ export class MpCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
     }
   }
 
+  /**
+   * Check if object is a FieldRef
+   * @param obj - The object to check
+   * @returns True if object is a FieldRef
+   */
   private isFieldRef(obj: any): obj is FieldRef {
     return obj && typeof obj === 'object' && 'field' in obj;
   }
