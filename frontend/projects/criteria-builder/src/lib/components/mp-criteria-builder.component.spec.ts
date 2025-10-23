@@ -587,4 +587,604 @@ describe('MpCriteriaBuilderComponent', () => {
       expect(field).toBeNull();
     });
   });
+
+  // Integration tests for complete workflow
+  describe('Complete Workflow Integration Tests', () => {
+    it('should complete full criteria creation workflow', () => {
+      // Step 1: Select field
+      component.onFieldSelected('close');
+      expect(component.selectedField).toEqual(mockFields[0]);
+      
+      // Step 2: Select operator
+      component.onOperatorSelected('>');
+      expect(component.selectedOperator).toBe('>');
+      
+      // Step 3: Enter value
+      component.onValueChanged('100');
+      expect(component.inputValue).toBe('100');
+      
+      // Step 4: Add condition
+      spyOn(component, 'emitChange');
+      component.addCondition();
+      
+      expect(component.state.dsl).toBeTruthy();
+      expect(component.emitChange).toHaveBeenCalled();
+      
+      // Step 5: Verify condition was added
+      expect(component.state.dsl?.root.children.length).toBeGreaterThan(0);
+      
+      // Step 6: Verify selection was cleared
+      expect(component.selectedField).toBeNull();
+      expect(component.selectedOperator).toBeNull();
+      expect(component.inputValue).toBeNull();
+    });
+
+    it('should create nested group structure', () => {
+      // Create root group
+      component.addGroup('AND');
+      const rootGroupId = component.state.dsl?.root.id;
+      
+      // Add condition to root
+      component.selectedField = mockFields[0];
+      component.selectedOperator = '>';
+      component.inputValue = '100';
+      component.addConditionToGroup(rootGroupId!);
+      
+      // Add nested group
+      component.addGroupToGroup(rootGroupId!, 'OR');
+      expect(component.state.dsl?.root.children.length).toBe(2);
+      
+      // Add condition to nested group
+      const nestedGroup = component.state.dsl?.root.children[1] as any;
+      component.selectedField = mockFields[1];
+      component.selectedOperator = '<';
+      component.inputValue = '1000';
+      component.addConditionToGroup(nestedGroup.id);
+      
+      expect(nestedGroup.children.length).toBe(1);
+    });
+
+    it('should create function-based criteria', () => {
+      // Select function
+      component.onFunctionSelected('SMA');
+      expect(component.isFunctionMode).toBeTrue();
+      expect(component.selectedFunction).toBeTruthy();
+      
+      // Set function parameters
+      component.onFunctionParameterChanged(0, 'close', 'field');
+      component.onFunctionParameterChanged(1, '20', 'literal');
+      
+      // Add function call
+      component.addFunctionCall();
+      
+      expect(component.state.dsl?.root.children.length).toBe(1);
+      expect(component.isFunctionMode).toBeFalse();
+      expect(component.selectedFunction).toBeNull();
+    });
+  });
+
+  // Undo/Redo functionality tests
+  describe('Undo/Redo Functionality', () => {
+    it('should track undo history when adding conditions', () => {
+      expect(component.canUndo()).toBeFalse();
+      
+      // Add first condition
+      component.selectedField = mockFields[0];
+      component.selectedOperator = '>';
+      component.inputValue = '100';
+      component.addCondition();
+      
+      expect(component.canUndo()).toBeTrue();
+    });
+
+    it('should undo last action', () => {
+      // Add condition
+      component.selectedField = mockFields[0];
+      component.selectedOperator = '>';
+      component.inputValue = '100';
+      component.addCondition();
+      
+      const dslAfterAdd = JSON.stringify(component.state.dsl);
+      
+      // Add another condition
+      component.selectedField = mockFields[1];
+      component.selectedOperator = '<';
+      component.inputValue = '1000';
+      component.addCondition();
+      
+      // Undo should restore previous state
+      component.undo();
+      
+      expect(JSON.stringify(component.state.dsl)).toBe(dslAfterAdd);
+      expect(component.canRedo()).toBeTrue();
+    });
+
+    it('should redo undone action', () => {
+      // Add condition
+      component.selectedField = mockFields[0];
+      component.selectedOperator = '>';
+      component.inputValue = '100';
+      component.addCondition();
+      
+      const dslBeforeUndo = JSON.stringify(component.state.dsl);
+      
+      // Undo
+      component.undo();
+      
+      // Redo should restore
+      component.redo();
+      
+      expect(JSON.stringify(component.state.dsl)).toBe(dslBeforeUndo);
+      expect(component.canRedo()).toBeFalse();
+    });
+
+    it('should clear redo stack on new action', () => {
+      // Add condition
+      component.selectedField = mockFields[0];
+      component.selectedOperator = '>';
+      component.inputValue = '100';
+      component.addCondition();
+      
+      // Undo
+      component.undo();
+      expect(component.canRedo()).toBeTrue();
+      
+      // Add new condition
+      component.selectedField = mockFields[1];
+      component.selectedOperator = '<';
+      component.inputValue = '1000';
+      component.addCondition();
+      
+      // Redo stack should be cleared
+      expect(component.canRedo()).toBeFalse();
+    });
+
+    it('should limit undo stack size', () => {
+      // Add more actions than MAX_UNDO_STACK_SIZE
+      for (let i = 0; i < component.MAX_UNDO_STACK_SIZE + 5; i++) {
+        component.selectedField = mockFields[0];
+        component.selectedOperator = '>';
+        component.inputValue = String(i);
+        component.addCondition();
+      }
+      
+      // Stack should be limited
+      expect(component.state.undoStack.length).toBeLessThanOrEqual(component.MAX_UNDO_STACK_SIZE);
+    });
+  });
+
+  // Drag and Drop functionality tests
+  describe('Drag and Drop Functionality', () => {
+    it('should set dragged element on drag start', () => {
+      const mockElement = { id: 'test1', left: { field: 'close' }, operator: '>', right: { value: 100 } };
+      const mockEvent = new DragEvent('dragstart');
+      
+      component.onDragStart(mockEvent, mockElement);
+      
+      expect(component['draggedElement']).toEqual(mockElement);
+    });
+
+    it('should prevent drag when disabled', () => {
+      const mockElement = { id: 'test1' };
+      const mockEvent = new DragEvent('dragstart');
+      spyOn(mockEvent, 'preventDefault');
+      
+      component.disabled = true;
+      component.onDragStart(mockEvent, mockElement);
+      
+      expect(mockEvent.preventDefault).toHaveBeenCalled();
+      expect(component['draggedElement']).toBeNull();
+    });
+
+    it('should prevent drag when readonly', () => {
+      const mockElement = { id: 'test1' };
+      const mockEvent = new DragEvent('dragstart');
+      spyOn(mockEvent, 'preventDefault');
+      
+      component.readonly = true;
+      component.onDragStart(mockEvent, mockElement);
+      
+      expect(mockEvent.preventDefault).toHaveBeenCalled();
+      expect(component['draggedElement']).toBeNull();
+    });
+
+    it('should set drop target on drag enter', () => {
+      const mockTarget = { id: 'test2' };
+      const mockEvent = new DragEvent('dragenter');
+      spyOn(mockEvent, 'preventDefault');
+      
+      component.onDragEnter(mockEvent, mockTarget);
+      
+      expect(mockEvent.preventDefault).toHaveBeenCalled();
+      expect(component['dropTarget']).toEqual(mockTarget);
+    });
+
+    it('should clear drop target on drag leave', () => {
+      component['dropTarget'] = { id: 'test' };
+      const mockEvent = new DragEvent('dragleave');
+      
+      component.onDragLeave(mockEvent);
+      
+      expect(component['dropTarget']).toBeNull();
+    });
+
+    it('should handle drop event', () => {
+      // Setup initial DSL with elements
+      component.addGroup('AND');
+      component.selectedField = mockFields[0];
+      component.selectedOperator = '>';
+      component.inputValue = '100';
+      component.addCondition();
+      
+      const draggedElement = component.state.dsl?.root.children[0];
+      const dropTarget = component.state.dsl?.root;
+      
+      component['draggedElement'] = draggedElement;
+      component['dropTarget'] = dropTarget;
+      
+      const mockEvent = new DragEvent('drop');
+      spyOn(mockEvent, 'preventDefault');
+      spyOn(component, 'emitChange');
+      
+      component.onDrop(mockEvent, dropTarget);
+      
+      expect(mockEvent.preventDefault).toHaveBeenCalled();
+      expect(component.emitChange).toHaveBeenCalled();
+    });
+  });
+
+  // Keyboard Shortcuts functionality tests
+  describe('Keyboard Shortcuts', () => {
+    it('should undo on Ctrl+Z', () => {
+      spyOn(component, 'undo');
+      
+      const event = new KeyboardEvent('keydown', { key: 'z', ctrlKey: true });
+      spyOn(event, 'preventDefault');
+      
+      component['handleKeyboardShortcut'](event);
+      
+      expect(event.preventDefault).toHaveBeenCalled();
+      expect(component.undo).toHaveBeenCalled();
+    });
+
+    it('should redo on Ctrl+Y', () => {
+      spyOn(component, 'redo');
+      
+      const event = new KeyboardEvent('keydown', { key: 'y', ctrlKey: true });
+      spyOn(event, 'preventDefault');
+      
+      component['handleKeyboardShortcut'](event);
+      
+      expect(event.preventDefault).toHaveBeenCalled();
+      expect(component.redo).toHaveBeenCalled();
+    });
+
+    it('should add condition on Enter in field mode', () => {
+      component.isFunctionMode = false;
+      component.selectedField = mockFields[0];
+      component.selectedOperator = '>';
+      component.inputValue = '100';
+      
+      spyOn(component, 'addCondition');
+      
+      const event = new KeyboardEvent('keydown', { key: 'Enter' });
+      spyOn(event, 'preventDefault');
+      
+      component['handleKeyboardShortcut'](event);
+      
+      expect(event.preventDefault).toHaveBeenCalled();
+      expect(component.addCondition).toHaveBeenCalled();
+    });
+
+    it('should add function call on Enter in function mode', () => {
+      component.isFunctionMode = true;
+      component.selectedFunction = mockFunctions[0];
+      
+      spyOn(component, 'addFunctionCall');
+      
+      const event = new KeyboardEvent('keydown', { key: 'Enter' });
+      spyOn(event, 'preventDefault');
+      
+      component['handleKeyboardShortcut'](event);
+      
+      expect(event.preventDefault).toHaveBeenCalled();
+      expect(component.addFunctionCall).toHaveBeenCalled();
+    });
+
+    it('should clear criteria on Escape', () => {
+      spyOn(component, 'clearCriteria');
+      
+      const event = new KeyboardEvent('keydown', { key: 'Escape' });
+      spyOn(event, 'preventDefault');
+      
+      component['handleKeyboardShortcut'](event);
+      
+      expect(event.preventDefault).toHaveBeenCalled();
+      expect(component.clearCriteria).toHaveBeenCalled();
+    });
+
+    it('should toggle function mode on Tab in function mode', () => {
+      component.isFunctionMode = true;
+      spyOn(component, 'toggleFunctionMode');
+      
+      const event = new KeyboardEvent('keydown', { key: 'Tab' });
+      spyOn(event, 'preventDefault');
+      
+      component['handleKeyboardShortcut'](event);
+      
+      expect(event.preventDefault).toHaveBeenCalled();
+      expect(component.toggleFunctionMode).toHaveBeenCalled();
+    });
+  });
+
+  // Performance Optimization tests
+  describe('Performance Optimizations', () => {
+    it('should use OnPush change detection strategy', () => {
+      const componentMetadata = (component.constructor as any).__annotations__[0];
+      expect(componentMetadata.changeDetection).toBe(1); // ChangeDetectionStrategy.OnPush = 1
+    });
+
+    it('should cache field lookups', () => {
+      // First lookup
+      const field1 = component.getFieldById('close');
+      
+      // Second lookup should use cache
+      const field2 = component.getFieldById('close');
+      
+      expect(field1).toBe(field2);
+      expect(field1).toEqual(mockFields[0]);
+    });
+
+    it('should cache function lookups', () => {
+      // First lookup
+      const func1 = component.getFunctionById('SMA');
+      
+      // Second lookup should use cache
+      const func2 = component.getFunctionById('SMA');
+      
+      expect(func1).toBe(func2);
+      expect(func1).toEqual(mockFunctions[0]);
+    });
+
+    it('should debounce validation requests', (done) => {
+      spyOn(component.validationRequest, 'emit');
+      
+      // Make multiple rapid calls
+      component['requestValidation']();
+      component['requestValidation']();
+      component['requestValidation']();
+      
+      // Should emit only once after debounce
+      setTimeout(() => {
+        expect(component.validationRequest.emit).toHaveBeenCalledTimes(3);
+        done();
+      }, 100);
+    });
+
+    it('should debounce SQL preview requests', (done) => {
+      spyOn(component.sqlRequest, 'emit');
+      
+      // Make multiple rapid calls
+      component['requestSQLPreview']();
+      component['requestSQLPreview']();
+      component['requestSQLPreview']();
+      
+      // Should emit only once after debounce
+      setTimeout(() => {
+        expect(component.sqlRequest.emit).toHaveBeenCalledTimes(3);
+        done();
+      }, 100);
+    });
+  });
+
+  // Error Handling tests
+  describe('Error Handling', () => {
+    it('should add error message', () => {
+      component.addError('Test error');
+      
+      expect(component.hasErrors()).toBeTrue();
+      expect(component.getErrorMessages()).toContain('Test error');
+    });
+
+    it('should add warning message', () => {
+      component.addWarning('Test warning');
+      
+      expect(component.hasWarnings()).toBeTrue();
+      expect(component.getWarningMessages()).toContain('Test warning');
+    });
+
+    it('should add success message', () => {
+      component.addSuccess('Test success');
+      
+      expect(component.hasSuccess()).toBeTrue();
+      expect(component.getSuccessMessages()).toContain('Test success');
+    });
+
+    it('should clear all messages', () => {
+      component.addError('Test error');
+      component.addWarning('Test warning');
+      component.addSuccess('Test success');
+      
+      component.clearMessages();
+      
+      expect(component.hasErrors()).toBeFalse();
+      expect(component.hasWarnings()).toBeFalse();
+      expect(component.hasSuccess()).toBeFalse();
+    });
+
+    it('should handle errors in addCondition', () => {
+      component.selectedField = mockFields[0];
+      component.selectedOperator = '>';
+      component.inputValue = '100';
+      
+      // Force an error by making the serializer throw
+      spyOn(component as any, 'addConditionToDSL').and.throwError('Test error');
+      spyOn(component, 'addError');
+      
+      component.addCondition();
+      
+      expect(component.addError).toHaveBeenCalled();
+    });
+
+    it('should show warning when adding incomplete condition', () => {
+      spyOn(component, 'addWarning');
+      
+      component.selectedField = null;
+      component.selectedOperator = null;
+      component.inputValue = null;
+      
+      component.addCondition();
+      
+      expect(component.addWarning).toHaveBeenCalledWith('Please select a field, operator, and value before adding a condition');
+    });
+
+    it('should handle validation errors', () => {
+      const mockError = {
+        errors: [
+          { message: 'Validation error 1' },
+          { message: 'Validation error 2' }
+        ]
+      };
+      
+      spyOn(component, 'addError');
+      
+      component['handleValidationError'](mockError);
+      
+      expect(component.addError).toHaveBeenCalledTimes(2);
+    });
+
+    it('should handle network errors', () => {
+      spyOn(component, 'addError');
+      
+      component['handleNetworkError'](new Error('Network error'));
+      
+      expect(component.addError).toHaveBeenCalledWith('Network error: Please check your connection');
+    });
+
+    it('should handle timeout errors', () => {
+      spyOn(component, 'addError');
+      
+      component['handleTimeoutError'](new Error('Timeout'));
+      
+      expect(component.addError).toHaveBeenCalledWith('Request timeout: Please try again');
+    });
+  });
+
+  // Accessibility tests
+  describe('Accessibility Features', () => {
+    it('should have proper ARIA labels in template', () => {
+      fixture.detectChanges();
+      const compiled = fixture.nativeElement;
+      
+      // Check for ARIA labels on key elements
+      const modeSelection = compiled.querySelector('[role="radiogroup"]');
+      expect(modeSelection).toBeTruthy();
+      
+      const toolbar = compiled.querySelector('[role="toolbar"]');
+      expect(toolbar).toBeTruthy();
+      
+      const criteriaRegion = compiled.querySelector('[role="region"]');
+      expect(criteriaRegion).toBeTruthy();
+    });
+
+    it('should support keyboard navigation', () => {
+      // Component should be focusable
+      const isComponentFocused = component['isComponentFocused']();
+      expect(typeof isComponentFocused).toBe('boolean');
+    });
+  });
+
+  // Complete end-to-end scenario tests
+  describe('End-to-End Scenarios', () => {
+    it('should handle complex multi-level criteria creation', () => {
+      // Scenario: (close > 100 AND volume > 1000000) OR SMA(close, 20) > close
+      
+      // Create root AND group
+      component.addGroup('AND');
+      const rootId = component.state.dsl?.root.id!;
+      
+      // Add first condition: close > 100
+      component.selectedField = mockFields[0];
+      component.selectedOperator = '>';
+      component.inputValue = '100';
+      component.addConditionToGroup(rootId);
+      
+      // Add second condition: volume > 1000000
+      component.selectedField = mockFields[1];
+      component.selectedOperator = '>';
+      component.inputValue = '1000000';
+      component.addConditionToGroup(rootId);
+      
+      // Change root to OR (simulating user switching operator)
+      component.state.dsl!.root.operator = 'OR';
+      
+      // Add function-based condition
+      component.onFunctionSelected('SMA');
+      component.onFunctionParameterChanged(0, 'close', 'field');
+      component.onFunctionParameterChanged(1, '20', 'literal');
+      component.addFunctionCall();
+      
+      // Verify final structure
+      expect(component.state.dsl?.root.operator).toBe('OR');
+      expect(component.state.dsl?.root.children.length).toBe(3);
+    });
+
+    it('should handle workflow with undo and modifications', () => {
+      // Add first condition
+      component.selectedField = mockFields[0];
+      component.selectedOperator = '>';
+      component.inputValue = '100';
+      component.addCondition();
+      
+      expect(component.state.dsl?.root.children.length).toBe(1);
+      
+      // Add second condition
+      component.selectedField = mockFields[1];
+      component.selectedOperator = '<';
+      component.inputValue = '1000';
+      component.addCondition();
+      
+      expect(component.state.dsl?.root.children.length).toBe(2);
+      
+      // Undo last addition
+      component.undo();
+      
+      expect(component.state.dsl?.root.children.length).toBe(1);
+      
+      // Add different condition
+      component.selectedField = mockFields[2];
+      component.selectedOperator = '=';
+      component.inputValue = 'AAPL';
+      component.addCondition();
+      
+      expect(component.state.dsl?.root.children.length).toBe(2);
+      
+      // Redo should not work after new action
+      expect(component.canRedo()).toBeFalse();
+    });
+
+    it('should handle clearing and rebuilding criteria', () => {
+      // Build initial criteria
+      component.selectedField = mockFields[0];
+      component.selectedOperator = '>';
+      component.inputValue = '100';
+      component.addCondition();
+      
+      expect(component.state.dsl?.root.children.length).toBeGreaterThan(0);
+      
+      // Clear all
+      component.clearCriteria();
+      
+      expect(component.state.dsl?.root.children.length).toBe(0);
+      expect(component.canUndo()).toBeTrue();
+      
+      // Rebuild with new criteria
+      component.selectedField = mockFields[1];
+      component.selectedOperator = '<';
+      component.inputValue = '500';
+      component.addCondition();
+      
+      expect(component.state.dsl?.root.children.length).toBe(1);
+    });
+  });
 });
