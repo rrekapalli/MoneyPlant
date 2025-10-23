@@ -76,6 +76,10 @@ export class MpCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
   // Undo/Redo configuration
   private readonly MAX_UNDO_STACK_SIZE = 50;
 
+  // Drag and drop state
+  private draggedElement: any = null;
+  private dropTarget: any = null;
+
   constructor(
     private criteriaSerializer: CriteriaSerializerService,
     private criteriaValidator: CriteriaValidationService
@@ -354,6 +358,97 @@ export class MpCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
     if (this.state.undoStack.length > this.MAX_UNDO_STACK_SIZE) {
       this.state.undoStack.shift();
     }
+  }
+
+  // Drag and drop functionality
+  onDragStart(event: DragEvent, element: any): void {
+    if (this.disabled || this.readonly) {
+      event.preventDefault();
+      return;
+    }
+
+    this.draggedElement = element;
+    event.dataTransfer!.setData('text/plain', element.id);
+    event.dataTransfer!.effectAllowed = 'move';
+  }
+
+  onDragOver(event: DragEvent): void {
+    if (this.disabled || this.readonly) return;
+    
+    event.preventDefault();
+    event.dataTransfer!.dropEffect = 'move';
+  }
+
+  onDragEnter(event: DragEvent, target: any): void {
+    if (this.disabled || this.readonly) return;
+    
+    event.preventDefault();
+    this.dropTarget = target;
+  }
+
+  onDragLeave(event: DragEvent): void {
+    if (this.disabled || this.readonly) return;
+    
+    this.dropTarget = null;
+  }
+
+  onDrop(event: DragEvent, target: any): void {
+    if (this.disabled || this.readonly) return;
+    
+    event.preventDefault();
+    
+    if (!this.draggedElement || !this.dropTarget) {
+      return;
+    }
+
+    // Save current state to undo stack
+    this.saveToUndoStack();
+
+    // Perform the move operation
+    this.moveElement(this.draggedElement, this.dropTarget);
+
+    // Clear drag state
+    this.draggedElement = null;
+    this.dropTarget = null;
+  }
+
+  private moveElement(element: any, target: any): void {
+    if (!this.state.dsl) return;
+
+    // Remove element from current location
+    const updatedRoot = this.removeElementFromGroup(this.state.dsl.root, element.id);
+    
+    // Add element to target location
+    if (this.isGroup(target)) {
+      // Move to group
+      const newRoot = this.addElementToGroup(updatedRoot, target.id, element);
+      this.state.dsl = this.criteriaSerializer.generateDSLFromGroup(newRoot);
+    } else {
+      // Move to root level
+      const newRoot = this.addElementToGroup(updatedRoot, this.state.dsl.root.id, element);
+      this.state.dsl = this.criteriaSerializer.generateDSLFromGroup(newRoot);
+    }
+
+    this.updateValidity();
+    this.emitChange();
+    this.requestValidation();
+    this.requestSQLPreview();
+  }
+
+  private addElementToGroup(group: Group, targetGroupId: string, element: any): Group {
+    if (group.id === targetGroupId) {
+      return this.criteriaSerializer.addConditionToGroup(group, element);
+    }
+
+    return {
+      ...group,
+      children: (group.children || []).map(child => {
+        if (this.isGroup(child)) {
+          return this.addElementToGroup(child, targetGroupId, element);
+        }
+        return child;
+      })
+    };
   }
 
   // Action methods

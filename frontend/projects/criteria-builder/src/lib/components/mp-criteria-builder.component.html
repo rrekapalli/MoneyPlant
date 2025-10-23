@@ -137,7 +137,15 @@
             <ng-container [ngSwitch]="getElementType(child)">
               
               <!-- Render condition -->
-              <div *ngSwitchCase="'condition'" class="condition-container">
+              <div *ngSwitchCase="'condition'" 
+                   class="condition-container"
+                   draggable="true"
+                   (dragstart)="onDragStart($event, child)"
+                   (dragover)="onDragOver($event)"
+                   (dragenter)="onDragEnter($event, child)"
+                   (dragleave)="onDragLeave($event)"
+                   (drop)="onDrop($event, child)">
+                
                 <mp-field-badge 
                   [field]="getFieldFromCondition(child)"
                   [disabled]="isDisabledState"
@@ -169,14 +177,28 @@
                 [nestingLevel]="1"
                 [disabled]="isDisabledState"
                 [readonly]="readonly"
-                (badgeAction)="onGroupBadgeAction($event)">
+                (badgeAction)="onGroupBadgeAction($event)"
+                draggable="true"
+                (dragstart)="onDragStart($event, child)"
+                (dragover)="onDragOver($event)"
+                (dragenter)="onDragEnter($event, child)"
+                (dragleave)="onDragLeave($event)"
+                (drop)="onDrop($event, child)">
                 
                 <!-- Recursively render nested group children -->
                 <ng-container *ngFor="let nestedChild of child.children; trackBy: trackByElementId">
                   <ng-container [ngSwitch]="getElementType(nestedChild)">
                     
                     <!-- Nested condition -->
-                    <div *ngSwitchCase="'condition'" class="condition-container">
+                    <div *ngSwitchCase="'condition'" 
+                         class="condition-container"
+                         draggable="true"
+                         (dragstart)="onDragStart($event, nestedChild)"
+                         (dragover)="onDragOver($event)"
+                         (dragenter)="onDragEnter($event, nestedChild)"
+                         (dragleave)="onDragLeave($event)"
+                         (drop)="onDrop($event, nestedChild)">
+                      
                       <mp-field-badge 
                         [field]="getFieldFromCondition(nestedChild)"
                         [disabled]="isDisabledState"
