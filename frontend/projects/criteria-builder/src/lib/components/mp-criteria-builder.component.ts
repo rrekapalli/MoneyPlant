@@ -73,6 +73,9 @@ export class MpCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
   functionParameters: (FieldRef | Literal)[] = [];
   isFunctionMode = false;
 
+  // Undo/Redo configuration
+  private readonly MAX_UNDO_STACK_SIZE = 50;
+
   constructor(
     private criteriaSerializer: CriteriaSerializerService,
     private criteriaValidator: CriteriaValidationService
@@ -192,6 +195,9 @@ export class MpCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
       return;
     }
 
+    // Save current state to undo stack
+    this.saveToUndoStack();
+
     // Validate function parameters
     const validation = this.criteriaSerializer.validateFunctionCall(
       { function: this.selectedFunction.id, args: this.functionParameters },
@@ -276,11 +282,88 @@ export class MpCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
     }
   }
 
+  // Undo/Redo functionality
+  undo(): void {
+    if (this.state.undoStack.length === 0) {
+      return;
+    }
+
+    // Save current state to redo stack
+    if (this.state.dsl) {
+      this.state.redoStack.push(JSON.parse(JSON.stringify(this.state.dsl)));
+    }
+
+    // Restore previous state
+    const previousState = this.state.undoStack.pop()!;
+    this.state.dsl = previousState;
+
+    // Limit redo stack size
+    if (this.state.redoStack.length > this.MAX_UNDO_STACK_SIZE) {
+      this.state.redoStack.shift();
+    }
+
+    this.updateValidity();
+    this.emitChange();
+    this.requestValidation();
+    this.requestSQLPreview();
+  }
+
+  redo(): void {
+    if (this.state.redoStack.length === 0) {
+      return;
+    }
+
+    // Save current state to undo stack
+    if (this.state.dsl) {
+      this.state.undoStack.push(JSON.parse(JSON.stringify(this.state.dsl)));
+    }
+
+    // Restore next state
+    const nextState = this.state.redoStack.pop()!;
+    this.state.dsl = nextState;
+
+    // Limit undo stack size
+    if (this.state.undoStack.length > this.MAX_UNDO_STACK_SIZE) {
+      this.state.undoStack.shift();
+    }
+
+    this.updateValidity();
+    this.emitChange();
+    this.requestValidation();
+    this.requestSQLPreview();
+  }
+
+  canUndo(): boolean {
+    return this.state.undoStack.length > 0;
+  }
+
+  canRedo(): boolean {
+    return this.state.redoStack.length > 0;
+  }
+
+  private saveToUndoStack(): void {
+    if (!this.state.dsl) return;
+
+    // Save current state to undo stack
+    this.state.undoStack.push(JSON.parse(JSON.stringify(this.state.dsl)));
+
+    // Clear redo stack when new action is performed
+    this.state.redoStack = [];
+
+    // Limit undo stack size
+    if (this.state.undoStack.length > this.MAX_UNDO_STACK_SIZE) {
+      this.state.undoStack.shift();
+    }
+  }
+
   // Action methods
   addCondition(): void {
     if (!this.selectedField || !this.selectedOperator || this.inputValue === null) {
       return;
     }
+
+    // Save current state to undo stack
+    this.saveToUndoStack();
 
     const condition: Condition = {
       id: this.generateId(),
@@ -297,6 +380,9 @@ export class MpCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
   }
 
   addGroup(operator: LogicalOperator = 'AND'): void {
+    // Save current state to undo stack
+    this.saveToUndoStack();
+
     const newGroup = this.criteriaSerializer.createGroup(operator);
     
     if (!this.state.dsl) {
@@ -315,6 +401,9 @@ export class MpCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
   }
 
   clearCriteria(): void {
+    // Save current state to undo stack
+    this.saveToUndoStack();
+
     this.state.dsl = this.criteriaSerializer.generateDSL([]);
     this.updateValidity();
     this.emitChange();
@@ -348,6 +437,9 @@ export class MpCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
 
   removeElement(elementId: string): void {
     if (!this.state.dsl) return;
+
+    // Save current state to undo stack
+    this.saveToUndoStack();
 
     const updatedRoot = this.removeElementFromGroup(this.state.dsl.root, elementId);
     this.state.dsl = this.criteriaSerializer.generateDSLFromGroup(updatedRoot);

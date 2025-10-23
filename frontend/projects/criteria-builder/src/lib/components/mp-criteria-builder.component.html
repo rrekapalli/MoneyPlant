@@ -219,6 +219,25 @@
 
     <!-- Action buttons -->
     <div class="action-buttons" *ngIf="!readonly">
+      <!-- Undo/Redo buttons -->
+      <div class="undo-redo-buttons" *ngIf="config.enableUndo">
+        <button type="button" 
+                (click)="undo()"
+                [disabled]="isDisabledState || !canUndo()"
+                class="btn btn-outline-secondary"
+                title="Undo (Ctrl+Z)">
+          ↶ Undo
+        </button>
+        
+        <button type="button" 
+                (click)="redo()"
+                [disabled]="isDisabledState || !canRedo()"
+                class="btn btn-outline-secondary"
+                title="Redo (Ctrl+Y)">
+          ↷ Redo
+        </button>
+      </div>
+
       <button type="button" 
               (click)="addCondition()"
               [disabled]="isDisabledState || !selectedField || !selectedOperator || inputValue === null"
