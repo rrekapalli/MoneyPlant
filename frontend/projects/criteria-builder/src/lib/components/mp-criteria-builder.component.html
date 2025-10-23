@@ -6,16 +6,50 @@
   <!-- Main criteria builder area -->
   <div class="criteria-container">
     
+    <!-- Mode selection -->
+    <div class="mode-selection" *ngIf="!readonly">
+      <label>
+        <input type="radio" 
+               name="mode" 
+               value="field" 
+               [checked]="!isFunctionMode"
+               (change)="toggleFunctionMode()">
+        Field Mode
+      </label>
+      <label>
+        <input type="radio" 
+               name="mode" 
+               value="function" 
+               [checked]="isFunctionMode"
+               (change)="toggleFunctionMode()">
+        Function Mode
+      </label>
+    </div>
+
     <!-- Field selection dropdown -->
-    <div class="field-selection" *ngIf="hasFields && !readonly">
+    <div class="field-selection" *ngIf="hasFields && !readonly && !isFunctionMode">
       <label for="field-select">Select Field:</label>
-      <select id="field-select" 
+      <select id="field-select"
               (change)="onFieldSelected($event.target.value)"
               [disabled]="isDisabledState">
         <option value="">Choose a field...</option>
-        <option *ngFor="let field of fields" 
+        <option *ngFor="let field of fields"
                 [value]="field.id">
           {{ field.label }} ({{ field.dataType }})
+        </option>
+      </select>
+    </div>
+
+    <!-- Function selection dropdown -->
+    <div class="function-selection" *ngIf="hasFunctions && !readonly && isFunctionMode">
+      <label for="function-select">Select Function:</label>
+      <select id="function-select"
+              (change)="onFunctionSelected($event.target.value)"
+              [disabled]="isDisabledState">
+        <option value="">Choose a function...</option>
+        <option *ngFor="let function of functions"
+                [value]="function.id">
+          {{ function.name }} - {{ function.description }}
         </option>
       </select>
     </div>
@@ -35,13 +69,55 @@
     </div>
 
     <!-- Value input -->
-    <div class="value-input" *ngIf="hasFields && !readonly && selectedField && selectedOperator">
+    <div class="value-input" *ngIf="hasFields && !readonly && selectedField && selectedOperator && !isFunctionMode">
       <label for="value-input">Enter Value:</label>
-      <input id="value-input" 
+      <input id="value-input"
              [type]="getInputType(selectedField.dataType)"
              (input)="onValueChanged($event.target.value)"
              [disabled]="isDisabledState"
              [placeholder]="getInputPlaceholder(selectedField.dataType)">
+    </div>
+
+    <!-- Function parameter configuration -->
+    <div class="function-parameters" *ngIf="hasFunctions && !readonly && selectedFunction && isFunctionMode">
+      <h4>Configure Parameters:</h4>
+      <div class="parameter-item" 
+           *ngFor="let param of selectedFunction.parameters; let i = index; trackBy: trackByParameterName">
+        
+        <label class="parameter-label">
+          {{ param.name }}
+          <span class="parameter-type">({{ param.type }})</span>
+          <span class="parameter-required" *ngIf="!param.optional">*</span>
+        </label>
+        
+        <div class="parameter-input">
+          
+          <!-- Field reference input -->
+          <select *ngIf="param.type === 'FIELD'"
+                  [value]="getFunctionParameterValue(i)"
+                  (change)="onFunctionParameterChanged(i, $event.target.value, 'field')"
+                  [disabled]="isDisabledState">
+            <option value="">Select field...</option>
+            <option *ngFor="let field of fields" 
+                    [value]="field.id">
+              {{ field.label }}
+            </option>
+          </select>
+          
+          <!-- Literal value input -->
+          <input *ngIf="param.type !== 'FIELD'"
+                 [type]="getInputType(param.type)"
+                 [value]="getFunctionParameterValue(i)"
+                 (input)="onFunctionParameterChanged(i, $event.target.value, 'literal')"
+                 [placeholder]="getParameterPlaceholder(param)"
+                 [disabled]="isDisabledState">
+          
+          <!-- Parameter description -->
+          <div class="parameter-help" *ngIf="param.description">
+            <small>{{ param.description }}</small>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Criteria display area -->
@@ -145,9 +221,18 @@
     <div class="action-buttons" *ngIf="!readonly">
       <button type="button" 
               (click)="addCondition()"
-              [disabled]="isDisabledState"
-              class="btn btn-primary">
+              [disabled]="isDisabledState || !selectedField || !selectedOperator || inputValue === null"
+              class="btn btn-primary"
+              *ngIf="!isFunctionMode">
         Add Condition
+      </button>
+      
+      <button type="button" 
+              (click)="addFunctionCall()"
+              [disabled]="isDisabledState || !selectedFunction"
+              class="btn btn-primary"
+              *ngIf="isFunctionMode">
+        Add Function Call
       </button>
       
       <button type="button" 

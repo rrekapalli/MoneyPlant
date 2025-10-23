@@ -67,6 +67,11 @@ export class MpCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
   selectedOperator: string | null = null;
   inputValue: any = null;
   availableOperators: string[] = [];
+  
+  // Function selection state
+  selectedFunction: FunctionMeta | null = null;
+  functionParameters: (FieldRef | Literal)[] = [];
+  isFunctionMode = false;
 
   constructor(
     private criteriaSerializer: CriteriaSerializerService,
@@ -142,6 +147,133 @@ export class MpCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
 
   onBadgeAction(event: BadgeActionEvent): void {
     this.badgeAction.emit(event);
+  }
+
+  // Function selection methods
+  onFunctionSelected(functionId: string): void {
+    if (!functionId) {
+      this.selectedFunction = null;
+      this.functionParameters = [];
+      this.isFunctionMode = false;
+      return;
+    }
+
+    this.selectedFunction = this.functions.find(f => f.id === functionId) || null;
+    if (this.selectedFunction) {
+      this.isFunctionMode = true;
+      this.initializeFunctionParameters();
+      this.clearCurrentSelection();
+    }
+  }
+
+  onFunctionParameterChanged(index: number, value: any, type: 'field' | 'literal'): void {
+    if (!this.selectedFunction || index >= this.selectedFunction.parameters.length) {
+      return;
+    }
+
+    const param = this.selectedFunction.parameters[index];
+    
+    if (type === 'field') {
+      this.functionParameters[index] = {
+        field: value,
+        id: this.generateId()
+      } as FieldRef;
+    } else {
+      this.functionParameters[index] = {
+        value: this.parseParameterValue(value, param.type),
+        type: param.type,
+        id: this.generateId()
+      } as Literal;
+    }
+  }
+
+  addFunctionCall(): void {
+    if (!this.selectedFunction || !this.isFunctionMode) {
+      return;
+    }
+
+    // Validate function parameters
+    const validation = this.criteriaSerializer.validateFunctionCall(
+      { function: this.selectedFunction.id, args: this.functionParameters },
+      this.selectedFunction
+    );
+
+    if (!validation.isValid) {
+      console.error('Function validation failed:', validation.errors);
+      return;
+    }
+
+    const functionCall = this.criteriaSerializer.createFunctionCall(
+      this.selectedFunction.id,
+      this.functionParameters
+    );
+
+    // Create condition with function call
+    const condition: Condition = {
+      id: this.generateId(),
+      left: functionCall,
+      operator: '>', // Default operator for function calls
+      right: this.createLiteralFromValue(0, 'NUMBER')
+    };
+
+    this.addConditionToDSL(condition);
+    this.clearFunctionSelection();
+  }
+
+  toggleFunctionMode(): void {
+    this.isFunctionMode = !this.isFunctionMode;
+    if (!this.isFunctionMode) {
+      this.clearFunctionSelection();
+    }
+  }
+
+  private initializeFunctionParameters(): void {
+    if (!this.selectedFunction) return;
+
+    this.functionParameters = this.selectedFunction.parameters.map(param => {
+      if (param.default !== undefined) {
+        return {
+          value: param.default,
+          type: param.type,
+          id: this.generateId()
+        } as Literal;
+      } else if (param.type === 'FIELD') {
+        return {
+          field: '',
+          id: this.generateId()
+        } as FieldRef;
+      } else {
+        return {
+          value: null,
+          type: param.type,
+          id: this.generateId()
+        } as Literal;
+      }
+    });
+  }
+
+  private clearFunctionSelection(): void {
+    this.selectedFunction = null;
+    this.functionParameters = [];
+    this.isFunctionMode = false;
+  }
+
+  private parseParameterValue(value: any, type: string): any {
+    if (value === '' || value === null || value === undefined) {
+      return null;
+    }
+
+    switch (type) {
+      case 'NUMBER':
+      case 'INTEGER':
+        return parseFloat(value) || 0;
+      case 'BOOLEAN':
+        return value === 'true' || value === true;
+      case 'DATE':
+        return new Date(value).toISOString();
+      default:
+        return String(value);
+    }
   }
 
   // Action methods
@@ -470,6 +602,42 @@ export class MpCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
     }
     
     return this.fields.find(f => f.id === condition.left.field) || null;
+  }
+
+  getFunctionParameterValue(index: number): any {
+    const param = this.functionParameters[index];
+    if (!param) return '';
+
+    if (this.isFieldRef(param)) {
+      return param.field;
+    } else if (this.isLiteral(param)) {
+      return param.value;
+    }
+    return '';
+  }
+
+  getParameterPlaceholder(param: any): string {
+    if (param.default !== undefined) {
+      return `Default: ${param.default}`;
+    }
+    
+    switch (param.type) {
+      case 'NUMBER':
+      case 'INTEGER':
+        return 'Enter number...';
+      case 'DATE':
+        return 'Select date...';
+      case 'BOOLEAN':
+        return 'true/false';
+      case 'STRING':
+        return 'Enter text...';
+      default:
+        return 'Enter value...';
+    }
+  }
+
+  trackByParameterName(index: number, param: any): string {
+    return param.name;
   }
 
   onGroupBadgeAction(event: BadgeActionEvent): void {
