@@ -90,11 +90,117 @@ export class MpCriteriaBuilderComponent implements ControlValueAccessor, OnInit,
     if (this.initialValue) {
       this.writeValue(this.initialValue);
     }
+
+    // Set up keyboard shortcuts
+    this.setupKeyboardShortcuts();
   }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  // Keyboard shortcuts functionality
+  private setupKeyboardShortcuts(): void {
+    document.addEventListener('keydown', (event) => this.handleKeyboardShortcut(event));
+  }
+
+  private handleKeyboardShortcut(event: KeyboardEvent): void {
+    // Only handle shortcuts when component is focused or when Ctrl/Cmd is pressed
+    if (!this.isComponentFocused() && !event.ctrlKey && !event.metaKey) {
+      return;
+    }
+
+    // Prevent default behavior for our shortcuts
+    if (event.ctrlKey || event.metaKey) {
+      switch (event.key.toLowerCase()) {
+        case 'z':
+          if (!event.shiftKey) {
+            event.preventDefault();
+            this.undo();
+          }
+          break;
+        case 'y':
+          event.preventDefault();
+          this.redo();
+          break;
+        case 's':
+          event.preventDefault();
+          this.saveCriteria();
+          break;
+        case 'n':
+          event.preventDefault();
+          this.clearCriteria();
+          break;
+        case 'a':
+          event.preventDefault();
+          this.selectAll();
+          break;
+        case 'd':
+          event.preventDefault();
+          this.duplicateSelected();
+          break;
+        case 'delete':
+        case 'backspace':
+          event.preventDefault();
+          this.deleteSelected();
+          break;
+      }
+    }
+
+    // Handle other keyboard shortcuts
+    switch (event.key) {
+      case 'Enter':
+        if (this.isFunctionMode) {
+          event.preventDefault();
+          this.addFunctionCall();
+        } else if (this.selectedField && this.selectedOperator && this.inputValue !== null) {
+          event.preventDefault();
+          this.addCondition();
+        }
+        break;
+      case 'Escape':
+        event.preventDefault();
+        this.clearCurrentSelection();
+        break;
+      case 'Tab':
+        if (this.isFunctionMode) {
+          event.preventDefault();
+          this.toggleFunctionMode();
+        }
+        break;
+    }
+  }
+
+  private isComponentFocused(): boolean {
+    // Check if any element within the component is focused
+    const componentElement = document.querySelector('mp-criteria-builder');
+    return componentElement?.contains(document.activeElement) || false;
+  }
+
+  private saveCriteria(): void {
+    // Emit save event to parent
+    this.dslChange.emit(this.state.dsl!);
+  }
+
+  private selectAll(): void {
+    // Select all criteria elements
+    this.state.selectedBadgeId = 'all';
+  }
+
+  private duplicateSelected(): void {
+    // Duplicate selected criteria
+    if (this.state.selectedBadgeId) {
+      // Implementation would depend on what's selected
+      console.log('Duplicate functionality not yet implemented');
+    }
+  }
+
+  private deleteSelected(): void {
+    // Delete selected criteria
+    if (this.state.selectedBadgeId && this.state.selectedBadgeId !== 'all') {
+      this.removeElement(this.state.selectedBadgeId);
+    }
   }
 
   // ControlValueAccessor implementation
