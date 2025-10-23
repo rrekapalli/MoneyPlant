@@ -262,6 +262,167 @@ describe('MpCriteriaBuilderComponent', () => {
     expect(component.isDisabledState).toBeTrue();
   });
 
+  // Function functionality tests
+  describe('Function Functionality', () => {
+    const mockFunctions: FunctionMeta[] = [
+      {
+        id: 'SMA',
+        name: 'Simple Moving Average',
+        description: 'Calculate simple moving average',
+        parameters: [
+          { name: 'field', type: 'FIELD', optional: false, description: 'Field to calculate SMA for' },
+          { name: 'period', type: 'INTEGER', optional: false, description: 'Period for SMA calculation', min: 1, max: 200 }
+        ],
+        returnType: 'NUMBER',
+        examples: ['SMA(close, 20)', 'SMA(volume, 10)']
+      },
+      {
+        id: 'RSI',
+        name: 'Relative Strength Index',
+        description: 'Calculate RSI indicator',
+        parameters: [
+          { name: 'field', type: 'FIELD', optional: false, description: 'Field to calculate RSI for' },
+          { name: 'period', type: 'INTEGER', optional: true, description: 'Period for RSI calculation', default: 14, min: 1, max: 100 }
+        ],
+        returnType: 'NUMBER',
+        examples: ['RSI(close)', 'RSI(close, 21)']
+      }
+    ];
+
+    beforeEach(() => {
+      component.functions = mockFunctions;
+    });
+
+    it('should toggle function mode', () => {
+      expect(component.isFunctionMode).toBeFalse();
+      
+      component.toggleFunctionMode();
+      expect(component.isFunctionMode).toBeTrue();
+      
+      component.toggleFunctionMode();
+      expect(component.isFunctionMode).toBeFalse();
+    });
+
+    it('should select function and initialize parameters', () => {
+      spyOn(component, 'clearCurrentSelection');
+      
+      component.onFunctionSelected('SMA');
+      
+      expect(component.selectedFunction).toEqual(mockFunctions[0]);
+      expect(component.isFunctionMode).toBeTrue();
+      expect(component.functionParameters.length).toBe(2);
+      expect(component.clearCurrentSelection).toHaveBeenCalled();
+    });
+
+    it('should clear function selection when no function selected', () => {
+      component.selectedFunction = mockFunctions[0];
+      component.isFunctionMode = true;
+      
+      component.onFunctionSelected('');
+      
+      expect(component.selectedFunction).toBeNull();
+      expect(component.functionParameters).toEqual([]);
+      expect(component.isFunctionMode).toBeFalse();
+    });
+
+    it('should update function parameter values', () => {
+      component.selectedFunction = mockFunctions[0];
+      component.initializeFunctionParameters();
+      
+      // Test field parameter
+      component.onFunctionParameterChanged(0, 'close', 'field');
+      expect(component.functionParameters[0]).toEqual(jasmine.objectContaining({
+        field: 'close'
+      }));
+      
+      // Test literal parameter
+      component.onFunctionParameterChanged(1, '20', 'literal');
+      expect(component.functionParameters[1]).toEqual(jasmine.objectContaining({
+        value: 20,
+        type: 'INTEGER'
+      }));
+    });
+
+    it('should add function call to criteria', () => {
+      component.selectedFunction = mockFunctions[0];
+      component.initializeFunctionParameters();
+      component.functionParameters[0] = { field: 'close', id: 'test1' } as FieldRef;
+      component.functionParameters[1] = { value: 20, type: 'INTEGER', id: 'test2' } as Literal;
+      
+      spyOn(component, 'emitChange');
+      spyOn(component, 'requestValidation');
+      spyOn(component, 'requestSQLPreview');
+      spyOn(component, 'clearFunctionSelection');
+      
+      component.addFunctionCall();
+      
+      expect(component.state.dsl).toBeTruthy();
+      expect(component.state.dsl?.root.children.length).toBe(1);
+      expect(component.emitChange).toHaveBeenCalled();
+      expect(component.clearFunctionSelection).toHaveBeenCalled();
+    });
+
+    it('should not add function call if validation fails', () => {
+      component.selectedFunction = mockFunctions[0];
+      component.functionParameters = []; // Empty parameters should fail validation
+      
+      spyOn(console, 'error');
+      spyOn(component, 'emitChange');
+      
+      component.addFunctionCall();
+      
+      expect(console.error).toHaveBeenCalled();
+      expect(component.emitChange).not.toHaveBeenCalled();
+    });
+
+    it('should get function parameter value correctly', () => {
+      component.functionParameters = [
+        { field: 'close', id: 'test1' } as FieldRef,
+        { value: 20, type: 'INTEGER', id: 'test2' } as Literal
+      ];
+      
+      expect(component.getFunctionParameterValue(0)).toBe('close');
+      expect(component.getFunctionParameterValue(1)).toBe(20);
+      expect(component.getFunctionParameterValue(2)).toBe('');
+    });
+
+    it('should get parameter placeholder correctly', () => {
+      const paramWithDefault = { type: 'INTEGER', default: 14 };
+      const paramWithoutDefault = { type: 'STRING' };
+      
+      expect(component.getParameterPlaceholder(paramWithDefault)).toBe('Default: 14');
+      expect(component.getParameterPlaceholder(paramWithoutDefault)).toBe('Enter text...');
+    });
+
+    it('should track parameters by name', () => {
+      const param1 = { name: 'field' };
+      const param2 = { name: 'period' };
+      
+      expect(component.trackByParameterName(0, param1)).toBe('field');
+      expect(component.trackByParameterName(1, param2)).toBe('period');
+    });
+
+    it('should clear function selection', () => {
+      component.selectedFunction = mockFunctions[0];
+      component.functionParameters = [{ field: 'close', id: 'test1' } as FieldRef];
+      component.isFunctionMode = true;
+      
+      component.clearFunctionSelection();
+      
+      expect(component.selectedFunction).toBeNull();
+      expect(component.functionParameters).toEqual([]);
+      expect(component.isFunctionMode).toBeFalse();
+    });
+
+    it('should parse parameter values correctly', () => {
+      expect(component.parseParameterValue('20', 'INTEGER')).toBe(20);
+      expect(component.parseParameterValue('true', 'BOOLEAN')).toBeTrue();
+      expect(component.parseParameterValue('false', 'BOOLEAN')).toBeFalse();
+      expect(component.parseParameterValue('test', 'STRING')).toBe('test');
+      expect(component.parseParameterValue('', 'STRING')).toBeNull();
+    });
+  });
+
   // Group functionality tests
   describe('Group Functionality', () => {
     it('should add AND group', () => {
