@@ -70,49 +70,49 @@ This document provides a bare minimum implementation task list for creating an A
 **Independent Test**: Create condition "Close > 100" and verify DSL output and SQL preview generation.
 
 ### T011: Create Main Component Shell
-- [ ] T011 [P] [US1] Create MpCriteriaBuilderComponent shell with @Input/@Output properties in frontend/projects/criteria-builder/src/lib/components/mp-criteria-builder.component.ts
+- [x] T011 [P] [US1] Create MpCriteriaBuilderComponent shell with @Input/@Output properties in frontend/projects/criteria-builder/src/lib/components/mp-criteria-builder.component.ts
 
 ### T012: Implement ControlValueAccessor
-- [ ] T012 [US1] Implement ControlValueAccessor interface in MpCriteriaBuilderComponent in frontend/projects/criteria-builder/src/lib/components/mp-criteria-builder.component.ts
+- [x] T012 [US1] Implement ControlValueAccessor interface in MpCriteriaBuilderComponent in frontend/projects/criteria-builder/src/lib/components/mp-criteria-builder.component.ts
 
 ### T013: Create Field Badge Component
-- [ ] T013 [P] [US1] Create FieldBadgeComponent for displaying field names in frontend/projects/criteria-builder/src/lib/components/badges/field-badge.component.ts
+- [x] T013 [P] [US1] Create FieldBadgeComponent for displaying field names in frontend/projects/criteria-builder/src/lib/components/badges/field-badge.component.ts
 
 ### T014: Create Operator Badge Component
-- [ ] T014 [P] [US1] Create OperatorBadgeComponent for displaying operators in frontend/projects/criteria-builder/src/lib/components/badges/operator-badge.component.ts
+- [x] T014 [P] [US1] Create OperatorBadgeComponent for displaying operators in frontend/projects/criteria-builder/src/lib/components/badges/operator-badge.component.ts
 
 ### T015: Create Value Badge Component
-- [ ] T015 [US1] Create ValueBadgeComponent for displaying literal values in frontend/projects/criteria-builder/src/lib/components/badges/value-badge.component.ts
+- [x] T015 [US1] Create ValueBadgeComponent for displaying literal values in frontend/projects/criteria-builder/src/lib/components/badges/value-badge.component.ts
 
 ### T016: Create Basic Template
-- [ ] T016 [US1] Create basic template for rendering field-operator-value combinations in frontend/projects/criteria-builder/src/lib/components/mp-criteria-builder.component.html
+- [x] T016 [US1] Create basic template for rendering field-operator-value combinations in frontend/projects/criteria-builder/src/lib/components/mp-criteria-builder.component.html
 
 ### T017: Implement DSL Generation
-- [ ] T017 [US1] Implement basic DSL generation for simple conditions in frontend/projects/criteria-builder/src/lib/services/criteria-serializer.service.ts
+- [x] T017 [US1] Implement basic DSL generation for simple conditions in frontend/projects/criteria-builder/src/lib/services/criteria-serializer.service.ts
 
 ### T018: Implement SQL Preview Generation
-- [ ] T018 [US1] Implement basic SQL preview generation for simple conditions in frontend/projects/criteria-builder/src/lib/services/criteria-serializer.service.ts
+- [x] T018 [US1] Implement basic SQL preview generation for simple conditions in frontend/projects/criteria-builder/src/lib/services/criteria-serializer.service.ts
 
 ### T019: Create Criteria Validation Service
-- [ ] T019 [US1] Create CriteriaValidationService for validating field-operator-value combinations in frontend/projects/criteria-builder/src/lib/services/criteria-validation.service.ts
+- [x] T019 [US1] Create CriteriaValidationService for validating field-operator-value combinations in frontend/projects/criteria-builder/src/lib/services/criteria-validation.service.ts
 
 ### T020: Implement Change Detection
-- [ ] T020 [US1] Implement change detection and DSL emission in MpCriteriaBuilderComponent in frontend/projects/criteria-builder/src/lib/components/mp-criteria-builder.component.ts
+- [x] T020 [US1] Implement change detection and DSL emission in MpCriteriaBuilderComponent in frontend/projects/criteria-builder/src/lib/components/mp-criteria-builder.component.ts
 
 ### T021: Add Basic Styling
-- [ ] T021 [US1] Add basic CSS styling for badge components in frontend/projects/criteria-builder/src/lib/components/badges/badge.component.scss
+- [x] T021 [US1] Add basic CSS styling for badge components in frontend/projects/criteria-builder/src/lib/components/badges/badge.component.scss
 
 ### T022: Implement Field Selection
-- [ ] T022 [US1] Implement field selection dropdown in MpCriteriaBuilderComponent in frontend/projects/criteria-builder/src/lib/components/mp-criteria-builder.component.ts
+- [x] T022 [US1] Implement field selection dropdown in MpCriteriaBuilderComponent in frontend/projects/criteria-builder/src/lib/components/mp-criteria-builder.component.ts
 
 ### T023: Implement Operator Selection
-- [ ] T023 [US1] Implement operator selection based on field type in MpCriteriaBuilderComponent in frontend/projects/criteria-builder/src/lib/components/mp-criteria-builder.component.ts
+- [x] T023 [US1] Implement operator selection based on field type in MpCriteriaBuilderComponent in frontend/projects/criteria-builder/src/lib/components/mp-criteria-builder.component.ts
 
 ### T024: Implement Value Input
-- [ ] T024 [US1] Implement value input with type validation in MpCriteriaBuilderComponent in frontend/projects/criteria-builder/src/lib/components/mp-criteria-builder.component.ts
+- [x] T024 [US1] Implement value input with type validation in MpCriteriaBuilderComponent in frontend/projects/criteria-builder/src/lib/components/mp-criteria-builder.component.ts
 
 ### T025: Create Basic Tests
-- [ ] T025 [US1] Create basic unit tests for MpCriteriaBuilderComponent in frontend/projects/criteria-builder/src/lib/components/mp-criteria-builder.component.spec.ts
+- [x] T025 [US1] Create basic unit tests for MpCriteriaBuilderComponent in frontend/projects/criteria-builder/src/lib/components/mp-criteria-builder.component.spec.ts
 
 ## Phase 4: User Story 2 - Grouped Criteria with Logical Operators
 
