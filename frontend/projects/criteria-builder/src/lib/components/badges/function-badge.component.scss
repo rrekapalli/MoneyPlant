@@ -1,0 +1,346 @@
+// Function Badge Component Styles
+.function-container {
+  display: flex;
+  flex-direction: column;
+  margin: 0.5rem 0;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  background-color: #fff8e1;
+  transition: all 0.2s ease;
+  position: relative;
+
+  &:hover {
+    border-color: #ff9800;
+    box-shadow: 0 2px 8px rgba(255, 152, 0, 0.15);
+  }
+
+  &.selected {
+    border-color: #ff9800;
+    box-shadow: 0 0 0 2px rgba(255, 152, 0, 0.25);
+  }
+
+  &.editing {
+    border-color: #4caf50;
+    box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.25);
+  }
+
+  &.expanded {
+    .function-header {
+      border-bottom: 1px solid #e0e0e0;
+    }
+  }
+}
+
+.function-header {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem;
+  background-color: #fff3e0;
+  cursor: default;
+  transition: background-color 0.2s ease;
+
+  &.clickable {
+    cursor: pointer;
+    
+    &:hover {
+      background-color: #ffe0b2;
+    }
+  }
+
+  .function-icon {
+    font-size: 1.2rem;
+    margin-right: 0.5rem;
+  }
+
+  .function-name {
+    font-weight: 600;
+    color: #e65100;
+    font-size: 1rem;
+    margin-right: 0.25rem;
+  }
+
+  .function-parentheses {
+    font-weight: bold;
+    color: #ff6f00;
+    font-size: 1.1rem;
+  }
+
+  .parameter-summary {
+    color: #666;
+    font-style: italic;
+    margin: 0 0.25rem;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .expand-indicator {
+    margin-left: auto;
+    color: #ff6f00;
+    font-size: 0.8rem;
+    transition: transform 0.2s ease;
+  }
+}
+
+.function-details {
+  padding: 1rem;
+  background-color: #ffffff;
+  border-top: 1px solid #e0e0e0;
+}
+
+.function-description {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  border-left: 4px solid #ff9800;
+
+  p {
+    margin: 0;
+    color: #333;
+    font-size: 0.9rem;
+    line-height: 1.4;
+  }
+}
+
+.parameter-config {
+  margin-bottom: 1rem;
+}
+
+.parameter-item {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  background-color: #fafafa;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.parameter-label {
+  display: block;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+
+  .parameter-type {
+    color: #666;
+    font-weight: normal;
+    font-size: 0.8rem;
+    margin-left: 0.25rem;
+  }
+
+  .parameter-required {
+    color: #d32f2f;
+    font-weight: bold;
+    margin-left: 0.25rem;
+  }
+}
+
+.parameter-input {
+  .parameter-help {
+    margin-top: 0.25rem;
+    color: #666;
+    font-size: 0.8rem;
+    font-style: italic;
+  }
+
+  select,
+  input {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    transition: border-color 0.2s ease;
+
+    &:focus {
+      outline: none;
+      border-color: #ff9800;
+      box-shadow: 0 0 0 2px rgba(255, 152, 0, 0.25);
+    }
+
+    &:disabled {
+      background-color: #f8f9fa;
+      cursor: not-allowed;
+    }
+  }
+}
+
+.function-examples {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background-color: #e8f5e8;
+  border-radius: 4px;
+  border-left: 4px solid #4caf50;
+
+  h5 {
+    margin: 0 0 0.5rem 0;
+    color: #2e7d32;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  ul {
+    margin: 0;
+    padding-left: 1rem;
+  }
+
+  li {
+    color: #333;
+    font-size: 0.8rem;
+    margin-bottom: 0.25rem;
+    font-family: 'Courier New', monospace;
+  }
+}
+
+.function-actions {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  display: flex;
+  gap: 0.25rem;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+
+  .function-container:hover & {
+    opacity: 1;
+  }
+
+  .action-btn {
+    width: 1.5rem;
+    height: 1.5rem;
+    border: none;
+    border-radius: 50%;
+    font-size: 0.8rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+
+    &.edit-function {
+      background-color: #4caf50;
+      color: white;
+
+      &:hover {
+        background-color: #388e3c;
+        transform: scale(1.1);
+      }
+    }
+
+    &.remove-function {
+      background-color: #f44336;
+      color: white;
+
+      &:hover {
+        background-color: #d32f2f;
+        transform: scale(1.1);
+      }
+    }
+  }
+}
+
+// Animation for expand/collapse
+.function-details {
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.function-container:not(.expanded) .function-details {
+  max-height: 0;
+  padding: 0;
+}
+
+.function-container.expanded .function-details {
+  max-height: 1000px;
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .function-container {
+    margin: 0.25rem 0;
+  }
+
+  .function-header {
+    padding: 0.5rem;
+    
+    .function-icon {
+      font-size: 1rem;
+    }
+    
+    .function-name {
+      font-size: 0.9rem;
+    }
+    
+    .parameter-summary {
+      max-width: 150px;
+      font-size: 0.8rem;
+    }
+  }
+
+  .function-details {
+    padding: 0.75rem;
+  }
+
+  .parameter-item {
+    padding: 0.5rem;
+  }
+
+  .function-actions {
+    top: 0.25rem;
+    right: 0.25rem;
+    
+    .action-btn {
+      width: 1.25rem;
+      height: 1.25rem;
+      font-size: 0.7rem;
+    }
+  }
+}
+
+// Function type variants
+.function-container {
+  &.technical-analysis {
+    border-color: #2196f3;
+    background-color: #e3f2fd;
+    
+    .function-header {
+      background-color: #bbdefb;
+    }
+    
+    .function-name {
+      color: #1976d2;
+    }
+  }
+
+  &.mathematical {
+    border-color: #9c27b0;
+    background-color: #f3e5f5;
+    
+    .function-header {
+      background-color: #ce93d8;
+    }
+    
+    .function-name {
+      color: #7b1fa2;
+    }
+  }
+
+  &.statistical {
+    border-color: #ff5722;
+    background-color: #fce4ec;
+    
+    .function-header {
+      background-color: #f8bbd9;
+    }
+    
+    .function-name {
+      color: #c2185b;
+    }
+  }
+}

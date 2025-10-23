@@ -12,6 +12,7 @@ export class CriteriaSerializerService {
    * Generate DSL from criteria builder state
    * T017: Implement basic DSL generation for simple conditions
    * T029: Extend DSL generation to handle nested groups
+   * T039: Extend DSL generation to handle function calls
    */
   generateDSL(conditions: Condition[]): CriteriaDSL {
     if (!conditions || conditions.length === 0) {
@@ -138,13 +139,88 @@ export class CriteriaSerializerService {
   }
 
   /**
+   * Create a function call with parameters
+   * T039: Extended for function call creation
+   */
+  createFunctionCall(functionName: string, parameters: (FieldRef | Literal)[] = []): FunctionCall {
+    return {
+      id: this.generateId(),
+      function: functionName,
+      args: parameters.map(param => {
+        // Ensure all parameters have IDs
+        if (this.isFieldRef(param) && !param.id) {
+          param.id = this.generateId();
+        } else if (this.isLiteral(param) && !param.id) {
+          param.id = this.generateId();
+        }
+        return param;
+      })
+    };
+  }
+
+  /**
+   * Add function call to condition
+   * T039: Extended for function integration
+   */
+  addFunctionToCondition(condition: Condition, functionCall: FunctionCall, position: 'left' | 'right'): Condition {
+    const updatedCondition = { ...condition };
+    
+    if (position === 'left') {
+      updatedCondition.left = functionCall;
+    } else {
+      updatedCondition.right = functionCall;
+    }
+    
+    return updatedCondition;
+  }
+
+  /**
+   * Validate function call structure
+   * T039: Extended for function validation
+   */
+  validateFunctionCall(functionCall: FunctionCall, functionMeta?: any): { isValid: boolean; errors: string[] } {
+    const errors: string[] = [];
+    
+    if (!functionCall.function) {
+      errors.push('Function name is required');
+    }
+    
+    if (!functionCall.args || functionCall.args.length === 0) {
+      errors.push('Function must have at least one parameter');
+    }
+    
+    if (functionMeta) {
+      const expectedParamCount = functionMeta.parameters?.length || 0;
+      const actualParamCount = functionCall.args?.length || 0;
+      
+      if (actualParamCount < expectedParamCount) {
+        const requiredParams = functionMeta.parameters?.filter((p: any) => !p.optional).length || 0;
+        if (actualParamCount < requiredParams) {
+          errors.push(`Function requires at least ${requiredParams} parameters, got ${actualParamCount}`);
+        }
+      }
+      
+      if (actualParamCount > expectedParamCount) {
+        errors.push(`Function expects ${expectedParamCount} parameters, got ${actualParamCount}`);
+      }
+    }
+    
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
+  }
+
+  /**
    * Calculate group statistics
    * T029: Extended for metadata generation
+   * T039: Extended to include function call statistics
    */
-  private calculateGroupStats(group: Group): { conditionCount: number; groupCount: number; maxDepth: number } {
+  private calculateGroupStats(group: Group): { conditionCount: number; groupCount: number; maxDepth: number; functionCount: number } {
     let conditionCount = 0;
     let groupCount = 1; // Count the current group
     let maxDepth = 1;
+    let functionCount = 0;
 
     const traverse = (currentGroup: Group, currentDepth: number) => {
       maxDepth = Math.max(maxDepth, currentDepth);
@@ -152,6 +228,13 @@ export class CriteriaSerializerService {
       (currentGroup.children || []).forEach(child => {
         if (this.isCondition(child)) {
           conditionCount++;
+          // Count function calls in conditions
+          if (this.isFunctionCall(child.left)) {
+            functionCount++;
+          }
+          if (child.right && this.isFunctionCall(child.right)) {
+            functionCount++;
+          }
         } else if (this.isGroup(child)) {
           groupCount++;
           traverse(child, currentDepth + 1);
@@ -161,7 +244,7 @@ export class CriteriaSerializerService {
 
     traverse(group, 1);
 
-    return { conditionCount, groupCount, maxDepth };
+    return { conditionCount, groupCount, maxDepth, functionCount };
   }
 
   /**
@@ -250,6 +333,7 @@ export class CriteriaSerializerService {
 
   /**
    * Generate SQL from operand (FieldRef, FunctionCall, or Literal)
+   * T040: Extended to handle function SQL templates
    */
   private generateSQLFromOperand(operand: FieldRef | FunctionCall | Literal | Literal[]): string {
     if (this.isFieldRef(operand)) {
@@ -257,8 +341,7 @@ export class CriteriaSerializerService {
     }
     
     if (this.isFunctionCall(operand)) {
-      const args = operand.args.map(arg => this.generateSQLFromOperand(arg)).join(', ');
-      return `${operand.function}(${args})`;
+      return this.generateSQLFromFunctionCall(operand);
     }
     
     if (this.isLiteral(operand)) {
@@ -271,6 +354,56 @@ export class CriteriaSerializerService {
     }
     
     return 'NULL';
+  }
+
+  /**
+   * Generate SQL from function call
+   * T040: Extended to handle function SQL templates
+   */
+  private generateSQLFromFunctionCall(functionCall: FunctionCall): string {
+    const functionName = functionCall.function;
+    const args = functionCall.args.map(arg => this.generateSQLFromOperand(arg)).join(', ');
+    
+    // Handle special function cases
+    switch (functionName.toUpperCase()) {
+      case 'SMA':
+        return `AVG(${args}) OVER (ORDER BY date ROWS BETWEEN ${this.getSmaPeriod(args)} PRECEDING AND CURRENT ROW)`;
+      case 'EMA':
+        return `EXP_AVG(${args})`;
+      case 'RSI':
+        return `RSI(${args})`;
+      case 'MACD':
+        return `MACD(${args})`;
+      case 'BOLLINGER_BANDS':
+        return `BOLLINGER_BANDS(${args})`;
+      case 'STOCHASTIC':
+        return `STOCHASTIC(${args})`;
+      case 'WILLIAMS_R':
+        return `WILLIAMS_R(${args})`;
+      case 'CCI':
+        return `CCI(${args})`;
+      case 'ATR':
+        return `ATR(${args})`;
+      case 'ADX':
+        return `ADX(${args})`;
+      default:
+        // Generic function call
+        return `${functionName}(${args})`;
+    }
+  }
+
+  /**
+   * Get SMA period from arguments
+   * T040: Helper for SMA function
+   */
+  private getSmaPeriod(args: string): number {
+    // Extract period from arguments (assuming it's the second parameter)
+    const parts = args.split(',');
+    if (parts.length >= 2) {
+      const period = parseInt(parts[1].trim());
+      return isNaN(period) ? 20 : period; // Default to 20 if invalid
+    }
+    return 20; // Default period
   }
 
   /**

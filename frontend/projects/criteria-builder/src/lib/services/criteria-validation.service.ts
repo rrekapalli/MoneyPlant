@@ -270,6 +270,7 @@ export class CriteriaValidationService {
 
   /**
    * Validate function calls
+   * T041: Extended for function parameter validation
    */
   private validateFunctions(dsl: CriteriaDSL, functions: FunctionMeta[], errors: ValidationError[], warnings: ValidationWarning[]): void {
     if (!dsl?.root || !functions) return;
@@ -292,12 +293,15 @@ export class CriteriaValidationService {
       const functionMeta = functions.find(f => f.id === funcCall.function);
       if (functionMeta) {
         this.validateFunctionParameters(funcCall, functionMeta, errors, warnings);
+        this.validateFunctionParameterTypes(funcCall, functionMeta, errors, warnings);
+        this.validateFunctionParameterValues(funcCall, functionMeta, errors, warnings);
       }
     });
   }
 
   /**
    * Validate function parameters
+   * T041: Extended for function parameter validation
    */
   private validateFunctionParameters(funcCall: FunctionCall, functionMeta: FunctionMeta, errors: ValidationError[], warnings: ValidationWarning[]): void {
     const expectedParamCount = functionMeta.parameters.length;
@@ -323,6 +327,113 @@ export class CriteriaValidationService {
         suggestion: 'Remove extra parameters or check function definition'
       });
     }
+  }
+
+  /**
+   * Validate function parameter types
+   * T041: Extended for function parameter type validation
+   */
+  private validateFunctionParameterTypes(funcCall: FunctionCall, functionMeta: FunctionMeta, errors: ValidationError[], warnings: ValidationWarning[]): void {
+    funcCall.args.forEach((arg, index) => {
+      const expectedParam = functionMeta.parameters[index];
+      if (!expectedParam) return;
+
+      if (this.isFieldRef(arg)) {
+        // Field reference validation
+        if (expectedParam.type !== 'FIELD' && expectedParam.type !== 'STRING') {
+          errors.push({
+            code: 'INVALID_PARAMETER_TYPE',
+            message: `Parameter ${index + 1} of function '${funcCall.function}' expects ${expectedParam.type}, got field reference`,
+            field: funcCall.function,
+            severity: 'error'
+          });
+        }
+      } else if (this.isLiteral(arg)) {
+        // Literal value type validation
+        if (arg.type !== expectedParam.type) {
+          errors.push({
+            code: 'INVALID_PARAMETER_TYPE',
+            message: `Parameter ${index + 1} of function '${funcCall.function}' expects ${expectedParam.type}, got ${arg.type}`,
+            field: funcCall.function,
+            severity: 'error'
+          });
+        }
+      } else {
+        errors.push({
+          code: 'INVALID_PARAMETER',
+          message: `Parameter ${index + 1} of function '${funcCall.function}' is invalid`,
+          field: funcCall.function,
+          severity: 'error'
+        });
+      }
+    });
+  }
+
+  /**
+   * Validate function parameter values
+   * T041: Extended for function parameter value validation
+   */
+  private validateFunctionParameterValues(funcCall: FunctionCall, functionMeta: FunctionMeta, errors: ValidationError[], warnings: ValidationWarning[]): void {
+    funcCall.args.forEach((arg, index) => {
+      const expectedParam = functionMeta.parameters[index];
+      if (!expectedParam || !this.isLiteral(arg)) return;
+
+      // Validate numeric parameters
+      if (expectedParam.type === 'NUMBER' || expectedParam.type === 'INTEGER') {
+        const value = parseFloat(arg.value);
+        if (isNaN(value)) {
+          errors.push({
+            code: 'INVALID_NUMERIC_VALUE',
+            message: `Parameter ${index + 1} of function '${funcCall.function}' must be a number`,
+            field: funcCall.function,
+            severity: 'error'
+          });
+        } else {
+          // Check min/max constraints
+          if (expectedParam.min !== undefined && value < expectedParam.min) {
+            errors.push({
+              code: 'VALUE_TOO_SMALL',
+              message: `Parameter ${index + 1} of function '${funcCall.function}' must be at least ${expectedParam.min}`,
+              field: funcCall.function,
+              severity: 'error'
+            });
+          }
+          if (expectedParam.max !== undefined && value > expectedParam.max) {
+            errors.push({
+              code: 'VALUE_TOO_LARGE',
+              message: `Parameter ${index + 1} of function '${funcCall.function}' must be at most ${expectedParam.max}`,
+              field: funcCall.function,
+              severity: 'error'
+            });
+          }
+        }
+      }
+
+      // Validate date parameters
+      if (expectedParam.type === 'DATE') {
+        const date = new Date(arg.value);
+        if (isNaN(date.getTime())) {
+          errors.push({
+            code: 'INVALID_DATE_VALUE',
+            message: `Parameter ${index + 1} of function '${funcCall.function}' must be a valid date`,
+            field: funcCall.function,
+            severity: 'error'
+          });
+        }
+      }
+
+      // Validate boolean parameters
+      if (expectedParam.type === 'BOOLEAN') {
+        if (arg.value !== true && arg.value !== false && arg.value !== 'true' && arg.value !== 'false') {
+          errors.push({
+            code: 'INVALID_BOOLEAN_VALUE',
+            message: `Parameter ${index + 1} of function '${funcCall.function}' must be true or false`,
+            field: funcCall.function,
+            severity: 'error'
+          });
+        }
+      }
+    });
   }
 
   /**
