@@ -22,6 +22,9 @@ export class CriteriaValidationService {
       // Basic structure validation
       this.validateStructure(dsl, errors, warnings);
       
+      // Group structure validation
+      this.validateGroupStructure(dsl, errors, warnings);
+      
       // Performance validation
       this.validatePerformance(dsl, warnings);
       
@@ -91,6 +94,8 @@ export class CriteriaValidationService {
 
   /**
    * Validate performance constraints
+   * T031: Extended for group structure validation
+   * T035: Implement nesting depth validation (max 10 levels)
    */
   private validatePerformance(dsl: CriteriaDSL, warnings: ValidationWarning[]): void {
     if (!dsl?.root) return;
@@ -111,6 +116,133 @@ export class CriteriaValidationService {
         code: 'EXCESSIVE_NESTING',
         message: `Criteria has ${nestingDepth} levels of nesting, exceeding recommended limit of ${PERFORMANCE_LIMITS.MAX_NESTING_DEPTH}`,
         suggestion: 'Consider simplifying the logical structure'
+      });
+    }
+  }
+
+  /**
+   * Validate group structure
+   * T031: Implement group structure validation
+   */
+  private validateGroupStructure(dsl: CriteriaDSL, errors: ValidationError[], warnings: ValidationWarning[]): void {
+    if (!dsl?.root) return;
+
+    this.validateGroup(dsl.root, 1, errors, warnings);
+  }
+
+  /**
+   * Validate individual group
+   * T031: Extended for group validation
+   */
+  private validateGroup(group: Group, depth: number, errors: ValidationError[], warnings: ValidationWarning[]): void {
+    // Validate group operator
+    if (!group.operator || !['AND', 'OR', 'NOT'].includes(group.operator)) {
+      errors.push({
+        code: 'INVALID_GROUP_OPERATOR',
+        message: `Invalid group operator: ${group.operator}`,
+        field: group.id,
+        severity: 'error'
+      });
+    }
+
+    // Validate group has children
+    if (!group.children || group.children.length === 0) {
+      warnings.push({
+        code: 'EMPTY_GROUP',
+        message: 'Group contains no conditions',
+        field: group.id,
+        suggestion: 'Add conditions to this group or remove it'
+      });
+      return;
+    }
+
+    // Validate NOT operator usage
+    if (group.operator === 'NOT' && group.children.length > 1) {
+      warnings.push({
+        code: 'NOT_MULTIPLE_CONDITIONS',
+        message: 'NOT operator with multiple conditions may not behave as expected',
+        field: group.id,
+        suggestion: 'Consider using nested groups for complex NOT operations'
+      });
+    }
+
+    // Validate nesting depth
+    if (depth > PERFORMANCE_LIMITS.MAX_NESTING_DEPTH) {
+      errors.push({
+        code: 'MAX_NESTING_EXCEEDED',
+        message: `Maximum nesting depth of ${PERFORMANCE_LIMITS.MAX_NESTING_DEPTH} exceeded`,
+        field: group.id,
+        severity: 'error'
+      });
+      return; // Don't validate deeper levels
+    }
+
+    // Recursively validate children
+    group.children.forEach(child => {
+      if (this.isCondition(child)) {
+        this.validateCondition(child, errors, warnings);
+      } else if (this.isGroup(child)) {
+        this.validateGroup(child, depth + 1, errors, warnings);
+      }
+    });
+  }
+
+  /**
+   * Validate individual condition
+   * T031: Extended for condition validation
+   */
+  private validateCondition(condition: Condition, errors: ValidationError[], warnings: ValidationWarning[]): void {
+    // Validate condition has required fields
+    if (!condition.left) {
+      errors.push({
+        code: 'MISSING_LEFT_OPERAND',
+        message: 'Condition is missing left operand',
+        field: condition.id,
+        severity: 'error'
+      });
+    }
+
+    if (!condition.operator) {
+      errors.push({
+        code: 'MISSING_OPERATOR',
+        message: 'Condition is missing operator',
+        field: condition.id,
+        severity: 'error'
+      });
+    }
+
+    // Validate operator compatibility with operands
+    if (condition.left && condition.operator) {
+      this.validateOperatorCompatibility(condition, errors, warnings);
+    }
+  }
+
+  /**
+   * Validate operator compatibility with operands
+   * T031: Extended for operator validation
+   */
+  private validateOperatorCompatibility(condition: Condition, errors: ValidationError[], warnings: ValidationWarning[]): void {
+    const operator = condition.operator;
+    
+    // Check if operator requires right operand
+    const requiresRightOperand = !['IS_NULL', 'IS_NOT_NULL'].includes(operator);
+    
+    if (requiresRightOperand && !condition.right) {
+      errors.push({
+        code: 'MISSING_RIGHT_OPERAND',
+        message: `Operator '${operator}' requires a right operand`,
+        field: condition.id,
+        severity: 'error'
+      });
+    }
+
+    // Check if operator should not have right operand
+    if (!requiresRightOperand && condition.right) {
+      warnings.push({
+        code: 'UNNECESSARY_RIGHT_OPERAND',
+        message: `Operator '${operator}' does not require a right operand`,
+        field: condition.id,
+        suggestion: 'Remove the right operand for this operator'
       });
     }
   }

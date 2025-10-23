@@ -11,6 +11,7 @@ export class CriteriaSerializerService {
   /**
    * Generate DSL from criteria builder state
    * T017: Implement basic DSL generation for simple conditions
+   * T029: Extend DSL generation to handle nested groups
    */
   generateDSL(conditions: Condition[]): CriteriaDSL {
     if (!conditions || conditions.length === 0) {
@@ -28,7 +29,9 @@ export class CriteriaSerializerService {
         version: '1.0',
         metadata: {
           generatedAt: new Date().toISOString(),
-          conditionCount: 1
+          conditionCount: 1,
+          groupCount: 1,
+          maxDepth: 1
         }
       };
     }
@@ -43,9 +46,122 @@ export class CriteriaSerializerService {
       version: '1.0',
       metadata: {
         generatedAt: new Date().toISOString(),
-        conditionCount: conditions.length
+        conditionCount: conditions.length,
+        groupCount: 1,
+        maxDepth: 1
       }
     };
+  }
+
+  /**
+   * Generate DSL from existing group structure
+   * T029: Extended to handle nested groups
+   */
+  generateDSLFromGroup(rootGroup: Group): CriteriaDSL {
+    if (!rootGroup) {
+      return this.createEmptyDSL();
+    }
+
+    const stats = this.calculateGroupStats(rootGroup);
+    
+    return {
+      root: rootGroup,
+      version: '1.0',
+      metadata: {
+        generatedAt: new Date().toISOString(),
+        conditionCount: stats.conditionCount,
+        groupCount: stats.groupCount,
+        maxDepth: stats.maxDepth
+      }
+    };
+  }
+
+  /**
+   * Create a new group with specified operator
+   * T029: Extended for group creation
+   */
+  createGroup(operator: LogicalOperator, children: (Condition | Group)[] = []): Group {
+    return {
+      id: this.generateId(),
+      operator,
+      children: children.map(child => {
+        // Ensure all children have IDs
+        if (this.isCondition(child) && !child.id) {
+          child.id = this.generateId();
+        } else if (this.isGroup(child) && !child.id) {
+          child.id = this.generateId();
+        }
+        return child;
+      })
+    };
+  }
+
+  /**
+   * Add condition to existing group
+   * T029: Extended for group manipulation
+   */
+  addConditionToGroup(group: Group, condition: Condition): Group {
+    if (!condition.id) {
+      condition.id = this.generateId();
+    }
+
+    return {
+      ...group,
+      children: [...(group.children || []), condition]
+    };
+  }
+
+  /**
+   * Add nested group to existing group
+   * T029: Extended for nested group support
+   */
+  addGroupToGroup(parentGroup: Group, childGroup: Group): Group {
+    if (!childGroup.id) {
+      childGroup.id = this.generateId();
+    }
+
+    return {
+      ...parentGroup,
+      children: [...(parentGroup.children || []), childGroup]
+    };
+  }
+
+  /**
+   * Remove element from group by ID
+   * T029: Extended for group manipulation
+   */
+  removeElementFromGroup(group: Group, elementId: string): Group {
+    return {
+      ...group,
+      children: (group.children || []).filter(child => child.id !== elementId)
+    };
+  }
+
+  /**
+   * Calculate group statistics
+   * T029: Extended for metadata generation
+   */
+  private calculateGroupStats(group: Group): { conditionCount: number; groupCount: number; maxDepth: number } {
+    let conditionCount = 0;
+    let groupCount = 1; // Count the current group
+    let maxDepth = 1;
+
+    const traverse = (currentGroup: Group, currentDepth: number) => {
+      maxDepth = Math.max(maxDepth, currentDepth);
+      
+      (currentGroup.children || []).forEach(child => {
+        if (this.isCondition(child)) {
+          conditionCount++;
+        } else if (this.isGroup(child)) {
+          groupCount++;
+          traverse(child, currentDepth + 1);
+        }
+      });
+    };
+
+    traverse(group, 1);
+
+    return { conditionCount, groupCount, maxDepth };
   }
 
   /**
@@ -68,6 +184,7 @@ export class CriteriaSerializerService {
 
   /**
    * Generate SQL from a group (recursive)
+   * T030: Extended to handle logical operators and parentheses
    */
   private generateSQLFromGroup(group: Group): string {
     if (!group.children || group.children.length === 0) {
@@ -88,11 +205,31 @@ export class CriteriaSerializerService {
     }
 
     if (conditions.length === 1) {
+      // Handle NOT operator for single condition
+      if (group.operator === 'NOT') {
+        return `NOT (${conditions[0]})`;
+      }
       return conditions[0];
     }
 
-    const operator = group.operator === 'NOT' ? 'NOT' : group.operator;
-    return conditions.join(` ${operator} `);
+    // Handle different logical operators
+    let sql = '';
+    switch (group.operator) {
+      case 'NOT':
+        // NOT operator with multiple conditions - wrap all in parentheses
+        sql = `NOT (${conditions.join(' AND ')})`;
+        break;
+      case 'AND':
+        sql = conditions.join(' AND ');
+        break;
+      case 'OR':
+        sql = conditions.join(' OR ');
+        break;
+      default:
+        sql = conditions.join(` ${group.operator} `);
+    }
+
+    return sql;
   }
 
   /**
