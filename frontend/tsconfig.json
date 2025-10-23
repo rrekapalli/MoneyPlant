@@ -30,13 +30,6 @@
       "@dashboards/public-api": [
         "./projects/dashboards/src/public-api"
       ],
-      "criteria-builder": [
-        "./dist/criteria-builder"
-      ],
-      "@projects/criteria-builder": [
-        "./dist/criteria-builder",
-        "./projects/criteria-builder/src/public-api"
-      ],
 
       "echarts": ["./src/types/echarts"]
     },
@@ -53,11 +46,5 @@
     "strictTemplates": true
   },
   "references": [
-    {
-      "path": "./projects/criteria-builder/tsconfig.lib.json"
-    },
-    {
-      "path": "./projects/criteria-builder/tsconfig.spec.json"
-    }
   ]
 }

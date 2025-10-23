@@ -88,9 +88,9 @@
             </div>
 
             <div class="criteria-builder-container">
-              <ac-criteria-builder [(ngModel)]="criteriaDSL" [config]="criteriaConfig"
-                (validityChange)="onValidityChange($event)" class="screener-criteria-builder">
-              </ac-criteria-builder>
+              <div class="empty-criteria-section">
+                <p>Criteria builder section will be implemented here.</p>
+              </div>
             </div>
 
             <div class="criteria-actions">
@@ -111,7 +111,7 @@
                 </div>
                 <div class="summary-item">
                   <span class="summary-label">Logic Operator:</span>
-                  <span class="summary-value">{{ criteriaDSL?.root?.operator || 'AND' }}</span>
+                  <span class="summary-value">AND</span>
                 </div>
                 <div class="summary-item">
                   <span class="summary-label">Status:</span>

@@ -65,8 +65,8 @@ public class CurrentUserService {
                     log.debug("Found user ID {} for email: {}", user.getId(), username);
                     return user.getId();
                 } catch (Exception ex) {
-                    log.warn("Failed to lookup user for email: {}", username, ex);
-                    return null;
+                    log.error("Failed to lookup user for email: {} - {}", username, ex.getMessage(), ex);
+                    throw new IllegalStateException("Unable to determine current user ID for email: " + username, ex);
                 }
             }
         } else {

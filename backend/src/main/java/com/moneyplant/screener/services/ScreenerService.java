@@ -138,6 +138,11 @@ public class ScreenerService {
             Long currentUserId = currentUserService.getCurrentUserId();
             log.info("Current user ID: {}", currentUserId);
             
+            if (currentUserId == null) {
+                log.error("Unable to determine current user ID - authentication may have failed");
+                throw new AccessDeniedException("Unable to determine current user - please re-authenticate");
+            }
+            
             // Note: Sorting is handled in the native query, so we don't pass Sort to Pageable
             Pageable pageable = PageRequest.of(page, size);
             log.info("Executing query with userId: {}, search: {}", currentUserId, search);
