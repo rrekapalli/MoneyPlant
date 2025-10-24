@@ -7,3 +7,6 @@ export * from './lib/criteria-builder';
 
 // Core interfaces
 export * from './lib/interfaces';
+
+// Services
+export * from './lib/services';

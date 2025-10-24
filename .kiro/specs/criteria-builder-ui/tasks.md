@@ -7,19 +7,19 @@
   - Configure build scripts and library dependencies in package.json
   - _Requirements: FR-001, FR-011_
 
-- [ ] 2. Implement core data models and DSL integration
-  - [ ] 2.1 Create CriteriaDSL data models matching backend structure
+- [x] 2. Implement core data models and DSL integration
+  - [x] 2.1 Create CriteriaDSL data models matching backend structure
     - Implement CriteriaDSL, Group, Condition, FieldRef, FunctionCall, Literal interfaces
     - Create type guards and validation utilities for DSL objects
     - _Requirements: FR-007, FR-008_
 
-  - [ ] 2.2 Build DSL Builder Service for JSON conversion
+  - [x] 2.2 Build DSL Builder Service for JSON conversion
     - Implement service to convert UI state to CriteriaDSL JSON format
     - Create methods for adding, updating, and removing criteria elements
     - Add validation for DSL structure integrity and nesting limits
     - _Requirements: FR-007, FR-012_
 
-  - [ ] 2.3 Create Chip Factory Service for dynamic chip creation
+  - [x] 2.3 Create Chip Factory Service for dynamic chip creation
     - Implement factory pattern for creating different chip types (group, condition, function, parameter)
     - Add methods for generating placeholder chips for function parameters
     - Create chip ID generation and parent-child relationship management
