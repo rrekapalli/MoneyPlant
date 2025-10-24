@@ -260,6 +260,19 @@
       }
     }
 
+    .criteria-builder-container {
+      background: #f8f9fa;
+      border: 1px solid #e9ecef;
+      border-radius: 6px;
+      padding: 1rem;
+      min-height: 300px;
+      
+      mp-criteria-builder {
+        display: block;
+        width: 100%;
+      }
+    }
+
     .config-actions {
       display: flex;
       justify-content: flex-end;
@@ -372,6 +385,33 @@
       font-size: 0.875rem;
       line-height: 1.5;
       border-radius: 0.25rem;
+    }
+  }
+}
+
+// Criteria builder placeholder styling
+.criteria-builder-container {
+  .criteria-placeholder {
+    text-align: center;
+    padding: 3rem 2rem;
+    background: #f8f9fa;
+    border: 2px dashed #dee2e6;
+    border-radius: 8px;
+    color: #6c757d;
+
+    i {
+      margin-bottom: 1rem;
+      display: block;
+    }
+
+    p {
+      margin: 0.5rem 0;
+      font-size: 1rem;
+
+      &.text-muted {
+        font-size: 0.9rem;
+        color: #adb5bd;
+      }
     }
   }
 }

@@ -11,6 +11,8 @@ cd "$PROJECT_ROOT/frontend"
 # Clean and build
 rm -rf dist/
 npm install
+
+# Build main application
 npm run build:single
 
 # Copy all built files to backend static resources

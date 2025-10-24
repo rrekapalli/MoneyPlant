@@ -30,7 +30,6 @@
       "@dashboards/public-api": [
         "./projects/dashboards/src/public-api"
       ],
-
       "echarts": ["./src/types/echarts"]
     },
     "lib": [
