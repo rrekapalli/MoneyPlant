@@ -1,0 +1,1 @@
+export * from './group-chip.component';

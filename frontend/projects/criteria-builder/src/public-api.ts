@@ -10,3 +10,6 @@ export * from './lib/interfaces';
 
 // Services
 export * from './lib/services';
+
+// Components
+export * from './lib/components';

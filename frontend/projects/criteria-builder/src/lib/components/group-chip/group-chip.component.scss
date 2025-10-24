@@ -1,0 +1,491 @@
+/* Group chip component styles */
+.group-chip-container {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  margin: 4px 0;
+  
+  /* Nested indentation */
+  &.nested {
+    border-left: 2px solid var(--surface-border);
+    padding-left: 8px;
+  }
+  
+  /* Maximum depth indicator */
+  &.max-depth {
+    opacity: 0.8;
+    
+    .add-sibling-btn,
+    .add-child-btn {
+      display: none;
+    }
+  }
+  
+  /* Grouped state styling */
+  &.grouped {
+    background-color: var(--surface-50);
+    border-radius: 8px;
+    padding: 8px;
+    border: 1px dashed var(--primary-color);
+    
+    .grouping-braces {
+      opacity: 1;
+    }
+  }
+  
+  /* Has children state */
+  &.has-children {
+    .group-chip-header {
+      margin-bottom: 8px;
+    }
+  }
+}
+
+/* Group chip header layout */
+.group-chip-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  
+  /* Group toggle button (curly braces) */
+  .group-toggle-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border: 1px solid var(--surface-border);
+    border-radius: 4px;
+    background: var(--surface-0);
+    color: var(--text-color-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    font-size: 0.75rem;
+    
+    &:hover {
+      border-color: var(--primary-color);
+      color: var(--primary-color);
+      background: var(--primary-50);
+    }
+    
+    &:focus {
+      outline: 2px solid var(--primary-color);
+      outline-offset: 2px;
+    }
+    
+    &.active {
+      background: var(--primary-color);
+      color: var(--primary-color-text);
+      border-color: var(--primary-color);
+      
+      .pi-code.grouped::before {
+        content: '\\e90b'; /* Different icon for grouped state */
+      }
+    }
+    
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      
+      &:hover {
+        border-color: var(--surface-border);
+        color: var(--text-color-secondary);
+        background: var(--surface-0);
+      }
+    }
+  }
+  
+  /* Main group chip button */
+  ::ng-deep .group-chip-button {
+    flex: 1;
+    min-width: 120px;
+    
+    .p-button-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .operator-display {
+      font-weight: 600;
+      color: var(--primary-color);
+      background: var(--primary-50);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+    }
+    
+    &.grouped {
+      border-style: dashed;
+      background: var(--primary-50);
+    }
+    
+    &.has-children {
+      font-weight: 600;
+    }
+    
+    &.expanded {
+      border-bottom-left-radius: 4px;
+      border-bottom-right-radius: 4px;
+    }
+    
+    /* Operator-specific styling */
+    &.operator-and .operator-display {
+      background: var(--green-50);
+      color: var(--green-700);
+    }
+    
+    &.operator-or .operator-display {
+      background: var(--blue-50);
+      color: var(--blue-700);
+    }
+    
+    &.operator-not .operator-display {
+      background: var(--red-50);
+      color: var(--red-700);
+    }
+  }
+  
+  /* Add sibling button (encircled plus) */
+  .add-sibling-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 50%;
+    background: var(--primary-color);
+    color: var(--primary-color-text);
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    font-size: 1rem;
+    
+    &:hover {
+      background: var(--primary-600);
+      transform: scale(1.1);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+    
+    &:focus {
+      outline: 2px solid var(--primary-color);
+      outline-offset: 2px;
+    }
+    
+    &:active {
+      transform: scale(0.95);
+    }
+    
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+      
+      &:hover {
+        background: var(--primary-color);
+        transform: none;
+        box-shadow: none;
+      }
+    }
+  }
+}
+
+/* Grouping braces visual indicator */
+.grouping-braces {
+  position: absolute;
+  top: 0;
+  left: -12px;
+  right: -12px;
+  bottom: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+  
+  .brace-left,
+  .brace-right {
+    position: absolute;
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--primary-color);
+    line-height: 1;
+  }
+  
+  .brace-left {
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  
+  .brace-right {
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+}
+
+/* Children container */
+.group-children {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-left: 16px;
+  border-left: 2px solid var(--surface-border);
+  margin-left: 12px;
+  
+  /* Child item layout */
+  .child-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+    padding: 2px;
+    border-radius: 4px;
+    transition: all 0.2s ease-in-out;
+    
+    &:hover {
+      background: var(--surface-50);
+    }
+    
+    &.dragging {
+      opacity: 0.5;
+      transform: rotate(2deg);
+    }
+    
+    /* Drag handle */
+    .drag-handle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      color: var(--text-color-secondary);
+      cursor: grab;
+      opacity: 0;
+      transition: opacity 0.2s ease-in-out;
+      
+      &:hover {
+        color: var(--primary-color);
+      }
+      
+      &:active {
+        cursor: grabbing;
+      }
+    }
+    
+    &:hover .drag-handle {
+      opacity: 1;
+    }
+    
+    /* Delete button for child */
+    .delete-child-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      border: none;
+      border-radius: 50%;
+      background: var(--red-500);
+      color: white;
+      cursor: pointer;
+      opacity: 0;
+      transition: all 0.2s ease-in-out;
+      font-size: 0.75rem;
+      
+      &:hover {
+        background: var(--red-600);
+        transform: scale(1.1);
+      }
+      
+      &:focus {
+        outline: 2px solid var(--red-500);
+        outline-offset: 2px;
+        opacity: 1;
+      }
+    }
+    
+    &:hover .delete-child-btn {
+      opacity: 1;
+    }
+  }
+  
+  /* Add child button */
+  .add-child-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border: 2px dashed var(--surface-border);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-color-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    font-size: 0.875rem;
+    margin-top: 4px;
+    
+    &:hover {
+      border-color: var(--primary-color);
+      color: var(--primary-color);
+      background: var(--primary-50);
+    }
+    
+    &:focus {
+      outline: 2px solid var(--primary-color);
+      outline-offset: 2px;
+    }
+    
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      
+      &:hover {
+        border-color: var(--surface-border);
+        color: var(--text-color-secondary);
+        background: transparent;
+      }
+    }
+    
+    .pi-plus {
+      font-size: 0.75rem;
+    }
+  }
+}
+
+/* Validation message */
+.validation-message {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  background: var(--red-50);
+  border: 1px solid var(--red-200);
+  border-radius: 4px;
+  color: var(--red-700);
+  font-size: 0.875rem;
+  margin-top: 4px;
+  
+  .pi-exclamation-triangle {
+    color: var(--red-500);
+  }
+}
+
+/* CDK Drag and Drop styling */
+::ng-deep .cdk-drag-preview {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  background: var(--surface-0);
+  border: 1px solid var(--primary-color);
+}
+
+::ng-deep .cdk-drag-placeholder {
+  opacity: 0.3;
+  background: var(--surface-100);
+  border: 2px dashed var(--surface-border);
+  border-radius: 4px;
+}
+
+::ng-deep .cdk-drop-list-dragging .child-item:not(.cdk-drag-placeholder) {
+  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+/* Compact mode adjustments */
+.group-chip-container.compact {
+  margin: 2px 0;
+  
+  .group-chip-header {
+    gap: 4px;
+    
+    .group-toggle-btn {
+      width: 20px;
+      height: 20px;
+      font-size: 0.625rem;
+    }
+    
+    .add-sibling-btn {
+      width: 24px;
+      height: 24px;
+      font-size: 0.875rem;
+    }
+  }
+  
+  .group-children {
+    padding-left: 12px;
+    margin-left: 8px;
+    gap: 2px;
+    
+    .child-item {
+      gap: 4px;
+    }
+    
+    .add-child-btn {
+      padding: 4px 8px;
+      font-size: 0.75rem;
+    }
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .group-chip-container {
+    &.grouped {
+      border-width: 2px;
+      border-style: solid;
+    }
+  }
+  
+  .group-toggle-btn,
+  .add-sibling-btn,
+  .add-child-btn {
+    border-width: 2px;
+    font-weight: 600;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .group-chip-container,
+  .group-toggle-btn,
+  .add-sibling-btn,
+  .child-item,
+  .drag-handle,
+  .delete-child-btn,
+  .add-child-btn,
+  .grouping-braces {
+    transition: none;
+  }
+  
+  .add-sibling-btn:hover {
+    transform: none;
+  }
+}
+
+/* Dark theme adjustments */
+@media (prefers-color-scheme: dark) {
+  .group-chip-container {
+    &.grouped {
+      background-color: var(--surface-800);
+      border-color: var(--primary-400);
+    }
+    
+    &.nested {
+      border-left-color: var(--surface-600);
+    }
+  }
+  
+  .group-children {
+    border-left-color: var(--surface-600);
+    
+    .child-item:hover {
+      background: var(--surface-700);
+    }
+  }
+  
+  .validation-message {
+    background: var(--red-900);
+    border-color: var(--red-700);
+    color: var(--red-200);
+  }
+}

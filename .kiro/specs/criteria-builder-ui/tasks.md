@@ -25,27 +25,27 @@
     - Create chip ID generation and parent-child relationship management
     - _Requirements: FR-003, FR-006_
 
-- [ ] 3. Build core chip components with PrimeNG integration
-  - [ ] 3.1 Implement base chip component using p-button
+- [x] 3. Build core chip components with PrimeNG integration
+  - [x] 3.1 Implement base chip component using p-button
     - Create abstract base chip component with common functionality (hover, click, badges)
     - Implement badge system using PrimeNG badge component for superscripts/subscripts
     - Add accessibility features (ARIA labels, keyboard navigation, focus management)
     - _Requirements: FR-002, FR-010, FR-016_
 
-  - [ ] 3.2 Create group-chip component with nesting support
+  - [x] 3.2 Create group-chip component with nesting support
     - Implement group-chip component extending base chip with curly braces '{}' icon
     - Add encircled plus '+' icon functionality for adding sibling chips
     - Implement visual hierarchy with proper indentation and containment styling
     - Add drag-and-drop support for reordering within groups
     - _Requirements: FR-004, FR-005, FR-016_
 
-  - [ ] 3.3 Build condition-chip component for field/operator/value display
+  - [x] 3.3 Build condition-chip component for field/operator/value display
     - Create condition chip component for displaying field, operator, and value elements
     - Implement individual chip creation for each selection (field, operator, value)
     - Add delete functionality with hover states and confirmation
     - _Requirements: FR-002, FR-003, FR-016_
 
-  - [ ] 3.4 Implement function-chip component with parameter management
+  - [x] 3.4 Implement function-chip component with parameter management
     - Create function chip component with parameter placeholder generation
     - Add nested function support and parameter validation indicators
     - Implement expandable parameter view for complex functions
