@@ -51,26 +51,26 @@
     - Implement expandable parameter view for complex functions
     - _Requirements: FR-006, FR-016_
 
-- [ ] 4. Create multi-tab popover system using PrimeNG
-  - [ ] 4.1 Build popover container with tab navigation
+- [x] 4. Create multi-tab popover system using PrimeNG
+  - [x] 4.1 Build popover container with tab navigation
     - Implement PrimeNG Popover component with TabView for Fields, Operators, Math Functions, Indicators
     - Add context-aware tab display based on chip type and current state
     - Implement popover positioning and responsive behavior
     - _Requirements: FR-003, FR-006_
 
-  - [ ] 4.2 Implement Fields tab with API integration
+  - [x] 4.2 Implement Fields tab with API integration
     - Create fields tab component displaying field metadata from /api/screeners/fields
     - Add field selection functionality with search and filtering
     - Implement field categorization and grouping for better UX
     - _Requirements: FR-003, FR-011_
 
-  - [ ] 4.3 Build Operators tab with dynamic operator loading
+  - [x] 4.3 Build Operators tab with dynamic operator loading
     - Create operators tab showing compatible operators from /api/screeners/fields/{fieldId}/operators
     - Implement logical operators (AND, OR, NOT) and comparison operators (=, >, <, etc.)
     - Add operator validation and compatibility checking
     - _Requirements: FR-004, FR-011_
 
-  - [ ] 4.4 Create Math Functions and Indicators tabs
+  - [x] 4.4 Create Math Functions and Indicators tabs
     - Implement function tabs displaying functions from /api/screeners/functions filtered by category
     - Add function signature loading from /api/screeners/functions/{functionId}/signature
     - Create parameter input fields based on FunctionParameterResp definitions

@@ -32,7 +32,7 @@ import { Subject } from 'rxjs';
       [label]="displayText"
       [disabled]="disabled || !isEditable"
       [severity]="getButtonSeverity()"
-      [size]="compactMode ? 'small' : 'normal'"
+      [size]="compactMode ? 'small' : undefined"
       [outlined]="!isSelected"
       [text]="isSelected"
       [class]="getChipClasses()"
@@ -203,7 +203,7 @@ export abstract class BaseChipComponent implements OnInit, OnDestroy {
   /**
    * Get PrimeNG button severity based on chip state
    */
-  protected getButtonSeverity(): 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'danger' | 'help' | 'contrast' | null {
+  protected getButtonSeverity(): 'primary' | 'secondary' | 'success' | 'info' | 'warn' | 'danger' | 'help' | 'contrast' | null {
     if (!this.isValid) return 'danger';
     if (this.isLoading) return 'info';
     if (this.isSelected) return 'primary';
@@ -255,14 +255,15 @@ export abstract class BaseChipComponent implements OnInit, OnDestroy {
   /**
    * Get PrimeNG badge severity from badge type
    */
-  protected getBadgeSeverity(type: string): 'success' | 'info' | 'warning' | 'danger' | 'secondary' | null {
+  protected getBadgeSeverity(type: string): 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast' | null {
     switch (type) {
       case 'success': return 'success';
       case 'info': return 'info';
-      case 'warning': return 'warning';
+      case 'warning': return 'warn';
       case 'error': return 'danger';
       case 'primary': return 'info';
       case 'secondary': return 'secondary';
+      case 'contrast': return 'contrast';
       default: return null;
     }
   }

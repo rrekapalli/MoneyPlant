@@ -1,0 +1,538 @@
+:host {
+  display: block;
+  height: 100%;
+  
+  .loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    gap: 1rem;
+    
+    .loading-text {
+      color: var(--text-color-secondary);
+      font-size: 0.875rem;
+    }
+  }
+  
+  .error-container {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    align-items: center;
+    
+    .error-message {
+      width: 100%;
+    }
+  }
+  
+  .functions-content {
+    .search-container {
+      padding: 1rem;
+      border-bottom: 1px solid var(--surface-border);
+      
+      .search-input {
+        width: 100%;
+      }
+    }
+    
+    .no-results {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      color: var(--text-color-secondary);
+      gap: 0.5rem;
+      text-align: center;
+      
+      i {
+        font-size: 1.5rem;
+        opacity: 0.6;
+      }
+      
+      small {
+        font-size: 0.8125rem;
+        opacity: 0.8;
+      }
+    }
+    
+    .functions-container {
+      .functions-accordion {
+        ::ng-deep {
+          .p-accordion-header {
+            .p-accordion-header-link {
+              padding: 0.75rem 1rem;
+              background: var(--surface-section);
+              border: none;
+              border-bottom: 1px solid var(--surface-border);
+              
+              &:hover {
+                background: var(--surface-hover);
+              }
+              
+              .category-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                width: 100%;
+                
+                .category-title {
+                  font-weight: 600;
+                  color: var(--text-color);
+                }
+                
+                .category-count {
+                  margin-left: auto;
+                }
+              }
+            }
+          }
+          
+          .p-accordion-content {
+            padding: 0;
+            border: none;
+          }
+        }
+        
+        .functions-list {
+          .function-item {
+            display: flex;
+            align-items: flex-start;
+            padding: 1rem;
+            border-bottom: 1px solid var(--surface-border);
+            transition: all 0.2s ease;
+            gap: 0.75rem;
+            
+            &:hover:not(.deprecated) {
+              background: var(--surface-hover);
+            }
+            
+            &.deprecated {
+              opacity: 0.6;
+              
+              &:hover {
+                background: var(--surface-hover);
+                opacity: 0.8;
+              }
+            }
+            
+            .function-icon {
+              color: var(--primary-color);
+              font-size: 1.125rem;
+              min-width: 1.125rem;
+              margin-top: 0.125rem;
+            }
+            
+            .function-content {
+              flex: 1;
+              
+              .function-header {
+                margin-bottom: 0.5rem;
+                
+                .function-main {
+                  display: flex;
+                  align-items: center;
+                  justify-content: space-between;
+                  
+                  .function-name {
+                    font-weight: 600;
+                    color: var(--text-color);
+                    font-size: 1rem;
+                  }
+                  
+                  .function-badges {
+                    display: flex;
+                    gap: 0.25rem;
+                    
+                    .return-type-badge {
+                      font-size: 0.75rem;
+                    }
+                    
+                    .deprecated-badge {
+                      font-size: 0.6875rem;
+                    }
+                  }
+                }
+              }
+              
+              .function-description {
+                font-size: 0.875rem;
+                color: var(--text-color-secondary);
+                line-height: 1.4;
+                margin-bottom: 0.5rem;
+              }
+              
+              .function-example {
+                .example-divider {
+                  margin: 0.5rem 0 0.25rem 0;
+                  
+                  ::ng-deep {
+                    .p-divider-horizontal {
+                      margin: 0;
+                      
+                      &:before {
+                        border-top-color: var(--surface-border);
+                      }
+                    }
+                  }
+                }
+                
+                .example-content {
+                  display: flex;
+                  flex-direction: column;
+                  gap: 0.25rem;
+                  
+                  .example-label {
+                    font-size: 0.75rem;
+                    color: var(--text-color-secondary);
+                    font-weight: 500;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                  }
+                  
+                  .example-code {
+                    font-family: 'Courier New', monospace;
+                    font-size: 0.8125rem;
+                    background: var(--surface-ground);
+                    padding: 0.375rem 0.5rem;
+                    border-radius: 4px;
+                    border: 1px solid var(--surface-border);
+                    color: var(--text-color);
+                  }
+                }
+              }
+            }
+            
+            .function-actions {
+              display: flex;
+              flex-direction: column;
+              gap: 0.5rem;
+              margin-top: 0.125rem;
+            }
+          }
+          
+          .function-item:last-child {
+            border-bottom: none;
+          }
+        }
+      }
+    }
+  }
+}
+
+// Function Signature Dialog Styles
+::ng-deep {
+  .function-signature-dialog {
+    .p-dialog-content {
+      padding: 1.5rem;
+    }
+    
+    .signature-content {
+      .signature-header {
+        margin-bottom: 1.5rem;
+        
+        .function-title {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          margin-bottom: 0.5rem;
+          
+          i {
+            color: var(--primary-color);
+            font-size: 1.25rem;
+          }
+          
+          .function-name {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-color);
+          }
+        }
+        
+        .function-description {
+          color: var(--text-color-secondary);
+          line-height: 1.4;
+        }
+      }
+      
+      .signature-loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        padding: 2rem;
+        color: var(--text-color-secondary);
+      }
+      
+      .signature-details {
+        .parameters-info {
+          margin-bottom: 1rem;
+          
+          h4 {
+            margin: 0 0 0.5rem 0;
+            color: var(--text-color);
+            font-size: 1rem;
+          }
+          
+          .parameter-count {
+            margin: 0;
+            color: var(--text-color-secondary);
+            font-size: 0.875rem;
+          }
+        }
+        
+        .parameters-list {
+          margin-bottom: 1.5rem;
+          
+          .parameter-item {
+            padding: 0.75rem;
+            border: 1px solid var(--surface-border);
+            border-radius: 6px;
+            margin-bottom: 0.75rem;
+            
+            &:last-child {
+              margin-bottom: 0;
+            }
+            
+            .parameter-header {
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              margin-bottom: 0.5rem;
+              
+              .parameter-name {
+                font-weight: 500;
+                color: var(--text-color);
+                font-family: 'Courier New', monospace;
+              }
+              
+              .parameter-badges {
+                display: flex;
+                gap: 0.25rem;
+                
+                .parameter-type {
+                  font-size: 0.75rem;
+                }
+                
+                .required-badge,
+                .optional-badge {
+                  font-size: 0.6875rem;
+                }
+              }
+            }
+            
+            .parameter-description {
+              color: var(--text-color-secondary);
+              font-size: 0.875rem;
+              line-height: 1.3;
+              margin-bottom: 0.5rem;
+            }
+            
+            .parameter-default {
+              small {
+                color: var(--text-color-secondary);
+                font-size: 0.8125rem;
+                
+                code {
+                  background: var(--surface-ground);
+                  padding: 0.125rem 0.25rem;
+                  border-radius: 3px;
+                  font-family: 'Courier New', monospace;
+                }
+              }
+            }
+          }
+        }
+        
+        .no-parameters {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+          padding: 1.5rem;
+          color: var(--text-color-secondary);
+          background: var(--surface-ground);
+          border-radius: 6px;
+          margin-bottom: 1.5rem;
+          
+          i {
+            opacity: 0.6;
+          }
+        }
+        
+        .return-info {
+          h4 {
+            margin: 0 0 0.5rem 0;
+            color: var(--text-color);
+            font-size: 1rem;
+          }
+          
+          .return-type {
+            margin: 0;
+            color: var(--text-color-secondary);
+            font-size: 0.875rem;
+            font-family: 'Courier New', monospace;
+            background: var(--surface-ground);
+            padding: 0.5rem;
+            border-radius: 4px;
+            border: 1px solid var(--surface-border);
+          }
+        }
+      }
+    }
+    
+    .dialog-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
+    }
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  :host {
+    .functions-content {
+      .search-container {
+        padding: 0.75rem;
+      }
+      
+      .functions-container {
+        .functions-accordion {
+          ::ng-deep {
+            .p-accordion-header {
+              .p-accordion-header-link {
+                padding: 0.5rem 0.75rem;
+                
+                .category-header {
+                  .category-title {
+                    font-size: 0.875rem;
+                  }
+                }
+              }
+            }
+          }
+          
+          .functions-list {
+            .function-item {
+              padding: 0.75rem;
+              gap: 0.5rem;
+              
+              .function-content {
+                .function-header {
+                  .function-main {
+                    flex-direction: column;
+                    align-items: flex-start;
+                    gap: 0.5rem;
+                    
+                    .function-name {
+                      font-size: 0.875rem;
+                    }
+                  }
+                }
+                
+                .function-description {
+                  font-size: 0.8125rem;
+                }
+                
+                .function-example {
+                  .example-content {
+                    .example-code {
+                      font-size: 0.75rem;
+                      padding: 0.25rem 0.375rem;
+                    }
+                  }
+                }
+              }
+              
+              .function-actions {
+                flex-direction: row;
+                gap: 0.25rem;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  ::ng-deep {
+    .function-signature-dialog {
+      .p-dialog {
+        width: 95vw !important;
+        max-width: none !important;
+      }
+      
+      .p-dialog-content {
+        padding: 1rem;
+      }
+      
+      .signature-content {
+        .signature-details {
+          .parameters-list {
+            .parameter-item {
+              .parameter-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+              }
+            }
+          }
+        }
+      }
+      
+      .dialog-footer {
+        flex-direction: column;
+        gap: 0.5rem;
+        
+        button {
+          width: 100%;
+        }
+      }
+    }
+  }
+}
+
+// Dark theme adjustments
+@media (prefers-color-scheme: dark) {
+  :host {
+    .functions-content {
+      .search-container {
+        border-bottom-color: var(--surface-border);
+      }
+      
+      .functions-container {
+        .functions-accordion {
+          ::ng-deep {
+            .p-accordion-header {
+              .p-accordion-header-link {
+                background: var(--surface-section);
+                border-bottom-color: var(--surface-border);
+              }
+            }
+          }
+          
+          .functions-list {
+            .function-item {
+              border-bottom-color: var(--surface-border);
+              
+              .function-content {
+                .function-example {
+                  .example-content {
+                    .example-code {
+                      background: var(--surface-ground);
+                      border-color: var(--surface-border);
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

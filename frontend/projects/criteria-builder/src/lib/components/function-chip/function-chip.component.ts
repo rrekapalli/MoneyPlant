@@ -14,7 +14,7 @@ import { ButtonModule } from 'primeng/button';
 import { BadgeModule } from 'primeng/badge';
 import { TooltipModule } from 'primeng/tooltip';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { OverlayPanelModule } from 'primeng/overlaypanel';
+import { PopoverModule } from 'primeng/popover';
 import { ConfirmationService } from 'primeng/api';
 import { BaseChipComponent } from '../base-chip/base-chip.component';
 import { ChipViewModel } from '../../interfaces';
@@ -47,7 +47,7 @@ export interface FunctionParameter {
     BadgeModule, 
     TooltipModule,
     ConfirmDialogModule,
-    OverlayPanelModule
+    PopoverModule
   ],
   providers: [ConfirmationService],
   template: `
@@ -82,7 +82,7 @@ export interface FunctionParameter {
           [label]="getDisplayLabel()"
           [disabled]="disabled || !isEditable"
           [severity]="getButtonSeverity()"
-          [size]="compactMode ? 'small' : 'normal'"
+          [size]="compactMode ? 'small' : undefined"
           [outlined]="!isSelected"
           [text]="isSelected"
           [class]="getChipClasses()"
@@ -313,7 +313,7 @@ export class FunctionChipComponent extends BaseChipComponent implements OnInit {
     return requiredParams.every(p => p.isConfigured);
   }
   
-  ngOnInit(): void {
+  override ngOnInit(): void {
     super.ngOnInit();
     this.initializeFunctionData();
   }
@@ -373,10 +373,10 @@ export class FunctionChipComponent extends BaseChipComponent implements OnInit {
   /**
    * Get parameter badge severity
    */
-  getParameterBadgeSeverity(): 'success' | 'info' | 'warning' | 'danger' {
+  getParameterBadgeSeverity(): 'success' | 'info' | 'warn' | 'danger' {
     if (this.allParametersConfigured) return 'success';
     if (this.requiredParametersConfigured) return 'info';
-    return 'warning';
+    return 'warn';
   }
   
   /**

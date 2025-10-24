@@ -15,6 +15,8 @@ import { BadgeModule } from 'primeng/badge';
 import { TooltipModule } from 'primeng/tooltip';
 import { DragDropModule, CdkDragDrop, CdkDrag, CdkDropList } from '@angular/cdk/drag-drop';
 import { BaseChipComponent } from '../base-chip/base-chip.component';
+import { ConditionChipComponent } from '../condition-chip/condition-chip.component';
+import { FunctionChipComponent } from '../function-chip/function-chip.component';
 import { ChipViewModel } from '../../interfaces';
 
 /**
@@ -29,7 +31,9 @@ import { ChipViewModel } from '../../interfaces';
     ButtonModule, 
     BadgeModule, 
     TooltipModule, 
-    DragDropModule
+    DragDropModule,
+    ConditionChipComponent,
+    FunctionChipComponent
   ],
   template: `
     <div 
@@ -65,7 +69,7 @@ import { ChipViewModel } from '../../interfaces';
           [label]="getDisplayLabel()"
           [disabled]="disabled || !isEditable"
           [severity]="getButtonSeverity()"
-          [size]="compactMode ? 'small' : 'normal'"
+          [size]="compactMode ? 'small' : undefined"
           [outlined]="!isSelected"
           [text]="isSelected"
           [class]="getChipClasses()"
@@ -115,8 +119,8 @@ import { ChipViewModel } from '../../interfaces';
       
       <!-- Grouping braces (visual indicator) -->
       <div class="grouping-braces" *ngIf="isGrouped && hasChildren">
-        <span class="brace-left">{</span>
-        <span class="brace-right">}</span>
+        <span class="brace-left">{{ '{' }}</span>
+        <span class="brace-right">{{ '}' }}</span>
       </div>
       
       <!-- Children container -->
@@ -154,7 +158,7 @@ import { ChipViewModel } from '../../interfaces';
               (chipClick)="onChildClick($event)"
               (childrenChanged)="onChildrenChanged($event)"
               (addSibling)="onChildAddSibling($event)"
-              (deleteChild)="onChildDelete($event)">
+              (deleteChild)="onNestedGroupChildDelete($event)">
             </mp-group-chip>
             
             <!-- Other chip types would be handled by their respective components -->
@@ -163,8 +167,8 @@ import { ChipViewModel } from '../../interfaces';
               [chipData]="child"
               [disabled]="disabled"
               [compactMode]="compactMode"
-              (chipClick)="onChildClick($event)"
-              (deleteChip)="onChildDelete($event)">
+              (chipClick)="onChildClick(child)"
+              (deleteChip)="onChildDelete(child)">
             </mp-condition-chip>
             
             <mp-function-chip
@@ -172,8 +176,8 @@ import { ChipViewModel } from '../../interfaces';
               [chipData]="child"
               [disabled]="disabled"
               [compactMode]="compactMode"
-              (chipClick)="onChildClick($event)"
-              (deleteChip)="onChildDelete($event)">
+              (chipClick)="onChildClick(child)"
+              (deleteChip)="onChildDelete(child)">
             </mp-function-chip>
             
             <!-- Delete button for child -->
@@ -257,7 +261,7 @@ export class GroupChipComponent extends BaseChipComponent implements OnInit {
     return this.indentationLevel < this.maxDepth - 1 && this.children.length < this.maxElements;
   }
   
-  ngOnInit(): void {
+  override ngOnInit(): void {
     super.ngOnInit();
     this.validateGroupData();
   }
@@ -302,6 +306,13 @@ export class GroupChipComponent extends BaseChipComponent implements OnInit {
    */
   onChildDelete(child: ChipViewModel): void {
     this.deleteChild.emit({ groupId: this.chipId, childId: child.id });
+  }
+
+  /**
+   * Handle nested group child deletion
+   */
+  onNestedGroupChildDelete(event: {groupId: string, childId: string}): void {
+    this.deleteChild.emit(event);
   }
   
   /**

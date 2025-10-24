@@ -1,0 +1,133 @@
+<p-popover 
+  #popover
+  [dismissable]="true"
+  styleClass="criteria-popover"
+  [style]="{ 'min-width': '400px', 'max-width': '600px' }">
+  
+  <div class="criteria-popover-content" *ngIf="context">
+    
+    <!-- Loading State -->
+    <div class="loading-container" *ngIf="isLoading()">
+      <p-progressSpinner 
+        [style]="{ width: '30px', height: '30px' }" 
+        strokeWidth="4">
+      </p-progressSpinner>
+      <span class="loading-text">Loading...</span>
+    </div>
+
+    <!-- Error State -->
+    <p-message 
+      *ngIf="getErrorMessage()" 
+      severity="error" 
+      [text]="getErrorMessage()!"
+      styleClass="error-message">
+    </p-message>
+
+    <!-- Main Content -->
+    <div class="popover-main" *ngIf="!isLoading() && !getErrorMessage()">
+      
+      <!-- Search Input -->
+      <div class="search-container">
+        <span class="p-input-icon-left">
+          <i class="pi pi-search"></i>
+          <input 
+            type="text" 
+            pInputText 
+            [(ngModel)]="searchTerm"
+            (ngModelChange)="onSearchChange()"
+            placeholder="Search options..."
+            class="search-input">
+        </span>
+      </div>
+
+      <!-- Tab View -->
+      <p-tabs 
+        [value]="getActiveTabValue()"
+        styleClass="criteria-tabs">
+        
+        <p-tablist>
+          <!-- Fields Tab -->
+          <p-tab 
+            *ngIf="getVisibleTabs().includes('fields')"
+            value="fields">
+            <i class="pi pi-list"></i>
+            <span class="tab-label">Fields</span>
+          </p-tab>
+
+          <!-- Operators Tab -->
+          <p-tab 
+            *ngIf="getVisibleTabs().includes('operators')"
+            value="operators">
+            <i class="pi pi-filter"></i>
+            <span class="tab-label">Operators</span>
+          </p-tab>
+
+          <!-- Math Functions Tab -->
+          <p-tab 
+            *ngIf="getVisibleTabs().includes('functions')"
+            value="functions">
+            <i class="pi pi-calculator"></i>
+            <span class="tab-label">Math Functions</span>
+          </p-tab>
+
+          <!-- Indicators Tab -->
+          <p-tab 
+            *ngIf="getVisibleTabs().includes('indicators')"
+            value="indicators">
+            <i class="pi pi-chart-line"></i>
+            <span class="tab-label">Indicators</span>
+          </p-tab>
+        </p-tablist>
+
+        <p-tabpanels>
+          <!-- Fields Tab Content -->
+          <p-tabpanel 
+            *ngIf="getVisibleTabs().includes('fields')"
+            value="fields">
+            <mp-fields-tab
+              [searchTerm]="searchTerm"
+              (searchTermChange)="onSearchChange()"
+              (fieldSelect)="onOptionSelect($event)">
+            </mp-fields-tab>
+          </p-tabpanel>
+
+          <!-- Operators Tab Content -->
+          <p-tabpanel 
+            *ngIf="getVisibleTabs().includes('operators')"
+            value="operators">
+            <mp-operators-tab
+              [fieldId]="getSelectedFieldId()"
+              [searchTerm]="searchTerm"
+              (searchTermChange)="onSearchChange()"
+              (operatorSelect)="onOptionSelect($event)">
+            </mp-operators-tab>
+          </p-tabpanel>
+
+          <!-- Math Functions Tab Content -->
+          <p-tabpanel 
+            *ngIf="getVisibleTabs().includes('functions')"
+            value="functions">
+            <mp-functions-tab
+              category="math"
+              [searchTerm]="searchTerm"
+              (searchTermChange)="onSearchChange()"
+              (functionSelect)="onOptionSelect($event)">
+            </mp-functions-tab>
+          </p-tabpanel>
+
+          <!-- Indicators Tab Content -->
+          <p-tabpanel 
+            *ngIf="getVisibleTabs().includes('indicators')"
+            value="indicators">
+            <mp-functions-tab
+              category="indicators"
+              [searchTerm]="searchTerm"
+              (searchTermChange)="onSearchChange()"
+              (functionSelect)="onOptionSelect($event)">
+            </mp-functions-tab>
+          </p-tabpanel>
+        </p-tabpanels>
+      </p-tabs>
+    </div>
+  </div>
+</p-popover>

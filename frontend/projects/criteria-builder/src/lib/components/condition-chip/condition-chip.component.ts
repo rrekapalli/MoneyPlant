@@ -47,7 +47,7 @@ import { ChipViewModel } from '../../interfaces';
         [label]="getDisplayLabel()"
         [disabled]="disabled || !isEditable"
         [severity]="getButtonSeverity()"
-        [size]="compactMode ? 'small' : 'normal'"
+        [size]="compactMode ? 'small' : undefined"
         [outlined]="!isSelected"
         [text]="isSelected"
         [class]="getChipClasses()"
@@ -176,7 +176,7 @@ export class ConditionChipComponent extends BaseChipComponent implements OnInit 
     return this.chipData?.type === 'value';
   }
   
-  ngOnInit(): void {
+  override ngOnInit(): void {
     super.ngOnInit();
     this.setDefaultIcons();
   }

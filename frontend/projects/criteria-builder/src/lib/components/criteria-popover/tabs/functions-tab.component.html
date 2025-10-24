@@ -1,0 +1,264 @@
+<!-- Loading State -->
+<div class="loading-container" *ngIf="isLoading">
+  <p-progressSpinner 
+    [style]="{ width: '30px', height: '30px' }" 
+    strokeWidth="4">
+  </p-progressSpinner>
+  <span class="loading-text">Loading {{ category === 'math' ? 'math functions' : 'indicators' }}...</span>
+</div>
+
+<!-- Error State -->
+<div class="error-container" *ngIf="error && !isLoading">
+  <p-message 
+    severity="error" 
+    [text]="error"
+    styleClass="error-message">
+  </p-message>
+  <button 
+    type="button" 
+    class="p-button p-button-sm p-button-outlined"
+    (click)="retryLoad()">
+    <i class="pi pi-refresh"></i>
+    Retry
+  </button>
+</div>
+
+<!-- Functions Content -->
+<div class="functions-content" *ngIf="!isLoading && !error">
+  
+  <!-- Search Input -->
+  <div class="search-container">
+    <span class="p-input-icon-left">
+      <i class="pi pi-search"></i>
+      <input 
+        type="text" 
+        pInputText 
+        [value]="searchTerm"
+        (input)="onSearchChange($event.target?.value || '')"
+        [placeholder]="'Search ' + (category === 'math' ? 'math functions' : 'indicators') + '...'"
+        class="search-input">
+    </span>
+  </div>
+
+  <!-- No Results -->
+  <div class="no-results" *ngIf="filteredFunctions.length === 0">
+    <i class="pi pi-info-circle"></i>
+    <span>No {{ category === 'math' ? 'math functions' : 'indicators' }} found</span>
+    <small *ngIf="searchTerm">Try adjusting your search terms</small>
+  </div>
+
+  <!-- Functions by Category -->
+  <div class="functions-container" *ngIf="filteredFunctions.length > 0">
+    <p-accordion 
+      [multiple]="true" 
+      styleClass="functions-accordion">
+      
+      <p-accordionpanel 
+        *ngFor="let categoryName of functionCategories; trackBy: trackByCategory">
+        
+        <p-accordionheader>
+          <div class="category-header">
+            <span class="category-title">{{ categoryName }}</span>
+            <p-badge 
+              [value]="groupedFunctions[categoryName].length.toString()" 
+              styleClass="category-count">
+            </p-badge>
+          </div>
+        </p-accordionheader>
+
+        <p-accordioncontent>
+          <!-- Functions List -->
+          <div class="functions-list">
+          <div 
+            class="function-item"
+            *ngFor="let func of groupedFunctions[categoryName]; trackBy: trackByFunctionId"
+            [class.deprecated]="func.deprecated">
+            
+            <!-- Function Icon -->
+            <i 
+              [class]="func.icon || getFunctionIcon(func.category)" 
+              class="function-icon">
+            </i>
+            
+            <!-- Function Content -->
+            <div class="function-content">
+              <div class="function-header">
+                <div class="function-main">
+                  <span class="function-name">{{ func.name }}</span>
+                  <div class="function-badges">
+                    <p-badge 
+                      [value]="getReturnTypeDisplay(func.returnType)" 
+                      styleClass="p-badge-secondary"
+                      class="return-type-badge">
+                    </p-badge>
+                    <p-badge 
+                      value="DEPRECATED" 
+                      styleClass="p-badge-danger"
+                      class="deprecated-badge"
+                      *ngIf="func.deprecated">
+                    </p-badge>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="function-description" *ngIf="func.description">
+                {{ func.description }}
+              </div>
+              
+              <div class="function-example" *ngIf="func.example">
+                <p-divider styleClass="example-divider"></p-divider>
+                <div class="example-content">
+                  <small class="example-label">Example:</small>
+                  <code class="example-code">{{ func.example }}</code>
+                </div>
+              </div>
+            </div>
+
+            <!-- Function Actions -->
+            <div class="function-actions">
+              <button 
+                type="button" 
+                class="p-button p-button-sm p-button-text p-button-rounded"
+                (click)="showFunctionSignature(func)"
+                pTooltip="View signature"
+                tooltipPosition="top">
+                <i class="pi pi-info-circle"></i>
+              </button>
+              
+              <button 
+                type="button" 
+                class="p-button p-button-sm p-button-outlined p-button-rounded"
+                (click)="onFunctionSelect(func)"
+                [disabled]="func.deprecated"
+                pTooltip="Select function"
+                tooltipPosition="top">
+                <i class="pi pi-plus"></i>
+              </button>
+            </div>
+          </div>
+          </div>
+        </p-accordioncontent>
+      </p-accordionpanel>
+    </p-accordion>
+  </div>
+</div>
+
+<!-- Function Signature Dialog -->
+<p-dialog 
+  [(visible)]="showSignatureDialog"
+  [modal]="true"
+  [closable]="true"
+  [draggable]="false"
+  [resizable]="false"
+  styleClass="function-signature-dialog"
+  header="Function Signature"
+  [style]="{ width: '500px', maxWidth: '90vw' }">
+  
+  <div class="signature-content" *ngIf="selectedFunction">
+    
+    <!-- Function Header -->
+    <div class="signature-header">
+      <div class="function-title">
+        <i [class]="selectedFunction.icon || getFunctionIcon(selectedFunction.category)"></i>
+        <span class="function-name">{{ selectedFunction.name }}</span>
+        <p-badge 
+          [value]="getReturnTypeDisplay(selectedFunction.returnType)" 
+          styleClass="p-badge-secondary">
+        </p-badge>
+      </div>
+      
+      <div class="function-description" *ngIf="selectedFunction.description">
+        {{ selectedFunction.description }}
+      </div>
+    </div>
+
+    <!-- Loading Signature -->
+    <div class="signature-loading" *ngIf="loadingSignature">
+      <p-progressSpinner [style]="{ width: '24px', height: '24px' }" strokeWidth="4"></p-progressSpinner>
+      <span>Loading signature...</span>
+    </div>
+
+    <!-- Function Signature -->
+    <div class="signature-details" *ngIf="functionSignature && !loadingSignature">
+      
+      <!-- Parameters Info -->
+      <div class="parameters-info">
+        <h4>Parameters</h4>
+        <p class="parameter-count">{{ getParameterCountText(functionSignature) }}</p>
+      </div>
+
+      <!-- Parameters List -->
+      <div class="parameters-list" *ngIf="functionSignature.parameters.length > 0">
+        <div 
+          class="parameter-item"
+          *ngFor="let param of functionSignature.parameters; trackBy: trackByParameterName">
+          
+          <div class="parameter-header">
+            <span class="parameter-name">{{ param.name }}</span>
+            <div class="parameter-badges">
+              <p-badge 
+                [value]="getReturnTypeDisplay(param.type)" 
+                styleClass="p-badge-info"
+                class="parameter-type">
+              </p-badge>
+              <p-badge 
+                value="REQUIRED" 
+                styleClass="p-badge-danger"
+                class="required-badge"
+                *ngIf="param.required">
+              </p-badge>
+              <p-badge 
+                value="OPTIONAL" 
+                styleClass="p-badge-secondary"
+                class="optional-badge"
+                *ngIf="!param.required">
+              </p-badge>
+            </div>
+          </div>
+          
+          <div class="parameter-description" *ngIf="param.description">
+            {{ param.description }}
+          </div>
+          
+          <div class="parameter-default" *ngIf="param.defaultValue !== undefined">
+            <small>Default: <code>{{ param.defaultValue }}</code></small>
+          </div>
+        </div>
+      </div>
+
+      <!-- No Parameters -->
+      <div class="no-parameters" *ngIf="functionSignature.parameters.length === 0">
+        <i class="pi pi-info-circle"></i>
+        <span>This function takes no parameters</span>
+      </div>
+
+      <!-- Return Type -->
+      <div class="return-info">
+        <h4>Returns</h4>
+        <p class="return-type">{{ getReturnTypeDisplay(functionSignature.returnType) }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dialog Footer -->
+  <ng-template pTemplate="footer">
+    <div class="dialog-footer">
+      <button 
+        type="button" 
+        class="p-button p-button-outlined"
+        (click)="closeSignatureDialog()">
+        Close
+      </button>
+      
+      <button 
+        type="button" 
+        class="p-button"
+        (click)="onFunctionSelect(selectedFunction!); closeSignatureDialog()"
+        [disabled]="selectedFunction?.deprecated"
+        *ngIf="selectedFunction">
+        <i class="pi pi-plus"></i>
+        Use Function
+      </button>
+    </div>
+  </ng-template>
+</p-dialog>

@@ -190,7 +190,7 @@
     font-weight: 600;
   }
   
-  &.chip-selected ::ng-deep .p-button {
+  .chip-container.chip-selected ::ng-deep .p-button {
     box-shadow: 0 0 0 3px var(--primary-color);
   }
 }

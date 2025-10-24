@@ -6,3 +6,4 @@ export * from './base-chip';
 export * from './group-chip';
 export * from './condition-chip';
 export * from './function-chip';
+export * from './criteria-popover';

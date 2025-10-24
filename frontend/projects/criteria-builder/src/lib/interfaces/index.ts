@@ -8,3 +8,4 @@ export * from './popover-context.interface';
 export * from './criteria-dsl.interface';
 // export * from './criteria-dsl-guards';
 export * from './validation.interface';
+export * from './field-metadata.interface';

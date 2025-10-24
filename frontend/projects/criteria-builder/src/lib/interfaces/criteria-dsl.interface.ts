@@ -130,6 +130,7 @@ export type FieldDataType =
   | 'date'
   | 'datetime'
   | 'time'
+  | 'enum'
   | 'array'
   | 'object';
 
