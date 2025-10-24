@@ -9,7 +9,11 @@ import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   forwardRef,
-  Injector
+  Injector,
+  ElementRef,
+  ViewChild,
+  HostBinding,
+  HostListener
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { 
@@ -21,13 +25,14 @@ import {
   ValidationErrors,
   NgControl
 } from '@angular/forms';
-import { Observable, Subject, BehaviorSubject } from 'rxjs';
-import { takeUntil, debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { Observable, Subject, BehaviorSubject, combineLatest } from 'rxjs';
+import { takeUntil, debounceTime, distinctUntilChanged, map } from 'rxjs/operators';
 
 // PrimeNG imports
 import { PanelModule } from 'primeng/panel';
 import { ButtonModule } from 'primeng/button';
 import { MessageModule } from 'primeng/message';
+import { TooltipModule } from 'primeng/tooltip';
 
 import { CriteriaDSL } from '../../interfaces/criteria-dsl.interface';
 import { 
@@ -37,9 +42,14 @@ import {
 } from '../../interfaces/validation.interface';
 
 import { CriteriaValidationService } from '../../services/criteria-validation.service';
+import { AccessibilityService } from '../../services/accessibility.service';
+import { ResponsiveDesignService, DisplayMode, ScreenSize } from '../../services/responsive-design.service';
 import { SqlPreviewComponent, SqlPreviewConfig } from '../sql-preview/sql-preview.component';
 import { ValidationDisplayComponent } from '../validation-display/validation-display.component';
 import { UndoNotificationComponent } from '../undo-notification/undo-notification.component';
+import { ResponsiveLayoutDirective } from '../../directives/responsive-layout.directive';
+import { BreakpointObserverDirective } from '../../directives/breakpoint-observer.directive';
+import { DisplayModeDirective } from '../../directives/display-mode.directive';
 
 /**
  * Configuration for the main criteria builder component
@@ -71,6 +81,45 @@ export interface MainCriteriaBuilderConfig {
   
   /** SQL preview configuration */
   sqlPreviewConfig: Partial<SqlPreviewConfig>;
+  
+  /** Accessibility configuration */
+  accessibility: {
+    /** Enable comprehensive keyboard navigation */
+    enableKeyboardNavigation: boolean;
+    
+    /** Enable screen reader announcements */
+    enableScreenReaderSupport: boolean;
+    
+    /** Enable focus management */
+    enableFocusManagement: boolean;
+    
+    /** Enable high contrast mode support */
+    enableHighContrastMode: boolean;
+    
+    /** Enable reduced motion support */
+    enableReducedMotion: boolean;
+    
+    /** Custom ARIA labels */
+    customAriaLabels: Record<string, string>;
+  };
+  
+  /** Responsive design configuration */
+  responsive: {
+    /** Enable responsive design */
+    enableResponsiveDesign: boolean;
+    
+    /** Enable compact mode on small screens */
+    enableCompactMode: boolean;
+    
+    /** Enable container queries */
+    enableContainerQueries: boolean;
+    
+    /** Custom breakpoints */
+    customBreakpoints?: Record<string, number>;
+    
+    /** Force display mode */
+    forceDisplayMode?: 'compact' | 'expanded' | 'auto';
+  };
 }
 
 /**
@@ -85,9 +134,13 @@ export interface MainCriteriaBuilderConfig {
     PanelModule,
     ButtonModule,
     MessageModule,
+    TooltipModule,
     SqlPreviewComponent,
     ValidationDisplayComponent,
-    UndoNotificationComponent
+    UndoNotificationComponent,
+    ResponsiveLayoutDirective,
+    BreakpointObserverDirective,
+    DisplayModeDirective
   ],
   providers: [
     {
@@ -109,6 +162,11 @@ export class CriteriaBuilderComponent implements ControlValueAccessor, Validator
   @Input() config: Partial<MainCriteriaBuilderConfig> = {};
   @Input() disabled: boolean = false;
   @Input() placeholder: string = 'Click to add criteria...';
+  @Input() ariaLabel: string = 'Criteria builder';
+  @Input() ariaDescription: string = 'Build complex filtering criteria using visual chips';
+  
+  @ViewChild('criteriaContainer', { static: true }) criteriaContainer!: ElementRef<HTMLElement>;
+  @ViewChild('mainPanel') mainPanel!: ElementRef<HTMLElement>;
 
   // Core events
   @Output() criteriaChange = new EventEmitter<CriteriaDSL | null>();
@@ -149,6 +207,19 @@ export class CriteriaBuilderComponent implements ControlValueAccessor, Validator
       enableSyntaxHighlighting: true,
       enableCopyToClipboard: true,
       autoRefresh: true
+    },
+    accessibility: {
+      enableKeyboardNavigation: true,
+      enableScreenReaderSupport: true,
+      enableFocusManagement: true,
+      enableHighContrastMode: true,
+      enableReducedMotion: true,
+      customAriaLabels: {}
+    },
+    responsive: {
+      enableResponsiveDesign: true,
+      enableCompactMode: true,
+      enableContainerQueries: true
     }
   };
 
@@ -179,13 +250,26 @@ export class CriteriaBuilderComponent implements ControlValueAccessor, Validator
   hasError = false;
   errorMessage = '';
   
+  // Accessibility and responsive state
+  currentDisplayMode: DisplayMode | null = null;
+  currentScreenSize: ScreenSize | null = null;
+  isKeyboardNavigationActive = false;
+  isHighContrastMode = false;
+  isReducedMotionPreferred = false;
+  
   // Validation state
   private validationErrors: ValidationErrors | null = null;
+  
+  // Cleanup function for keyboard navigation
+  private keyboardNavigationCleanup?: () => void;
 
   constructor(
     private validationService: CriteriaValidationService,
+    private accessibilityService: AccessibilityService,
+    private responsiveService: ResponsiveDesignService,
     private cdr: ChangeDetectorRef,
-    private injector: Injector
+    private injector: Injector,
+    private elementRef: ElementRef<HTMLElement>
   ) {}
   
   ngAfterViewInit(): void {
@@ -199,9 +283,16 @@ export class CriteriaBuilderComponent implements ControlValueAccessor, Validator
     this.setupCriteriaWatcher();
     this.setupStateWatchers();
     this.setupChangeDetectionOptimization();
+    this.setupAccessibilityFeatures();
+    this.setupResponsiveDesign();
   }
 
   ngOnDestroy(): void {
+    // Cleanup keyboard navigation
+    if (this.keyboardNavigationCleanup) {
+      this.keyboardNavigationCleanup();
+    }
+    
     // Complete all subjects
     this.destroy$.next();
     this.destroy$.complete();
@@ -974,5 +1065,576 @@ export class CriteriaBuilderComponent implements ControlValueAccessor, Validator
     // Implementation depends on the specific data structure
     console.log('Handling undo edit:', undoData);
     this.markAsDirty();
+  }
+
+  // Accessibility Methods
+
+  /**
+   * Setup accessibility features
+   */
+  private setupAccessibilityFeatures(): void {
+    if (!this.mergedConfig.accessibility.enableKeyboardNavigation) {
+      return;
+    }
+
+    // Configure accessibility service
+    this.accessibilityService.configure({
+      enableKeyboardNavigation: this.mergedConfig.accessibility.enableKeyboardNavigation,
+      enableScreenReaderAnnouncements: this.mergedConfig.accessibility.enableScreenReaderSupport,
+      enableFocusManagement: this.mergedConfig.accessibility.enableFocusManagement,
+      enableHighContrastMode: this.mergedConfig.accessibility.enableHighContrastMode,
+      enableReducedMotion: this.mergedConfig.accessibility.enableReducedMotion
+    });
+
+    // Setup keyboard navigation
+    this.setupKeyboardNavigation();
+
+    // Subscribe to accessibility state changes
+    this.subscribeToAccessibilityState();
+
+    // Setup ARIA attributes
+    this.setupAriaAttributes();
+
+    // Announce component initialization
+    this.accessibilityService.announce(
+      'Criteria builder loaded and ready for input',
+      'polite',
+      'low',
+      'initialization'
+    );
+  }
+
+  /**
+   * Setup keyboard navigation
+   */
+  private setupKeyboardNavigation(): void {
+    if (!this.criteriaContainer) {
+      return;
+    }
+
+    this.keyboardNavigationCleanup = this.accessibilityService.setupKeyboardNavigation(
+      this.criteriaContainer.nativeElement,
+      {
+        enableArrowKeys: true,
+        enableTabNavigation: true,
+        enableActivationKeys: true,
+        enableEscapeKey: true,
+        customKeyBindings: new Map([
+          ['Ctrl+Enter', () => this.validateCriteria()],
+          ['Ctrl+Shift+C', () => this.clearCriteria()],
+          ['Ctrl+Z', () => this.handleUndo()],
+          ['F1', () => this.showKeyboardHelp()]
+        ])
+      }
+    );
+  }
+
+  /**
+   * Subscribe to accessibility state changes
+   */
+  private subscribeToAccessibilityState(): void {
+    // High contrast mode
+    this.accessibilityService.isHighContrastMode()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(isHighContrast => {
+        this.isHighContrastMode = isHighContrast;
+        this.updateAccessibilityClasses();
+        this.cdr.markForCheck();
+      });
+
+    // Reduced motion
+    this.accessibilityService.isReducedMotionPreferred()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(isReducedMotion => {
+        this.isReducedMotionPreferred = isReducedMotion;
+        this.updateAccessibilityClasses();
+        this.cdr.markForCheck();
+      });
+
+    // Keyboard navigation
+    this.accessibilityService.isKeyboardNavigationActive()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(isKeyboardActive => {
+        this.isKeyboardNavigationActive = isKeyboardActive;
+        this.updateAccessibilityClasses();
+        this.cdr.markForCheck();
+      });
+  }
+
+  /**
+   * Setup ARIA attributes
+   */
+  private setupAriaAttributes(): void {
+    const element = this.elementRef.nativeElement;
+    
+    this.accessibilityService.setAriaAttributes(element, {
+      'role': 'group',
+      'aria-label': this.ariaLabel,
+      'aria-describedby': this.generateDescriptionId(),
+      'aria-invalid': !this.isValid(),
+      'aria-required': this.ngControl?.control?.hasError('required') || false
+    });
+
+    // Create description element
+    this.createAriaDescription();
+  }
+
+  /**
+   * Create ARIA description element
+   */
+  private createAriaDescription(): void {
+    const descriptionId = this.generateDescriptionId();
+    let descriptionElement = document.getElementById(descriptionId);
+    
+    if (!descriptionElement) {
+      descriptionElement = document.createElement('div');
+      descriptionElement.id = descriptionId;
+      descriptionElement.className = 'sr-only';
+      descriptionElement.textContent = this.ariaDescription;
+      document.body.appendChild(descriptionElement);
+    }
+  }
+
+  /**
+   * Generate description ID
+   */
+  private generateDescriptionId(): string {
+    return `criteria-builder-desc-${this.accessibilityService.generateUniqueId()}`;
+  }
+
+  /**
+   * Update accessibility CSS classes
+   */
+  private updateAccessibilityClasses(): void {
+    const element = this.elementRef.nativeElement;
+    
+    // High contrast mode
+    element.classList.toggle('high-contrast', this.isHighContrastMode);
+    
+    // Reduced motion
+    element.classList.toggle('reduced-motion', this.isReducedMotionPreferred);
+    
+    // Keyboard navigation
+    element.classList.toggle('keyboard-navigation', this.isKeyboardNavigationActive);
+  }
+
+  /**
+   * Handle keyboard shortcuts
+   */
+  private handleUndo(): void {
+    // Implement undo functionality
+    this.accessibilityService.announce('Undo action triggered', 'polite', 'medium');
+  }
+
+  /**
+   * Show keyboard help
+   */
+  showKeyboardHelp(): void {
+    const helpText = `
+      Keyboard shortcuts:
+      - Arrow keys: Navigate between elements
+      - Enter/Space: Activate buttons
+      - Escape: Close popovers
+      - Ctrl+Enter: Validate criteria
+      - Ctrl+Shift+C: Clear all criteria
+      - Ctrl+Z: Undo last action
+      - F1: Show this help
+    `;
+    
+    this.accessibilityService.announce(helpText, 'polite', 'high', 'help');
+  }
+
+  /**
+   * Announce validation changes
+   */
+  private announceValidationChanges(result: ValidationResult): void {
+    if (!this.mergedConfig.accessibility.enableScreenReaderSupport) {
+      return;
+    }
+
+    if (result.isValid) {
+      this.accessibilityService.announceSuccess('Criteria validation passed');
+    } else if (result.errors.length > 0) {
+      const errorCount = result.errors.length;
+      const errorMessage = `Validation failed with ${errorCount} error${errorCount > 1 ? 's' : ''}`;
+      this.accessibilityService.announceValidationError('Criteria', errorMessage);
+    }
+
+    if (result.warnings.length > 0) {
+      const warningCount = result.warnings.length;
+      this.accessibilityService.announce(
+        `${warningCount} warning${warningCount > 1 ? 's' : ''} found`,
+        'polite',
+        'medium',
+        'validation'
+      );
+    }
+  }
+
+  /**
+   * Announce content changes
+   */
+  private announceContentChange(changeType: 'added' | 'removed' | 'modified', description: string): void {
+    if (this.mergedConfig.accessibility.enableScreenReaderSupport) {
+      this.accessibilityService.announceContentChange(description, changeType);
+    }
+  }
+
+  // Responsive Design Methods
+
+  /**
+   * Setup responsive design features
+   */
+  private setupResponsiveDesign(): void {
+    if (!this.mergedConfig.responsive.enableResponsiveDesign) {
+      return;
+    }
+
+    // Configure responsive service
+    this.responsiveService.configure({
+      breakpoints: this.mergedConfig.responsive.customBreakpoints,
+      debounceTime: 150
+    });
+
+    // Subscribe to screen size changes
+    this.subscribeToResponsiveState();
+
+    // Setup container queries if enabled
+    if (this.mergedConfig.responsive.enableContainerQueries) {
+      this.setupContainerQueries();
+    }
+
+    // Set initial display mode
+    this.setInitialDisplayMode();
+  }
+
+  /**
+   * Subscribe to responsive state changes
+   */
+  private subscribeToResponsiveState(): void {
+    // Screen size changes
+    this.responsiveService.getScreenSize()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(screenSize => {
+        this.currentScreenSize = screenSize;
+        this.updateResponsiveClasses();
+        this.handleScreenSizeChange(screenSize);
+        this.cdr.markForCheck();
+      });
+
+    // Display mode changes
+    this.responsiveService.getDisplayMode()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(displayMode => {
+        this.currentDisplayMode = displayMode;
+        this.updateDisplayModeClasses();
+        this.handleDisplayModeChange(displayMode);
+        this.cdr.markForCheck();
+      });
+  }
+
+  /**
+   * Setup container queries
+   */
+  private setupContainerQueries(): void {
+    if (!this.criteriaContainer) {
+      return;
+    }
+
+    this.responsiveService.observeContainer(
+      this.criteriaContainer.nativeElement,
+      'criteria-builder-main'
+    ).pipe(takeUntil(this.destroy$))
+    .subscribe(containerInfo => {
+      this.handleContainerSizeChange(containerInfo);
+    });
+  }
+
+  /**
+   * Set initial display mode
+   */
+  private setInitialDisplayMode(): void {
+    if (this.mergedConfig.responsive.forceDisplayMode) {
+      this.responsiveService.setDisplayMode({
+        mode: this.mergedConfig.responsive.forceDisplayMode
+      });
+    }
+  }
+
+  /**
+   * Handle screen size changes
+   */
+  private handleScreenSizeChange(screenSize: ScreenSize): void {
+    // Announce screen size changes for accessibility
+    if (this.mergedConfig.accessibility.enableScreenReaderSupport) {
+      this.accessibilityService.announce(
+        `Screen size changed to ${screenSize.breakpoint}`,
+        'polite',
+        'low',
+        'responsive'
+      );
+    }
+
+    // Adjust validation debounce time based on screen size
+    if (screenSize.width < 768) {
+      // Increase debounce time on mobile for better performance
+      this.mergedConfig.validationDebounceMs = Math.max(this.mergedConfig.validationDebounceMs, 500);
+    }
+  }
+
+  /**
+   * Handle display mode changes
+   */
+  handleDisplayModeChange(displayMode: DisplayMode): void {
+    // Update component configuration based on display mode
+    if (displayMode.mode === 'compact') {
+      // Disable some features in compact mode for better performance
+      this.mergedConfig.showValidationBadges = false;
+      this.mergedConfig.enableDragDrop = false;
+    } else {
+      // Restore features in expanded mode
+      this.mergedConfig.showValidationBadges = true;
+      this.mergedConfig.enableDragDrop = true;
+    }
+
+    // Announce display mode changes
+    if (this.mergedConfig.accessibility.enableScreenReaderSupport) {
+      this.accessibilityService.announce(
+        `Display mode changed to ${displayMode.mode}`,
+        'polite',
+        'low',
+        'responsive'
+      );
+    }
+  }
+
+  /**
+   * Handle container size changes
+   */
+  handleContainerSizeChange(containerInfo: any): void {
+    const element = this.elementRef.nativeElement;
+    
+    // Add container-based classes
+    const containerClasses = this.responsiveService.getContainerClasses(containerInfo);
+    
+    // Remove existing container classes
+    element.classList.forEach(className => {
+      if (className.startsWith('container-')) {
+        element.classList.remove(className);
+      }
+    });
+    
+    // Add new container classes
+    containerClasses.forEach(className => {
+      element.classList.add(className);
+    });
+  }
+
+  /**
+   * Update responsive CSS classes
+   */
+  private updateResponsiveClasses(): void {
+    if (!this.currentScreenSize) {
+      return;
+    }
+
+    const element = this.elementRef.nativeElement;
+    
+    // Remove existing breakpoint classes
+    element.classList.forEach(className => {
+      if (className.startsWith('breakpoint-') || className.startsWith('orientation-')) {
+        element.classList.remove(className);
+      }
+    });
+    
+    // Add current breakpoint and orientation classes
+    element.classList.add(`breakpoint-${this.currentScreenSize.breakpoint}`);
+    element.classList.add(`orientation-${this.currentScreenSize.orientation}`);
+    
+    // Add mobile/desktop class
+    if (this.currentScreenSize.width < 768) {
+      element.classList.add('mobile');
+      element.classList.remove('desktop');
+    } else {
+      element.classList.add('desktop');
+      element.classList.remove('mobile');
+    }
+  }
+
+  /**
+   * Update display mode CSS classes
+   */
+  private updateDisplayModeClasses(): void {
+    if (!this.currentDisplayMode) {
+      return;
+    }
+
+    const element = this.elementRef.nativeElement;
+    
+    // Remove existing display mode classes
+    element.classList.remove('display-compact', 'display-expanded', 'display-auto');
+    element.classList.remove('no-labels', 'no-icons', 'condensed', 'single-column', 'collapsible');
+    
+    // Add current display mode classes
+    element.classList.add(`display-${this.currentDisplayMode.mode}`);
+    
+    if (!this.currentDisplayMode.showLabels) element.classList.add('no-labels');
+    if (!this.currentDisplayMode.showIcons) element.classList.add('no-icons');
+    if (this.currentDisplayMode.condensedSpacing) element.classList.add('condensed');
+    if (this.currentDisplayMode.singleColumn) element.classList.add('single-column');
+    if (this.currentDisplayMode.collapsibleSections) element.classList.add('collapsible');
+  }
+
+  // Host Bindings for Accessibility and Responsive Design
+
+  @HostBinding('class.criteria-builder') readonly criteriaBuilderClass = true;
+  
+  @HostBinding('attr.role') get role(): string {
+    return 'group';
+  }
+  
+  @HostBinding('attr.aria-label') get ariaLabelBinding(): string {
+    return this.ariaLabel;
+  }
+  
+  @HostBinding('attr.aria-invalid') get ariaInvalid(): boolean {
+    return !this.isValid();
+  }
+  
+  @HostBinding('attr.aria-required') get ariaRequired(): boolean {
+    return this.ngControl?.control?.hasError('required') || false;
+  }
+  
+  @HostBinding('attr.tabindex') get tabIndex(): number {
+    return this.disabled ? -1 : 0;
+  }
+
+  // Host Listeners for Keyboard Navigation
+
+  @HostListener('keydown', ['$event'])
+  onHostKeyDown(event: KeyboardEvent): void {
+    // Handle global keyboard shortcuts
+    if (event.ctrlKey || event.metaKey) {
+      switch (event.key) {
+        case 'Enter':
+          event.preventDefault();
+          this.validateCriteria();
+          break;
+        case 'c':
+          if (event.shiftKey) {
+            event.preventDefault();
+            this.clearCriteria();
+          }
+          break;
+        case 'z':
+          event.preventDefault();
+          this.handleUndo();
+          break;
+      }
+    } else if (event.key === 'F1') {
+      event.preventDefault();
+      this.showKeyboardHelp();
+    }
+  }
+
+  @HostListener('focusin', ['$event'])
+  onHostFocusIn(event: FocusEvent): void {
+    this.onFocus();
+  }
+
+  @HostListener('focusout', ['$event'])
+  onHostFocusOut(event: FocusEvent): void {
+    // Only trigger blur if focus is leaving the component entirely
+    if (!this.elementRef.nativeElement.contains(event.relatedTarget as Node)) {
+      this.onBlur();
+    }
+  }
+
+  /**
+   * Get current responsive and accessibility classes
+   */
+  getComponentClasses(): string[] {
+    const classes: string[] = ['criteria-builder'];
+    
+    // Accessibility classes
+    if (this.isHighContrastMode) classes.push('high-contrast');
+    if (this.isReducedMotionPreferred) classes.push('reduced-motion');
+    if (this.isKeyboardNavigationActive) classes.push('keyboard-navigation');
+    
+    // Responsive classes
+    if (this.currentScreenSize) {
+      classes.push(`breakpoint-${this.currentScreenSize.breakpoint}`);
+      classes.push(`orientation-${this.currentScreenSize.orientation}`);
+      classes.push(this.currentScreenSize.width < 768 ? 'mobile' : 'desktop');
+    }
+    
+    // Display mode classes
+    if (this.currentDisplayMode) {
+      classes.push(`display-${this.currentDisplayMode.mode}`);
+      if (!this.currentDisplayMode.showLabels) classes.push('no-labels');
+      if (!this.currentDisplayMode.showIcons) classes.push('no-icons');
+      if (this.currentDisplayMode.condensedSpacing) classes.push('condensed');
+      if (this.currentDisplayMode.singleColumn) classes.push('single-column');
+      if (this.currentDisplayMode.collapsibleSections) classes.push('collapsible');
+    }
+    
+    // Form state classes
+    Object.entries(this.formControlClasses).forEach(([className, isActive]) => {
+      if (isActive) classes.push(className);
+    });
+    
+    return classes;
+  }
+
+  /**
+   * Enhanced validation completed to include accessibility announcements
+   */
+  onValidationCompletedWithAccessibility(result: ValidationResult): void {
+    this.onValidationCompleted(result);
+    this.announceValidationChanges(result);
+  }
+
+  /**
+   * Enhanced criteria change to include accessibility announcements
+   */
+  onCriteriaChangedWithAccessibility(criteria: CriteriaDSL | null): void {
+    const previousCriteria = this.currentCriteria;
+    this.onCriteriaChanged(criteria);
+    
+    // Announce content changes
+    if (criteria && !previousCriteria) {
+      this.announceContentChange('added', 'First criteria added');
+    } else if (!criteria && previousCriteria) {
+      this.announceContentChange('removed', 'All criteria cleared');
+    } else if (criteria && previousCriteria) {
+      this.announceContentChange('modified', 'Criteria modified');
+    }
+  }
+
+  /**
+   * Focus main content area
+   */
+  focusMainContent(): void {
+    const contentElement = document.getElementById('criteria-content');
+    if (contentElement) {
+      this.accessibilityService.setFocus(contentElement, { preventScroll: false });
+    }
+  }
+
+  /**
+   * Show mobile actions menu
+   */
+  showMobileActionsMenu(event: Event): void {
+    // Implementation for mobile actions menu
+    // This could show a popup menu with additional actions
+    console.log('Mobile actions menu triggered', event);
+  }
+
+  /**
+   * Handle breakpoint changes from directive
+   */
+  handleBreakpointChange(breakpoint: string): void {
+    // Update component state based on breakpoint
+    console.log('Breakpoint changed to:', breakpoint);
   }
 }

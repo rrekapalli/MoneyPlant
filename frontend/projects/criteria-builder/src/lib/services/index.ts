@@ -13,3 +13,5 @@ export * from './undo.service';
 export * from './confirmation-dialog.service';
 export * from './toast-notification.service';
 export * from './user-feedback.service';
+export * from './accessibility.service';
+export * from './responsive-design.service';

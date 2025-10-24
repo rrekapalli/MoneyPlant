@@ -1,17 +1,33 @@
 <div 
+  #criteriaContainer
   class="criteria-builder-container" 
   [class.disabled]="disabled"
-  [ngClass]="formControlClasses"
+  [ngClass]="getComponentClasses()"
   [attr.aria-invalid]="!isValid()"
   [attr.aria-describedby]="hasError ? 'criteria-error' : null"
-  role="group"
-  [attr.aria-label]="'Criteria builder form control'"
+  [attr.aria-label]="ariaLabel"
   [attr.aria-required]="ngControl?.control?.hasError('required')"
   [attr.tabindex]="disabled ? -1 : 0"
-  (focus)="onFocus()"
-  (blur)="onBlur()"
-  (focusin)="onFocus()"
-  (focusout)="onBlur()">
+  [attr.data-testid]="'criteria-builder'"
+  role="group"
+  [mpResponsiveLayout]="{
+    enableContainerQueries: mergedConfig.responsive.enableContainerQueries,
+    enableBreakpointClasses: true,
+    enableDisplayModeClasses: true,
+    containerId: 'criteria-builder-main',
+    compactModeThreshold: 400,
+    expandedModeThreshold: 800,
+    autoDisplayMode: mergedConfig.responsive.enableCompactMode
+  }"
+  [mpDisplayMode]="{
+    mode: mergedConfig.responsive.forceDisplayMode || 'auto',
+    autoMode: mergedConfig.responsive.enableCompactMode,
+    compactThreshold: 400,
+    expandedThreshold: 800
+  }"
+  (containerSizeChange)="handleContainerSizeChange($event)"
+  (displayModeChange)="handleDisplayModeChange($event)"
+  (breakpointChange)="handleBreakpointChange($event)">
   
   <!-- Error Message -->
   <p-message 
@@ -41,78 +57,279 @@
     </p-message>
   </div>
 
+  <!-- Skip Links for Accessibility -->
+  <div class="skip-links" *ngIf="mergedConfig.accessibility.enableKeyboardNavigation">
+    <a 
+      href="#criteria-content" 
+      class="skip-link"
+      (click)="focusMainContent()"
+      [attr.aria-label]="'Skip to criteria content'">
+      Skip to criteria content
+    </a>
+    <a 
+      href="#sql-preview" 
+      class="skip-link"
+      *ngIf="mergedConfig.showSqlPreview"
+      [attr.aria-label]="'Skip to SQL preview'">
+      Skip to SQL preview
+    </a>
+  </div>
+
   <!-- Main Criteria Building Area -->
-  <div class="criteria-building-area">
+  <div class="criteria-building-area" role="main" [attr.aria-label]="'Criteria building area'">
     <p-panel 
-      header="Criteria Builder" 
-      [toggleable]="false"
-      styleClass="criteria-panel">
+      #mainPanel
+      [header]="currentDisplayMode?.showLabels !== false ? 'Criteria Builder' : ''" 
+      [toggleable]="currentDisplayMode?.collapsibleSections || false"
+      [collapsed]="false"
+      styleClass="criteria-panel"
+      [attr.aria-label]="'Criteria builder panel'"
+      [attr.aria-expanded]="true">
       
       <!-- Header actions -->
       <ng-template pTemplate="icons">
-        <button 
-          pButton 
-          type="button" 
-          icon="pi pi-refresh" 
-          class="p-button-text p-button-sm"
-          pTooltip="Validate criteria"
-          tooltipPosition="bottom"
-          (click)="validateCriteria()"
-          [disabled]="disabled || !currentCriteria">
-        </button>
-        
-        <button 
-          pButton 
-          type="button" 
-          icon="pi pi-trash" 
-          class="p-button-text p-button-sm"
-          pTooltip="Clear all criteria"
-          tooltipPosition="bottom"
-          (click)="clearCriteria()"
-          [disabled]="disabled || !currentCriteria">
-        </button>
-      </ng-template>
-
-      <!-- Criteria Building Content -->
-      <div class="criteria-content">
-        <!-- Empty State -->
-        <div class="empty-state" *ngIf="!currentCriteria">
-          <div class="empty-state-content">
-            <i class="pi pi-plus-circle"></i>
-            <h3>Build Your Criteria</h3>
-            <p>{{ placeholder }}</p>
+        <div class="header-actions" role="toolbar" [attr.aria-label]="'Criteria builder actions'">
+          <!-- Desktop/Tablet Actions -->
+          <ng-container *mpBreakpointObserver="{ up: 'md' }">
             <button 
               pButton 
               type="button" 
-              label="Add First Condition" 
-              icon="pi pi-plus"
-              class="p-button-outlined"
-              [disabled]="disabled"
-              (click)="onAddFirstCondition()">
+              [icon]="currentDisplayMode?.showIcons !== false ? 'pi pi-refresh' : ''"
+              [label]="currentDisplayMode?.showLabels ? 'Validate' : ''"
+              class="p-button-text p-button-sm"
+              [pTooltip]="currentDisplayMode?.showTooltips !== false ? 'Validate criteria (Ctrl+Enter)' : ''"
+              tooltipPosition="bottom"
+              (click)="validateCriteria()"
+              [disabled]="disabled || !currentCriteria"
+              [attr.aria-label]="'Validate criteria'"
+              [attr.aria-keyshortcuts]="'Control+Enter'">
             </button>
+            
+            <button 
+              pButton 
+              type="button" 
+              [icon]="currentDisplayMode?.showIcons !== false ? 'pi pi-trash' : ''"
+              [label]="currentDisplayMode?.showLabels ? 'Clear' : ''"
+              class="p-button-text p-button-sm"
+              [pTooltip]="currentDisplayMode?.showTooltips !== false ? 'Clear all criteria (Ctrl+Shift+C)' : ''"
+              tooltipPosition="bottom"
+              (click)="clearCriteria()"
+              [disabled]="disabled || !currentCriteria"
+              [attr.aria-label]="'Clear all criteria'"
+              [attr.aria-keyshortcuts]="'Control+Shift+c'">
+            </button>
+            
+            <button 
+              pButton 
+              type="button" 
+              [icon]="currentDisplayMode?.showIcons !== false ? 'pi pi-question-circle' : ''"
+              [label]="currentDisplayMode?.showLabels ? 'Help' : ''"
+              class="p-button-text p-button-sm"
+              [pTooltip]="currentDisplayMode?.showTooltips !== false ? 'Show keyboard shortcuts (F1)' : ''"
+              tooltipPosition="bottom"
+              (click)="showKeyboardHelp()"
+              [disabled]="disabled"
+              [attr.aria-label]="'Show keyboard shortcuts'"
+              [attr.aria-keyshortcuts]="'F1'"
+              *ngIf="mergedConfig.accessibility.enableKeyboardNavigation">
+            </button>
+          </ng-container>
+
+          <!-- Mobile Actions (Compact) -->
+          <ng-container *mpBreakpointObserver="{ down: 'sm' }">
+            <button 
+              pButton 
+              type="button" 
+              icon="pi pi-refresh"
+              class="p-button-text p-button-sm"
+              pTooltip="Validate"
+              tooltipPosition="bottom"
+              (click)="validateCriteria()"
+              [disabled]="disabled || !currentCriteria"
+              [attr.aria-label]="'Validate criteria'">
+            </button>
+            
+            <button 
+              pButton 
+              type="button" 
+              icon="pi pi-trash"
+              class="p-button-text p-button-sm"
+              pTooltip="Clear"
+              tooltipPosition="bottom"
+              (click)="clearCriteria()"
+              [disabled]="disabled || !currentCriteria"
+              [attr.aria-label]="'Clear all criteria'">
+            </button>
+            
+            <!-- More actions menu for mobile -->
+            <button 
+              pButton 
+              type="button" 
+              icon="pi pi-ellipsis-v"
+              class="p-button-text p-button-sm"
+              pTooltip="More actions"
+              tooltipPosition="bottom"
+              (click)="showMobileActionsMenu($event)"
+              [disabled]="disabled"
+              [attr.aria-label]="'More actions'"
+              *ngIf="mergedConfig.accessibility.enableKeyboardNavigation">
+            </button>
+          </ng-container>
+        </div>
+      </ng-template>
+
+      <!-- Criteria Building Content -->
+      <div 
+        id="criteria-content"
+        class="criteria-content"
+        [attr.aria-label]="'Criteria building content'"
+        role="region">
+        
+        <!-- Empty State -->
+        <div 
+          class="empty-state" 
+          *ngIf="!currentCriteria"
+          role="status"
+          [attr.aria-label]="'No criteria defined'">
+          <div class="empty-state-content">
+            <!-- Desktop/Tablet Empty State -->
+            <ng-container *mpBreakpointObserver="{ up: 'md' }">
+              <i 
+                class="pi pi-plus-circle"
+                [attr.aria-hidden]="currentDisplayMode?.showIcons === false"
+                *ngIf="currentDisplayMode?.showIcons !== false">
+              </i>
+              <h3 
+                *ngIf="currentDisplayMode?.showLabels !== false"
+                [attr.aria-level]="3">
+                Build Your Criteria
+              </h3>
+              <p 
+                *ngIf="currentDisplayMode?.showLabels !== false"
+                [attr.aria-describedby]="'empty-state-description'">
+                {{ placeholder }}
+              </p>
+              <button 
+                pButton 
+                type="button" 
+                [label]="currentDisplayMode?.showLabels !== false ? 'Add First Condition' : 'Add'"
+                [icon]="currentDisplayMode?.showIcons !== false ? 'pi pi-plus' : ''"
+                class="p-button-outlined"
+                [size]="currentDisplayMode?.mode === 'compact' ? 'small' : undefined"
+                [disabled]="disabled"
+                (click)="onAddFirstCondition()"
+                [attr.aria-label]="'Add first condition to start building criteria'"
+                [attr.aria-describedby]="'add-first-condition-help'">
+              </button>
+            </ng-container>
+
+            <!-- Mobile Empty State (Simplified) -->
+            <ng-container *mpBreakpointObserver="{ down: 'sm' }">
+              <i class="pi pi-plus-circle" [attr.aria-hidden]="true"></i>
+              <h3 [attr.aria-level]="3">Add Criteria</h3>
+              <button 
+                pButton 
+                type="button" 
+                label="Add Condition"
+                icon="pi pi-plus"
+                class="p-button-outlined p-button-lg"
+                [disabled]="disabled"
+                (click)="onAddFirstCondition()"
+                [attr.aria-label]="'Add first condition'">
+              </button>
+            </ng-container>
+            
+            <!-- Hidden description for screen readers -->
+            <div 
+              id="empty-state-description" 
+              class="sr-only"
+              [attr.aria-live]="'polite'">
+              Use the Add First Condition button to start building your criteria. 
+              You can then add more conditions and group them using logical operators.
+            </div>
+            
+            <div 
+              id="add-first-condition-help" 
+              class="sr-only">
+              This will create your first criteria condition. You can then add more conditions and organize them into groups.
+            </div>
           </div>
         </div>
 
         <!-- Criteria Chips Area -->
-        <div class="criteria-chips-area" *ngIf="currentCriteria">
+        <div 
+          class="criteria-chips-area" 
+          *ngIf="currentCriteria"
+          role="region"
+          [attr.aria-label]="'Criteria chips'"
+          [attr.aria-describedby]="'criteria-chips-description'">
+          
           <!-- This is where the actual chip components would be rendered -->
           <!-- For now, showing a placeholder that indicates the criteria structure -->
-          <div class="criteria-placeholder">
-            <i class="pi pi-cog"></i>
-            <span>Criteria structure will be rendered here</span>
-            <small>Current criteria: {{ currentCriteria | json }}</small>
+          <div 
+            class="criteria-placeholder"
+            role="status"
+            [attr.aria-label]="'Criteria structure placeholder'">
+            <i 
+              class="pi pi-cog"
+              [attr.aria-hidden]="true"
+              *ngIf="currentDisplayMode?.showIcons !== false">
+            </i>
+            <span *ngIf="currentDisplayMode?.showLabels !== false">
+              Criteria structure will be rendered here
+            </span>
+            <small 
+              *ngIf="currentDisplayMode?.mode !== 'compact'"
+              [attr.aria-label]="'Current criteria JSON structure'">
+              Current criteria: {{ currentCriteria | json }}
+            </small>
+          </div>
+          
+          <!-- Hidden description for screen readers -->
+          <div 
+            id="criteria-chips-description" 
+            class="sr-only">
+            This area contains your criteria chips. Use arrow keys to navigate between chips, 
+            Enter or Space to edit them, and Delete to remove them.
           </div>
         </div>
 
         <!-- Validation Summary -->
-        <div class="validation-summary" *ngIf="currentValidation && (getErrors().length > 0 || getWarnings().length > 0)">
-          <div class="validation-item error" *ngIf="getErrors().length > 0">
-            <i class="pi pi-times-circle"></i>
-            <span>{{ getErrors().length }} error{{ getErrors().length > 1 ? 's' : '' }}</span>
+        <div 
+          class="validation-summary" 
+          *ngIf="currentValidation && (getErrors().length > 0 || getWarnings().length > 0)"
+          role="status"
+          [attr.aria-live]="'polite'"
+          [attr.aria-label]="'Validation summary'">
+          
+          <div 
+            class="validation-item error" 
+            *ngIf="getErrors().length > 0"
+            role="alert"
+            [attr.aria-label]="getErrors().length + ' validation errors'">
+            <i 
+              class="pi pi-times-circle"
+              [attr.aria-hidden]="true"
+              *ngIf="currentDisplayMode?.showIcons !== false">
+            </i>
+            <span>
+              {{ getErrors().length }} error{{ getErrors().length > 1 ? 's' : '' }}
+            </span>
           </div>
-          <div class="validation-item warning" *ngIf="getWarnings().length > 0">
-            <i class="pi pi-exclamation-triangle"></i>
-            <span>{{ getWarnings().length }} warning{{ getWarnings().length > 1 ? 's' : '' }}</span>
+          
+          <div 
+            class="validation-item warning" 
+            *ngIf="getWarnings().length > 0"
+            role="status"
+            [attr.aria-label]="getWarnings().length + ' validation warnings'">
+            <i 
+              class="pi pi-exclamation-triangle"
+              [attr.aria-hidden]="true"
+              *ngIf="currentDisplayMode?.showIcons !== false">
+            </i>
+            <span>
+              {{ getWarnings().length }} warning{{ getWarnings().length > 1 ? 's' : '' }}
+            </span>
           </div>
         </div>
       </div>
@@ -121,16 +338,28 @@
 
   <!-- SQL Preview Panel -->
   <mp-sql-preview
+    id="sql-preview"
     *ngIf="mergedConfig.showSqlPreview"
     [criteria]="currentCriteria"
     [config]="mergedConfig.sqlPreviewConfig"
     [visible]="true"
-    [collapsed]="false"
+    [collapsed]="!!(currentDisplayMode?.collapsibleSections && currentDisplayMode?.mode === 'compact')"
+    [attr.aria-label]="'SQL preview panel'"
+    [attr.aria-describedby]="'sql-preview-description'"
     (sqlGenerated)="onSqlGenerated($event)"
     (previewGenerated)="onPreviewGenerated($event)"
     (validationCompleted)="onValidationCompleted($event)"
     (errorOccurred)="onError($event)">
   </mp-sql-preview>
+  
+  <!-- Hidden description for SQL preview -->
+  <div 
+    id="sql-preview-description" 
+    class="sr-only"
+    *ngIf="mergedConfig.showSqlPreview">
+    This panel shows the generated SQL query and human-readable preview of your criteria. 
+    It updates automatically as you modify your criteria.
+  </div>
 
   <!-- Undo Notification -->
   <mp-undo-notification

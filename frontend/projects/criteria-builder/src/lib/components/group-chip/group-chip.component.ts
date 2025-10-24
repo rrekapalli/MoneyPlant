@@ -9,6 +9,7 @@ import {
   ViewChild,
   ElementRef,
   HostBinding,
+  HostListener,
   ChangeDetectorRef,
   Inject
 } from '@angular/core';
@@ -19,7 +20,8 @@ import { TooltipModule } from 'primeng/tooltip';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
 import { DragDropModule, CdkDragDrop, CdkDrag, CdkDropList, CdkDragStart, CdkDragEnd } from '@angular/cdk/drag-drop';
-import { Subscription } from 'rxjs';
+import { Subscription, Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { BaseChipComponent } from '../base-chip/base-chip.component';
 import { ConditionChipComponent } from '../condition-chip/condition-chip.component';
 import { FunctionChipComponent } from '../function-chip/function-chip.component';
@@ -27,6 +29,8 @@ import { ChipViewModel } from '../../interfaces';
 import { DragDropService, DragDropResult } from '../../services/drag-drop.service';
 import { UndoService } from '../../services/undo.service';
 import { UserFeedbackService } from '../../services/user-feedback.service';
+import { AccessibilityService } from '../../services/accessibility.service';
+import { ResponsiveDesignService, DisplayMode } from '../../services/responsive-design.service';
 
 /**
  * Group chip component for creating nestable containers with logical operators
@@ -252,6 +256,8 @@ export class GroupChipComponent extends BaseChipComponent implements OnInit, OnD
   @Input() maxDepth = 10;
   @Input() maxElements = 100;
   @Input() allGroups: Map<string, ChipViewModel[]> = new Map();
+  @Input() accessibilityConfig: any = {};
+  @Input() responsiveConfig: any = {};
   
   @Output() childrenChanged = new EventEmitter<{groupId: string, children: ChipViewModel[]}>();
   @Output() addSibling = new EventEmitter<string>();
@@ -274,6 +280,12 @@ export class GroupChipComponent extends BaseChipComponent implements OnInit, OnD
   private dragDropSubscription?: Subscription;
   private undoSubscription?: Subscription;
   
+  // Accessibility and responsive state
+  currentDisplayMode: DisplayMode | null = null;
+  isKeyboardNavigationActive = false;
+  isHighContrastMode = false;
+  private keyboardNavigationCleanup?: () => void;
+  
   get hasChildren(): boolean {
     return this.children && this.children.length > 0;
   }
@@ -291,7 +303,10 @@ export class GroupChipComponent extends BaseChipComponent implements OnInit, OnD
     private undoService: UndoService,
     private confirmationService: ConfirmationService,
     private userFeedbackService: UserFeedbackService,
-    private cdr: ChangeDetectorRef
+    private accessibilityService: AccessibilityService,
+    private responsiveService: ResponsiveDesignService,
+    private cdr: ChangeDetectorRef,
+    private elementRef: ElementRef<HTMLElement>
   ) {
     super();
   }
@@ -301,6 +316,8 @@ export class GroupChipComponent extends BaseChipComponent implements OnInit, OnD
     this.validateGroupData();
     this.setupDragDropSubscription();
     this.setupUndoSubscription();
+    this.setupAccessibilityFeatures();
+    this.setupResponsiveFeatures();
   }
 
   override ngOnDestroy(): void {
@@ -310,6 +327,12 @@ export class GroupChipComponent extends BaseChipComponent implements OnInit, OnD
     if (this.undoSubscription) {
       this.undoSubscription.unsubscribe();
     }
+    if (this.keyboardNavigationCleanup) {
+      this.keyboardNavigationCleanup();
+    }
+    
+    // Call parent cleanup
+    super.ngOnDestroy();
   }
   
   /**
@@ -317,8 +340,18 @@ export class GroupChipComponent extends BaseChipComponent implements OnInit, OnD
    */
   toggleGrouping(): void {
     if (!this.disabled) {
+      const wasGrouped = this.isGrouped;
       this.isGrouped = !this.isGrouped;
       this.groupingToggled.emit({ groupId: this.chipId, isGrouped: this.isGrouped });
+      
+      // Accessibility announcement
+      const action = this.isGrouped ? 'grouped' : 'ungrouped';
+      this.accessibilityService.announce(
+        `Group ${action}`,
+        'polite',
+        'medium',
+        'grouping'
+      );
     }
   }
   
@@ -328,6 +361,25 @@ export class GroupChipComponent extends BaseChipComponent implements OnInit, OnD
   onAddSibling(): void {
     if (this.canAddSibling && !this.disabled) {
       this.addSibling.emit(this.chipId);
+      this.accessibilityService.announce(
+        'Sibling group added',
+        'polite',
+        'medium',
+        'content-change'
+      );
+    } else {
+      let reason = '';
+      if (!this.canAddSibling) {
+        reason = 'Maximum nesting depth reached';
+      } else if (this.disabled) {
+        reason = 'Component is disabled';
+      }
+      
+      this.accessibilityService.announce(
+        `Cannot add sibling group: ${reason}`,
+        'assertive',
+        'medium'
+      );
     }
   }
   
@@ -337,6 +389,29 @@ export class GroupChipComponent extends BaseChipComponent implements OnInit, OnD
   onAddChild(): void {
     if (this.canAddChild && !this.disabled) {
       this.addChild.emit(this.chipId);
+      this.accessibilityService.announce(
+        'Child element added to group',
+        'polite',
+        'medium',
+        'content-change'
+      );
+    } else {
+      let reason = '';
+      if (!this.canAddChild) {
+        if (this.indentationLevel >= this.maxDepth - 1) {
+          reason = 'Maximum nesting depth reached';
+        } else if (this.children.length >= this.maxElements) {
+          reason = 'Maximum number of elements reached';
+        }
+      } else if (this.disabled) {
+        reason = 'Component is disabled';
+      }
+      
+      this.accessibilityService.announce(
+        `Cannot add child element: ${reason}`,
+        'assertive',
+        'medium'
+      );
     }
   }
   
@@ -556,22 +631,30 @@ export class GroupChipComponent extends BaseChipComponent implements OnInit, OnD
    * Override base class method for group-specific ARIA label
    */
   protected override getAriaLabel(): string {
-    let label = `Group chip: ${this.getDisplayLabel()}`;
+    let label = `Group chip at level ${this.indentationLevel + 1}`;
     
     if (this.logicalOperator) {
-      label += `, Operator: ${this.logicalOperator}`;
+      label += `, operator: ${this.logicalOperator}`;
     }
     
     if (this.isGrouped) {
-      label += ', Grouped';
+      label += ', grouped';
     }
     
     if (this.hasChildren) {
-      label += `, ${this.children.length} children`;
+      label += `, contains ${this.children.length} child${this.children.length > 1 ? 'ren' : ''}`;
+      
+      if (this.isExpanded) {
+        label += ', expanded';
+      } else {
+        label += ', collapsed';
+      }
+    } else {
+      label += ', empty';
     }
     
     if (!this.isValid && this.validationMessage) {
-      label += `, Error: ${this.validationMessage}`;
+      label += `, error: ${this.validationMessage}`;
     }
     
     return label;
@@ -761,5 +844,364 @@ export class GroupChipComponent extends BaseChipComponent implements OnInit, OnD
     if (this.children.length > this.maxElements) {
       console.warn(`GroupChipComponent: children count (${this.children.length}) exceeds maxElements (${this.maxElements})`);
     }
+  }
+
+  // Accessibility Methods
+
+  /**
+   * Setup accessibility features for group chip
+   */
+  private setupAccessibilityFeatures(): void {
+    // Setup ARIA attributes
+    this.setupAriaAttributes();
+    
+    // Setup keyboard navigation
+    this.setupKeyboardNavigation();
+    
+    // Subscribe to accessibility state changes
+    this.subscribeToAccessibilityState();
+  }
+
+  /**
+   * Setup ARIA attributes for group chip
+   */
+  private setupAriaAttributes(): void {
+    const element = this.elementRef.nativeElement;
+    
+    this.accessibilityService.setAriaAttributes(element, {
+      'role': 'group',
+      'aria-label': this.getAriaLabel(),
+      'aria-expanded': this.isExpanded,
+      'aria-level': this.indentationLevel + 1,
+      'aria-setsize': -1, // Will be set by parent
+      'aria-posinset': -1 // Will be set by parent
+    });
+  }
+
+  /**
+   * Setup keyboard navigation for group chip
+   */
+  private setupKeyboardNavigation(): void {
+    this.keyboardNavigationCleanup = this.accessibilityService.setupKeyboardNavigation(
+      this.elementRef.nativeElement,
+      {
+        enableArrowKeys: true,
+        enableTabNavigation: true,
+        enableActivationKeys: true,
+        enableEscapeKey: true,
+        customKeyBindings: new Map([
+          ['Enter', () => this.onChipClick(new Event('click'))],
+          [' ', () => this.onChipClick(new Event('click'))],
+          ['Delete', () => this.handleDeleteKeyPress()],
+          ['Backspace', () => this.handleDeleteKeyPress()],
+          ['ArrowRight', () => this.handleArrowRight()],
+          ['ArrowLeft', () => this.handleArrowLeft()],
+          ['ArrowUp', () => this.handleArrowUp()],
+          ['ArrowDown', () => this.handleArrowDown()],
+          ['Home', () => this.handleHome()],
+          ['End', () => this.handleEnd()],
+          ['Ctrl+g', () => this.toggleGrouping()],
+          ['Ctrl+Shift+=', () => this.onAddSibling()],
+          ['Ctrl+=', () => this.onAddChild()]
+        ])
+      }
+    );
+  }
+
+  /**
+   * Subscribe to accessibility state changes
+   */
+  private subscribeToAccessibilityState(): void {
+    // High contrast mode
+    this.accessibilityService.isHighContrastMode()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((isHighContrast: boolean) => {
+        this.isHighContrastMode = isHighContrast;
+        this.updateAccessibilityClasses();
+        this.cdr.markForCheck();
+      });
+
+    // Keyboard navigation
+    this.accessibilityService.isKeyboardNavigationActive()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((isKeyboardActive: boolean) => {
+        this.isKeyboardNavigationActive = isKeyboardActive;
+        this.updateAccessibilityClasses();
+        this.cdr.markForCheck();
+      });
+  }
+
+  /**
+   * Update accessibility CSS classes
+   */
+  private updateAccessibilityClasses(): void {
+    const element = this.elementRef.nativeElement;
+    
+    element.classList.toggle('high-contrast', this.isHighContrastMode);
+    element.classList.toggle('keyboard-navigation', this.isKeyboardNavigationActive);
+  }
+
+  /**
+   * Handle keyboard navigation - Arrow Right
+   */
+  private handleArrowRight(): void {
+    if (!this.isExpanded && this.hasChildren) {
+      this.isExpanded = true;
+      this.accessibilityService.announce('Group expanded', 'polite', 'low');
+    } else {
+      // Move to next sibling or first child
+      this.focusNextElement();
+    }
+  }
+
+  /**
+   * Handle keyboard navigation - Arrow Left
+   */
+  private handleArrowLeft(): void {
+    if (this.isExpanded && this.hasChildren) {
+      this.isExpanded = false;
+      this.accessibilityService.announce('Group collapsed', 'polite', 'low');
+    } else {
+      // Move to parent or previous sibling
+      this.focusPreviousElement();
+    }
+  }
+
+  /**
+   * Handle keyboard navigation - Arrow Up
+   */
+  private handleArrowUp(): void {
+    this.focusPreviousElement();
+  }
+
+  /**
+   * Handle keyboard navigation - Arrow Down
+   */
+  private handleArrowDown(): void {
+    this.focusNextElement();
+  }
+
+  /**
+   * Handle keyboard navigation - Home
+   */
+  private handleHome(): void {
+    this.focusFirstElement();
+  }
+
+  /**
+   * Handle keyboard navigation - End
+   */
+  private handleEnd(): void {
+    this.focusLastElement();
+  }
+
+  /**
+   * Handle delete key press
+   */
+  private handleDeleteKeyPress(): void {
+    if (this.children.length === 0) {
+      // Delete this group if it's empty
+      this.accessibilityService.announce('Deleting empty group', 'assertive', 'high');
+      // Emit delete event to parent
+    } else {
+      this.accessibilityService.announce('Cannot delete group with children', 'assertive', 'medium');
+    }
+  }
+
+  /**
+   * Focus next element in navigation order
+   */
+  private focusNextElement(): void {
+    const currentElement = this.elementRef.nativeElement;
+    const nextElement = this.accessibilityService.getNextFocusableElement(currentElement, 'forward');
+    if (nextElement) {
+      this.accessibilityService.setFocus(nextElement);
+    }
+  }
+
+  /**
+   * Focus previous element in navigation order
+   */
+  private focusPreviousElement(): void {
+    const currentElement = this.elementRef.nativeElement;
+    const previousElement = this.accessibilityService.getNextFocusableElement(currentElement, 'backward');
+    if (previousElement) {
+      this.accessibilityService.setFocus(previousElement);
+    }
+  }
+
+  /**
+   * Focus first element in container
+   */
+  private focusFirstElement(): void {
+    const focusableElements = this.accessibilityService.getFocusableElements(this.elementRef.nativeElement);
+    if (focusableElements.length > 0) {
+      this.accessibilityService.setFocus(focusableElements[0]);
+    }
+  }
+
+  /**
+   * Focus last element in container
+   */
+  private focusLastElement(): void {
+    const focusableElements = this.accessibilityService.getFocusableElements(this.elementRef.nativeElement);
+    if (focusableElements.length > 0) {
+      this.accessibilityService.setFocus(focusableElements[focusableElements.length - 1]);
+    }
+  }
+
+  // Responsive Design Methods
+
+  /**
+   * Setup responsive design features
+   */
+  private setupResponsiveFeatures(): void {
+    // Subscribe to display mode changes
+    this.responsiveService.getDisplayMode()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((displayMode: DisplayMode) => {
+        this.currentDisplayMode = displayMode;
+        this.updateResponsiveClasses();
+        this.handleDisplayModeChange(displayMode);
+        this.cdr.markForCheck();
+      });
+
+    // Subscribe to screen size changes
+    this.responsiveService.getScreenSize()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((screenSize: any) => {
+        this.handleScreenSizeChange(screenSize);
+      });
+  }
+
+  /**
+   * Handle display mode changes
+   */
+  private handleDisplayModeChange(displayMode: DisplayMode): void {
+    // Adjust component behavior based on display mode
+    if (displayMode.mode === 'compact') {
+      // In compact mode, collapse deeply nested groups
+      if (this.indentationLevel > 2) {
+        this.isExpanded = false;
+      }
+    } else if (displayMode.mode === 'expanded') {
+      // In expanded mode, show all groups
+      this.isExpanded = true;
+    }
+
+    // Announce display mode changes
+    this.accessibilityService.announce(
+      `Group display changed to ${displayMode.mode} mode`,
+      'polite',
+      'low'
+    );
+  }
+
+  /**
+   * Handle screen size changes
+   */
+  private handleScreenSizeChange(screenSize: any): void {
+    // Adjust drag and drop behavior based on screen size
+    if (screenSize.width < 768) {
+      // Disable drag and drop on small screens for better touch experience
+      this.enableDragDrop = false;
+    } else {
+      // Re-enable drag and drop on larger screens
+      this.enableDragDrop = true;
+    }
+  }
+
+  /**
+   * Update responsive CSS classes
+   */
+  private updateResponsiveClasses(): void {
+    if (!this.currentDisplayMode) {
+      return;
+    }
+
+    const element = this.elementRef.nativeElement;
+    
+    // Remove existing display mode classes
+    element.classList.remove('display-compact', 'display-expanded', 'display-auto');
+    element.classList.remove('no-labels', 'no-icons', 'condensed');
+    
+    // Add current display mode classes
+    element.classList.add(`display-${this.currentDisplayMode.mode}`);
+    
+    if (!this.currentDisplayMode.showLabels) element.classList.add('no-labels');
+    if (!this.currentDisplayMode.showIcons) element.classList.add('no-icons');
+    if (this.currentDisplayMode.condensedSpacing) element.classList.add('condensed');
+  }
+
+  // Enhanced Accessibility Methods
+
+
+
+  // Host Bindings and Listeners for Accessibility
+
+  @HostBinding('attr.role') get role(): string {
+    return 'group';
+  }
+  
+  @HostBinding('attr.aria-label') get ariaLabelBinding(): string {
+    return this.getAriaLabel();
+  }
+  
+  @HostBinding('attr.aria-expanded') get ariaExpanded(): boolean {
+    return this.hasChildren ? this.isExpanded : undefined as any;
+  }
+  
+  @HostBinding('attr.aria-level') get ariaLevel(): number {
+    return this.indentationLevel + 1;
+  }
+  
+  @HostBinding('attr.tabindex') get tabIndex(): number {
+    return this.disabled ? -1 : 0;
+  }
+
+  @HostListener('keydown', ['$event'])
+  onHostKeyDown(event: KeyboardEvent): void {
+    // Let the accessibility service handle keyboard navigation
+    // The custom key bindings are already set up in setupKeyboardNavigation
+  }
+
+  @HostListener('focus', ['$event'])
+  onHostFocus(event: FocusEvent): void {
+    this.accessibilityService.announce(
+      `Focused on ${this.getAriaLabel()}`,
+      'polite',
+      'low',
+      'focus'
+    );
+  }
+
+  /**
+   * Get component classes including accessibility and responsive classes
+   */
+  getComponentClasses(): string[] {
+    const classes: string[] = ['group-chip'];
+    
+    // Base classes
+    if (this.isGrouped) classes.push('grouped');
+    if (this.hasChildren) classes.push('has-children');
+    if (this.isExpanded) classes.push('expanded');
+    if (this.isDragging) classes.push('dragging');
+    
+    // Accessibility classes
+    if (this.isHighContrastMode) classes.push('high-contrast');
+    if (this.isKeyboardNavigationActive) classes.push('keyboard-navigation');
+    
+    // Responsive classes
+    if (this.currentDisplayMode) {
+      classes.push(`display-${this.currentDisplayMode.mode}`);
+      if (!this.currentDisplayMode.showLabels) classes.push('no-labels');
+      if (!this.currentDisplayMode.showIcons) classes.push('no-icons');
+      if (this.currentDisplayMode.condensedSpacing) classes.push('condensed');
+    }
+    
+    // Validation classes
+    if (!this.isValid) classes.push('invalid');
+    
+    return classes;
   }
 }

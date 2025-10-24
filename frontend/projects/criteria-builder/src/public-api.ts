@@ -14,5 +14,8 @@ export * from './lib/services';
 // Components
 export * from './lib/components';
 
+// Directives
+export * from './lib/directives';
+
 // Validators
 export * from './lib/validators/criteria-validators';

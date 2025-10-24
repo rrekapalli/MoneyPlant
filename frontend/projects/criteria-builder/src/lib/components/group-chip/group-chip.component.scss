@@ -640,6 +640,336 @@
   }
 }
 
+/* Accessibility Enhancements */
+
+/* High contrast mode */
+.group-chip-container.high-contrast {
+  border-width: 2px;
+  border-color: var(--text-color);
+  
+  .group-toggle-btn,
+  .add-sibling-btn,
+  .add-child-btn {
+    border-width: 2px;
+    font-weight: 700;
+  }
+  
+  ::ng-deep .group-chip-button {
+    border-width: 2px;
+    font-weight: 700;
+  }
+  
+  .grouping-braces {
+    font-weight: 900;
+  }
+}
+
+/* Keyboard navigation */
+.group-chip-container.keyboard-navigation {
+  &:focus-within {
+    outline: 3px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+  
+  .group-toggle-btn:focus,
+  .add-sibling-btn:focus,
+  .add-child-btn:focus {
+    outline: 3px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+  
+  ::ng-deep .group-chip-button:focus {
+    outline: 3px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+}
+
+/* Screen reader announcements */
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* Responsive Design Enhancements */
+
+/* Display Mode: Compact */
+.group-chip-container.display-compact {
+  margin: 2px 0;
+  
+  .group-chip-header {
+    gap: 4px;
+    
+    .group-toggle-btn {
+      width: 20px;
+      height: 20px;
+      font-size: 0.625rem;
+    }
+    
+    .add-sibling-btn {
+      width: 24px;
+      height: 24px;
+      font-size: 0.875rem;
+    }
+    
+    ::ng-deep .group-chip-button {
+      min-width: 80px;
+      font-size: 0.875rem;
+      
+      .p-button-label {
+        gap: 4px;
+      }
+      
+      .operator-display {
+        padding: 1px 4px;
+        font-size: 0.625rem;
+      }
+    }
+  }
+  
+  .group-children {
+    padding-left: 12px;
+    margin-left: 8px;
+    gap: 2px;
+    
+    .child-item {
+      gap: 4px;
+    }
+    
+    .add-child-btn {
+      padding: 4px 8px;
+      font-size: 0.75rem;
+      margin-top: 2px;
+    }
+  }
+  
+  .grouping-braces {
+    .brace-left,
+    .brace-right {
+      font-size: 1.5rem;
+    }
+  }
+}
+
+/* Display Mode: Expanded */
+.group-chip-container.display-expanded {
+  margin: 6px 0;
+  
+  .group-chip-header {
+    gap: 12px;
+    
+    .group-toggle-btn {
+      width: 28px;
+      height: 28px;
+      font-size: 0.875rem;
+    }
+    
+    .add-sibling-btn {
+      width: 32px;
+      height: 32px;
+      font-size: 1.125rem;
+    }
+    
+    ::ng-deep .group-chip-button {
+      min-width: 140px;
+      font-size: 1rem;
+      
+      .p-button-label {
+        gap: 12px;
+      }
+      
+      .operator-display {
+        padding: 4px 8px;
+        font-size: 0.875rem;
+      }
+    }
+  }
+  
+  .group-children {
+    padding-left: 20px;
+    margin-left: 16px;
+    gap: 6px;
+    
+    .child-item {
+      gap: 12px;
+    }
+    
+    .add-child-btn {
+      padding: 12px 16px;
+      font-size: 1rem;
+      margin-top: 6px;
+    }
+  }
+  
+  .grouping-braces {
+    .brace-left,
+    .brace-right {
+      font-size: 2.5rem;
+    }
+  }
+}
+
+/* Display Mode: No Labels */
+.group-chip-container.no-labels {
+  ::ng-deep .group-chip-button .p-button-label {
+    .operator-display {
+      display: none;
+    }
+  }
+  
+  .add-child-btn span {
+    display: none;
+  }
+}
+
+/* Display Mode: No Icons */
+.group-chip-container.no-icons {
+  .group-toggle-btn .pi,
+  .add-sibling-btn .pi,
+  .add-child-btn .pi {
+    display: none;
+  }
+  
+  .grouping-braces {
+    display: none;
+  }
+}
+
+/* Display Mode: Condensed Spacing */
+.group-chip-container.condensed {
+  margin: 3px 0;
+  
+  .group-chip-header {
+    gap: 6px;
+  }
+  
+  .group-children {
+    padding-left: 14px;
+    margin-left: 10px;
+    gap: 3px;
+    
+    .child-item {
+      gap: 6px;
+    }
+    
+    .add-child-btn {
+      padding: 6px 10px;
+      margin-top: 3px;
+    }
+  }
+}
+
+/* Mobile Responsive Styles */
+@media (max-width: 767px) {
+  .group-chip-container {
+    /* Touch-friendly sizing */
+    .group-toggle-btn,
+    .add-sibling-btn {
+      min-width: 44px;
+      min-height: 44px;
+    }
+    
+    ::ng-deep .group-chip-button {
+      min-height: 44px;
+      font-size: 1rem;
+    }
+    
+    .add-child-btn {
+      min-height: 44px;
+      padding: 12px 16px;
+      font-size: 1rem;
+    }
+    
+    /* Disable drag and drop on mobile */
+    .drag-handle {
+      display: none;
+    }
+    
+    .child-item {
+      &.dragging {
+        opacity: 1;
+        transform: none;
+      }
+    }
+    
+    /* Larger delete buttons for touch */
+    .delete-child-btn {
+      width: 32px;
+      height: 32px;
+      font-size: 1rem;
+    }
+  }
+}
+
+/* Tablet Responsive Styles */
+@media (min-width: 768px) and (max-width: 991px) {
+  .group-chip-container {
+    .group-chip-header {
+      flex-wrap: nowrap;
+    }
+    
+    ::ng-deep .group-chip-button {
+      min-width: 100px;
+    }
+  }
+}
+
+/* Desktop Responsive Styles */
+@media (min-width: 992px) {
+  .group-chip-container {
+    /* Enhanced hover effects for desktop */
+    .group-toggle-btn:hover,
+    .add-sibling-btn:hover {
+      transform: scale(1.05);
+    }
+    
+    ::ng-deep .group-chip-button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+    
+    .add-child-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+  }
+}
+
+/* Container Query Styles */
+.group-chip-container.container-narrow {
+  .group-chip-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    
+    .group-toggle-btn,
+    .add-sibling-btn {
+      align-self: flex-start;
+    }
+    
+    ::ng-deep .group-chip-button {
+      width: 100%;
+    }
+  }
+}
+
+.group-chip-container.container-wide {
+  .group-chip-header {
+    justify-content: space-between;
+    
+    ::ng-deep .group-chip-button {
+      flex: 0 1 auto;
+      max-width: 300px;
+    }
+  }
+}
+
 /* Dark theme adjustments */
 @media (prefers-color-scheme: dark) {
   .group-chip-container {
@@ -665,5 +995,115 @@
     background: var(--red-900);
     border-color: var(--red-700);
     color: var(--red-200);
+  }
+}
+
+/* Print Styles */
+@media print {
+  .group-chip-container {
+    border: 1px solid #000;
+    background: #fff;
+    color: #000;
+    
+    .group-toggle-btn,
+    .add-sibling-btn,
+    .add-child-btn,
+    .delete-child-btn,
+    .drag-handle {
+      display: none;
+    }
+    
+    .group-children {
+      border-left: 1px solid #000;
+    }
+    
+    .grouping-braces {
+      color: #000;
+    }
+  }
+}
+
+/* Animation Preferences */
+@media (prefers-reduced-motion: reduce) {
+  .group-chip-container {
+    * {
+      transition: none !important;
+      animation: none !important;
+    }
+    
+    .add-sibling-btn:hover,
+    .group-toggle-btn:hover {
+      transform: none;
+    }
+    
+    ::ng-deep .group-chip-button:hover {
+      transform: none;
+      box-shadow: none;
+    }
+  }
+}
+
+/* Focus Management */
+.group-chip-container {
+  &:focus-within {
+    .group-children {
+      border-left-color: var(--primary-color);
+    }
+  }
+  
+  /* Ensure proper focus order */
+  .group-toggle-btn {
+    order: 1;
+  }
+  
+  ::ng-deep .group-chip-button {
+    order: 2;
+  }
+  
+  .add-sibling-btn {
+    order: 3;
+  }
+}
+
+/* Loading and Disabled States */
+.group-chip-container {
+  &.loading {
+    opacity: 0.7;
+    pointer-events: none;
+    
+    &::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255, 255, 255, 0.5);
+      z-index: 10;
+    }
+  }
+  
+  &.disabled {
+    opacity: 0.6;
+    pointer-events: none;
+    
+    .group-toggle-btn,
+    .add-sibling-btn,
+    .add-child-btn {
+      cursor: not-allowed;
+    }
+  }
+}
+
+/* Validation States */
+.group-chip-container.invalid {
+  border-color: var(--red-500);
+  
+  ::ng-deep .group-chip-button {
+    border-color: var(--red-500);
+  }
+  
+  .validation-message {
+    display: flex;
   }
 }
