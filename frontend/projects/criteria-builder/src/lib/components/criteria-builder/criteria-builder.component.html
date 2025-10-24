@@ -1,4 +1,18 @@
-<div class="criteria-builder-container" [class.disabled]="disabled">
+<div 
+  class="criteria-builder-container" 
+  [class.disabled]="disabled"
+  [ngClass]="formControlClasses"
+  [attr.aria-invalid]="!isValid()"
+  [attr.aria-describedby]="hasError ? 'criteria-error' : null"
+  role="group"
+  [attr.aria-label]="'Criteria builder form control'"
+  [attr.aria-required]="ngControl?.control?.hasError('required')"
+  [attr.tabindex]="disabled ? -1 : 0"
+  (focus)="onFocus()"
+  (blur)="onBlur()"
+  (focusin)="onFocus()"
+  (focusout)="onBlur()">
+  
   <!-- Error Message -->
   <p-message 
     *ngIf="hasError"
@@ -6,8 +20,26 @@
     [text]="errorMessage"
     styleClass="criteria-error-message"
     [closable]="true"
+    id="criteria-error"
+    role="alert"
+    [attr.aria-live]="'assertive'"
     (onClose)="clearError()">
   </p-message>
+
+  <!-- Form Validation Errors -->
+  <div 
+    *ngIf="ngControl?.control?.errors && (isTouched || isDirty)"
+    class="form-validation-errors"
+    id="form-validation-errors"
+    role="alert"
+    aria-live="polite">
+    <p-message 
+      *ngFor="let error of getFormErrors()"
+      severity="error"
+      [text]="error.message"
+      styleClass="form-error-message">
+    </p-message>
+  </div>
 
   <!-- Main Criteria Building Area -->
   <div class="criteria-building-area">

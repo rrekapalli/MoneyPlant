@@ -13,3 +13,6 @@ export * from './lib/services';
 
 // Components
 export * from './lib/components';
+
+// Validators
+export * from './lib/validators/criteria-validators';
