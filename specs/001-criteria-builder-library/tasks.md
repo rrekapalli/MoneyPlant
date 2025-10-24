@@ -32,36 +32,36 @@ This document provides a bare minimum implementation task list for creating an A
 ## Phase 1: Setup (Project Initialization)
 
 ### T001: Create Angular Library Structure
-- [x] T001 Create project structure in frontend/projects/criteria-builder per implementation plan
+- [ ] T001 Create project structure in frontend/projects/criteria-builder per implementation plan
 
 ### T002: Configure ng-packagr
-- [x] T002 Configure ng-packagr for library packaging in frontend/projects/criteria-builder/ng-package.json
+- [ ] T002 Configure ng-packagr for library packaging in frontend/projects/criteria-builder/ng-package.json
 
 ### T003: Setup Package Dependencies
-- [x] T003 Configure package.json with Angular 20, PrimeNG 20, Angular CDK dependencies in frontend/projects/criteria-builder/package.json
+- [ ] T003 Configure package.json with Angular 20, PrimeNG 20, Angular CDK dependencies in frontend/projects/criteria-builder/package.json
 
 ### T004: Create Module Structure
-- [x] T004 Create MpCriteriaBuilderModule with proper imports and exports in frontend/projects/criteria-builder/src/lib/criteria-builder.module.ts
+- [ ] T004 Create MpCriteriaBuilderModule with proper imports and exports in frontend/projects/criteria-builder/src/lib/criteria-builder.module.ts
 
 ### T005: Setup Public API
-- [x] T005 Create public-api.ts with component and interface exports in frontend/projects/criteria-builder/src/public-api.ts
+- [ ] T005 Create public-api.ts with component and interface exports in frontend/projects/criteria-builder/src/public-api.ts
 
 ## Phase 2: Foundational (Blocking Prerequisites)
 
 ### T006: Create Core Data Models
-- [x] T006 Implement core data interfaces (CriteriaDSL, FieldMeta, FunctionMeta) in frontend/projects/criteria-builder/src/lib/models/criteria.models.ts
+- [ ] T006 Implement core data interfaces (CriteriaDSL, FieldMeta, FunctionMeta) in frontend/projects/criteria-builder/src/lib/models/criteria.models.ts
 
 ### T007: Create Configuration Interfaces
-- [x] T007 Implement configuration interfaces (CriteriaConfig, ValidationResult) in frontend/projects/criteria-builder/src/lib/models/config.models.ts
+- [ ] T007 Implement configuration interfaces (CriteriaConfig, ValidationResult) in frontend/projects/criteria-builder/src/lib/models/config.models.ts
 
 ### T008: Create Event Interfaces
-- [x] T008 Implement event interfaces (BadgeActionEvent, CriteriaChangeEvent) in frontend/projects/criteria-builder/src/lib/models/event.models.ts
+- [ ] T008 Implement event interfaces (BadgeActionEvent, CriteriaChangeEvent) in frontend/projects/criteria-builder/src/lib/models/event.models.ts
 
 ### T009: Create Constants and Utilities
-- [x] T009 Implement constants (DEFAULT_CONFIG, OPERATORS_BY_FIELD_TYPE) in frontend/projects/criteria-builder/src/lib/utils/constants.ts
+- [ ] T009 Implement constants (DEFAULT_CONFIG, OPERATORS_BY_FIELD_TYPE) in frontend/projects/criteria-builder/src/lib/utils/constants.ts
 
 ### T010: Create Type Definitions
-- [x] T010 Implement type definitions (FieldType, Operator, LogicalOperator) in frontend/projects/criteria-builder/src/lib/types/criteria.types.ts
+- [ ] T010 Implement type definitions (FieldType, Operator, LogicalOperator) in frontend/projects/criteria-builder/src/lib/types/criteria.types.ts
 
 ## Phase 3: User Story 1 - Basic Criteria Creation (MVP)
 
@@ -70,49 +70,49 @@ This document provides a bare minimum implementation task list for creating an A
 **Independent Test**: Create condition "Close > 100" and verify DSL output and SQL preview generation.
 
 ### T011: Create Main Component Shell
-- [x] T011 [P] [US1] Create MpCriteriaBuilderComponent shell with @Input/@Output properties in frontend/projects/criteria-builder/src/lib/components/mp-criteria-builder.component.ts
+- [ ] T011 [P] [US1] Create MpCriteriaBuilderComponent shell with @Input/@Output properties in frontend/projects/criteria-builder/src/lib/components/mp-criteria-builder.component.ts
 
 ### T012: Implement ControlValueAccessor
-- [x] T012 [US1] Implement ControlValueAccessor interface in MpCriteriaBuilderComponent in frontend/projects/criteria-builder/src/lib/components/mp-criteria-builder.component.ts
+- [ ] T012 [US1] Implement ControlValueAccessor interface in MpCriteriaBuilderComponent in frontend/projects/criteria-builder/src/lib/components/mp-criteria-builder.component.ts
 
 ### T013: Create Field Badge Component
-- [x] T013 [P] [US1] Create FieldBadgeComponent for displaying field names in frontend/projects/criteria-builder/src/lib/components/badges/field-badge.component.ts
+- [ ] T013 [P] [US1] Create FieldBadgeComponent for displaying field names in frontend/projects/criteria-builder/src/lib/components/badges/field-badge.component.ts
 
 ### T014: Create Operator Badge Component
-- [x] T014 [P] [US1] Create OperatorBadgeComponent for displaying operators in frontend/projects/criteria-builder/src/lib/components/badges/operator-badge.component.ts
+- [ ] T014 [P] [US1] Create OperatorBadgeComponent for displaying operators in frontend/projects/criteria-builder/src/lib/components/badges/operator-badge.component.ts
 
 ### T015: Create Value Badge Component
-- [x] T015 [US1] Create ValueBadgeComponent for displaying literal values in frontend/projects/criteria-builder/src/lib/components/badges/value-badge.component.ts
+- [ ] T015 [US1] Create ValueBadgeComponent for displaying literal values in frontend/projects/criteria-builder/src/lib/components/badges/value-badge.component.ts
 
 ### T016: Create Basic Template
-- [x] T016 [US1] Create basic template for rendering field-operator-value combinations in frontend/projects/criteria-builder/src/lib/components/mp-criteria-builder.component.html
+- [ ] T016 [US1] Create basic template for rendering field-operator-value combinations in frontend/projects/criteria-builder/src/lib/components/mp-criteria-builder.component.html
 
 ### T017: Implement DSL Generation
-- [x] T017 [US1] Implement basic DSL generation for simple conditions in frontend/projects/criteria-builder/src/lib/services/criteria-serializer.service.ts
+- [ ] T017 [US1] Implement basic DSL generation for simple conditions in frontend/projects/criteria-builder/src/lib/services/criteria-serializer.service.ts
 
 ### T018: Implement SQL Preview Generation
-- [x] T018 [US1] Implement basic SQL preview generation for simple conditions in frontend/projects/criteria-builder/src/lib/services/criteria-serializer.service.ts
+- [ ] T018 [US1] Implement basic SQL preview generation for simple conditions in frontend/projects/criteria-builder/src/lib/services/criteria-serializer.service.ts
 
 ### T019: Create Criteria Validation Service
-- [x] T019 [US1] Create CriteriaValidationService for validating field-operator-value combinations in frontend/projects/criteria-builder/src/lib/services/criteria-validation.service.ts
+- [ ] T019 [US1] Create CriteriaValidationService for validating field-operator-value combinations in frontend/projects/criteria-builder/src/lib/services/criteria-validation.service.ts
 
 ### T020: Implement Change Detection
-- [x] T020 [US1] Implement change detection and DSL emission in MpCriteriaBuilderComponent in frontend/projects/criteria-builder/src/lib/components/mp-criteria-builder.component.ts
+- [ ] T020 [US1] Implement change detection and DSL emission in MpCriteriaBuilderComponent in frontend/projects/criteria-builder/src/lib/components/mp-criteria-builder.component.ts
 
 ### T021: Add Basic Styling
-- [x] T021 [US1] Add basic CSS styling for badge components in frontend/projects/criteria-builder/src/lib/components/badges/badge.component.scss
+- [ ] T021 [US1] Add basic CSS styling for badge components in frontend/projects/criteria-builder/src/lib/components/badges/badge.component.scss
 
 ### T022: Implement Field Selection
-- [x] T022 [US1] Implement field selection dropdown in MpCriteriaBuilderComponent in frontend/projects/criteria-builder/src/lib/components/mp-criteria-builder.component.ts
+- [ ] T022 [US1] Implement field selection dropdown in MpCriteriaBuilderComponent in frontend/projects/criteria-builder/src/lib/components/mp-criteria-builder.component.ts
 
 ### T023: Implement Operator Selection
-- [x] T023 [US1] Implement operator selection based on field type in MpCriteriaBuilderComponent in frontend/projects/criteria-builder/src/lib/components/mp-criteria-builder.component.ts
+- [ ] T023 [US1] Implement operator selection based on field type in MpCriteriaBuilderComponent in frontend/projects/criteria-builder/src/lib/components/mp-criteria-builder.component.ts
 
 ### T024: Implement Value Input
-- [x] T024 [US1] Implement value input with type validation in MpCriteriaBuilderComponent in frontend/projects/criteria-builder/src/lib/components/mp-criteria-builder.component.ts
+- [ ] T024 [US1] Implement value input with type validation in MpCriteriaBuilderComponent in frontend/projects/criteria-builder/src/lib/components/mp-criteria-builder.component.ts
 
 ### T025: Create Basic Tests
-- [x] T025 [US1] Create basic unit tests for MpCriteriaBuilderComponent in frontend/projects/criteria-builder/src/lib/components/mp-criteria-builder.component.spec.ts
+- [ ] T025 [US1] Create basic unit tests for MpCriteriaBuilderComponent in frontend/projects/criteria-builder/src/lib/components/mp-criteria-builder.component.spec.ts
 
 ## Phase 4: User Story 2 - Grouped Criteria with Logical Operators
 
@@ -121,34 +121,34 @@ This document provides a bare minimum implementation task list for creating an A
 **Independent Test**: Create nested groups like "(Close > 100 AND Volume > 1000000)" and verify proper nesting.
 
 ### T026: Create Group Badge Component
-- [x] T026 [P] [US2] Create GroupBadgeComponent for displaying logical groups in frontend/projects/criteria-builder/src/lib/components/badges/group-badge.component.ts
+- [ ] T026 [P] [US2] Create GroupBadgeComponent for displaying logical groups in frontend/projects/criteria-builder/src/lib/components/badges/group-badge.component.ts
 
 ### T027: Implement Group Creation
-- [x] T027 [US2] Implement group creation with AND/OR/NOT operators in MpCriteriaBuilderComponent in frontend/projects/criteria-builder/src/lib/components/mp-criteria-builder.component.ts
+- [ ] T027 [US2] Implement group creation with AND/OR/NOT operators in MpCriteriaBuilderComponent in frontend/projects/criteria-builder/src/lib/components/mp-criteria-builder.component.ts
 
 ### T028: Implement Curly Brace Toggle
-- [x] T028 [P] [US2] Implement curly brace toggle functionality in GroupBadgeComponent in frontend/projects/criteria-builder/src/lib/components/badges/group-badge.component.ts
+- [ ] T028 [P] [US2] Implement curly brace toggle functionality in GroupBadgeComponent in frontend/projects/criteria-builder/src/lib/components/badges/group-badge.component.ts
 
 ### T029: Extend DSL Generation for Groups
-- [x] T029 [US2] Extend DSL generation to handle nested groups in frontend/projects/criteria-builder/src/lib/services/criteria-serializer.service.ts
+- [ ] T029 [US2] Extend DSL generation to handle nested groups in frontend/projects/criteria-builder/src/lib/services/criteria-serializer.service.ts
 
 ### T030: Extend SQL Generation for Groups
-- [x] T030 [US2] Extend SQL generation to handle logical operators and parentheses in frontend/projects/criteria-builder/src/lib/services/criteria-serializer.service.ts
+- [ ] T030 [US2] Extend SQL generation to handle logical operators and parentheses in frontend/projects/criteria-builder/src/lib/services/criteria-serializer.service.ts
 
 ### T031: Implement Group Validation
-- [x] T031 [US2] Implement group structure validation in CriteriaValidationService in frontend/projects/criteria-builder/src/lib/services/criteria-validation.service.ts
+- [ ] T031 [US2] Implement group structure validation in CriteriaValidationService in frontend/projects/criteria-builder/src/lib/services/criteria-validation.service.ts
 
 ### T032: Add Group Styling
-- [x] T032 [US2] Add CSS styling for group badges and nesting in frontend/projects/criteria-builder/src/lib/components/badges/group-badge.component.scss
+- [ ] T032 [US2] Add CSS styling for group badges and nesting in frontend/projects/criteria-builder/src/lib/components/badges/group-badge.component.scss
 
 ### T033: Implement Group Template
-- [x] T033 [US2] Update template to render nested groups in frontend/projects/criteria-builder/src/lib/components/mp-criteria-builder.component.html
+- [ ] T033 [US2] Update template to render nested groups in frontend/projects/criteria-builder/src/lib/components/mp-criteria-builder.component.html
 
 ### T034: Add Group Tests
-- [x] T034 [US2] Add unit tests for group functionality in frontend/projects/criteria-builder/src/lib/components/mp-criteria-builder.component.spec.ts
+- [ ] T034 [US2] Add unit tests for group functionality in frontend/projects/criteria-builder/src/lib/components/mp-criteria-builder.component.spec.ts
 
 ### T035: Implement Nesting Depth Validation
-- [x] T035 [US2] Implement nesting depth validation (max 10 levels) in CriteriaValidationService in frontend/projects/criteria-builder/src/lib/services/criteria-validation.service.ts
+- [ ] T035 [US2] Implement nesting depth validation (max 10 levels) in CriteriaValidationService in frontend/projects/criteria-builder/src/lib/services/criteria-validation.service.ts
 
 ## Phase 5: User Story 3 - Function Integration and Parameter Editing
 
@@ -157,25 +157,25 @@ This document provides a bare minimum implementation task list for creating an A
 **Independent Test**: Create function calls like "SMA(Close, 20) > 50" and verify parameter validation and SQL generation.
 
 ### T036: Create Function Badge Component
-- [x] T036 [P] [US3] Create FunctionBadgeComponent for displaying function calls in frontend/projects/criteria-builder/src/lib/components/badges/function-badge.component.ts
+- [ ] T036 [P] [US3] Create FunctionBadgeComponent for displaying function calls in frontend/projects/criteria-builder/src/lib/components/badges/function-badge.component.ts
 
 ### T037: Implement Function Selection
-- [x] T037 [US3] Implement function selection dropdown in MpCriteriaBuilderComponent in frontend/projects/criteria-builder/src/lib/components/mp-criteria-builder.component.ts
+- [ ] T037 [US3] Implement function selection dropdown in MpCriteriaBuilderComponent in frontend/projects/criteria-builder/src/lib/components/mp-criteria-builder.component.ts
 
 ### T038: Implement Parameter Configuration
-- [x] T038 [US3] Implement parameter configuration for function calls in FunctionBadgeComponent in frontend/projects/criteria-builder/src/lib/components/badges/function-badge.component.ts
+- [ ] T038 [US3] Implement parameter configuration for function calls in FunctionBadgeComponent in frontend/projects/criteria-builder/src/lib/components/badges/function-badge.component.ts
 
 ### T039: Extend DSL Generation for Functions
-- [x] T039 [US3] Extend DSL generation to handle function calls in frontend/projects/criteria-builder/src/lib/services/criteria-serializer.service.ts
+- [ ] T039 [US3] Extend DSL generation to handle function calls in frontend/projects/criteria-builder/src/lib/services/criteria-serializer.service.ts
 
 ### T040: Extend SQL Generation for Functions
-- [x] T040 [US3] Extend SQL generation to handle function SQL templates in frontend/projects/criteria-builder/src/lib/services/criteria-serializer.service.ts
+- [ ] T040 [US3] Extend SQL generation to handle function SQL templates in frontend/projects/criteria-builder/src/lib/services/criteria-serializer.service.ts
 
 ### T041: Implement Function Validation
-- [x] T041 [US3] Implement function parameter validation in CriteriaValidationService in frontend/projects/criteria-builder/src/lib/services/criteria-validation.service.ts
+- [ ] T041 [US3] Implement function parameter validation in CriteriaValidationService in frontend/projects/criteria-builder/src/lib/services/criteria-validation.service.ts
 
 ### T042: Add Function Tests
-- [x] T042 [US3] Add unit tests for function functionality in frontend/projects/criteria-builder/src/lib/components/mp-criteria-builder.component.spec.ts
+- [ ] T042 [US3] Add unit tests for function functionality in frontend/projects/criteria-builder/src/lib/components/mp-criteria-builder.component.spec.ts
 
 ## Phase 6: User Story 4 - Interactive Badge Management
 
