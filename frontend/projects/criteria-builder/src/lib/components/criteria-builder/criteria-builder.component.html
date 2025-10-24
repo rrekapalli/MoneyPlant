@@ -131,4 +131,14 @@
     (validationCompleted)="onValidationCompleted($event)"
     (errorOccurred)="onError($event)">
   </mp-sql-preview>
+
+  <!-- Undo Notification -->
+  <mp-undo-notification
+    *ngIf="mergedConfig.enableUndo"
+    [compactMode]="false"
+    [showProgress]="true"
+    [position]="'bottom'"
+    (undoExecuted)="onUndoExecuted($event)"
+    (undoDismissed)="onUndoDismissed()">
+  </mp-undo-notification>
 </div>

@@ -115,14 +115,14 @@
     - Create proper subscription management and cleanup
     - _Requirements: FR-013_
 
-- [ ] 8. Build drag-and-drop and interaction features
-  - [ ] 8.1 Implement drag-and-drop functionality
+- [x] 8. Build drag-and-drop and interaction features
+  - [x] 8.1 Implement drag-and-drop functionality
     - Add CDK drag-and-drop support for reordering chips within groups
     - Implement visual feedback during drag operations with drop zones
     - Add constraints for valid drop targets and nesting rules
     - _Requirements: FR-005_
 
-  - [ ] 8.2 Create undo functionality and user feedback
+  - [x] 8.2 Create undo functionality and user feedback
     - Implement undo system for delete operations with 5-second timeout
     - Add toast notifications using existing ToastService for user feedback
     - Create confirmation dialogs for destructive actions

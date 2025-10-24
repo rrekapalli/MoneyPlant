@@ -39,6 +39,7 @@ import {
 import { CriteriaValidationService } from '../../services/criteria-validation.service';
 import { SqlPreviewComponent, SqlPreviewConfig } from '../sql-preview/sql-preview.component';
 import { ValidationDisplayComponent } from '../validation-display/validation-display.component';
+import { UndoNotificationComponent } from '../undo-notification/undo-notification.component';
 
 /**
  * Configuration for the main criteria builder component
@@ -85,7 +86,8 @@ export interface MainCriteriaBuilderConfig {
     ButtonModule,
     MessageModule,
     SqlPreviewComponent,
-    ValidationDisplayComponent
+    ValidationDisplayComponent,
+    UndoNotificationComponent
   ],
   providers: [
     {
@@ -914,5 +916,63 @@ export class CriteriaBuilderComponent implements ControlValueAccessor, Validator
     this.hasError = true;
     this.errorMessage = error;
     this.cdr.markForCheck();
+  }
+
+  /**
+   * Handle undo execution
+   */
+  onUndoExecuted(undoData: any): void {
+    // Handle undo based on the type of action
+    switch (undoData.type) {
+      case 'delete':
+        this.handleUndoDelete(undoData);
+        break;
+      case 'move':
+        this.handleUndoMove(undoData);
+        break;
+      case 'edit':
+        this.handleUndoEdit(undoData);
+        break;
+      default:
+        console.warn('Unknown undo type:', undoData.type);
+    }
+  }
+
+  /**
+   * Handle undo dismissal
+   */
+  onUndoDismissed(): void {
+    // Optional: Log or track undo dismissals
+    console.log('Undo notification dismissed');
+  }
+
+  /**
+   * Handle undo delete operation
+   */
+  private handleUndoDelete(undoData: any): void {
+    // This would restore a deleted element
+    // Implementation depends on the specific data structure
+    console.log('Handling undo delete:', undoData);
+    this.markAsDirty();
+  }
+
+  /**
+   * Handle undo move operation
+   */
+  private handleUndoMove(undoData: any): void {
+    // This would restore the original position of a moved element
+    // Implementation depends on the specific data structure
+    console.log('Handling undo move:', undoData);
+    this.markAsDirty();
+  }
+
+  /**
+   * Handle undo edit operation
+   */
+  private handleUndoEdit(undoData: any): void {
+    // This would restore the previous value of an edited element
+    // Implementation depends on the specific data structure
+    console.log('Handling undo edit:', undoData);
+    this.markAsDirty();
   }
 }

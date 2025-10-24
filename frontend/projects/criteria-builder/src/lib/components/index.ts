@@ -10,3 +10,4 @@ export * from './criteria-popover';
 export * from './sql-preview';
 export * from './validation-display';
 export * from './criteria-builder';
+export * from './undo-notification';

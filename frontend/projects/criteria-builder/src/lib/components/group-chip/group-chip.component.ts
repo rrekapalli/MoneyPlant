@@ -5,19 +5,28 @@ import {
   EventEmitter, 
   ChangeDetectionStrategy,
   OnInit,
+  OnDestroy,
   ViewChild,
   ElementRef,
-  HostBinding
+  HostBinding,
+  ChangeDetectorRef,
+  Inject
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { BadgeModule } from 'primeng/badge';
 import { TooltipModule } from 'primeng/tooltip';
-import { DragDropModule, CdkDragDrop, CdkDrag, CdkDropList } from '@angular/cdk/drag-drop';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { ConfirmationService } from 'primeng/api';
+import { DragDropModule, CdkDragDrop, CdkDrag, CdkDropList, CdkDragStart, CdkDragEnd } from '@angular/cdk/drag-drop';
+import { Subscription } from 'rxjs';
 import { BaseChipComponent } from '../base-chip/base-chip.component';
 import { ConditionChipComponent } from '../condition-chip/condition-chip.component';
 import { FunctionChipComponent } from '../function-chip/function-chip.component';
 import { ChipViewModel } from '../../interfaces';
+import { DragDropService, DragDropResult } from '../../services/drag-drop.service';
+import { UndoService } from '../../services/undo.service';
+import { UserFeedbackService } from '../../services/user-feedback.service';
 
 /**
  * Group chip component for creating nestable containers with logical operators
@@ -32,15 +41,20 @@ import { ChipViewModel } from '../../interfaces';
     BadgeModule, 
     TooltipModule, 
     DragDropModule,
+    ConfirmDialogModule,
     ConditionChipComponent,
     FunctionChipComponent
   ],
+  providers: [ConfirmationService],
   template: `
     <div 
       class="group-chip-container"
       [class.grouped]="isGrouped"
       [class.has-children]="hasChildren"
+      [class.drag-over]="dragDropService.isDragging()"
       [style.margin-left.px]="indentationLevel * 20"
+      [attr.data-group-id]="chipId"
+      [attr.data-drop-zone]="chipId + '-inside'"
       cdkDropList
       [cdkDropListData]="children"
       [cdkDropListDisabled]="!enableDragDrop || disabled"
@@ -135,11 +149,14 @@ import { ChipViewModel } from '../../interfaces';
           <div
             class="child-item"
             [class.dragging]="isDragging"
+            [attr.data-child-id]="child.id"
+            [attr.data-child-type]="child.type"
             cdkDrag
             [cdkDragData]="child"
             [cdkDragDisabled]="!enableDragDrop || disabled || !child.isDraggable"
-            (cdkDragStarted)="onDragStarted(child)"
-            (cdkDragEnded)="onDragEnded()">
+            (cdkDragStarted)="onCdkDragStarted($event)"
+            (cdkDragEnded)="onCdkDragEnded($event)"
+            [attr.data-drop-zone]="child.id + '-before'">
             
             <!-- Drag handle -->
             <div class="drag-handle" *ngIf="enableDragDrop && child.isDraggable" cdkDragHandle>
@@ -223,15 +240,18 @@ import { ChipViewModel } from '../../interfaces';
   styleUrls: ['./group-chip.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class GroupChipComponent extends BaseChipComponent implements OnInit {
+export class GroupChipComponent extends BaseChipComponent implements OnInit, OnDestroy {
   @Input() children: ChipViewModel[] = [];
   @Input() logicalOperator: 'AND' | 'OR' | 'NOT' = 'AND';
   @Input() isGrouped = false;
   @Input() isExpanded = true;
   @Input() enableDragDrop = true;
+  @Input() enableUndo = true;
+  @Input() undoTimeout = 5000;
   @Input() indentationLevel = 0;
   @Input() maxDepth = 10;
   @Input() maxElements = 100;
+  @Input() allGroups: Map<string, ChipViewModel[]> = new Map();
   
   @Output() childrenChanged = new EventEmitter<{groupId: string, children: ChipViewModel[]}>();
   @Output() addSibling = new EventEmitter<string>();
@@ -239,6 +259,8 @@ export class GroupChipComponent extends BaseChipComponent implements OnInit {
   @Output() deleteChild = new EventEmitter<{groupId: string, childId: string}>();
   @Output() groupingToggled = new EventEmitter<{groupId: string, isGrouped: boolean}>();
   @Output() operatorChanged = new EventEmitter<{groupId: string, operator: 'AND' | 'OR' | 'NOT'}>();
+  @Output() undoRequested = new EventEmitter<any>();
+  @Output() dragDropCompleted = new EventEmitter<DragDropResult>();
   
   @ViewChild('groupToggle') groupToggleButton!: ElementRef;
   @ViewChild('addButton') addSiblingButton!: ElementRef;
@@ -246,8 +268,11 @@ export class GroupChipComponent extends BaseChipComponent implements OnInit {
   @HostBinding('class.group-chip') groupChipClass = true;
   @HostBinding('class.nested') get isNested() { return this.indentationLevel > 0; }
   @HostBinding('class.max-depth') get isMaxDepth() { return this.indentationLevel >= this.maxDepth; }
+  @HostBinding('class.dragging') get isDraggingClass() { return this.isDragging; }
   
   protected isDragging = false;
+  private dragDropSubscription?: Subscription;
+  private undoSubscription?: Subscription;
   
   get hasChildren(): boolean {
     return this.children && this.children.length > 0;
@@ -260,10 +285,31 @@ export class GroupChipComponent extends BaseChipComponent implements OnInit {
   get canAddChild(): boolean {
     return this.indentationLevel < this.maxDepth - 1 && this.children.length < this.maxElements;
   }
+
+  constructor(
+    public dragDropService: DragDropService,
+    private undoService: UndoService,
+    private confirmationService: ConfirmationService,
+    private userFeedbackService: UserFeedbackService,
+    private cdr: ChangeDetectorRef
+  ) {
+    super();
+  }
   
   override ngOnInit(): void {
     super.ngOnInit();
     this.validateGroupData();
+    this.setupDragDropSubscription();
+    this.setupUndoSubscription();
+  }
+
+  override ngOnDestroy(): void {
+    if (this.dragDropSubscription) {
+      this.dragDropSubscription.unsubscribe();
+    }
+    if (this.undoSubscription) {
+      this.undoSubscription.unsubscribe();
+    }
   }
   
   /**
@@ -302,10 +348,60 @@ export class GroupChipComponent extends BaseChipComponent implements OnInit {
   }
   
   /**
-   * Handle child deletion
+   * Handle child deletion with undo support
    */
   onChildDelete(child: ChipViewModel): void {
-    this.deleteChild.emit({ groupId: this.chipId, childId: child.id });
+    if (this.enableUndo) {
+      this.deleteChildWithUndo(child);
+    } else {
+      this.confirmAndDeleteChild(child);
+    }
+  }
+
+  /**
+   * Delete child with undo functionality
+   */
+  private async deleteChildWithUndo(child: ChipViewModel): Promise<void> {
+    const deleteData = {
+      groupId: this.chipId,
+      childId: child.id,
+      childData: child,
+      childIndex: this.children.findIndex(c => c.id === child.id)
+    };
+
+    const deleted = await this.userFeedbackService.handleDelete(
+      child.displayText,
+      child.type,
+      deleteData,
+      () => {
+        this.deleteChild.emit({ groupId: this.chipId, childId: child.id });
+      },
+      false // Don't skip confirmation
+    );
+
+    if (deleted) {
+      // Additional logic if needed after successful deletion
+    }
+  }
+
+  /**
+   * Confirm and delete child (when undo is disabled)
+   */
+  private async confirmAndDeleteChild(child: ChipViewModel): Promise<void> {
+    const confirmed = await this.userFeedbackService.confirm({
+      title: 'Confirm Deletion',
+      message: `Are you sure you want to delete this ${child.type}?`,
+      acceptLabel: 'Delete',
+      rejectLabel: 'Cancel',
+      acceptButtonClass: 'p-button-danger',
+      icon: 'pi pi-exclamation-triangle',
+      severity: 'warn'
+    });
+
+    if (confirmed) {
+      this.deleteChild.emit({ groupId: this.chipId, childId: child.id });
+      this.userFeedbackService.showSuccess('Deleted', `${child.type} deleted successfully`);
+    }
   }
 
   /**
@@ -316,30 +412,97 @@ export class GroupChipComponent extends BaseChipComponent implements OnInit {
   }
   
   /**
-   * Handle children reordering via drag and drop
+   * Handle children reordering via drag and drop with enhanced validation
    */
   onChildrenReordered(event: CdkDragDrop<ChipViewModel[]>): void {
-    if (event.previousIndex !== event.currentIndex) {
-      const newChildren = [...this.children];
-      const movedItem = newChildren.splice(event.previousIndex, 1)[0];
-      newChildren.splice(event.currentIndex, 0, movedItem);
-      
-      this.childrenChanged.emit({ groupId: this.chipId, children: newChildren });
+    if (event.previousIndex === event.currentIndex) {
+      return; // No change
+    }
+
+    const movedItem = this.children[event.previousIndex];
+    
+    // Validate the drop operation
+    const dropResult = this.dragDropService.executeDrop(
+      this.chipId, // from group
+      this.chipId, // to group (same group reordering)
+      event.previousIndex,
+      event.currentIndex,
+      this.allGroups
+    );
+
+    if (!dropResult.success) {
+      // Show validation errors
+      const violations = dropResult.violatedConstraints || [];
+      this.userFeedbackService.showError(
+        'Invalid Drop',
+        `Cannot move item: ${violations.join(', ')}`
+      );
+      return;
+    }
+
+    // Perform the reordering
+    const newChildren = [...this.children];
+    const movedChild = newChildren.splice(event.previousIndex, 1)[0];
+    newChildren.splice(event.currentIndex, 0, movedChild);
+    
+    this.childrenChanged.emit({ groupId: this.chipId, children: newChildren });
+    this.dragDropCompleted.emit(dropResult);
+
+    // Handle move with undo support
+    if (this.enableUndo) {
+      const moveData = {
+        groupId: this.chipId,
+        itemId: movedItem.id,
+        fromIndex: event.previousIndex,
+        toIndex: event.currentIndex
+      };
+
+      this.userFeedbackService.handleMove(
+        movedItem.displayText,
+        `position ${event.previousIndex + 1}`,
+        `position ${event.currentIndex + 1}`,
+        moveData,
+        () => {} // Move already performed above
+      );
+    } else {
+      this.userFeedbackService.showSuccess(
+        'Item Moved',
+        `${movedItem.displayText} moved successfully`
+      );
     }
   }
   
   /**
-   * Handle drag start
+   * Handle drag start with enhanced feedback
    */
   onDragStarted(child: ChipViewModel): void {
     this.isDragging = true;
+    this.dragDropService.startDrag(child, this.chipId);
+    this.cdr.markForCheck();
   }
   
   /**
-   * Handle drag end
+   * Handle drag end with cleanup
    */
   onDragEnded(): void {
     this.isDragging = false;
+    this.dragDropService.endDrag();
+    this.cdr.markForCheck();
+  }
+
+  /**
+   * Handle CDK drag start event
+   */
+  onCdkDragStarted(event: CdkDragStart): void {
+    const draggedItem = event.source.data as ChipViewModel;
+    this.onDragStarted(draggedItem);
+  }
+
+  /**
+   * Handle CDK drag end event
+   */
+  onCdkDragEnded(event: CdkDragEnd): void {
+    this.onDragEnded();
   }
   
   /**
@@ -468,6 +631,121 @@ export class GroupChipComponent extends BaseChipComponent implements OnInit {
     }
   }
   
+  /**
+   * Setup drag-drop service subscription
+   */
+  private setupDragDropSubscription(): void {
+    if (this.enableDragDrop) {
+      this.dragDropService.setConstraints({
+        maxDepth: this.maxDepth,
+        maxElements: this.maxElements,
+        allowedTypes: ['group', 'condition', 'function', 'field', 'operator', 'value'],
+        preventCircularNesting: true
+      });
+
+      this.dragDropSubscription = this.dragDropService.dragDropState$.subscribe(state => {
+        // Update visual feedback based on drag state
+        if (state.isDragging !== this.isDragging) {
+          this.cdr.markForCheck();
+        }
+      });
+    }
+  }
+
+  /**
+   * Setup undo service subscription
+   */
+  private setupUndoSubscription(): void {
+    if (this.enableUndo) {
+      this.undoSubscription = this.undoService.undoState$.subscribe(state => {
+        if (state.isActive && state.action) {
+          // Handle undo execution if it matches this component's actions
+          // This would be implemented based on specific undo requirements
+        }
+      });
+    }
+  }
+
+  /**
+   * Handle undo execution
+   */
+  onUndoExecuted(undoData: any): void {
+    if (undoData.groupId === this.chipId) {
+      switch (undoData.type) {
+        case 'delete':
+          this.restoreDeletedChild(undoData);
+          break;
+        case 'move':
+          this.restoreMoveOperation(undoData);
+          break;
+        default:
+          console.warn('Unknown undo type:', undoData.type);
+      }
+    }
+    this.undoRequested.emit(undoData);
+  }
+
+  /**
+   * Restore a deleted child
+   */
+  private restoreDeletedChild(undoData: any): void {
+    const { childData, childIndex } = undoData;
+    const newChildren = [...this.children];
+    
+    // Insert the child back at its original position
+    newChildren.splice(childIndex, 0, childData);
+    
+    this.childrenChanged.emit({ groupId: this.chipId, children: newChildren });
+    this.userFeedbackService.showSuccess('Restored', `${childData.displayText} restored successfully`);
+  }
+
+  /**
+   * Restore a move operation
+   */
+  private restoreMoveOperation(undoData: any): void {
+    const { itemId, fromIndex, toIndex } = undoData;
+    const newChildren = [...this.children];
+    
+    // Find the item and move it back to original position
+    const currentIndex = newChildren.findIndex(child => child.id === itemId);
+    if (currentIndex !== -1) {
+      const movedItem = newChildren.splice(currentIndex, 1)[0];
+      newChildren.splice(fromIndex, 0, movedItem);
+      
+      this.childrenChanged.emit({ groupId: this.chipId, children: newChildren });
+      this.userFeedbackService.showSuccess('Move Undone', `${movedItem.displayText} moved back to original position`);
+    }
+  }
+
+  /**
+   * Check if drop is allowed for external drops
+   */
+  canDropExternal(item: ChipViewModel): boolean {
+    if (!this.enableDragDrop || this.disabled) {
+      return false;
+    }
+
+    const validation = this.dragDropService.validateDrop(
+      item,
+      this.chipId,
+      this.children.length,
+      this.allGroups
+    );
+
+    return validation.isValid;
+  }
+
+  /**
+   * Get drop zone data attributes for styling
+   */
+  getDropZoneAttributes(): { [key: string]: string } {
+    return {
+      'data-drop-zone': `${this.chipId}-inside`,
+      'data-group-id': this.chipId,
+      'data-drop-position': 'inside'
+    };
+  }
+
   /**
    * Validate group-specific data
    */

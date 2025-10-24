@@ -372,23 +372,201 @@
   }
 }
 
-/* CDK Drag and Drop styling */
+/* Enhanced CDK Drag and Drop styling */
 ::ng-deep .cdk-drag-preview {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-  border-radius: 4px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  border-radius: 6px;
   background: var(--surface-0);
-  border: 1px solid var(--primary-color);
+  border: 2px solid var(--primary-color);
+  transform: rotate(3deg);
+  z-index: 1000;
+  
+  /* Add glow effect */
+  &::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: var(--primary-color);
+    border-radius: 8px;
+    opacity: 0.2;
+    z-index: -1;
+  }
 }
 
 ::ng-deep .cdk-drag-placeholder {
-  opacity: 0.3;
+  opacity: 0.4;
   background: var(--surface-100);
-  border: 2px dashed var(--surface-border);
-  border-radius: 4px;
+  border: 2px dashed var(--primary-color);
+  border-radius: 6px;
+  position: relative;
+  
+  /* Add animated placeholder content */
+  &::before {
+    content: 'Drop here';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--primary-color);
+    font-size: 0.875rem;
+    font-weight: 600;
+    opacity: 0.7;
+  }
 }
 
 ::ng-deep .cdk-drop-list-dragging .child-item:not(.cdk-drag-placeholder) {
   transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+/* Drop zone indicators */
+.group-chip-container {
+  position: relative;
+  
+  /* Drop zone highlighting */
+  &[data-drop-zone] {
+    position: relative;
+    
+    &::before {
+      content: '';
+      position: absolute;
+      top: -2px;
+      left: -2px;
+      right: -2px;
+      bottom: -2px;
+      border: 2px solid transparent;
+      border-radius: 6px;
+      pointer-events: none;
+      transition: all 0.2s ease-in-out;
+      z-index: 1;
+    }
+  }
+  
+  /* Active drop zone */
+  &.drop-zone-active::before {
+    border-color: var(--primary-color);
+    background: var(--primary-50);
+    opacity: 0.8;
+  }
+  
+  /* Valid drop zone */
+  &.drop-zone-valid::before {
+    border-color: var(--green-500);
+    background: var(--green-50);
+  }
+  
+  /* Invalid drop zone */
+  &.drop-zone-invalid::before {
+    border-color: var(--red-500);
+    background: var(--red-50);
+  }
+  
+  /* Drag over state */
+  &.drag-over {
+    background: var(--primary-50);
+    border-radius: 6px;
+    
+    .group-chip-header {
+      opacity: 0.8;
+    }
+  }
+}
+
+/* Enhanced drag handle */
+.child-item {
+  .drag-handle {
+    position: relative;
+    
+    &::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      right: 2px;
+      bottom: 2px;
+      background: var(--surface-200);
+      border-radius: 2px;
+      opacity: 0;
+      transition: opacity 0.2s ease-in-out;
+    }
+    
+    &:hover::after {
+      opacity: 1;
+    }
+  }
+  
+  /* Dragging state */
+  &.dragging {
+    opacity: 0.6;
+    transform: rotate(2deg) scale(0.98);
+    z-index: 100;
+    
+    .drag-handle {
+      opacity: 1;
+      color: var(--primary-color);
+    }
+  }
+}
+
+/* Global drag state styles */
+:host-context(.criteria-dragging) {
+  .group-chip-container {
+    /* Highlight potential drop targets */
+    &:not(.dragging) {
+      &::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        border: 1px dashed var(--surface-border);
+        border-radius: 4px;
+        pointer-events: none;
+        opacity: 0.5;
+      }
+    }
+  }
+  
+  /* Hide non-essential elements during drag */
+  .add-child-btn,
+  .add-sibling-btn {
+    opacity: 0.3;
+    pointer-events: none;
+  }
+}
+
+/* Drop indicator animation */
+@keyframes dropIndicator {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+}
+
+.drag-drop-indicator {
+  animation: dropIndicator 0.3s ease-out;
+  color: var(--primary-color);
+  font-size: 1.2rem;
+  background: var(--surface-0);
+  border: 2px solid var(--primary-color);
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 /* Compact mode adjustments */
