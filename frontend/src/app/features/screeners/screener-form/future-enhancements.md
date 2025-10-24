@@ -234,7 +234,6 @@ class CriteriaCache {
 
 ```typescript
 // Lazy loading implementation
-const CriteriaBuilderModule = lazy(() => import('./criteria-builder/criteria-builder.module'));
 const AdvancedFeaturesModule = lazy(() => import('./advanced-features/advanced-features.module'));
 
 // Code splitting by feature

@@ -240,14 +240,14 @@ export class ScreenerFormComponent implements OnInit, OnDestroy {
    * Get criteria count
    */
   getCriteriaCount(): number {
-    // Simple implementation - return 0 since criteria-builder is removed
+    // Simple implementation - return 0 for now
     return 0;
   }
 
   /**
-   * Handle validity change (placeholder for criteria-builder integration)
+   * Handle validity change (placeholder for future implementation)
    */
   onValidityChange(isValid: boolean): void {
-    // Placeholder method for future criteria-builder integration
+    // Placeholder method for future implementation
   }
 }

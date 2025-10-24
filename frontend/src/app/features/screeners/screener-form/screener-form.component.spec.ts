@@ -7,7 +7,6 @@ import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { ScreenerFormComponent } from './screener-form.component';
 import { ScreenerStateService } from '../../../services/state/screener.state';
 import { ScreenerResp, ScreenerCreateReq, ScreenerCriteria, ScreenerRule } from '../../../services/entities/screener.entities';
-import { CriteriaDSL, Group, Condition, FieldRef, Literal } from 'criteria-builder';
 
 describe('ScreenerFormComponent - Basic Criteria Integration', () => {
   let component: ScreenerFormComponent;
