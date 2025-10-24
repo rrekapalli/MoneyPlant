@@ -25,7 +25,12 @@
     ],
     "paths": {
       "dashboards": ["./dist/dashboards", "./projects/dashboards/src/public-api"],
-      "dashboards/*": ["./dist/dashboards/*"],
+      "dashboards/*": [
+        "./dist/dashboards/*"
+      ],
+      "criteria-builder": [
+        "./dist/criteria-builder"
+      ],
       "@dashboards/*": ["./projects/dashboards/src/lib/*"],
       "@dashboards/public-api": [
         "./projects/dashboards/src/public-api"
@@ -45,5 +50,11 @@
     "strictTemplates": true
   },
   "references": [
+    {
+      "path": "./projects/criteria-builder/tsconfig.lib.json"
+    },
+    {
+      "path": "./projects/criteria-builder/tsconfig.spec.json"
+    }
   ]
 }
