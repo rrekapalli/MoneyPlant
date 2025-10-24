@@ -76,14 +76,14 @@
     - Create parameter input fields based on FunctionParameterResp definitions
     - _Requirements: FR-006, FR-011_
 
-- [ ] 5. Implement API integration services
-  - [ ] 5.1 Create criteria API service extending existing ScreenerApiService
+- [x] 5. Implement API integration services
+  - [x] 5.1 Create criteria API service extending existing ScreenerApiService
     - Add methods for field metadata, function metadata, and operator compatibility
     - Implement validation API calls (/api/screeners/validate-criteria, /api/screeners/validate-partial-criteria)
     - Add SQL generation API integration (/api/screeners/generate-sql)
     - _Requirements: FR-008, FR-009, FR-011_
 
-  - [ ] 5.2 Build caching layer for metadata and validation results
+  - [x] 5.2 Build caching layer for metadata and validation results
     - Implement LRU cache for field and function metadata to reduce API calls
     - Add cache invalidation strategies and refresh mechanisms
     - Create debounced validation to prevent excessive API requests

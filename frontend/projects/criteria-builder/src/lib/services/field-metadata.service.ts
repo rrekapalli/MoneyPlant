@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, BehaviorSubject, of } from 'rxjs';
-import { map, catchError, shareReplay, tap } from 'rxjs/operators';
+import { map, catchError, shareReplay, tap, switchMap } from 'rxjs/operators';
 
 import { 
   FieldMetaResp, 
@@ -11,34 +11,33 @@ import {
   FieldSuggestionResp 
 } from '../interfaces/field-metadata.interface';
 
+import { CriteriaApiService } from './criteria-api.service';
+import { CriteriaCacheService } from './criteria-cache.service';
+
 /**
- * Service for managing field metadata and API interactions
+ * Enhanced service for managing field metadata and API interactions with caching
  */
 @Injectable({
   providedIn: 'root'
 })
 export class FieldMetadataService {
-  private readonly baseUrl = '/api/screeners';
-  
-  // Cache for metadata to reduce API calls
-  private fieldsCache$ = new BehaviorSubject<FieldMetaResp[] | null>(null);
-  private functionsCache$ = new BehaviorSubject<FunctionMetaResp[] | null>(null);
-  private operatorsCache = new Map<string, OperatorMetaResp[]>();
-  private signaturesCache = new Map<string, FunctionSignatureResp>();
-  
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private apiService: CriteriaApiService,
+    private cacheService: CriteriaCacheService
+  ) {}
 
   /**
-   * Get all available fields
+   * Get all available fields with caching
    */
   getFields(): Observable<FieldMetaResp[]> {
-    const cached = this.fieldsCache$.value;
+    const cached = this.cacheService.getCachedFields();
     if (cached) {
       return of(cached);
     }
 
-    return this.http.get<FieldMetaResp[]>(`${this.baseUrl}/fields`).pipe(
-      tap(fields => this.fieldsCache$.next(fields)),
+    return this.apiService.getFields().pipe(
+      tap(fields => this.cacheService.cacheFields(fields)),
       shareReplay(1),
       catchError(error => {
         console.error('Error fetching fields:', error);
@@ -48,11 +47,24 @@ export class FieldMetadataService {
   }
 
   /**
-   * Get fields by category
+   * Get fields by category with caching
    */
   getFieldsByCategory(category: string): Observable<FieldMetaResp[]> {
-    return this.getFields().pipe(
-      map(fields => fields.filter(field => field.category === category))
+    const cached = this.cacheService.getCachedFieldsByCategory(category);
+    if (cached) {
+      return of(cached);
+    }
+
+    return this.apiService.getFieldsByCategory(category).pipe(
+      tap(fields => this.cacheService.cacheFieldsByCategory(category, fields)),
+      shareReplay(1),
+      catchError(error => {
+        console.error(`Error fetching fields for category ${category}:`, error);
+        // Fallback to filtering all fields
+        return this.getFields().pipe(
+          map(fields => fields.filter(field => field.category === category))
+        );
+      })
     );
   }
 
@@ -75,16 +87,16 @@ export class FieldMetadataService {
   }
 
   /**
-   * Get compatible operators for a field
+   * Get compatible operators for a field with caching
    */
   getOperatorsForField(fieldId: string): Observable<OperatorMetaResp[]> {
-    const cached = this.operatorsCache.get(fieldId);
+    const cached = this.cacheService.getCachedOperators(fieldId);
     if (cached) {
       return of(cached);
     }
 
-    return this.http.get<OperatorMetaResp[]>(`${this.baseUrl}/fields/${fieldId}/operators`).pipe(
-      tap(operators => this.operatorsCache.set(fieldId, operators)),
+    return this.apiService.getOperatorsForField(fieldId).pipe(
+      tap(operators => this.cacheService.cacheOperators(fieldId, operators)),
       shareReplay(1),
       catchError(error => {
         console.error(`Error fetching operators for field ${fieldId}:`, error);
@@ -94,16 +106,16 @@ export class FieldMetadataService {
   }
 
   /**
-   * Get all available functions
+   * Get all available functions with caching
    */
   getFunctions(): Observable<FunctionMetaResp[]> {
-    const cached = this.functionsCache$.value;
+    const cached = this.cacheService.getCachedFunctions();
     if (cached) {
       return of(cached);
     }
 
-    return this.http.get<FunctionMetaResp[]>(`${this.baseUrl}/functions`).pipe(
-      tap(functions => this.functionsCache$.next(functions)),
+    return this.apiService.getFunctions().pipe(
+      tap(functions => this.cacheService.cacheFunctions(functions)),
       shareReplay(1),
       catchError(error => {
         console.error('Error fetching functions:', error);
@@ -113,11 +125,24 @@ export class FieldMetadataService {
   }
 
   /**
-   * Get functions by category
+   * Get functions by category with caching
    */
   getFunctionsByCategory(category: string): Observable<FunctionMetaResp[]> {
-    return this.getFunctions().pipe(
-      map(functions => functions.filter(func => func.category === category))
+    const cached = this.cacheService.getCachedFunctionsByCategory(category);
+    if (cached) {
+      return of(cached);
+    }
+
+    return this.apiService.getFunctionsByCategory(category).pipe(
+      tap(functions => this.cacheService.cacheFunctionsByCategory(category, functions)),
+      shareReplay(1),
+      catchError(error => {
+        console.error(`Error fetching functions for category ${category}:`, error);
+        // Fallback to filtering all functions
+        return this.getFunctions().pipe(
+          map(functions => functions.filter(func => func.category === category))
+        );
+      })
     );
   }
 
@@ -140,41 +165,44 @@ export class FieldMetadataService {
   }
 
   /**
-   * Get function signature
+   * Get function signature with caching
    */
   getFunctionSignature(functionId: string): Observable<FunctionSignatureResp> {
-    const cached = this.signaturesCache.get(functionId);
+    const cached = this.cacheService.getCachedSignature(functionId);
     if (cached) {
       return of(cached);
     }
 
-    return this.http.get<FunctionSignatureResp>(`${this.baseUrl}/functions/${functionId}/signature`).pipe(
-      tap(signature => this.signaturesCache.set(functionId, signature)),
+    return this.apiService.getFunctionSignature(functionId).pipe(
+      tap(signature => this.cacheService.cacheSignature(functionId, signature)),
       shareReplay(1),
       catchError(error => {
         console.error(`Error fetching signature for function ${functionId}:`, error);
         // Return a default signature structure
-        return of({
+        const defaultSignature: FunctionSignatureResp = {
           functionId,
           parameters: [],
           returnType: 'number',
           variadic: false,
           minParams: 0
-        } as FunctionSignatureResp);
+        };
+        return of(defaultSignature);
       })
     );
   }
 
   /**
-   * Get field value suggestions
+   * Get field value suggestions with caching
    */
   getFieldSuggestions(fieldId: string, query?: string): Observable<FieldSuggestionResp[]> {
-    let params = new HttpParams();
-    if (query) {
-      params = params.set('q', query);
+    const cached = this.cacheService.getCachedSuggestions(fieldId, query);
+    if (cached) {
+      return of(cached);
     }
 
-    return this.http.get<FieldSuggestionResp[]>(`${this.baseUrl}/fields/${fieldId}/suggestions`, { params }).pipe(
+    return this.apiService.getFieldSuggestions(fieldId, query).pipe(
+      tap(suggestions => this.cacheService.cacheSuggestions(fieldId, suggestions, query)),
+      shareReplay(1),
       catchError(error => {
         console.error(`Error fetching suggestions for field ${fieldId}:`, error);
         return of([]);
@@ -183,25 +211,37 @@ export class FieldMetadataService {
   }
 
   /**
-   * Get field categories
+   * Get field categories with API fallback
    */
   getFieldCategories(): Observable<string[]> {
-    return this.getFields().pipe(
-      map(fields => {
-        const categories = new Set(fields.map(field => field.category));
-        return Array.from(categories).sort();
+    return this.apiService.getFieldCategories().pipe(
+      catchError(error => {
+        console.warn('Error fetching field categories from API, falling back to client-side calculation:', error);
+        // Fallback to calculating from all fields
+        return this.getFields().pipe(
+          map(fields => {
+            const categories = new Set(fields.map(field => field.category));
+            return Array.from(categories).sort();
+          })
+        );
       })
     );
   }
 
   /**
-   * Get function categories
+   * Get function categories with API fallback
    */
   getFunctionCategories(): Observable<string[]> {
-    return this.getFunctions().pipe(
-      map(functions => {
-        const categories = new Set(functions.map(func => func.category));
-        return Array.from(categories).sort();
+    return this.apiService.getFunctionCategories().pipe(
+      catchError(error => {
+        console.warn('Error fetching function categories from API, falling back to client-side calculation:', error);
+        // Fallback to calculating from all functions
+        return this.getFunctions().pipe(
+          map(functions => {
+            const categories = new Set(functions.map(func => func.category));
+            return Array.from(categories).sort();
+          })
+        );
       })
     );
   }
@@ -210,17 +250,14 @@ export class FieldMetadataService {
    * Clear all caches
    */
   clearCache(): void {
-    this.fieldsCache$.next(null);
-    this.functionsCache$.next(null);
-    this.operatorsCache.clear();
-    this.signaturesCache.clear();
+    this.cacheService.clearAllCaches();
   }
 
   /**
    * Refresh field metadata
    */
   refreshFields(): Observable<FieldMetaResp[]> {
-    this.fieldsCache$.next(null);
+    this.cacheService.clearCache('fields');
     return this.getFields();
   }
 
@@ -228,7 +265,7 @@ export class FieldMetadataService {
    * Refresh function metadata
    */
   refreshFunctions(): Observable<FunctionMetaResp[]> {
-    this.functionsCache$.next(null);
+    this.cacheService.clearCache('functions');
     return this.getFunctions();
   }
 
@@ -248,5 +285,26 @@ export class FieldMetadataService {
     return this.getFunctions().pipe(
       map(functions => functions.find(func => func.functionId === functionId))
     );
+  }
+
+  /**
+   * Get cache statistics
+   */
+  getCacheStats() {
+    return this.cacheService.getCacheStats();
+  }
+
+  /**
+   * Check if cache is healthy
+   */
+  isCacheHealthy(): boolean {
+    return this.cacheService.isCacheHealthy();
+  }
+
+  /**
+   * Cleanup expired cache entries
+   */
+  cleanupCache(): void {
+    this.cacheService.cleanup();
   }
 }
