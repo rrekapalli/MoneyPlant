@@ -1,0 +1,243 @@
+.criteria-builder-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  &.disabled {
+    opacity: 0.6;
+    pointer-events: none;
+  }
+
+  .criteria-error-message {
+    margin-bottom: 1rem;
+  }
+}
+
+.criteria-building-area {
+  .criteria-panel {
+    border: 1px solid var(--surface-border);
+    border-radius: var(--border-radius);
+    background: var(--surface-card);
+
+    ::ng-deep {
+      .p-panel-header {
+        background: var(--surface-section);
+        border-bottom: 1px solid var(--surface-border);
+        padding: 1rem;
+        
+        .p-panel-title {
+          font-weight: 600;
+          color: var(--text-color);
+        }
+
+        .p-panel-icons {
+          display: flex;
+          gap: 0.5rem;
+
+          .p-button {
+            margin: 0;
+          }
+        }
+      }
+
+      .p-panel-content {
+        padding: 0;
+      }
+    }
+  }
+
+  .criteria-content {
+    min-height: 200px;
+    padding: 1rem;
+
+    .empty-state {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 200px;
+      text-align: center;
+
+      .empty-state-content {
+        max-width: 400px;
+        color: var(--text-color-secondary);
+
+        .pi {
+          font-size: 4rem;
+          margin-bottom: 1rem;
+          color: var(--primary-color);
+          opacity: 0.6;
+        }
+
+        h3 {
+          margin: 0 0 0.5rem 0;
+          color: var(--text-color);
+          font-size: 1.5rem;
+          font-weight: 600;
+        }
+
+        p {
+          margin: 0 0 1.5rem 0;
+          font-size: 1rem;
+          line-height: 1.5;
+        }
+
+        .p-button {
+          font-size: 1rem;
+          padding: 0.75rem 1.5rem;
+        }
+      }
+    }
+
+    .criteria-chips-area {
+      min-height: 150px;
+      padding: 1rem;
+      border: 2px dashed var(--surface-border);
+      border-radius: var(--border-radius);
+      background: var(--surface-ground);
+
+      .criteria-placeholder {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        color: var(--text-color-secondary);
+        gap: 0.5rem;
+
+        .pi {
+          font-size: 2rem;
+          color: var(--primary-color);
+          opacity: 0.6;
+        }
+
+        span {
+          font-size: 1rem;
+          font-weight: 500;
+        }
+
+        small {
+          font-size: 0.8rem;
+          opacity: 0.7;
+          max-width: 100%;
+          word-break: break-all;
+          font-family: monospace;
+          background: var(--surface-section);
+          padding: 0.5rem;
+          border-radius: 4px;
+          margin-top: 0.5rem;
+        }
+      }
+    }
+
+    .validation-summary {
+      margin-top: 1rem;
+      padding: 0.75rem;
+      background: var(--surface-section);
+      border-radius: var(--border-radius);
+      border-left: 4px solid var(--surface-border);
+
+      .validation-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+
+        &:last-child {
+          margin-bottom: 0;
+        }
+
+        &.error {
+          color: var(--red-600);
+
+          .pi {
+            color: var(--red-500);
+          }
+        }
+
+        &.warning {
+          color: var(--orange-600);
+
+          .pi {
+            color: var(--orange-500);
+          }
+        }
+
+        .pi {
+          font-size: 0.8rem;
+        }
+
+        span {
+          font-weight: 500;
+        }
+      }
+    }
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .criteria-builder-container {
+    .criteria-content {
+      padding: 0.75rem;
+
+      .empty-state-content {
+        .pi {
+          font-size: 3rem;
+        }
+
+        h3 {
+          font-size: 1.25rem;
+        }
+
+        .p-button {
+          font-size: 0.9rem;
+          padding: 0.5rem 1rem;
+        }
+      }
+
+      .criteria-placeholder {
+        small {
+          font-size: 0.7rem;
+          padding: 0.25rem;
+        }
+      }
+    }
+  }
+}
+
+// Dark theme adjustments
+@media (prefers-color-scheme: dark) {
+  .criteria-builder-container {
+    .criteria-chips-area {
+      background: var(--surface-900);
+      border-color: var(--surface-700);
+    }
+
+    .validation-summary {
+      background: var(--surface-800);
+      border-left-color: var(--surface-600);
+    }
+  }
+}
+
+// Animation for smooth transitions
+.criteria-content {
+  transition: all 0.3s ease;
+}
+
+.empty-state-content {
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

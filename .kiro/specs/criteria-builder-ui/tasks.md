@@ -89,14 +89,14 @@
     - Create debounced validation to prevent excessive API requests
     - _Requirements: Performance optimization_
 
-- [ ] 6. Implement real-time validation and SQL preview
-  - [ ] 6.1 Create validation service with real-time feedback
+- [x] 6. Implement real-time validation and SQL preview
+  - [x] 6.1 Create validation service with real-time feedback
     - Implement real-time validation using /api/screeners/validate-partial-criteria
     - Add validation state management and error display on chips
     - Create validation result caching and debouncing for performance
     - _Requirements: FR-009, FR-011_
 
-  - [ ] 6.2 Build SQL preview component
+  - [x] 6.2 Build SQL preview component
     - Implement SQL preview panel using /api/screeners/generate-sql
     - Add formatted SQL display with syntax highlighting
     - Create human-readable preview using /api/screeners/preview-criteria

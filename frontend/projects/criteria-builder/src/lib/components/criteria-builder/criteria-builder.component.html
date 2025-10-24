@@ -1,0 +1,102 @@
+<div class="criteria-builder-container" [class.disabled]="disabled">
+  <!-- Error Message -->
+  <p-message 
+    *ngIf="hasError"
+    severity="error" 
+    [text]="errorMessage"
+    styleClass="criteria-error-message"
+    [closable]="true"
+    (onClose)="clearError()">
+  </p-message>
+
+  <!-- Main Criteria Building Area -->
+  <div class="criteria-building-area">
+    <p-panel 
+      header="Criteria Builder" 
+      [toggleable]="false"
+      styleClass="criteria-panel">
+      
+      <!-- Header actions -->
+      <ng-template pTemplate="icons">
+        <button 
+          pButton 
+          type="button" 
+          icon="pi pi-refresh" 
+          class="p-button-text p-button-sm"
+          pTooltip="Validate criteria"
+          tooltipPosition="bottom"
+          (click)="validateCriteria()"
+          [disabled]="disabled || !currentCriteria">
+        </button>
+        
+        <button 
+          pButton 
+          type="button" 
+          icon="pi pi-trash" 
+          class="p-button-text p-button-sm"
+          pTooltip="Clear all criteria"
+          tooltipPosition="bottom"
+          (click)="clearCriteria()"
+          [disabled]="disabled || !currentCriteria">
+        </button>
+      </ng-template>
+
+      <!-- Criteria Building Content -->
+      <div class="criteria-content">
+        <!-- Empty State -->
+        <div class="empty-state" *ngIf="!currentCriteria">
+          <div class="empty-state-content">
+            <i class="pi pi-plus-circle"></i>
+            <h3>Build Your Criteria</h3>
+            <p>{{ placeholder }}</p>
+            <button 
+              pButton 
+              type="button" 
+              label="Add First Condition" 
+              icon="pi pi-plus"
+              class="p-button-outlined"
+              [disabled]="disabled"
+              (click)="onAddFirstCondition()">
+            </button>
+          </div>
+        </div>
+
+        <!-- Criteria Chips Area -->
+        <div class="criteria-chips-area" *ngIf="currentCriteria">
+          <!-- This is where the actual chip components would be rendered -->
+          <!-- For now, showing a placeholder that indicates the criteria structure -->
+          <div class="criteria-placeholder">
+            <i class="pi pi-cog"></i>
+            <span>Criteria structure will be rendered here</span>
+            <small>Current criteria: {{ currentCriteria | json }}</small>
+          </div>
+        </div>
+
+        <!-- Validation Summary -->
+        <div class="validation-summary" *ngIf="currentValidation && (getErrors().length > 0 || getWarnings().length > 0)">
+          <div class="validation-item error" *ngIf="getErrors().length > 0">
+            <i class="pi pi-times-circle"></i>
+            <span>{{ getErrors().length }} error{{ getErrors().length > 1 ? 's' : '' }}</span>
+          </div>
+          <div class="validation-item warning" *ngIf="getWarnings().length > 0">
+            <i class="pi pi-exclamation-triangle"></i>
+            <span>{{ getWarnings().length }} warning{{ getWarnings().length > 1 ? 's' : '' }}</span>
+          </div>
+        </div>
+      </div>
+    </p-panel>
+  </div>
+
+  <!-- SQL Preview Panel -->
+  <mp-sql-preview
+    *ngIf="mergedConfig.showSqlPreview"
+    [criteria]="currentCriteria"
+    [config]="mergedConfig.sqlPreviewConfig"
+    [visible]="true"
+    [collapsed]="false"
+    (sqlGenerated)="onSqlGenerated($event)"
+    (previewGenerated)="onPreviewGenerated($event)"
+    (validationCompleted)="onValidationCompleted($event)"
+    (errorOccurred)="onError($event)">
+  </mp-sql-preview>
+</div>
