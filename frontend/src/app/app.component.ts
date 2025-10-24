@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { WebSocketNavigationService } from './services/websockets/websocket-navigation.service';
 
 @Component({
   selector: 'app-root',
@@ -17,6 +18,11 @@ import { RouterOutlet } from '@angular/router';
     }
   `]
 })
-export class AppComponent {
-  // Root component now only serves as an entry point for the router
+export class AppComponent implements OnInit {
+  constructor(private webSocketNavigationService: WebSocketNavigationService) {}
+
+  ngOnInit(): void {
+    // The WebSocketNavigationService is injected here to ensure it's initialized
+    // and starts tracking navigation events for WebSocket cleanup
+  }
 }

@@ -5,18 +5,12 @@
     "ng": "ng",
     "start": "ng serve --proxy-config proxy.conf.json",
     "start:dev": "ng serve --proxy-config proxy.conf.json --port 4200",
-    "build": "npm run build:dashboards && npm run build:criteria-builder && ng build",
+    "build": "npm run build:dashboards && ng build",
     "build:dashboards": "ng build dashboards",
-    "build:criteria-builder": "ng build criteria-builder",
-    "build:criteria-builder:dev": "ng build criteria-builder --configuration development",
-    "build:prod": "npm run build:dashboards && npm run build:criteria-builder && ng build --configuration production",
-    "build:single": "npm run build:dashboards && npm run build:criteria-builder && ng build --configuration production --extract-licenses=false --named-chunks=false",
+    "build:prod": "npm run build:dashboards && ng build --configuration production",
+    "build:single": "npm run build:dashboards && ng build --configuration production --extract-licenses=false --named-chunks=false",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test",
-    "test:criteria-builder": "ng test criteria-builder",
-    "test:criteria-builder:watch": "ng test criteria-builder --watch",
-    "lint:criteria-builder": "ng lint criteria-builder",
-    "pack:criteria-builder": "cd projects/criteria-builder && npm run pack"
+    "test": "ng test"
   },
   "private": true,
   "dependencies": {

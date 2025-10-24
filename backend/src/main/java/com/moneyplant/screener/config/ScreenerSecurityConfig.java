@@ -72,10 +72,7 @@ public class ScreenerSecurityConfig {
             
             // Authorization rules for screener endpoints
             .authorizeHttpRequests(authz -> authz
-                // Public endpoints (if any)
-                .requestMatchers("/api/screeners/public/**").permitAll()
-                
-                // All other screener endpoints require authentication
+                // All screener endpoints require authentication
                 .requestMatchers("/api/screeners/**").authenticated()
                 
                 .anyRequest().denyAll()

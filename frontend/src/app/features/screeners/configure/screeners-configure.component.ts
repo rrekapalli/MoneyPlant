@@ -6,8 +6,6 @@ import { SelectModule } from 'primeng/select';
 import { InputTextModule } from 'primeng/inputtext';
 
 import { ScreenerResp, ScreenerCreateReq, ScreenerCriteria } from '../../../services/entities/screener.entities';
-import { CriteriaBuilderModule } from '@projects/criteria-builder';
-import { CriteriaDSL, BuilderConfig } from '@projects/criteria-builder';
 
 @Component({
   selector: 'app-screeners-configure',
@@ -18,7 +16,6 @@ import { CriteriaDSL, BuilderConfig } from '@projects/criteria-builder';
     ButtonModule,
     SelectModule,
     InputTextModule,
-    CriteriaBuilderModule
   ],
   templateUrl: './screeners-configure.component.html',
   styleUrl: './screeners-configure.component.scss'
@@ -27,7 +24,6 @@ export class ScreenersConfigureComponent implements OnInit, OnChanges {
   @Input() selectedScreener: ScreenerResp | null = null;
   @Input() loading = false;
   @Input() universeOptions: any[] = [];
-  @Input() criteriaConfig: BuilderConfig = {} as BuilderConfig;
 
 
 
@@ -39,8 +35,6 @@ export class ScreenersConfigureComponent implements OnInit, OnChanges {
   @Output() createScreener = new EventEmitter<void>();
   @Output() clearSelection = new EventEmitter<void>();
   @Output() saveScreener = new EventEmitter<ScreenerCreateReq>();
-  @Output() criteriaChange = new EventEmitter<CriteriaDSL | null>();
-  @Output() validityChange = new EventEmitter<boolean>();
 
   screenerForm: ScreenerCreateReq = {
     name: '',
@@ -54,17 +48,6 @@ export class ScreenersConfigureComponent implements OnInit, OnChanges {
   isEditingBasicInfo = false;
   originalBasicInfo: Partial<ScreenerCreateReq> = {};
 
-  // Criteria DSL
-  private _criteriaDSL: CriteriaDSL | null = null;
-
-  get criteriaDSL(): CriteriaDSL | null {
-    return this._criteriaDSL;
-  }
-
-  set criteriaDSL(value: CriteriaDSL | null) {
-    this._criteriaDSL = value;
-    this.criteriaChange.emit(value);
-  }
 
   ngOnInit(): void {
     this.initializeForm();
@@ -117,14 +100,6 @@ export class ScreenersConfigureComponent implements OnInit, OnChanges {
     this.saveScreener.emit(this.screenerForm);
   }
 
-  onCriteriaChange(dsl: CriteriaDSL | null): void {
-    this._criteriaDSL = dsl;
-    this.criteriaChange.emit(dsl);
-  }
-
-  onValidityChange(isValid: boolean): void {
-    this.validityChange.emit(isValid);
-  }
 
   onVisibilityChange(event: any): void {
     this.screenerForm.isPublic = event.target.checked;
