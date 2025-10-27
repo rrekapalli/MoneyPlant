@@ -11,3 +11,7 @@ export * from './sql-preview';
 export * from './validation-display';
 export * from './criteria-builder';
 export * from './undo-notification';
+
+// New custom components
+export * from './base-chip/abstract-chip.component';
+export * from './group-chip/custom-group-chip.component';

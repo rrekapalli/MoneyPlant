@@ -115,6 +115,11 @@ export class CriteriaValidationService implements OnDestroy {
       return;
     }
 
+    // Skip validation if criteria is null or completely empty
+    if (!criteria || !this.hasValidatableContent(criteria)) {
+      return;
+    }
+
     const isPartial = this.isPartialCriteria(criteria);
     const requestId = this.generateRequestId();
     
@@ -174,6 +179,11 @@ export class CriteriaValidationService implements OnDestroy {
    * Generate SQL from criteria (debounced)
    */
   generateSql(criteria: CriteriaDSL): void {
+    // Skip SQL generation if criteria is null or completely empty
+    if (!criteria || !this.hasValidatableContent(criteria)) {
+      return;
+    }
+    
     this.sqlGenerationRequest$.next(criteria);
   }
 
@@ -212,6 +222,11 @@ export class CriteriaValidationService implements OnDestroy {
    * Generate criteria preview (debounced)
    */
   generatePreview(criteria: CriteriaDSL): void {
+    // Skip preview generation if criteria is null or completely empty
+    if (!criteria || !this.hasValidatableContent(criteria)) {
+      return;
+    }
+    
     this.previewRequest$.next(criteria);
   }
 
@@ -447,6 +462,23 @@ export class CriteriaValidationService implements OnDestroy {
     // Check if the criteria structure is incomplete
     const hasIncompleteElements = this.hasIncompleteElements(criteria.root);
     return hasIncompleteElements;
+  }
+
+  /**
+   * Check if criteria has any validatable content (not null/empty)
+   */
+  private hasValidatableContent(criteria: any): boolean {
+    if (!criteria || !criteria.root) {
+      return false;
+    }
+
+    // Check if root has any children
+    if (!criteria.root.children || !Array.isArray(criteria.root.children)) {
+      return false;
+    }
+
+    // Check if there are any actual conditions or groups
+    return criteria.root.children.length > 0;
   }
 
   private hasIncompleteElements(element: any): boolean {

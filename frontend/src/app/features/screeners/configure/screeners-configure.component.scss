@@ -382,10 +382,451 @@
       border-radius: 0.25rem;
     }
   }
+
+  // Criteria builder component styling integration
+  mp-criteria-builder {
+    // Disable responsive design features to prevent Object.entries errors
+    * {
+      container-type: normal !important;
+      container-name: none !important;
+    }
+
+    // Main container styling
+    .criteria-builder-main {
+      background: transparent;
+      border: none;
+      padding: 1.5rem;
+      border-radius: 8px;
+    }
+
+    // Chip styling to match MoneyPlant design
+    .criteria-chip {
+      background: var(--criteria-bg-primary);
+      border: 1px solid var(--criteria-border-primary);
+      border-radius: 6px;
+      padding: 0.5rem 0.75rem;
+      margin: 0.25rem;
+      font-size: 0.9rem;
+      color: var(--criteria-text-primary);
+      transition: all 0.2s ease-in-out;
+      box-shadow: 0 1px 3px var(--criteria-shadow-light);
+
+      &:hover {
+        border-color: var(--criteria-accent-primary);
+        box-shadow: 0 2px 6px var(--criteria-shadow-accent);
+        transform: translateY(-1px);
+      }
+
+      &.active {
+        background: var(--criteria-accent-primary);
+        color: var(--criteria-bg-primary);
+        border-color: var(--criteria-accent-primary);
+      }
+
+      &.error {
+        border-color: var(--criteria-error);
+        background: color-mix(in srgb, var(--criteria-error) 10%, var(--criteria-bg-primary));
+        color: var(--criteria-error);
+      }
+
+      &.warning {
+        border-color: var(--criteria-warning);
+        background: color-mix(in srgb, var(--criteria-warning) 10%, var(--criteria-bg-primary));
+        color: var(--criteria-warning);
+      }
+    }
+
+    // Group chip styling
+    .group-chip {
+      background: var(--criteria-bg-secondary);
+      border: 2px dashed var(--criteria-border-secondary);
+      border-radius: 8px;
+      padding: 1rem;
+      margin: 0.5rem 0;
+
+      &.nested {
+        margin-left: 1.5rem;
+        border-left: 3px solid var(--criteria-accent-primary);
+        background: color-mix(in srgb, var(--criteria-accent-primary) 5%, var(--criteria-bg-primary));
+      }
+
+      .group-operator {
+        font-weight: 600;
+        color: var(--criteria-accent-primary);
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        margin-bottom: 0.5rem;
+      }
+    }
+
+    // Add button styling
+    .add-criteria-btn {
+      background: var(--criteria-accent-secondary);
+      border: 1px solid var(--criteria-accent-secondary);
+      color: var(--criteria-bg-primary);
+      padding: 0.75rem 1.5rem;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease-in-out;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+
+      &:hover {
+        background: color-mix(in srgb, var(--criteria-accent-secondary) 85%, black);
+        border-color: color-mix(in srgb, var(--criteria-accent-secondary) 80%, black);
+        transform: translateY(-1px);
+        box-shadow: 0 2px 6px color-mix(in srgb, var(--criteria-accent-secondary) 40%, transparent);
+      }
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+      }
+
+      i {
+        font-size: 1rem;
+      }
+    }
+
+    // Popover styling
+    .criteria-popover {
+      .p-popover-content {
+        padding: 0;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px var(--criteria-shadow-medium);
+        background: var(--criteria-bg-primary);
+        border: 1px solid var(--criteria-border-primary);
+      }
+
+      .p-tabview {
+        .p-tabview-nav {
+          background: var(--criteria-bg-secondary);
+          border-bottom: 1px solid var(--criteria-border-primary);
+
+          .p-tabview-nav-link {
+            padding: 0.75rem 1rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--criteria-text-secondary);
+            border: none;
+            background: transparent;
+
+            &:hover {
+              background: var(--criteria-bg-tertiary);
+              color: var(--criteria-accent-primary);
+            }
+
+            &.p-highlight {
+              background: var(--criteria-accent-primary);
+              color: var(--criteria-bg-primary);
+            }
+          }
+        }
+
+        .p-tabview-panels {
+          padding: 1rem;
+          max-height: 300px;
+          overflow-y: auto;
+          background: var(--criteria-bg-primary);
+        }
+      }
+    }
+
+    // SQL preview styling
+    .sql-preview-panel {
+      background: var(--criteria-bg-secondary);
+      border: 1px solid var(--criteria-border-primary);
+      border-radius: 6px;
+      margin-top: 1rem;
+      
+      .sql-preview-header {
+        padding: 0.75rem 1rem;
+        background: var(--criteria-bg-tertiary);
+        border-bottom: 1px solid var(--criteria-border-secondary);
+        font-weight: 600;
+        color: var(--criteria-text-secondary);
+        font-size: 0.9rem;
+      }
+
+      .sql-preview-content {
+        padding: 1rem;
+        font-family: 'Courier New', monospace;
+        font-size: 0.85rem;
+        line-height: 1.4;
+        color: var(--criteria-text-primary);
+        background: var(--criteria-bg-primary);
+        white-space: pre-wrap;
+        word-break: break-all;
+      }
+    }
+
+    // Validation badge styling
+    .validation-badge {
+      position: absolute;
+      top: -0.5rem;
+      right: -0.5rem;
+      background: var(--criteria-error);
+      color: var(--criteria-bg-primary);
+      border-radius: 50%;
+      width: 1.2rem;
+      height: 1.2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      font-weight: bold;
+      z-index: 10;
+
+      &.warning {
+        background: var(--criteria-warning);
+        color: var(--criteria-text-primary);
+      }
+
+      &.success {
+        background: var(--criteria-success);
+        color: var(--criteria-bg-primary);
+      }
+    }
+
+    // Drag and drop styling
+    .drag-placeholder {
+      background: color-mix(in srgb, var(--criteria-accent-primary) 10%, var(--criteria-bg-primary));
+      border: 2px dashed var(--criteria-accent-primary);
+      border-radius: 6px;
+      padding: 1rem;
+      margin: 0.5rem 0;
+      text-align: center;
+      color: var(--criteria-accent-primary);
+      font-size: 0.9rem;
+    }
+
+    .drag-active {
+      opacity: 0.7;
+      transform: rotate(2deg);
+      z-index: 1000;
+    }
+
+    // Responsive adjustments for criteria builder
+    @media (max-width: 768px) {
+      .criteria-builder-main {
+        padding: 1rem;
+      }
+
+      .group-chip {
+        &.nested {
+          margin-left: 1rem;
+        }
+      }
+
+      .criteria-popover {
+        .p-tabview-panels {
+          max-height: 250px;
+        }
+      }
+    }
+  }
+
+  // Message component styling for validation
+  .p-message {
+    margin-bottom: 0.5rem;
+    border-radius: 6px;
+    
+    &.p-message-error {
+      background: color-mix(in srgb, var(--criteria-error) 10%, var(--criteria-bg-primary));
+      border: 1px solid color-mix(in srgb, var(--criteria-error) 30%, var(--criteria-border-primary));
+      color: var(--criteria-error);
+    }
+
+    &.p-message-warn {
+      background: color-mix(in srgb, var(--criteria-warning) 10%, var(--criteria-bg-primary));
+      border: 1px solid color-mix(in srgb, var(--criteria-warning) 30%, var(--criteria-border-primary));
+      color: var(--criteria-warning);
+    }
+
+    .p-message-text {
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
+  }
 }
 
-// Criteria builder placeholder styling
+// CSS Custom Properties for Theme Support
+:host {
+  // Light theme (default)
+  --criteria-bg-primary: #ffffff;
+  --criteria-bg-secondary: #f8f9fa;
+  --criteria-bg-tertiary: #e9ecef;
+  --criteria-text-primary: #2c3e50;
+  --criteria-text-secondary: #495057;
+  --criteria-text-muted: #6c757d;
+  --criteria-border-primary: #e9ecef;
+  --criteria-border-secondary: #dee2e6;
+  --criteria-accent-primary: #007bff;
+  --criteria-accent-secondary: #28a745;
+  --criteria-error: #dc3545;
+  --criteria-warning: #ffc107;
+  --criteria-success: #28a745;
+  --criteria-shadow-light: rgba(0, 0, 0, 0.1);
+  --criteria-shadow-medium: rgba(0, 0, 0, 0.15);
+  --criteria-shadow-accent: rgba(0, 123, 255, 0.15);
+
+  // Dark theme support (when parent has dark theme class)
+  &.dark-theme,
+  :host-context(.dark-theme) & {
+    --criteria-bg-primary: #2d3748;
+    --criteria-bg-secondary: #1a202c;
+    --criteria-bg-tertiary: #4a5568;
+    --criteria-text-primary: #f7fafc;
+    --criteria-text-secondary: #e2e8f0;
+    --criteria-text-muted: #a0aec0;
+    --criteria-border-primary: #4a5568;
+    --criteria-border-secondary: #2d3748;
+    --criteria-accent-primary: #63b3ed;
+    --criteria-accent-secondary: #68d391;
+    --criteria-error: #fc8181;
+    --criteria-warning: #f6e05e;
+    --criteria-success: #68d391;
+    --criteria-shadow-light: rgba(0, 0, 0, 0.3);
+    --criteria-shadow-medium: rgba(0, 0, 0, 0.4);
+    --criteria-shadow-accent: rgba(99, 179, 237, 0.25);
+  }
+}
+
+// Criteria builder styling
 .criteria-builder-container {
+  background: var(--criteria-bg-primary);
+  border: 1px solid var(--criteria-border-primary);
+  border-radius: 8px;
+  padding: 0;
+  min-height: 300px;
+  overflow: hidden;
+
+  .criteria-builder {
+    width: 100%;
+    min-height: 300px;
+    
+    // Ensure the criteria builder takes full width
+    ::ng-deep mp-criteria-builder {
+      display: block;
+      width: 100%;
+    }
+  }
+
+  // Validation error styling
+  .criteria-validation-errors {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: color-mix(in srgb, var(--criteria-error) 10%, var(--criteria-bg-primary));
+    border: 1px solid color-mix(in srgb, var(--criteria-error) 30%, var(--criteria-border-primary));
+    border-radius: 6px;
+
+    .criteria-error-item {
+      margin-bottom: 0.5rem;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+  }
+
+  // Validation warning styling
+  .criteria-validation-warnings {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: color-mix(in srgb, var(--criteria-warning) 10%, var(--criteria-bg-primary));
+    border: 1px solid color-mix(in srgb, var(--criteria-warning) 30%, var(--criteria-border-primary));
+    border-radius: 6px;
+
+    .criteria-warning-item {
+      margin-bottom: 0.5rem;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+  }
+
+  // Integration status placeholder styling
+  .criteria-builder-placeholder {
+    text-align: center;
+    padding: 2rem;
+    background: var(--criteria-bg-primary);
+    border: 2px solid var(--criteria-border-primary);
+    border-radius: 8px;
+    color: var(--criteria-text-primary);
+
+    &.disabled {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+
+    .placeholder-content {
+      max-width: 600px;
+      margin: 0 auto;
+
+      i {
+        margin-bottom: 1rem;
+        display: block;
+      }
+
+      h4 {
+        margin: 1rem 0 0.5rem 0;
+        color: var(--criteria-accent-primary);
+        font-size: 1.25rem;
+        font-weight: 600;
+      }
+
+      p {
+        margin: 0.5rem 0;
+        font-size: 0.95rem;
+        line-height: 1.4;
+
+        &.technical-note {
+          background: var(--criteria-bg-secondary);
+          padding: 1rem;
+          border-radius: 6px;
+          border-left: 4px solid var(--criteria-warning);
+          text-align: left;
+          margin: 1rem 0;
+          font-size: 0.9rem;
+        }
+      }
+
+      .integration-status {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 0.75rem;
+        margin: 1.5rem 0;
+        text-align: left;
+
+        .status-item {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.5rem;
+          background: var(--criteria-bg-secondary);
+          border-radius: 4px;
+          font-size: 0.9rem;
+
+          i {
+            margin: 0;
+            font-size: 1rem;
+          }
+        }
+      }
+
+      button {
+        margin-top: 1rem;
+      }
+    }
+  }
+
+  // Legacy placeholder styling (for fallback)
   .criteria-placeholder {
     text-align: center;
     padding: 3rem 2rem;

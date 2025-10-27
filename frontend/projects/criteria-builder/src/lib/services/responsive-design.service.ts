@@ -147,8 +147,8 @@ export class ResponsiveDesignService {
   private debounceTime = 150;
 
   // State subjects
-  private screenSize$ = new BehaviorSubject<ScreenSize>(this.getCurrentScreenSize());
-  private displayMode$ = new BehaviorSubject<DisplayMode>(this.getDisplayModeForBreakpoint('md'));
+  private screenSize$!: BehaviorSubject<ScreenSize>;
+  private displayMode$!: BehaviorSubject<DisplayMode>;
   private containerQueries$ = new Map<string, BehaviorSubject<ContainerInfo>>();
 
   // Resize observer for container queries
@@ -156,8 +156,16 @@ export class ResponsiveDesignService {
   private observedContainers = new Map<Element, string>();
 
   constructor(@Inject(DOCUMENT) private document: Document) {
+    // Initialize configuration first
     this.breakpoints = { ...this.defaultBreakpoints };
     this.layoutConfig = { ...this.defaultLayoutConfig };
+    
+    // Initialize state subjects with proper initial values
+    const initialScreenSize = this.getCurrentScreenSize();
+    const initialDisplayMode = this.getDisplayModeForBreakpoint(initialScreenSize.breakpoint);
+    
+    this.screenSize$ = new BehaviorSubject<ScreenSize>(initialScreenSize);
+    this.displayMode$ = new BehaviorSubject<DisplayMode>(initialDisplayMode);
     
     this.initializeResponsiveFeatures();
   }
@@ -567,12 +575,13 @@ export class ResponsiveDesignService {
    * Get current screen size information
    */
   private getCurrentScreenSize(): ScreenSize {
-    const width = window.innerWidth;
-    const height = window.innerHeight;
+    // Safely get window dimensions with fallbacks
+    const width = (typeof window !== 'undefined' && window.innerWidth) || 1024;
+    const height = (typeof window !== 'undefined' && window.innerHeight) || 768;
     const breakpoint = this.getBreakpointForWidth(width);
     const orientation = width > height ? 'landscape' : 'portrait';
-    const aspectRatio = width / height;
-    const devicePixelRatio = window.devicePixelRatio || 1;
+    const aspectRatio = height > 0 ? width / height : 1;
+    const devicePixelRatio = (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
 
     return {
       width,
@@ -588,11 +597,15 @@ export class ResponsiveDesignService {
    * Get breakpoint for given width
    */
   private getBreakpointForWidth(width: number): keyof Breakpoints {
-    const breakpointEntries = Object.entries(this.breakpoints)
-      .sort(([, a], [, b]) => b - a); // Sort by value descending
+    // Ensure breakpoints are available, fallback to defaults if not
+    const breakpoints = this.breakpoints || this.defaultBreakpoints;
+    
+    // Safely get entries and sort them
+    const breakpointEntries = Object.entries(breakpoints)
+      .sort(([, a], [, b]) => (b as number) - (a as number)); // Sort by value descending
 
     for (const [breakpoint, minWidth] of breakpointEntries) {
-      if (width >= minWidth) {
+      if (width >= (minWidth as number)) {
         return breakpoint as keyof Breakpoints;
       }
     }

@@ -48,20 +48,14 @@
                   <span class="toggle-label">{{ screenerForm.isPublic ? 'Public' : 'Private' }}</span>
                 </div>
                 <div class="edit-buttons">
-                  <button pButton 
-                    [icon]="isEditingBasicInfo ? 'pi pi-check' : 'pi pi-pencil'"
-                    [label]="isEditingBasicInfo ? 'Save' : 'Edit'"
-                    (click)="toggleBasicInfoEdit()"
+                  <button pButton [icon]="isEditingBasicInfo ? 'pi pi-check' : 'pi pi-pencil'"
+                    [label]="isEditingBasicInfo ? 'Save' : 'Edit'" (click)="toggleBasicInfoEdit()"
                     class="p-button-sm edit-save-btn"
                     [class.p-button-success]="isEditingBasicInfo && hasBasicInfoChanges()"
                     [disabled]="isEditingBasicInfo && !hasBasicInfoChanges()">
                   </button>
-                  <button pButton 
-                    icon="pi pi-times"
-                    label="Cancel"
-                    (click)="cancelBasicInfoEdit()"
-                    class="p-button-sm p-button-text cancel-btn"
-                    [disabled]="!isEditingBasicInfo">
+                  <button pButton icon="pi pi-times" label="Cancel" (click)="cancelBasicInfoEdit()"
+                    class="p-button-sm p-button-text cancel-btn" [disabled]="!isEditingBasicInfo">
                   </button>
                 </div>
               </div>
@@ -72,31 +66,53 @@
           <div class="form-group">
             <label for="configDescription">Description</label>
             <textarea id="configDescription" [(ngModel)]="screenerForm.description"
-              placeholder="Enter screener description" rows="2" class="w-full" [readonly]="!isEditingBasicInfo"></textarea>
+              placeholder="Enter screener description" rows="2" class="w-full"
+              [readonly]="!isEditingBasicInfo"></textarea>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Criteria Builder Section -->
+    <!-- Criteria Builder Section - Full Production Implementation -->
     <div class="config-section">
       <h4 class="section-title">Screening Criteria</h4>
       <div class="criteria-builder-container">
-        <div class="criteria-placeholder">
-          <i class="pi pi-filter" style="font-size: 2rem; color: #ccc;"></i>
-          <p>Screening criteria builder will be implemented here.</p>
-          <p class="text-muted">This section will allow you to build complex screening conditions using visual tools.</p>
+        <!-- PRODUCTION IMPLEMENTATION: Full criteria builder integration -->
+        <mp-criteria-builder [(ngModel)]="screenerForm.criteria" [config]="criteriaBuilderConfig" [disabled]="false"
+          [placeholder]="'Click to add screening criteria...'" [ariaLabel]="'Screening criteria builder'"
+          [ariaDescription]="'Build complex screening conditions using visual chips and logical operators'"
+          (criteriaChange)="onCriteriaChange($event)" (validationChange)="onCriteriaValidationChange($event)"
+          (sqlGenerated)="onSqlGenerated($event)" (errorOccurred)="onCriteriaError($event)" class="criteria-builder">
+        </mp-criteria-builder>
+
+        @if (criteriaValidationResult && !criteriaValidationResult.isValid) {
+        <div class="criteria-validation-errors">
+          <p-message severity="error" [text]="'Please fix the following criteria errors:'" [closable]="false">
+          </p-message>
+          @for (error of criteriaValidationResult.errors; track error.code) {
+          <p-message severity="error" [text]="error.message" [closable]="false" class="criteria-error-item">
+          </p-message>
+          }
         </div>
+        }
+
+        @if (criteriaValidationResult && criteriaValidationResult.warnings.length > 0) {
+        <div class="criteria-validation-warnings">
+          @for (warning of criteriaValidationResult.warnings; track warning.code) {
+          <p-message severity="warn" [text]="warning.message" [closable]="true" class="criteria-warning-item">
+          </p-message>
+          }
+        </div>
+        }
       </div>
     </div>
 
     <!-- Action Buttons -->
     <div class="config-actions">
       <div class="action-buttons-right">
-        <button pButton label="Cancel" icon="pi pi-times" (click)="onClearSelection()"
-          class="p-button-text"></button>
+        <button pButton label="Cancel" icon="pi pi-times" (click)="onClearSelection()" class="p-button-text"></button>
         <button pButton label="Save Changes" icon="pi pi-check" (click)="onSaveScreener()"
-          [disabled]="!screenerForm.name || loading" [loading]="loading"></button>
+          [disabled]="!screenerForm.name || loading || hasValidationErrors()" [loading]="loading"></button>
       </div>
     </div>
   </div>

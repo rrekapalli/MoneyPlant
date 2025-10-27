@@ -1,0 +1,607 @@
+/* Group Chip Component Styles - Single chip with internal elements */
+.group-chip-wrapper {
+  display: inline-block;
+  position: relative;
+}
+  
+/* Group Chip Button - Single chip with internal elements */
+::ng-deep .p-button {
+  position: relative;
+  min-width: 120px;
+  max-width: 600px; /* Allow expansion for more items */
+  padding: 0.75rem 1rem;
+  border-radius: 20px !important;
+  font-weight: 500;
+  font-size: 0.875rem;
+  display: flex !important;
+  align-items: center;
+  gap: 0.5rem;
+  
+  /* Auto-expand based on content */
+  width: auto;
+  
+  &.group-chip {
+    background: var(--surface-0);
+    border: 2px solid var(--surface-300);
+    color: var(--text-color);
+    
+    /* Group badge (curly braces) */
+    .group-badge {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--surface-100);
+      border: 1px solid var(--surface-300);
+      cursor: pointer;
+      transition: all 0.2s ease-in-out;
+      
+      .pi-code {
+        font-size: 0.75rem;
+        color: var(--text-color-secondary);
+        
+        &.enabled {
+          color: var(--primary-color);
+        }
+      }
+      
+      &:hover {
+        background: var(--primary-50);
+        border-color: var(--primary-300);
+        
+        .pi-code {
+          color: var(--primary-color);
+        }
+      }
+    }
+    
+    /* Main chip text */
+    .chip-text {
+      flex: 1;
+      text-align: center;
+    }
+    
+    /* Selected items container */
+    .selected-items {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      
+      .mini-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.25rem 0.5rem;
+        background: var(--surface-100);
+        border: 1px solid var(--surface-300);
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: var(--text-color);
+        transition: all 0.2s ease-in-out;
+        
+        &:hover {
+          background: var(--surface-200);
+          border-color: var(--surface-400);
+        }
+        
+        .mini-chip-delete {
+          font-size: 0.625rem;
+          color: var(--red-500);
+          cursor: pointer;
+          padding: 0.125rem;
+          border-radius: 50%;
+          transition: all 0.2s ease-in-out;
+          
+          &:hover {
+            background: var(--red-100);
+            color: var(--red-600);
+          }
+        }
+        
+        /* Different colors for different types */
+        &.mini-chip-field {
+          background: var(--blue-100);
+          border-color: var(--blue-300);
+          color: var(--blue-800);
+        }
+        
+        &.mini-chip-operator {
+          background: var(--orange-100);
+          border-color: var(--orange-300);
+          color: var(--orange-800);
+        }
+        
+        &.mini-chip-function {
+          background: var(--purple-100);
+          border-color: var(--purple-300);
+          color: var(--purple-800);
+        }
+        
+        &.mini-chip-indicator {
+          background: var(--green-100);
+          border-color: var(--green-300);
+          color: var(--green-800);
+        }
+      }
+    }
+    
+    /* Close button inside the chip */
+    .close-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--red-100);
+      border: 1px solid var(--red-300);
+      cursor: pointer;
+      transition: all 0.2s ease-in-out;
+      
+      .pi-times {
+        font-size: 0.625rem;
+        color: var(--red-600);
+      }
+      
+      &:hover {
+        background: var(--red-500);
+        border-color: var(--red-500);
+        
+        .pi-times {
+          color: white;
+        }
+      }
+    }
+    
+    /* Different colors based on severity */
+    &.p-button-primary {
+      background: var(--blue-50);
+      border-color: var(--blue-300);
+      color: var(--blue-800);
+    }
+    
+    &.p-button-info {
+      background: var(--cyan-50);
+      border-color: var(--cyan-300);
+      color: var(--cyan-800);
+    }
+    
+    &.p-button-success {
+      background: var(--green-50);
+      border-color: var(--green-300);
+      color: var(--green-800);
+    }
+    
+    &.p-button-warn {
+      background: var(--orange-50);
+      border-color: var(--orange-300);
+      color: var(--orange-800);
+    }
+    
+    &.p-button-danger {
+      background: var(--red-50);
+      border-color: var(--red-300);
+      color: var(--red-800);
+    }
+    
+    &.toggle-enabled {
+      border-style: dashed;
+      border-width: 2px;
+      box-shadow: 0 0 0 2px var(--primary-200);
+    }
+  }
+  
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border-color: var(--primary-400);
+  }
+  
+  &:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+  
+  &:disabled {
+    opacity: 0.6;
+    transform: none;
+    
+    &:hover {
+      transform: none;
+      box-shadow: none;
+    }
+  }
+}
+  
+
+  
+
+
+/* Popover Styles with Custom Tabs */
+::ng-deep .criteria-popover {
+  .p-popover-content {
+    padding: 0;
+    min-width: 320px;
+    max-width: 420px;
+  }
+  
+  .popover-content {
+    .tab-buttons {
+      display: flex;
+      background: var(--surface-50);
+      border-bottom: 1px solid var(--surface-border);
+      
+      .tab-btn {
+        flex: 1;
+        padding: 0.75rem 1rem;
+        border: none;
+        background: transparent;
+        color: var(--text-color-secondary);
+        cursor: pointer;
+        transition: all 0.2s ease-in-out;
+        font-size: 0.875rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        
+        &:hover {
+          background: var(--surface-100);
+          color: var(--text-color);
+        }
+        
+        &.active {
+          background: var(--primary-color);
+          color: var(--primary-color-text);
+          font-weight: 600;
+        }
+        
+        i {
+          font-size: 0.75rem;
+        }
+      }
+    }
+    
+    .tab-content {
+      background: var(--surface-0);
+      
+      .tab-panel {
+        padding: 1rem;
+      }
+    }
+  }
+  
+  .popover-content {
+    h4 {
+      margin: 0 0 0.75rem 0;
+      color: var(--text-color);
+      font-size: 1rem;
+      font-weight: 600;
+    }
+    
+    .field-list,
+    .operator-list,
+    .function-list,
+    .indicator-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      max-height: 200px;
+      overflow-y: auto;
+      
+      button {
+        padding: 0.5rem 0.75rem;
+        border: 1px solid var(--surface-border);
+        border-radius: 6px;
+        background: var(--surface-0);
+        color: var(--text-color);
+        cursor: pointer;
+        transition: all 0.2s ease-in-out;
+        text-align: left;
+        font-size: 0.875rem;
+        
+        &:hover {
+          background: var(--primary-50);
+          border-color: var(--primary-color);
+          color: var(--primary-color);
+        }
+        
+        &:focus {
+          outline: 2px solid var(--primary-color);
+          outline-offset: 1px;
+        }
+        
+        &:active {
+          background: var(--primary-100);
+        }
+      }
+    }
+    
+    .operator-list button {
+      font-family: 'Courier New', monospace;
+      font-weight: 600;
+    }
+    
+    .function-list button,
+    .indicator-list button {
+      font-family: 'Courier New', monospace;
+      
+      &:hover {
+        background: var(--blue-50);
+        border-color: var(--blue-500);
+        color: var(--blue-700);
+      }
+    }
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 767px) {
+  ::ng-deep .p-button.group-chip {
+    min-width: 100px;
+    padding: 0.75rem 0.75rem;
+    font-size: 0.875rem;
+    
+    .group-badge {
+      width: 20px;
+      height: 20px;
+      
+      .pi-code {
+        font-size: 0.625rem;
+      }
+    }
+    
+    .close-btn {
+      width: 18px;
+      height: 18px;
+      
+      .pi-times {
+        font-size: 0.5rem;
+      }
+    }
+    
+    .selected-items {
+      gap: 0.125rem;
+      
+      .mini-chip {
+        padding: 0.125rem 0.375rem;
+        font-size: 0.625rem;
+        
+        .mini-chip-delete {
+          font-size: 0.5rem;
+        }
+      }
+    }
+  }
+  
+  ::ng-deep .criteria-popover {
+    .p-popover-content {
+      min-width: 280px;
+      max-width: 90vw;
+    }
+  }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+  .custom-group-chip-container {
+    .toggle-btn,
+    .delete-btn {
+      border-width: 2px;
+      font-weight: 700;
+    }
+    
+    ::ng-deep .p-button.criteria-chip {
+      border-width: 2px;
+      font-weight: 700;
+    }
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .custom-group-chip-container {
+    .toggle-btn,
+    .delete-btn,
+    ::ng-deep .p-button {
+      transition: none;
+      
+      &:hover {
+        transform: none;
+      }
+    }
+  }
+}
+
+/* Dark Theme */
+@media (prefers-color-scheme: dark) {
+  ::ng-deep .p-button.group-chip {
+    background: var(--surface-800);
+    border-color: var(--surface-600);
+    color: var(--text-color);
+    
+    .group-badge {
+      background: var(--surface-700);
+      border-color: var(--surface-500);
+      
+      .pi-code {
+        color: var(--text-color-secondary);
+        
+        &.enabled {
+          color: var(--primary-400);
+        }
+      }
+      
+      &:hover {
+        background: var(--primary-900);
+        border-color: var(--primary-600);
+      }
+    }
+    
+    .close-btn {
+      background: var(--red-900);
+      border-color: var(--red-700);
+      
+      .pi-times {
+        color: var(--red-400);
+      }
+      
+      &:hover {
+        background: var(--red-600);
+        border-color: var(--red-600);
+        
+        .pi-times {
+          color: white;
+        }
+      }
+    }
+    
+    &.p-button-primary {
+      background: var(--blue-900);
+      border-color: var(--blue-600);
+      color: var(--blue-200);
+    }
+    
+    &.p-button-info {
+      background: var(--cyan-900);
+      border-color: var(--cyan-600);
+      color: var(--cyan-200);
+    }
+    
+    &.p-button-success {
+      background: var(--green-900);
+      border-color: var(--green-600);
+      color: var(--green-200);
+    }
+    
+    .selected-items {
+      .mini-chip {
+        background: var(--surface-700);
+        border-color: var(--surface-500);
+        color: var(--text-color);
+        
+        .mini-chip-delete {
+          color: var(--red-400);
+          
+          &:hover {
+            background: var(--red-900);
+            color: var(--red-300);
+          }
+        }
+        
+        &.mini-chip-field {
+          background: var(--blue-900);
+          border-color: var(--blue-600);
+          color: var(--blue-200);
+        }
+        
+        &.mini-chip-operator {
+          background: var(--orange-900);
+          border-color: var(--orange-600);
+          color: var(--orange-200);
+        }
+        
+        &.mini-chip-function {
+          background: var(--purple-900);
+          border-color: var(--purple-600);
+          color: var(--purple-200);
+        }
+        
+        &.mini-chip-indicator {
+          background: var(--green-900);
+          border-color: var(--green-600);
+          color: var(--green-200);
+        }
+      }
+    }
+  }
+  
+  ::ng-deep .criteria-popover {
+    .p-tabs .p-tablist {
+      background: var(--surface-800);
+      border-bottom-color: var(--surface-600);
+    }
+    
+    .popover-content {
+      .field-list,
+      .operator-list,
+      .function-list,
+      .indicator-list {
+        button {
+          background: var(--surface-800);
+          border-color: var(--surface-600);
+          color: var(--text-color);
+          
+          &:hover {
+            background: var(--primary-900);
+            border-color: var(--primary-400);
+            color: var(--primary-300);
+          }
+        }
+      }
+    }
+  }
+}
+
+/* Focus Management */
+::ng-deep .p-button.group-chip:focus-within {
+  .group-badge,
+  .close-btn {
+    z-index: 11;
+  }
+}
+
+/* Animation for toggle state change */
+@keyframes togglePulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+::ng-deep .p-button.group-chip.toggle-enabled .group-badge {
+  animation: togglePulse 0.3s ease-out;
+}
+
+/* Loading state */
+::ng-deep .p-button.group-chip.loading {
+  opacity: 0.7;
+  pointer-events: none;
+  
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 20px;
+    z-index: 5;
+  }
+}
+
+/* Print styles */
+@media print {
+  ::ng-deep .p-button.group-chip {
+    background: white !important;
+    color: black !important;
+    border: 1px solid black !important;
+    
+    .group-badge,
+    .close-btn {
+      display: none;
+    }
+  }
+}

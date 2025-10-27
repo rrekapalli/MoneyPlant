@@ -47,6 +47,8 @@ import { ResponsiveDesignService, DisplayMode, ScreenSize } from '../../services
 import { SqlPreviewComponent, SqlPreviewConfig } from '../sql-preview/sql-preview.component';
 import { ValidationDisplayComponent } from '../validation-display/validation-display.component';
 import { UndoNotificationComponent } from '../undo-notification/undo-notification.component';
+import { CustomGroupChipComponent } from '../group-chip/custom-group-chip.component';
+
 import { ResponsiveLayoutDirective } from '../../directives/responsive-layout.directive';
 import { BreakpointObserverDirective } from '../../directives/breakpoint-observer.directive';
 import { DisplayModeDirective } from '../../directives/display-mode.directive';
@@ -140,7 +142,8 @@ export interface MainCriteriaBuilderConfig {
     UndoNotificationComponent,
     ResponsiveLayoutDirective,
     BreakpointObserverDirective,
-    DisplayModeDirective
+    DisplayModeDirective,
+    CustomGroupChipComponent
   ],
   providers: [
     {
@@ -185,6 +188,18 @@ export class CriteriaBuilderComponent implements ControlValueAccessor, Validator
   @Output() chipAdded = new EventEmitter<{chipId: string, type: string}>();
   @Output() chipRemoved = new EventEmitter<{chipId: string, type: string}>();
   @Output() chipModified = new EventEmitter<{chipId: string, type: string, changes: any}>();
+  @Output() chipClicked = new EventEmitter<{chipId: string, chipType: string}>();
+  @Output() chipFocused = new EventEmitter<{chipId: string, chipType: string}>();
+  
+  // Drag and drop events
+  @Output() dragStarted = new EventEmitter<{chipId: string, chipType: string}>();
+  @Output() dragEnded = new EventEmitter<{chipId: string, chipType: string}>();
+  @Output() dropAccepted = new EventEmitter<{sourceId: string, targetId: string, position: number}>();
+  
+  // Group and condition management events
+  @Output() addChild = new EventEmitter<string>();
+  @Output() addSibling = new EventEmitter<string>();
+  @Output() deleteRequested = new EventEmitter<string>();
   
   // Error and loading events
   @Output() errorOccurred = new EventEmitter<{error: string, context?: any}>();
@@ -279,6 +294,12 @@ export class CriteriaBuilderComponent implements ControlValueAccessor, Validator
 
   ngOnInit(): void {
     this.mergedConfig = { ...this.defaultConfig, ...this.config };
+    
+    // Initialize with empty criteria if none provided
+    if (!this.currentCriteria) {
+      this.initializeEmptyCriteria();
+    }
+    
     this.setupValidationService();
     this.setupCriteriaWatcher();
     this.setupStateWatchers();
@@ -568,19 +589,243 @@ export class CriteriaBuilderComponent implements ControlValueAccessor, Validator
   }
 
   /**
+   * Initialize empty criteria structure
+   */
+  private initializeEmptyCriteria(): void {
+    const emptyCriteria: CriteriaDSL = {
+      root: {
+        operator: 'AND',
+        children: [],
+        id: `group_${Date.now()}`
+      },
+      version: '1.0.0',
+      metadata: {
+        createdAt: new Date().toISOString(),
+        elementCount: 1,
+        maxDepth: 0
+      }
+    };
+    
+    this.currentCriteria = emptyCriteria;
+    this.criteriaSubject.next(emptyCriteria);
+  }
+
+  /**
    * Handle adding first condition
    */
   onAddFirstCondition(): void {
-    // Create a basic criteria structure
-    const newCriteria: CriteriaDSL = {
-      root: {
-        operator: 'AND',
-        children: []
-      },
-      version: '1.0'
+    // If criteria is null, initialize it first
+    if (!this.currentCriteria) {
+      this.initializeEmptyCriteria();
+    }
+    
+    // The actual condition adding logic should be handled by child components
+    // This method just ensures we have a valid criteria structure
+  }
+
+  /**
+   * Handle adding condition to root group
+   */
+  onAddConditionToRoot(): void {
+    if (!this.currentCriteria) {
+      this.initializeEmptyCriteria();
+    }
+    
+    // Emit event for parent components to handle
+    this.criteriaChange.emit(this.currentCriteria);
+  }
+
+  /**
+   * Handle group operator change
+   */
+  onGroupOperatorChanged(event: { groupId: string; operator: string }): void {
+    if (!this.currentCriteria) return;
+    
+    // Update the operator in the criteria structure
+    const group = this.findGroupById(this.currentCriteria.root, event.groupId);
+    if (group) {
+      group.operator = event.operator as any;
+      this.updateCriteria(this.currentCriteria);
+    }
+  }
+
+  /**
+   * Handle adding child to group
+   */
+  onAddChildToGroup(groupId: string): void {
+    // Emit event for parent components to handle
+    this.addChild.emit(groupId);
+  }
+
+  /**
+   * Handle adding sibling to group
+   */
+  onAddSiblingToGroup(groupId: string): void {
+    // Emit event for parent components to handle
+    this.addSibling.emit(groupId);
+  }
+
+  /**
+   * Handle group deletion
+   */
+  onDeleteGroup(groupId: string): void {
+    // Emit event for parent components to handle
+    this.deleteRequested.emit(groupId);
+  }
+
+  /**
+   * Handle chip click
+   */
+  onChipClicked(event: { chipId: string; chipType: string }): void {
+    this.chipClicked.emit(event);
+  }
+
+  /**
+   * Handle chip focus
+   */
+  onChipFocused(event: { chipId: string; chipType: string }): void {
+    this.chipFocused.emit(event);
+  }
+
+  /**
+   * Handle drag start
+   */
+  onDragStarted(event: { chipId: string; chipType: string }): void {
+    this.dragStarted.emit(event);
+  }
+
+  /**
+   * Handle drag end
+   */
+  onDragEnded(event: { chipId: string; chipType: string }): void {
+    this.dragEnded.emit(event);
+  }
+
+  /**
+   * Handle drop accepted
+   */
+  onDropAccepted(event: { sourceId: string; targetId: string; position: number }): void {
+    this.dropAccepted.emit(event);
+  }
+
+  /**
+   * Handle adding group to root
+   */
+  onAddGroupToRoot(): void {
+    if (!this.currentCriteria) {
+      this.initializeEmptyCriteria();
+    }
+    
+    // Add a new group to the root
+    const newGroup: any = {
+      operator: 'AND',
+      children: [],
+      id: `group_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     };
     
-    this.updateCriteria(newCriteria);
+    this.currentCriteria!.root.children.push(newGroup);
+    this.updateCriteria(this.currentCriteria!);
+  }
+
+  /**
+   * Handle editing a group
+   */
+  onEditGroup(groupId: string): void {
+    // Emit event for parent components to handle
+    this.chipClicked.emit({ chipId: groupId, chipType: 'group' });
+  }
+
+  /**
+   * Handle editing a condition
+   */
+  onEditCondition(conditionId: string): void {
+    // Emit event for parent components to handle
+    this.chipClicked.emit({ chipId: conditionId, chipType: 'condition' });
+  }
+
+  /**
+   * Handle deleting a condition
+   */
+  onDeleteCondition(conditionId: string): void {
+    // Emit event for parent components to handle
+    this.deleteRequested.emit(conditionId);
+  }
+
+  /**
+   * Handle adding condition to a specific group
+   */
+  onAddConditionToGroup(groupId: string): void {
+    // Emit event for parent components to handle
+    this.addChild.emit(groupId);
+  }
+
+  /**
+   * Handle adding group to a specific group
+   */
+  onAddGroupToGroup(groupId: string): void {
+    // Emit event for parent components to handle
+    this.addSibling.emit(groupId);
+  }
+
+  /**
+   * Check if an item is a group
+   */
+  isGroup(item: any): boolean {
+    return item && typeof item === 'object' && item.hasOwnProperty('children') && item.hasOwnProperty('operator');
+  }
+
+  /**
+   * Get condition summary for display
+   */
+  getConditionSummary(condition: any): string {
+    if (!condition) return 'Empty condition';
+    
+    const left = condition.left?.field || condition.left?.name || 'Field';
+    const operator = condition.operator || '=';
+    const right = condition.right?.value || condition.right?.field || condition.right?.name || 'Value';
+    
+    return `${left} ${operator} ${right}`;
+  }
+
+  /**
+   * Get children count for a group
+   */
+  getChildrenCount(item: any): number {
+    return (item && item.children) ? item.children.length : 0;
+  }
+
+  /**
+   * Check if item has children
+   */
+  hasChildren(item: any): boolean {
+    return item && item.children && item.children.length > 0;
+  }
+
+  /**
+   * Get children array safely
+   */
+  getChildren(item: any): any[] {
+    return (item && item.children) ? item.children : [];
+  }
+
+  /**
+   * Find group by ID in criteria structure
+   */
+  private findGroupById(group: any, id: string): any {
+    if (group.id === id) {
+      return group;
+    }
+    
+    if (group.children) {
+      for (const child of group.children) {
+        if (child.children) { // It's a group
+          const found = this.findGroupById(child, id);
+          if (found) return found;
+        }
+      }
+    }
+    
+    return null;
   }
 
   // Private helper methods
@@ -1636,5 +1881,47 @@ export class CriteriaBuilderComponent implements ControlValueAccessor, Validator
   handleBreakpointChange(breakpoint: string): void {
     // Update component state based on breakpoint
     console.log('Breakpoint changed to:', breakpoint);
+  }
+
+  // Demo event handling methods
+  demoEvents: Array<{type: string, data: any}> = [];
+
+  onDemoChipClick(chipId: string): void {
+    this.addDemoEvent('chipClick', { chipId });
+  }
+
+  onDemoToggleClick(event: {chipId: string, enabled: boolean}): void {
+    this.addDemoEvent('toggleClick', event);
+  }
+
+  onDemoDeleteClick(chipId: string): void {
+    this.addDemoEvent('deleteClick', { chipId });
+  }
+
+  onDemoFieldSelected(event: {chipId: string, field: any}): void {
+    this.addDemoEvent('fieldSelected', event);
+  }
+
+  onDemoOperatorSelected(event: {chipId: string, operator: any}): void {
+    this.addDemoEvent('operatorSelected', event);
+  }
+
+  onDemoFunctionSelected(event: {chipId: string, function: any}): void {
+    this.addDemoEvent('functionSelected', event);
+  }
+
+  onDemoIndicatorSelected(event: {chipId: string, indicator: any}): void {
+    this.addDemoEvent('indicatorSelected', event);
+  }
+
+  private addDemoEvent(type: string, data: any): void {
+    this.demoEvents.unshift({ type, data });
+    
+    // Keep only last 10 events
+    if (this.demoEvents.length > 10) {
+      this.demoEvents = this.demoEvents.slice(0, 10);
+    }
+    
+    this.cdr.markForCheck();
   }
 }

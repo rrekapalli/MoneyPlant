@@ -185,6 +185,44 @@
         [attr.aria-label]="'Criteria building content'"
         role="region">
         
+        <!-- Group Chip Interface - Always Show -->
+        <div 
+          class="group-chip-interface" 
+          role="region"
+          [attr.aria-label]="'Group chip criteria builder'">
+          
+          <!-- Single Empty Group Chip Initially -->
+          <div class="group-chip-container">
+            <mp-custom-group-chip
+              chipId="main-group"
+              displayText=""
+              [hasToggle]="true"
+              [toggleState]="false"
+              [deletable]="false"
+              [showPopover]="true"
+              severity="secondary"
+              tooltip="Click to configure group criteria"
+              (chipClick)="onDemoChipClick($event)"
+              (toggleClick)="onDemoToggleClick($event)"
+              (fieldSelected)="onDemoFieldSelected($event)"
+              (operatorSelected)="onDemoOperatorSelected($event)"
+              (functionSelected)="onDemoFunctionSelected($event)"
+              (indicatorSelected)="onDemoIndicatorSelected($event)">
+            </mp-custom-group-chip>
+          </div>
+          
+          <!-- Demo Event Log -->
+          <div class="demo-events" *ngIf="demoEvents.length > 0">
+            <h4>Recent Events:</h4>
+            <div class="event-list">
+              <div *ngFor="let event of demoEvents.slice(0, 3)" class="event-item">
+                <span class="event-type">{{ event.type }}</span>
+                <span class="event-data">{{ event.data | json }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Empty State -->
         <div 
           class="empty-state" 
@@ -256,33 +294,112 @@
           </div>
         </div>
 
-        <!-- Criteria Chips Area -->
+        <!-- Simple Chip-Based Interface - Exact Reference Match -->
         <div 
           class="criteria-chips-area" 
-          *ngIf="currentCriteria"
+          *ngIf="currentCriteria && currentCriteria.root"
           role="region"
           [attr.aria-label]="'Criteria chips'"
           [attr.aria-describedby]="'criteria-chips-description'">
           
-          <!-- This is where the actual chip components would be rendered -->
-          <!-- For now, showing a placeholder that indicates the criteria structure -->
+          <!-- Root Group Row -->
+          <div class="criteria-row root-row">
+            <!-- Group Chip -->
+            <div class="group-chip">
+              <span class="group-content">
+                <span class="brace">{{ '{' }}</span>
+                <span class="operator">{{ currentCriteria.root.operator }}</span>
+                <span class="brace">{{ '}' }}</span>
+              </span>
+            </div>
+            
+            <!-- Add Buttons -->
+            <button 
+              pButton 
+              type="button" 
+              icon="pi pi-plus"
+              label="Add Condition"
+              class="p-button-outlined p-button-sm add-btn"
+              [disabled]="disabled"
+              (click)="onAddConditionToRoot()">
+            </button>
+            
+            <button 
+              pButton 
+              type="button" 
+              icon="pi pi-plus"
+              label="Add Group"
+              class="p-button-outlined p-button-sm add-btn"
+              [disabled]="disabled"
+              (click)="onAddGroupToRoot()">
+            </button>
+          </div>
+          
+          <!-- Nested Group Row -->
           <div 
-            class="criteria-placeholder"
-            role="status"
-            [attr.aria-label]="'Criteria structure placeholder'">
-            <i 
-              class="pi pi-cog"
-              [attr.aria-hidden]="true"
-              *ngIf="currentDisplayMode?.showIcons !== false">
-            </i>
-            <span *ngIf="currentDisplayMode?.showLabels !== false">
-              Criteria structure will be rendered here
-            </span>
-            <small 
-              *ngIf="currentDisplayMode?.mode !== 'compact'"
-              [attr.aria-label]="'Current criteria JSON structure'">
-              Current criteria: {{ currentCriteria | json }}
-            </small>
+            class="criteria-row nested-row" 
+            *ngFor="let child of currentCriteria.root.children; let i = index"
+            [attr.data-index]="i">
+            
+            <!-- Nested Group -->
+            <div class="nested-group-container" *ngIf="isGroup(child)">
+              <!-- Group Chip -->
+              <div class="group-chip nested">
+                <span class="group-content">
+                  <span class="brace">{{ '{' }}</span>
+                  <span class="operator">{{ child.operator }}</span>
+                  <span class="brace">{{ '}' }}</span>
+                </span>
+              </div>
+              
+              <!-- Add Buttons -->
+              <button 
+                pButton 
+                type="button" 
+                icon="pi pi-plus"
+                label="Add Condition"
+                class="p-button-outlined p-button-sm add-btn"
+                [disabled]="disabled"
+                (click)="onAddConditionToGroup(child.id || '')">
+              </button>
+              
+              <button 
+                pButton 
+                type="button" 
+                icon="pi pi-plus"
+                label="Add Group"
+                class="p-button-outlined p-button-sm add-btn"
+                [disabled]="disabled"
+                (click)="onAddGroupToGroup(child.id || '')">
+              </button>
+              
+              <!-- Delete Button -->
+              <button 
+                pButton 
+                type="button" 
+                icon="pi pi-times"
+                class="p-button-text p-button-sm delete-btn"
+                [disabled]="disabled"
+                (click)="onDeleteGroup(child.id || '')">
+              </button>
+            </div>
+            
+            <!-- Condition Chip -->
+            <div class="condition-container" *ngIf="!isGroup(child)">
+              <div class="condition-chip">
+                <span class="condition-text">{{ getConditionSummary(child) }}</span>
+              </div>
+              
+              <!-- Delete Button -->
+              <button 
+                pButton 
+                type="button" 
+                icon="pi pi-times"
+                class="p-button-text p-button-sm delete-btn"
+                [disabled]="disabled"
+                (click)="onDeleteCondition(child.id || '')">
+              </button>
+            </div>
           </div>
           
           <!-- Hidden description for screen readers -->

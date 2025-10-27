@@ -860,3 +860,1206 @@
     }
   }
 }
+/* Ro
+ot Group Container Styles */
+.root-group-container {
+  border: 1px solid var(--surface-border);
+  border-radius: 8px;
+  background: var(--surface-0);
+  padding: 1rem;
+  
+  .group-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--surface-border);
+    
+    .group-operator-label {
+      font-weight: 600;
+      color: var(--text-color);
+      font-size: 1.1rem;
+    }
+    
+    .group-actions {
+      display: flex;
+      gap: 0.5rem;
+      
+      ::ng-deep .p-button {
+        transition: all 0.2s ease-in-out;
+        
+        &:hover:not(:disabled) {
+          transform: translateY(-1px);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+      }
+    }
+  }
+  
+  .group-children {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    
+    .child-item {
+      border: 1px solid var(--surface-border);
+      border-radius: 6px;
+      background: var(--surface-50);
+      transition: all 0.2s ease-in-out;
+      
+      &:hover {
+        border-color: var(--primary-color);
+        background: var(--primary-50);
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+    }
+  }
+  
+  .empty-group-state {
+    text-align: center;
+    padding: 2rem;
+    border: 2px dashed var(--surface-border);
+    border-radius: 6px;
+    background: var(--surface-50);
+    
+    .empty-message {
+      margin: 0 0 1rem 0;
+      color: var(--text-color-secondary);
+      font-style: italic;
+    }
+    
+    ::ng-deep .p-button {
+      font-weight: 600;
+    }
+  }
+}
+
+/* Group Chip Styles */
+.group-chip {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  
+  .chip-content {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+    
+    .pi {
+      color: var(--blue-500);
+      font-size: 1.1rem;
+    }
+    
+    span {
+      font-weight: 500;
+      color: var(--text-color);
+    }
+    
+    .child-count {
+      background: var(--blue-100);
+      color: var(--blue-700);
+      padding: 0.25rem 0.5rem;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-left: 0.5rem;
+    }
+  }
+  
+  .chip-actions {
+    display: flex;
+    gap: 0.25rem;
+    opacity: 0;
+    transition: opacity 0.2s ease-in-out;
+    
+    ::ng-deep .p-button {
+      padding: 0.375rem;
+      min-width: auto;
+      
+      &.p-button-danger:hover {
+        background: var(--red-500);
+        border-color: var(--red-500);
+      }
+    }
+  }
+  
+  &:hover .chip-actions {
+    opacity: 1;
+  }
+}
+
+/* Condition Chip Styles */
+.condition-chip {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  
+  .chip-content {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+    
+    .pi {
+      color: var(--green-500);
+      font-size: 1.1rem;
+    }
+    
+    span {
+      font-weight: 500;
+      color: var(--text-color);
+    }
+    
+    .condition-summary {
+      background: var(--green-100);
+      color: var(--green-700);
+      padding: 0.25rem 0.75rem;
+      border-radius: 12px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      margin-left: 0.5rem;
+      font-family: monospace;
+    }
+  }
+  
+  .chip-actions {
+    display: flex;
+    gap: 0.25rem;
+    opacity: 0;
+    transition: opacity 0.2s ease-in-out;
+    
+    ::ng-deep .p-button {
+      padding: 0.375rem;
+      min-width: auto;
+      
+      &.p-button-danger:hover {
+        background: var(--red-500);
+        border-color: var(--red-500);
+      }
+    }
+  }
+  
+  &:hover .chip-actions {
+    opacity: 1;
+  }
+}
+
+/* Add First Condition Button */
+.add-first-condition {
+  text-align: center;
+  padding: 1rem;
+  
+  ::ng-deep .p-button {
+    font-weight: 600;
+    min-width: 200px;
+  }
+}
+
+/* Responsive Adjustments for Chips */
+@media (max-width: 768px) {
+  .root-group-container {
+    padding: 0.75rem;
+    
+    .group-header {
+      flex-direction: column;
+      gap: 0.75rem;
+      align-items: stretch;
+      
+      .group-actions {
+        justify-content: center;
+        
+        ::ng-deep .p-button {
+          flex: 1;
+          max-width: 150px;
+        }
+      }
+    }
+    
+    .group-children {
+      gap: 0.5rem;
+    }
+  }
+  
+  .group-chip,
+  .condition-chip {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+    
+    .chip-actions {
+      opacity: 1;
+      justify-content: center;
+      
+      ::ng-deep .p-button {
+        flex: 1;
+        max-width: 120px;
+      }
+    }
+  }
+  
+  .condition-chip .chip-content .condition-summary {
+    margin-left: 0;
+    margin-top: 0.5rem;
+    text-align: center;
+  }
+}
+
+/* Compact Mode Adjustments */
+.criteria-builder-container.display-compact {
+  .root-group-container {
+    padding: 0.5rem;
+    
+    .group-header {
+      margin-bottom: 0.5rem;
+      padding-bottom: 0.5rem;
+      
+      .group-operator-label {
+        font-size: 1rem;
+      }
+      
+      .group-actions {
+        gap: 0.25rem;
+        
+        ::ng-deep .p-button {
+          padding: 0.375rem 0.75rem;
+          font-size: 0.875rem;
+        }
+      }
+    }
+    
+    .group-children {
+      gap: 0.5rem;
+    }
+    
+    .empty-group-state {
+      padding: 1rem;
+      
+      .empty-message {
+        font-size: 0.875rem;
+        margin-bottom: 0.75rem;
+      }
+    }
+  }
+  
+  .group-chip,
+  .condition-chip {
+    padding: 0.5rem 0.75rem;
+    
+    .chip-content {
+      gap: 0.375rem;
+      
+      .pi {
+        font-size: 1rem;
+      }
+      
+      span {
+        font-size: 0.875rem;
+      }
+      
+      .child-count,
+      .condition-summary {
+        font-size: 0.75rem;
+        padding: 0.125rem 0.375rem;
+      }
+    }
+    
+    .chip-actions ::ng-deep .p-button {
+      padding: 0.25rem;
+    }
+  }
+}
+
+/* Dark Theme Support for Chips */
+@media (prefers-color-scheme: dark) {
+  .root-group-container {
+    background: var(--surface-900);
+    border-color: var(--surface-700);
+    
+    .group-header {
+      border-color: var(--surface-700);
+    }
+    
+    .group-children .child-item {
+      background: var(--surface-800);
+      border-color: var(--surface-600);
+      
+      &:hover {
+        background: var(--surface-700);
+      }
+    }
+    
+    .empty-group-state {
+      background: var(--surface-800);
+      border-color: var(--surface-600);
+    }
+  }
+  
+  .group-chip .chip-content .child-count {
+    background: var(--blue-900);
+    color: var(--blue-200);
+  }
+  
+  .condition-chip .chip-content .condition-summary {
+    background: var(--green-900);
+    color: var(--green-200);
+  }
+}
+
+/* Focus States for Chips */
+.group-chip,
+.condition-chip {
+  &:focus-within {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+  
+  .chip-actions ::ng-deep .p-button:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+}
+
+/* Animation for Chip Actions */
+@media (prefers-reduced-motion: no-preference) {
+  .chip-actions {
+    transition: opacity 0.2s ease-in-out;
+  }
+  
+  .child-item {
+    transition: all 0.2s ease-in-out;
+  }
+  
+  .group-chip,
+  .condition-chip {
+    transition: all 0.2s ease-in-out;
+  }
+}/* UPDATE
+D: Criteria Builder Chip-Based Interface - Matching Reference Design */
+
+/* Override previous styles with reference design */
+.criteria-chips-area {
+  padding: 1rem !important;
+  background: var(--surface-0) !important;
+  border: 1px solid var(--surface-border) !important;
+  border-radius: 8px !important;
+  min-height: 120px !important;
+}
+
+/* Group Chip Container */
+.group-chip-container {
+  margin-bottom: 1rem;
+  
+  &.root-group {
+    border: 2px solid var(--green-200);
+    border-radius: 12px;
+    padding: 1rem;
+    background: var(--green-50);
+  }
+  
+  &.nested-group {
+    border: 1px solid var(--blue-200);
+    border-radius: 8px;
+    padding: 0.75rem;
+    background: var(--blue-50);
+    margin-left: 2rem;
+    margin-top: 0.5rem;
+  }
+}
+
+/* Group Chip */
+.group-chip {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.75rem !important;
+  flex-wrap: wrap !important;
+  padding: 0 !important;
+  justify-content: flex-start !important;
+  
+  .group-braces {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--green-600);
+    font-family: monospace;
+  }
+  
+  .group-operator {
+    background: var(--green-100);
+    color: var(--green-800);
+    padding: 0.375rem 0.75rem;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    border: 1px solid var(--green-300);
+  }
+  
+  .add-condition-btn,
+  .add-group-btn {
+    ::ng-deep {
+      .p-button {
+        background: var(--surface-0);
+        border: 1px solid var(--green-400);
+        color: var(--green-700);
+        font-size: 0.875rem;
+        padding: 0.375rem 0.75rem;
+        border-radius: 16px;
+        transition: all 0.2s ease-in-out;
+        
+        &:hover:not(:disabled) {
+          background: var(--green-100);
+          border-color: var(--green-500);
+          transform: translateY(-1px);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        &:focus {
+          outline: 2px solid var(--green-500);
+          outline-offset: 2px;
+        }
+        
+        .p-button-icon {
+          font-size: 0.75rem;
+          margin-right: 0.375rem;
+        }
+        
+        .p-button-label {
+          font-weight: 500;
+        }
+      }
+    }
+  }
+  
+  .delete-btn {
+    ::ng-deep {
+      .p-button {
+        background: transparent;
+        border: none;
+        color: var(--red-500);
+        padding: 0.25rem;
+        border-radius: 50%;
+        width: 2rem;
+        height: 2rem;
+        min-width: 2rem;
+        transition: all 0.2s ease-in-out;
+        
+        &:hover:not(:disabled) {
+          background: var(--red-100);
+          color: var(--red-600);
+          transform: scale(1.1);
+        }
+        
+        .p-button-icon {
+          font-size: 0.875rem;
+        }
+      }
+    }
+  }
+}
+
+/* Nested Group Styling */
+.nested-group {
+  .group-chip {
+    .group-braces {
+      color: var(--blue-600);
+    }
+    
+    .group-operator {
+      background: var(--blue-100);
+      color: var(--blue-800);
+      border-color: var(--blue-300);
+    }
+    
+    .add-condition-btn,
+    .add-group-btn {
+      ::ng-deep .p-button {
+        border-color: var(--blue-400);
+        color: var(--blue-700);
+        
+        &:hover:not(:disabled) {
+          background: var(--blue-100);
+          border-color: var(--blue-500);
+        }
+      }
+    }
+  }
+}
+
+/* Group Children */
+.group-children {
+  margin-top: 1rem;
+  
+  .child-item {
+    margin-bottom: 0.75rem;
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+}
+
+/* Nested Children */
+.nested-children {
+  margin-top: 0.75rem;
+  margin-left: 1.5rem;
+  border-left: 2px solid var(--surface-border);
+  padding-left: 1rem;
+  
+  .nested-child {
+    margin-bottom: 0.5rem;
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+}
+
+/* Condition Chip - Override previous styles */
+.condition-chip {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  background: var(--surface-0) !important;
+  border: 1px solid var(--surface-border) !important;
+  border-radius: 20px !important;
+  padding: 0.5rem 1rem !important;
+  transition: all 0.2s ease-in-out !important;
+  
+  &:hover {
+    border-color: var(--primary-color);
+    background: var(--primary-50);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .condition-text {
+    color: var(--text-color);
+    font-weight: 500;
+    font-size: 0.875rem;
+    flex: 1;
+  }
+  
+  .delete-btn {
+    margin-left: 0.5rem;
+    opacity: 0;
+    transition: opacity 0.2s ease-in-out;
+    
+    ::ng-deep .p-button {
+      background: transparent;
+      border: none;
+      color: var(--red-500);
+      padding: 0.25rem;
+      border-radius: 50%;
+      width: 1.75rem;
+      height: 1.75rem;
+      min-width: 1.75rem;
+      
+      &:hover:not(:disabled) {
+        background: var(--red-100);
+        color: var(--red-600);
+        transform: scale(1.1);
+      }
+      
+      .p-button-icon {
+        font-size: 0.75rem;
+      }
+    }
+  }
+  
+  &:hover .delete-btn {
+    opacity: 1;
+  }
+}
+
+/* Responsive Design for New Layout */
+@media (max-width: 768px) {
+  .group-chip {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.5rem !important;
+    
+    .add-condition-btn,
+    .add-group-btn {
+      ::ng-deep .p-button {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+  }
+  
+  .nested-children {
+    margin-left: 1rem;
+  }
+  
+  .group-chip-container.nested-group {
+    margin-left: 1rem;
+  }
+}
+
+/* Dark Theme Support for New Layout */
+@media (prefers-color-scheme: dark) {
+  .group-chip-container {
+    &.root-group {
+      background: var(--green-900);
+      border-color: var(--green-700);
+    }
+    
+    &.nested-group {
+      background: var(--blue-900);
+      border-color: var(--blue-700);
+    }
+  }
+  
+  .group-chip {
+    .group-braces {
+      color: var(--green-400);
+    }
+    
+    .group-operator {
+      background: var(--green-800);
+      color: var(--green-200);
+      border-color: var(--green-600);
+    }
+  }
+  
+  .nested-group .group-chip {
+    .group-braces {
+      color: var(--blue-400);
+    }
+    
+    .group-operator {
+      background: var(--blue-800);
+      color: var(--blue-200);
+      border-color: var(--blue-600);
+    }
+  }
+  
+  .condition-chip {
+    background: var(--surface-900) !important;
+    border-color: var(--surface-700) !important;
+    
+    &:hover {
+      background: var(--surface-800) !important;
+    }
+  }
+}
+
+/* FINAL: Simple Chip Interface - Exact Reference Match */
+
+/* Override all previous styles */
+.criteria-chips-area {
+  padding: 1rem !important;
+  background: var(--surface-0) !important;
+  border: 1px solid var(--surface-border) !important;
+  border-radius: 8px !important;
+  min-height: 120px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0.75rem !important;
+}
+
+/* Criteria Row - Horizontal Layout */
+.criteria-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  
+  &.root-row {
+    /* Root row styling */
+  }
+  
+  &.nested-row {
+    margin-left: 2rem;
+    position: relative;
+    
+    &::before {
+      content: '';
+      position: absolute;
+      left: -1rem;
+      top: 50%;
+      width: 0.5rem;
+      height: 1px;
+      background: var(--surface-border);
+    }
+  }
+}
+
+/* Group Chip - Simple Rounded Rectangle */
+.group-chip {
+  display: inline-flex;
+  align-items: center;
+  background: var(--surface-0);
+  border: 1px solid var(--surface-border);
+  border-radius: 20px;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-color);
+  transition: all 0.2s ease-in-out;
+  
+  &:hover {
+    border-color: var(--primary-color);
+    background: var(--primary-50);
+  }
+  
+  &.nested {
+    background: var(--blue-50);
+    border-color: var(--blue-200);
+    
+    &:hover {
+      border-color: var(--blue-400);
+      background: var(--blue-100);
+    }
+  }
+  
+  .group-content {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  
+  .brace {
+    font-family: monospace;
+    font-weight: bold;
+    font-size: 1rem;
+    color: var(--text-color-secondary);
+  }
+  
+  .operator {
+    font-weight: 600;
+    color: var(--text-color);
+  }
+}
+
+/* Add Buttons - Simple Outlined Style */
+.add-btn {
+  ::ng-deep .p-button {
+    background: var(--surface-0);
+    border: 1px solid var(--green-400);
+    color: var(--green-700);
+    font-size: 0.875rem;
+    padding: 0.375rem 0.75rem;
+    border-radius: 16px;
+    transition: all 0.2s ease-in-out;
+    
+    &:hover:not(:disabled) {
+      background: var(--green-100);
+      border-color: var(--green-500);
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    &:focus {
+      outline: 2px solid var(--green-500);
+      outline-offset: 2px;
+    }
+    
+    .p-button-icon {
+      font-size: 0.75rem;
+      margin-right: 0.375rem;
+    }
+    
+    .p-button-label {
+      font-weight: 500;
+    }
+  }
+}
+
+/* Delete Button - Simple X */
+.delete-btn {
+  ::ng-deep .p-button {
+    background: transparent;
+    border: none;
+    color: var(--red-500);
+    padding: 0.25rem;
+    border-radius: 50%;
+    width: 2rem;
+    height: 2rem;
+    min-width: 2rem;
+    transition: all 0.2s ease-in-out;
+    
+    &:hover:not(:disabled) {
+      background: var(--red-100);
+      color: var(--red-600);
+      transform: scale(1.1);
+    }
+    
+    .p-button-icon {
+      font-size: 0.875rem;
+    }
+  }
+}
+
+/* Condition Chip - Simple Rounded Rectangle */
+.condition-chip {
+  display: inline-flex;
+  align-items: center;
+  background: var(--surface-0);
+  border: 1px solid var(--surface-border);
+  border-radius: 20px;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+  color: var(--text-color);
+  transition: all 0.2s ease-in-out;
+  
+  &:hover {
+    border-color: var(--primary-color);
+    background: var(--primary-50);
+  }
+  
+  .condition-text {
+    font-weight: 500;
+  }
+}
+
+/* Container Layouts */
+.nested-group-container,
+.condition-container {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .criteria-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+    
+    &.nested-row {
+      margin-left: 1rem;
+    }
+  }
+  
+  .nested-group-container,
+  .condition-container {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+  
+  .add-btn {
+    ::ng-deep .p-button {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+}
+
+/* Dark Theme Support */
+@media (prefers-color-scheme: dark) {
+  .group-chip {
+    background: var(--surface-900);
+    border-color: var(--surface-700);
+    
+    &:hover {
+      background: var(--surface-800);
+    }
+    
+    &.nested {
+      background: var(--blue-900);
+      border-color: var(--blue-700);
+      
+      &:hover {
+        background: var(--blue-800);
+      }
+    }
+  }
+  
+  .condition-chip {
+    background: var(--surface-900);
+    border-color: var(--surface-700);
+    
+    &:hover {
+      background: var(--surface-800);
+    }
+  }
+}
+
+/* Focus States */
+.group-chip,
+.condition-chip {
+  &:focus-within {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+}
+
+/* Animation Preferences */
+@media (prefers-reduced-motion: no-preference) {
+  .group-chip,
+  .condition-chip,
+  .add-btn,
+  .delete-btn {
+    transition: all 0.2s ease-in-out;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .group-chip,
+  .condition-chip,
+  .add-btn,
+  .delete-btn {
+    transition: none;
+  }
+}
+/* C
+ustom Group Chip Demo Styles */
+.custom-chip-demo {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  border: 2px dashed var(--surface-border);
+  border-radius: 8px;
+  background: var(--surface-50);
+  
+  .demo-content {
+    h3 {
+      margin: 0 0 1rem 0;
+      color: var(--text-color);
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    
+    p {
+      margin: 0 0 1.5rem 0;
+      color: var(--text-color-secondary);
+      font-size: 0.875rem;
+    }
+  }
+  
+  .demo-chips {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+    align-items: center;
+    padding: 1rem;
+    background: var(--surface-100);
+    border-radius: 8px;
+    border: 2px dashed var(--primary-200);
+    
+    .group-indicator {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: var(--primary-color);
+      margin: 0 0.25rem;
+    }
+    
+    .parenthesis {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--text-color-secondary);
+      margin: 0 0.125rem;
+    }
+  }
+  
+  .demo-events {
+    border-top: 1px solid var(--surface-border);
+    padding-top: 1rem;
+    
+    h4 {
+      margin: 0 0 0.75rem 0;
+      color: var(--text-color);
+      font-size: 1rem;
+      font-weight: 600;
+    }
+    
+    .event-list {
+      background: var(--surface-0);
+      border: 1px solid var(--surface-border);
+      border-radius: 4px;
+      padding: 0.75rem;
+      max-height: 120px;
+      overflow-y: auto;
+    }
+    
+    .event-item {
+      display: flex;
+      gap: 1rem;
+      padding: 0.25rem 0;
+      border-bottom: 1px solid var(--surface-100);
+      font-family: 'Courier New', monospace;
+      font-size: 0.75rem;
+      
+      &:last-child {
+        border-bottom: none;
+      }
+      
+      .event-type {
+        color: var(--primary-color);
+        font-weight: 600;
+        min-width: 100px;
+      }
+      
+      .event-data {
+        color: var(--text-color-secondary);
+        flex: 1;
+        word-break: break-all;
+      }
+    }
+  }
+}
+
+/* Responsive adjustments for demo */
+@media (max-width: 767px) {
+  .custom-chip-demo {
+    padding: 1rem;
+    
+    .demo-chips {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.75rem;
+    }
+    
+    .demo-events {
+      .event-item {
+        flex-direction: column;
+        gap: 0.25rem;
+        
+        .event-type {
+          min-width: auto;
+        }
+      }
+    }
+  }
+}
+
+/* Dark theme adjustments */
+@media (prefers-color-scheme: dark) {
+  .custom-chip-demo {
+    background: var(--surface-800);
+    border-color: var(--surface-600);
+    
+    .demo-events {
+      border-top-color: var(--surface-600);
+      
+      .event-list {
+        background: var(--surface-900);
+        border-color: var(--surface-600);
+      }
+      
+      .event-item {
+        border-bottom-color: var(--surface-700);
+      }
+    }
+  }
+}/* Group
+ Chip Interface Styles */
+.group-chip-interface {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  border: 2px solid var(--surface-border);
+  border-radius: 8px;
+  background: var(--surface-0);
+  
+  .group-chip-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background: var(--surface-50);
+    border-radius: 8px;
+    border: 1px solid var(--surface-200);
+  }
+  
+  .demo-events {
+    border-top: 1px solid var(--surface-border);
+    padding-top: 1rem;
+    
+    h4 {
+      margin: 0 0 0.75rem 0;
+      color: var(--text-color);
+      font-size: 1rem;
+      font-weight: 600;
+    }
+    
+    .event-list {
+      background: var(--surface-0);
+      border: 1px solid var(--surface-border);
+      border-radius: 4px;
+      padding: 0.75rem;
+      max-height: 120px;
+      overflow-y: auto;
+    }
+    
+    .event-item {
+      display: flex;
+      gap: 1rem;
+      padding: 0.25rem 0;
+      border-bottom: 1px solid var(--surface-100);
+      font-family: 'Courier New', monospace;
+      font-size: 0.75rem;
+      
+      &:last-child {
+        border-bottom: none;
+      }
+      
+      .event-type {
+        color: var(--primary-color);
+        font-weight: 600;
+        min-width: 100px;
+      }
+      
+      .event-data {
+        color: var(--text-color-secondary);
+        flex: 1;
+        word-break: break-all;
+      }
+    }
+  }
+}
+
+/* Responsive adjustments for group chip interface */
+@media (max-width: 767px) {
+  .group-chip-interface {
+    padding: 1rem;
+    
+    .group-chip-container {
+      padding: 0.75rem;
+    }
+    
+    .demo-events {
+      .event-item {
+        flex-direction: column;
+        gap: 0.25rem;
+        
+        .event-type {
+          min-width: auto;
+        }
+      }
+    }
+  }
+}
+
+/* Dark theme adjustments for group chip interface */
+@media (prefers-color-scheme: dark) {
+  .group-chip-interface {
+    background: var(--surface-800);
+    border-color: var(--surface-600);
+    
+    .group-chip-container {
+      background: var(--surface-700);
+      border-color: var(--surface-500);
+    }
+    
+    .demo-events {
+      border-top-color: var(--surface-600);
+      
+      .event-list {
+        background: var(--surface-900);
+        border-color: var(--surface-600);
+      }
+      
+      .event-item {
+        border-bottom-color: var(--surface-700);
+      }
+    }
+  }
+}
