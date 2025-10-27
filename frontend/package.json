@@ -6,9 +6,9 @@
     "start": "ng serve --proxy-config proxy.conf.json",
     "start:dev": "ng serve --proxy-config proxy.conf.json --port 4200",
     "build": "npm run build:libraries && ng build",
-    "build:libraries": "npm run build:dashboards && npm run build:criteria-builder",
+    "build:libraries": "npm run build:dashboards",
     "build:dashboards": "ng build dashboards",
-    "build:criteria-builder": "ng build criteria-builder",
+
     "build:prod": "npm run build:libraries && ng build --configuration production",
     "build:single": "npm run build:libraries && ng build --configuration production --extract-licenses=false --named-chunks=false",
     "watch": "ng build --watch --configuration development",
