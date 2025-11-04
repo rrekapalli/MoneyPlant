@@ -3,3 +3,4 @@
  */
 
 export * from './lib/querybuilder.module';
+export * from './lib/models';

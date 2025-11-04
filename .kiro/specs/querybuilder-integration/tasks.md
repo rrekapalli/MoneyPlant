@@ -7,14 +7,14 @@
   - Create ng-package.json for library packaging configuration
   - _Requirements: 1.1, 2.2_
 
-- [ ] 2. Implement core data models and interfaces following Angular-QueryBuilder pattern
-  - [ ] 2.1 Create query builder data models exactly matching Angular-QueryBuilder
+- [x] 2. Implement core data models and interfaces following Angular-QueryBuilder pattern
+  - [x] 2.1 Create query builder data models exactly matching Angular-QueryBuilder
     - Define QueryBuilderConfig, Field, RuleSet, Rule, and Option interfaces
     - Implement LocalRuleMeta interface and OPERATORS constant
     - Create validation error interfaces and utility types
     - _Requirements: 1.2, 2.1_
 
-  - [ ] 2.2 Create stock field configuration models using Angular-QueryBuilder Field format
+  - [x] 2.2 Create stock field configuration models using Angular-QueryBuilder Field format
     - Define stock-specific field configurations with defaultValue and defaultOperator properties
     - Implement sector, market cap, financial ratio field definitions with proper options arrays
     - Create operator mappings for different field types following Angular-QueryBuilder pattern
