@@ -1,5 +1,5 @@
 import {Component, EventEmitter, Input, Output} from '@angular/core';
-import {NgComponentOutlet} from '@angular/common';
+import {NgComponentOutlet, CommonModule} from '@angular/common';
 import {provideEchartsCore} from 'ngx-echarts';
 import {IWidget} from '../../entities/IWidget';
 import {EchartComponent} from '../echarts/echart.component';
@@ -49,7 +49,7 @@ const onGetWidget = (widget: IWidget) => {
   selector: 'vis-widget',
   standalone: true,
   templateUrl:'./widget.component.html',
-  imports: [NgComponentOutlet],
+  imports: [CommonModule, NgComponentOutlet, StockListTableComponent],
   providers: [
     provideEchartsCore({
       echarts: () => import('echarts'),
@@ -68,6 +68,12 @@ export class WidgetComponent {
   
   /** Event emitted when filter is updated */
   @Output() onUpdateFilter: EventEmitter<any> = new EventEmitter();
+  
+  /** Event emitted when stock is selected (for stock list widgets) */
+  @Output() onStockSelected: EventEmitter<any> = new EventEmitter();
+  
+  /** Event emitted when stock is double-clicked (for stock list widgets) */
+  @Output() onStockDoubleClicked: EventEmitter<any> = new EventEmitter();
 
   private originalWidget: IWidget | null = null;
   private tableWidget: IWidget | null = null;
@@ -98,6 +104,8 @@ export class WidgetComponent {
         widget: widgetToRender,
         onDataLoad: this.onDataLoad,
         onUpdateFilter: this.onUpdateFilter,
+        stockSelected: this.onStockSelected,
+        stockDoubleClicked: this.onStockDoubleClicked,
       },
     };
     

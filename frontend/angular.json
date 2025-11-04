@@ -36,6 +36,7 @@
         }
       }
     },
+
     "money-plant-frontend": {
       "projectType": "application",
       "schematics": {
@@ -150,7 +151,8 @@
           }
         }
       }
-    }
+    },
+
   },
   "schematics": {
     "@schematics/angular:component": {

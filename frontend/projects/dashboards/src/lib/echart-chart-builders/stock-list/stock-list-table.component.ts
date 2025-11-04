@@ -55,7 +55,9 @@ export class StockListTableComponent implements OnInit, OnChanges, DoCheck {
   @Input() widget!: IWidget;
   @Input() stocks: StockListData[] = [];
   @Input() isLoadingStocks: boolean = false;
+  @Input() selectedStockSymbol: string = ''; // Add input for selected stock
   @Output() stockSelected = new EventEmitter<SelectedStockData>();
+  @Output() stockDoubleClicked = new EventEmitter<SelectedStockData>();
   @Output() refreshRequested = new EventEmitter<void>();
 
   @ViewChild('stockTooltipTemplate') stockTooltipTemplate!: TemplateRef<any>;
@@ -104,12 +106,23 @@ export class StockListTableComponent implements OnInit, OnChanges, DoCheck {
    * Update stocks data from widget.data
    */
   private updateStocksFromWidget(): void {
+    console.log('🔄 StockListTable: Updating stocks from widget data:', this.widget?.data);
+    
     if (this.widget?.data?.stocks && this.widget.data.stocks.length > 0) {
       this.stocks = this.widget.data.stocks;
       this.isLoadingStocks = this.widget.data.isLoadingStocks || false;
+      
+      // Update selected stock symbol from widget data
+      if (this.widget.data.selectedStockSymbol !== undefined) {
+        this.selectedStockSymbol = this.widget.data.selectedStockSymbol;
+        console.log('📊 StockListTable: Updated selected stock symbol to:', this.selectedStockSymbol);
+      }
+      
+      console.log('✅ StockListTable: Updated with', this.stocks.length, 'stocks');
     } else if (!this.stocks || this.stocks.length === 0) {
       // Ensure stocks is initialized as empty array if no data
       this.stocks = [];
+      console.log('⚠️ StockListTable: No stock data available, using empty array');
     }
   }
 
@@ -188,6 +201,33 @@ export class StockListTableComponent implements OnInit, OnChanges, DoCheck {
   }
 
   /**
+   * Handle row double-click event in the table
+   */
+  onRowDoubleClick(rowData: any): void {
+    console.log('📊 StockListTable: Row double-clicked:', rowData);
+    
+    // Transform the row data to SelectedStockData format
+    const selectedStockData: SelectedStockData = {
+      id: rowData.symbol || 'unknown',
+      symbol: rowData.symbol || '',
+      name: rowData.companyName || rowData.symbol || '',
+      lastPrice: rowData.lastPrice || 0,
+      priceChange: rowData.priceChange || 0,
+      percentChange: rowData.percentChange || 0,
+      volume: rowData.volume,
+      dayHigh: rowData.dayHigh,
+      dayLow: rowData.dayLow,
+      industry: rowData.industry,
+      sector: rowData.sector
+    };
+
+    console.log('📤 StockListTable: Emitting stockDoubleClicked event:', selectedStockData);
+    
+    // Emit the double-clicked stock data
+    this.stockDoubleClicked.emit(selectedStockData);
+  }
+
+  /**
    * Refresh stocks data
    */
   refreshStocks(): void {
@@ -224,6 +264,8 @@ export class StockListTableComponent implements OnInit, OnChanges, DoCheck {
    * Load sample data for testing
    */
   loadSampleData(): void {
+    console.log('🎲 StockListTable: Loading sample data for testing');
+    
     const sampleStocks: StockListData[] = [
       {
         symbol: 'RELIANCE',

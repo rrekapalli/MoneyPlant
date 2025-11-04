@@ -139,50 +139,8 @@ public class ScreenerController {
         }
     }
 
-    /**
-     * Lists my screeners.
-     */
-    @GetMapping("/my")
-    @Operation(summary = "List my screeners", description = "Lists screeners owned by current user")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Screeners retrieved successfully"),
-            @ApiResponse(responseCode = "401", description = "Unauthorized")
-    })
-    public ResponseEntity<List<ScreenerResp>> listMyScreeners() {
-        log.info("Listing my screeners");
-        List<ScreenerResp> response = screenerService.listMyScreeners();
-        return ResponseEntity.ok(response);
-    }
 
-    /**
-     * Lists public screeners.
-     */
-    @GetMapping("/public")
-    @Operation(summary = "List public screeners", description = "Lists public screeners")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Screeners retrieved successfully"),
-            @ApiResponse(responseCode = "401", description = "Unauthorized")
-    })
-    public ResponseEntity<List<ScreenerResp>> listPublicScreeners() {
-        log.info("Listing public screeners");
-        List<ScreenerResp> response = screenerService.listPublicScreeners();
-        return ResponseEntity.ok(response);
-    }
 
-    /**
-     * Lists starred screeners for current user.
-     */
-    @GetMapping("/starred")
-    @Operation(summary = "List starred screeners", description = "Lists screeners starred by current user")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Starred screeners retrieved successfully"),
-            @ApiResponse(responseCode = "401", description = "Unauthorized")
-    })
-    public ResponseEntity<List<ScreenerResp>> listStarredScreeners() {
-        log.info("Listing starred screeners");
-        List<ScreenerResp> response = screenerService.listStarredScreeners();
-        return ResponseEntity.ok(response);
-    }
 
 
     /**

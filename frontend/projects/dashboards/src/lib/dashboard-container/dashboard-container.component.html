@@ -24,7 +24,9 @@
                 [widget]="item" 
                 [viewMode]="getWidgetViewMode(item.id)"
                 (onDataLoad)="handleDataLoad($event)" 
-                (onUpdateFilter)="onUpdateFilter($event)"/>
+                (onUpdateFilter)="onUpdateFilter($event)"
+                (onStockSelected)="handleStockSelected($event)"
+                (onStockDoubleClicked)="handleStockDoubleClicked($event)"/>
 
         </gridster-item>
         

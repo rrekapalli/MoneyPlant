@@ -65,6 +65,8 @@ export class DashboardContainerComponent {
   @Output() changesMade: EventEmitter<string> = new EventEmitter<string>();
   @Output() filterValuesChanged: EventEmitter<IFilterValues[]> = new EventEmitter<IFilterValues[]>();
   @Output() onDataLoad: EventEmitter<IWidget> = new EventEmitter<IWidget>();
+  @Output() onStockSelected: EventEmitter<any> = new EventEmitter<any>();
+  @Output() onStockDoubleClicked: EventEmitter<any> = new EventEmitter<any>();
 
   availableDashboards: any[] = [];
   //selectedDashboardId: string = '';
@@ -501,5 +503,23 @@ export class DashboardContainerComponent {
     this.widgetViewModes.set(event.widgetId, event.viewMode);
     // Don't trigger change detection here as it might cause loops
     // this.widgets = [...this.widgets]; // Removed
+  }
+
+  /**
+   * Handle stock selection event from stock list widget
+   * @param event - Selected stock data
+   */
+  handleStockSelected(event: any) {
+    // Forward the event to the parent component
+    this.onStockSelected.emit(event);
+  }
+
+  /**
+   * Handle stock double-click event from stock list widget
+   * @param event - Double-clicked stock data
+   */
+  handleStockDoubleClicked(event: any) {
+    // Forward the event to the parent component
+    this.onStockDoubleClicked.emit(event);
   }
 }

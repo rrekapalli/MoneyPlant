@@ -260,6 +260,14 @@
       }
     }
 
+    .criteria-builder-container {
+      background: #f8f9fa;
+      border: 1px solid #e9ecef;
+      border-radius: 6px;
+      padding: 1rem;
+      min-height: 300px;
+    }
+
     .config-actions {
       display: flex;
       justify-content: flex-end;
@@ -372,6 +380,237 @@
       font-size: 0.875rem;
       line-height: 1.5;
       border-radius: 0.25rem;
+    }
+  }
+
+  // Criteria builder placeholder styling
+  .criteria-builder-placeholder {
+    text-align: center;
+    padding: 2rem;
+    background: var(--surface-50);
+    border: 2px dashed var(--surface-border);
+    border-radius: 6px;
+    color: var(--text-color-secondary);
+    
+    p {
+      margin: 0.5rem 0;
+      font-size: 0.9rem;
+    }
+  }
+
+  // Message component styling for validation
+  .p-message {
+    margin-bottom: 0.5rem;
+    border-radius: 6px;
+    
+    &.p-message-error {
+      background: color-mix(in srgb, var(--criteria-error) 10%, var(--criteria-bg-primary));
+      border: 1px solid color-mix(in srgb, var(--criteria-error) 30%, var(--criteria-border-primary));
+      color: var(--criteria-error);
+    }
+
+    &.p-message-warn {
+      background: color-mix(in srgb, var(--criteria-warning) 10%, var(--criteria-bg-primary));
+      border: 1px solid color-mix(in srgb, var(--criteria-warning) 30%, var(--criteria-border-primary));
+      color: var(--criteria-warning);
+    }
+
+    .p-message-text {
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
+  }
+}
+
+// CSS Custom Properties for Theme Support
+:host {
+  // Light theme (default)
+  --criteria-bg-primary: #ffffff;
+  --criteria-bg-secondary: #f8f9fa;
+  --criteria-bg-tertiary: #e9ecef;
+  --criteria-text-primary: #2c3e50;
+  --criteria-text-secondary: #495057;
+  --criteria-text-muted: #6c757d;
+  --criteria-border-primary: #e9ecef;
+  --criteria-border-secondary: #dee2e6;
+  --criteria-accent-primary: #007bff;
+  --criteria-accent-secondary: #28a745;
+  --criteria-error: #dc3545;
+  --criteria-warning: #ffc107;
+  --criteria-success: #28a745;
+  --criteria-shadow-light: rgba(0, 0, 0, 0.1);
+  --criteria-shadow-medium: rgba(0, 0, 0, 0.15);
+  --criteria-shadow-accent: rgba(0, 123, 255, 0.15);
+
+  // Dark theme support (when parent has dark theme class)
+  &.dark-theme,
+  :host-context(.dark-theme) & {
+    --criteria-bg-primary: #2d3748;
+    --criteria-bg-secondary: #1a202c;
+    --criteria-bg-tertiary: #4a5568;
+    --criteria-text-primary: #f7fafc;
+    --criteria-text-secondary: #e2e8f0;
+    --criteria-text-muted: #a0aec0;
+    --criteria-border-primary: #4a5568;
+    --criteria-border-secondary: #2d3748;
+    --criteria-accent-primary: #63b3ed;
+    --criteria-accent-secondary: #68d391;
+    --criteria-error: #fc8181;
+    --criteria-warning: #f6e05e;
+    --criteria-success: #68d391;
+    --criteria-shadow-light: rgba(0, 0, 0, 0.3);
+    --criteria-shadow-medium: rgba(0, 0, 0, 0.4);
+    --criteria-shadow-accent: rgba(99, 179, 237, 0.25);
+  }
+}
+
+// Criteria builder styling
+.criteria-builder-container {
+  background: var(--criteria-bg-primary);
+  border: 1px solid var(--criteria-border-primary);
+  border-radius: 8px;
+  padding: 0;
+  min-height: 300px;
+  overflow: hidden;
+
+  .criteria-builder {
+    width: 100%;
+    min-height: 300px;
+    
+    // Placeholder for future criteria builder styling
+  }
+
+  // Validation error styling
+  .criteria-validation-errors {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: color-mix(in srgb, var(--criteria-error) 10%, var(--criteria-bg-primary));
+    border: 1px solid color-mix(in srgb, var(--criteria-error) 30%, var(--criteria-border-primary));
+    border-radius: 6px;
+
+    .criteria-error-item {
+      margin-bottom: 0.5rem;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+  }
+
+  // Validation warning styling
+  .criteria-validation-warnings {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: color-mix(in srgb, var(--criteria-warning) 10%, var(--criteria-bg-primary));
+    border: 1px solid color-mix(in srgb, var(--criteria-warning) 30%, var(--criteria-border-primary));
+    border-radius: 6px;
+
+    .criteria-warning-item {
+      margin-bottom: 0.5rem;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+  }
+
+  // Integration status placeholder styling
+  .criteria-builder-placeholder {
+    text-align: center;
+    padding: 2rem;
+    background: var(--criteria-bg-primary);
+    border: 2px solid var(--criteria-border-primary);
+    border-radius: 8px;
+    color: var(--criteria-text-primary);
+
+    &.disabled {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+
+    .placeholder-content {
+      max-width: 600px;
+      margin: 0 auto;
+
+      i {
+        margin-bottom: 1rem;
+        display: block;
+      }
+
+      h4 {
+        margin: 1rem 0 0.5rem 0;
+        color: var(--criteria-accent-primary);
+        font-size: 1.25rem;
+        font-weight: 600;
+      }
+
+      p {
+        margin: 0.5rem 0;
+        font-size: 0.95rem;
+        line-height: 1.4;
+
+        &.technical-note {
+          background: var(--criteria-bg-secondary);
+          padding: 1rem;
+          border-radius: 6px;
+          border-left: 4px solid var(--criteria-warning);
+          text-align: left;
+          margin: 1rem 0;
+          font-size: 0.9rem;
+        }
+      }
+
+      .integration-status {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 0.75rem;
+        margin: 1.5rem 0;
+        text-align: left;
+
+        .status-item {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.5rem;
+          background: var(--criteria-bg-secondary);
+          border-radius: 4px;
+          font-size: 0.9rem;
+
+          i {
+            margin: 0;
+            font-size: 1rem;
+          }
+        }
+      }
+
+      button {
+        margin-top: 1rem;
+      }
+    }
+  }
+
+  // Legacy placeholder styling (for fallback)
+  .criteria-placeholder {
+    text-align: center;
+    padding: 3rem 2rem;
+    background: #f8f9fa;
+    border: 2px dashed #dee2e6;
+    border-radius: 8px;
+    color: #6c757d;
+
+    i {
+      margin-bottom: 1rem;
+      display: block;
+    }
+
+    p {
+      margin: 0.5rem 0;
+      font-size: 1rem;
+
+      &.text-muted {
+        font-size: 0.9rem;
+        color: #adb5bd;
+      }
     }
   }
 }

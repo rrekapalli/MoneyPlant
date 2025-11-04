@@ -4,8 +4,11 @@ import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { SelectModule } from 'primeng/select';
 import { InputTextModule } from 'primeng/inputtext';
+import { MessageModule } from 'primeng/message';
 
 import { ScreenerResp, ScreenerCreateReq, ScreenerCriteria } from '../../../services/entities/screener.entities';
+// Removed criteria-builder imports - functionality to be implemented later
+// No environment import needed - using configuration-based approach instead
 
 @Component({
   selector: 'app-screeners-configure',
@@ -16,6 +19,8 @@ import { ScreenerResp, ScreenerCreateReq, ScreenerCriteria } from '../../../serv
     ButtonModule,
     SelectModule,
     InputTextModule,
+    MessageModule,
+
   ],
   templateUrl: './screeners-configure.component.html',
   styleUrl: './screeners-configure.component.scss'
@@ -24,9 +29,6 @@ export class ScreenersConfigureComponent implements OnInit, OnChanges {
   @Input() selectedScreener: ScreenerResp | null = null;
   @Input() loading = false;
   @Input() universeOptions: any[] = [];
-
-
-
 
   constructor(
     private cdr: ChangeDetectorRef
@@ -47,6 +49,9 @@ export class ScreenersConfigureComponent implements OnInit, OnChanges {
   // Basic Info Edit State
   isEditingBasicInfo = false;
   originalBasicInfo: Partial<ScreenerCreateReq> = {};
+
+  // Placeholder for future criteria builder configuration
+  // This will be implemented when the criteria builder is added back
 
 
   ngOnInit(): void {
@@ -97,6 +102,7 @@ export class ScreenersConfigureComponent implements OnInit, OnChanges {
     if (!this.screenerForm.name.trim()) {
       return;
     }
+    
     this.saveScreener.emit(this.screenerForm);
   }
 
@@ -159,4 +165,7 @@ export class ScreenersConfigureComponent implements OnInit, OnChanges {
     this.isEditingBasicInfo = false;
     this.originalBasicInfo = {};
   }
+
+  // Placeholder methods for future criteria builder integration
+  // These will be implemented when the criteria builder is added back
 }

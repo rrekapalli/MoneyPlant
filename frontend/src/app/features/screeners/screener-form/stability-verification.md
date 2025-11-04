@@ -29,7 +29,7 @@
 - **ScreenersComponent**: Temporarily disabled query-builder features
   - Component still exists but query-builder functionality is commented out
   - Placeholder message shown to users
-  - Requires future update to use criteria-builder
+  - Requires future update for criteria functionality
 
 ### 📋 Verification Summary
 The screener-form criteria builder integration is stable and functional:
