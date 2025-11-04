@@ -20,7 +20,28 @@ npm run build:querybuilder
 
 ## Basic Usage
 
-### Import the Module
+### Import Components (Angular v20 Standalone)
+
+```typescript
+import { QueryBuilderComponent } from 'querybuilder';
+
+@Component({
+  selector: 'app-my-component',
+  standalone: true,
+  imports: [QueryBuilderComponent],
+  template: `
+    <lib-query-builder
+      [config]="queryConfig"
+      [query]="currentQuery"
+      (queryChange)="onQueryChange($event)"
+      (validationChange)="onValidationChange($event)">
+    </lib-query-builder>
+  `
+})
+export class MyComponent { }
+```
+
+### Legacy Module Import
 
 ```typescript
 import { QueryBuilderModule } from 'querybuilder';
@@ -38,6 +59,8 @@ export class YourModule { }
 <lib-query-builder
   [config]="queryConfig"
   [query]="currentQuery"
+  [allowRuleset]="true"
+  [allowEmpty]="false"
   (queryChange)="onQueryChange($event)"
   (validationChange)="onValidationChange($event)">
 </lib-query-builder>
@@ -46,45 +69,89 @@ export class YourModule { }
 ### Component Configuration
 
 ```typescript
-import { QueryBuilderConfig, RuleSet } from 'querybuilder';
+import { Component } from '@angular/core';
+import { QueryBuilderConfig, RuleSet, QueryBuilderConfigService } from 'querybuilder';
 
-export class YourComponent {
-  queryConfig: QueryBuilderConfig = {
-    fields: [
-      {
-        name: 'marketCap',
-        type: 'number',
-        label: 'Market Cap',
-        operators: ['=', '!=', '<', '<=', '>', '>=', 'between'],
-        defaultOperator: '>',
-        defaultValue: 1000000000
-      },
-      {
-        name: 'sector',
-        type: 'category',
-        label: 'Sector',
-        operators: ['=', '!=', 'in', 'not in'],
-        defaultOperator: '=',
-        options: [
-          { name: 'Technology', value: 'TECH' },
-          { name: 'Healthcare', value: 'HEALTH' }
-        ]
-      }
-    ]
-  };
+@Component({
+  selector: 'app-stock-screener',
+  standalone: true,
+  imports: [QueryBuilderComponent],
+  template: `
+    <div class="screener-form">
+      <h3>Stock Screening Criteria</h3>
+      <lib-query-builder
+        [config]="queryConfig"
+        [query]="currentQuery"
+        [allowRuleset]="true"
+        [allowEmpty]="false"
+        (queryChange)="onQueryChange($event)"
+        (validationChange)="onValidationChange($event)">
+      </lib-query-builder>
+      
+      <div class="form-actions">
+        <button [disabled]="!isValid" (click)="saveScreener()">
+          Save Screener
+        </button>
+      </div>
+    </div>
+  `
+})
+export class StockScreenerComponent {
+  queryConfig: QueryBuilderConfig;
+  currentQuery: RuleSet = { condition: 'and', rules: [] };
+  isValid = false;
 
-  currentQuery: RuleSet = {
-    condition: 'and',
-    rules: []
-  };
+  constructor(private configService: QueryBuilderConfigService) {
+    // Use the service to get pre-configured stock fields
+    this.queryConfig = this.configService.createStockQueryBuilderConfig({
+      allowEmptyRulesets: false,
+      allowRuleset: true
+    });
+  }
 
   onQueryChange(query: RuleSet) {
     this.currentQuery = query;
-    // Handle query changes
+    console.log('Query changed:', query);
+    
+    // Convert to API format if needed
+    const apiQuery = this.convertToApiFormat(query);
+    console.log('API format:', apiQuery);
   }
 
   onValidationChange(isValid: boolean) {
-    // Handle validation state changes
+    this.isValid = isValid;
+    console.log('Validation state:', isValid);
+  }
+
+  saveScreener() {
+    if (this.isValid) {
+      // Save the screener configuration
+      const screenerData = {
+        name: 'My Screener',
+        criteria: this.currentQuery,
+        createdAt: new Date()
+      };
+      
+      // Call your API service
+      // this.screenerService.save(screenerData);
+    }
+  }
+
+  private convertToApiFormat(query: RuleSet): any {
+    // Convert QueryBuilder format to your API format
+    return {
+      condition: query.condition,
+      rules: query.rules.map(rule => {
+        if ('field' in rule) {
+          return {
+            field: rule.field,
+            operator: rule.operator,
+            value: rule.value
+          };
+        }
+        return rule; // Handle nested rulesets
+      })
+    };
   }
 }
 ```
@@ -170,6 +237,190 @@ The library adapts to different screen sizes:
 - **Desktop**: Full horizontal layout with optimal spacing
 - **Tablet**: Adjusted sizing for touch interaction
 - **Mobile**: Stacked layout with larger touch targets
+
+## Advanced Usage
+
+### Custom Field Configuration
+
+```typescript
+import { QueryBuilderConfigService, Field } from 'querybuilder';
+
+export class CustomScreenerComponent {
+  constructor(private configService: QueryBuilderConfigService) {}
+
+  createCustomConfig(): QueryBuilderConfig {
+    // Create custom fields
+    const customFields: Field[] = [
+      this.configService.createCustomField({
+        name: 'customRatio',
+        type: 'number',
+        label: 'Custom Financial Ratio',
+        operators: ['>', '<', '=', 'between'],
+        defaultOperator: '>',
+        defaultValue: 1.5
+      }),
+      {
+        name: 'riskLevel',
+        type: 'category',
+        label: 'Risk Level',
+        operators: ['=', '!=', 'in'],
+        defaultOperator: '=',
+        options: [
+          { name: 'Low Risk', value: 'LOW' },
+          { name: 'Medium Risk', value: 'MEDIUM' },
+          { name: 'High Risk', value: 'HIGH' }
+        ]
+      }
+    ];
+
+    return this.configService.createStockQueryBuilderConfig({
+      customFields: [...this.configService.getStockFields(), ...customFields],
+      allowEmptyRulesets: false,
+      allowRuleset: true
+    });
+  }
+}
+```
+
+### Loading Existing Queries
+
+```typescript
+export class ScreenerEditComponent implements OnInit {
+  queryConfig: QueryBuilderConfig;
+  currentQuery: RuleSet = { condition: 'and', rules: [] };
+
+  constructor(
+    private configService: QueryBuilderConfigService,
+    private screenerService: ScreenerService,
+    private route: ActivatedRoute
+  ) {
+    this.queryConfig = this.configService.createStockQueryBuilderConfig();
+  }
+
+  async ngOnInit() {
+    const screenerId = this.route.snapshot.params['id'];
+    if (screenerId) {
+      await this.loadExistingScreener(screenerId);
+    }
+  }
+
+  private async loadExistingScreener(id: string) {
+    try {
+      const screener = await this.screenerService.getById(id);
+      
+      // Convert API format back to QueryBuilder format
+      this.currentQuery = this.convertFromApiFormat(screener.criteria);
+    } catch (error) {
+      console.error('Failed to load screener:', error);
+      // Handle error - show message, redirect, etc.
+    }
+  }
+
+  private convertFromApiFormat(apiCriteria: any): RuleSet {
+    return {
+      condition: apiCriteria.condition || 'and',
+      rules: apiCriteria.rules?.map((rule: any) => {
+        if (rule.field && rule.operator) {
+          return {
+            field: rule.field,
+            operator: rule.operator,
+            value: rule.value
+          };
+        }
+        return rule; // Handle nested rulesets
+      }) || []
+    };
+  }
+}
+```
+
+### Validation and Error Handling
+
+```typescript
+export class ValidatedScreenerComponent {
+  queryConfig: QueryBuilderConfig;
+  currentQuery: RuleSet = { condition: 'and', rules: [] };
+  validationErrors: string[] = [];
+  isValid = false;
+
+  constructor(
+    private configService: QueryBuilderConfigService,
+    private queryBuilderService: QueryBuilderService
+  ) {
+    this.queryConfig = this.configService.createStockQueryBuilderConfig();
+  }
+
+  onQueryChange(query: RuleSet) {
+    this.currentQuery = query;
+    this.validateQuery();
+  }
+
+  onValidationChange(isValid: boolean) {
+    this.isValid = isValid;
+  }
+
+  private validateQuery() {
+    const result = this.queryBuilderService.validateRuleset(
+      this.currentQuery,
+      this.queryConfig.fields,
+      false // Don't allow empty
+    );
+
+    this.validationErrors = result.errors.map(error => error.message);
+    
+    if (!result.valid) {
+      console.warn('Query validation failed:', result.errors);
+    }
+  }
+
+  getValidationMessage(): string {
+    if (this.validationErrors.length === 0) {
+      return 'Query is valid';
+    }
+    
+    return `Validation errors: ${this.validationErrors.join(', ')}`;
+  }
+}
+```
+
+### Integration with Reactive Forms
+
+```typescript
+import { FormBuilder, FormGroup, FormControl } from '@angular/forms';
+
+export class ReactiveFormScreenerComponent {
+  screenerForm: FormGroup;
+  queryConfig: QueryBuilderConfig;
+
+  constructor(
+    private fb: FormBuilder,
+    private configService: QueryBuilderConfigService
+  ) {
+    this.queryConfig = this.configService.createStockQueryBuilderConfig();
+    
+    this.screenerForm = this.fb.group({
+      name: ['', Validators.required],
+      description: [''],
+      criteria: [{ condition: 'and', rules: [] }],
+      isActive: [true]
+    });
+  }
+
+  onQueryChange(query: RuleSet) {
+    this.screenerForm.patchValue({ criteria: query });
+  }
+
+  onSubmit() {
+    if (this.screenerForm.valid) {
+      const formValue = this.screenerForm.value;
+      console.log('Submitting screener:', formValue);
+      
+      // Submit to API
+      // this.screenerService.create(formValue);
+    }
+  }
+}
+```
 
 ## Field Types
 

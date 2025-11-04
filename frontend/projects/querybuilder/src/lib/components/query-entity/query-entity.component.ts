@@ -9,6 +9,21 @@ import { QueryButtonGroupComponent } from '../query-button-group/query-button-gr
 import { QueryFieldDetailsComponent } from '../query-field-details/query-field-details.component';
 import { QueryRemoveButtonComponent } from '../query-remove-button/query-remove-button.component';
 
+/**
+ * QueryEntityComponent renders individual rules or rule groups with compact padding.
+ * Handles recursive rendering logic exactly matching Angular-QueryBuilder behavior.
+ * 
+ * @example
+ * ```html
+ * <lib-query-entity
+ *   [config]="queryConfig"
+ *   [data]="ruleOrRuleSet"
+ *   [allowRuleset]="true"
+ *   [allowEmpty]="false"
+ *   (dataChange)="onEntityChange($event)">
+ * </lib-query-entity>
+ * ```
+ */
 @Component({
   selector: 'lib-query-entity',
   standalone: true,
@@ -25,15 +40,31 @@ import { QueryRemoveButtonComponent } from '../query-remove-button/query-remove-
   styleUrls: ['./query-entity.component.scss']
 })
 export class QueryEntityComponent implements OnInit {
+  /** QueryBuilder configuration containing field definitions */
   @Input() config!: QueryBuilderConfig;
+  
+  /** The rule or ruleset data to render */
   @Input() data!: RuleSet | Rule;
+  
+  /** Parent ruleset for context */
   @Input() parentValue?: RuleSet;
+  
+  /** Whether nested rule groups are allowed */
   @Input() allowRuleset: boolean = true;
+  
+  /** Whether empty rulesets are allowed */
   @Input() allowEmpty: boolean = true;
+  
+  /** Message to display for empty rulesets */
   @Input() emptyMessage: string = 'A ruleset cannot be empty. Please add a rule or remove it all together.';
+  
+  /** Custom operator mappings */
   @Input() operatorMap?: { [key: string]: string[] };
+  
+  /** ARIA level for accessibility */
   @Input() parentAriaLevel: number = 0;
 
+  /** Emitted when the entity data changes */
   @Output() dataChange = new EventEmitter<RuleSet | Rule>();
 
   private queryBuilderService = inject(QueryBuilderService);
