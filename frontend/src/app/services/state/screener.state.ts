@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable, combineLatest, map, tap } from 'rxjs';
+import { BehaviorSubject, Observable, combineLatest, map, tap, throwError } from 'rxjs';
 import { ScreenerApiService } from '../apis/screener.api';
+import { QueryConverterService } from 'querybuilder';
 import {
   ScreenerResp,
   ScreenerVersionResp,
@@ -58,7 +59,10 @@ const initialState: ScreenerState = {
 export class ScreenerStateService {
   private stateSubject$ = new BehaviorSubject<ScreenerState>(initialState);
 
-  constructor(private screenerApi: ScreenerApiService) {}
+  constructor(
+    private screenerApi: ScreenerApiService,
+    private queryConverter: QueryConverterService
+  ) {}
 
   // State selectors
   get state$(): Observable<ScreenerState> {
@@ -241,6 +245,13 @@ export class ScreenerStateService {
   }
 
   createScreener(request: any): Observable<ScreenerResp> {
+    // Validate criteria before API call
+    const validationResult = this.validateScreenerRequest(request);
+    if (!validationResult.isValid) {
+      this.setError(`Validation failed: ${validationResult.errors.join(', ')}`);
+      return throwError(() => new Error(validationResult.errors.join(', ')));
+    }
+
     this.setLoading(true);
     this.setError(null);
 
@@ -263,6 +274,13 @@ export class ScreenerStateService {
   }
 
   updateScreener(id: number, request: any): Observable<ScreenerResp> {
+    // Validate criteria before API call
+    const validationResult = this.validateScreenerRequest(request);
+    if (!validationResult.isValid) {
+      this.setError(`Validation failed: ${validationResult.errors.join(', ')}`);
+      return throwError(() => new Error(validationResult.errors.join(', ')));
+    }
+
     this.setLoading(true);
     this.setError(null);
 
@@ -422,6 +440,40 @@ export class ScreenerStateService {
         }
       })
     );
+  }
+
+  // Validation methods
+  private validateScreenerRequest(request: any): { isValid: boolean; errors: string[] } {
+    const errors: string[] = [];
+
+    // Basic validation
+    if (!request.name || typeof request.name !== 'string' || !request.name.trim()) {
+      errors.push('Screener name is required');
+    }
+
+    // Validate criteria if present
+    if (request.criteria) {
+      try {
+        // Convert to RuleSet first to validate structure
+        const conversionResult = this.queryConverter.convertScreenerCriteriaToQuery(request.criteria);
+        if (!conversionResult.success) {
+          errors.push(...(conversionResult.errors?.map(e => e.message) || ['Invalid criteria structure']));
+        } else if (conversionResult.data) {
+          // Validate API compatibility
+          const apiErrors = this.queryConverter.validateApiCompatibility(conversionResult.data);
+          if (apiErrors.length > 0) {
+            errors.push(...apiErrors.map(e => e.message));
+          }
+        }
+      } catch (error) {
+        errors.push(`Criteria validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
   }
 
   // Reset state

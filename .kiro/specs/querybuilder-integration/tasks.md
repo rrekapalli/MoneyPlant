@@ -144,20 +144,20 @@
     - Test integration to ensure query builder uses minimal real estate
     - _Requirements: 3.1, 4.1, 4.2_
 
-- [ ] 8. API integration and data conversion
-  - [ ] 8.1 Implement query to API format conversion
+- [x] 8. API integration and data conversion
+  - [x] 8.1 Implement query to API format conversion
     - Create methods to convert RuleSet to ScreenerCriteria format
     - Handle different field types and operators in conversion
     - Add validation for API-compatible query structures
     - _Requirements: 3.3, 4.3_
 
-  - [ ] 8.2 Implement API to query format conversion
+  - [x] 8.2 Implement API to query format conversion
     - Create methods to convert ScreenerCriteria to RuleSet format
     - Handle loading existing screener configurations
     - Add error handling for invalid API data
     - _Requirements: 3.3, 4.3_
 
-  - [ ] 8.3 Update screener service integration
+  - [x] 8.3 Update screener service integration
     - Modify screener save/load methods to use new query format
     - Add validation before API calls
     - Implement proper error handling and user feedback

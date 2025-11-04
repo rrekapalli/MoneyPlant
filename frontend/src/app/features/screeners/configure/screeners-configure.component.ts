@@ -13,7 +13,8 @@ import {
   QueryBuilderConfig, 
   RuleSet, 
   Rule, 
-  STOCK_FIELDS
+  STOCK_FIELDS,
+  QueryConverterService
 } from 'querybuilder';
 
 @Component({
@@ -40,7 +41,8 @@ export class ScreenersConfigureComponent implements OnInit, OnChanges {
   @ViewChild(QueryBuilderComponent) queryBuilder!: QueryBuilderComponent;
 
   constructor(
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private queryConverter: QueryConverterService
   ) {
     // Initialize query builder configuration with stock fields
     this.queryConfig = {
@@ -217,97 +219,63 @@ export class ScreenersConfigureComponent implements OnInit, OnChanges {
 
   private updateQueryValidationErrors(): void {
     this.queryValidationErrors = [];
+    
     if (!this.queryValidationState) {
       this.queryValidationErrors.push('Query contains invalid rules or incomplete conditions');
     }
-  }
-
-  // Conversion Methods between Query Format and Screener Criteria
-  private convertQueryToScreenerCriteria(query: RuleSet): ScreenerCriteria | undefined {
-    if (!query || !query.rules || query.rules.length === 0) {
-      return undefined;
-    }
-
-    // Convert RuleSet to ScreenerCriteria format
-    const criteria: ScreenerCriteria = {
-      condition: query.condition as 'and' | 'or',
-      rules: this.convertRuleSetToScreenerRules(query)
-    };
-
-    return criteria;
-  }
-
-  private convertRuleSetToScreenerRules(ruleSet: RuleSet): Array<ScreenerRule | ScreenerCriteria> {
-    const rules: Array<ScreenerRule | ScreenerCriteria> = [];
-
-    for (const rule of ruleSet.rules) {
-      if (this.isRule(rule)) {
-        // Convert individual rule
-        rules.push({
-          field: rule.field,
-          operator: rule.operator,
-          value: rule.value,
-          entity: rule.entity
-        });
-      } else {
-        // Convert nested ruleset
-        rules.push({
-          condition: rule.condition as 'and' | 'or',
-          rules: this.convertRuleSetToScreenerRules(rule)
-        });
+    
+    // Check API compatibility
+    if (this.currentQuery) {
+      const apiErrors = this.queryConverter.validateApiCompatibility(this.currentQuery);
+      if (apiErrors.length > 0) {
+        this.queryValidationErrors.push(...apiErrors.map(error => error.message));
       }
     }
+  }
 
-    return rules;
+  // Conversion Methods between Query Format and Screener Criteria using QueryConverterService
+  private convertQueryToScreenerCriteria(query: RuleSet): ScreenerCriteria | undefined {
+    const result = this.queryConverter.convertQueryToScreenerCriteria(query);
+    
+    if (!result.success) {
+      // Handle conversion errors
+      console.error('Failed to convert query to screener criteria:', result.errors);
+      this.queryValidationErrors = result.errors?.map(error => error.message) || ['Conversion failed'];
+      return undefined;
+    }
+    
+    return result.data;
   }
 
   private convertScreenerCriteriaToQuery(criteria: ScreenerCriteria | undefined): RuleSet {
-    if (!criteria || !criteria.rules) {
+    const result = this.queryConverter.convertScreenerCriteriaToQuery(criteria);
+    
+    if (!result.success) {
+      // Handle conversion errors
+      console.error('Failed to convert screener criteria to query:', result.errors);
+      this.queryValidationErrors = result.errors?.map(error => error.message) || ['Conversion failed'];
       return { condition: 'and', rules: [] };
     }
-
-    // Convert ScreenerCriteria to RuleSet format
-    return {
-      condition: criteria.condition,
-      rules: this.convertScreenerRulesToQueryRules(criteria.rules)
-    };
-  }
-
-  private convertScreenerRulesToQueryRules(screenerRules: Array<ScreenerRule | ScreenerCriteria>): Array<Rule | RuleSet> {
-    const rules: Array<Rule | RuleSet> = [];
-
-    for (const screenerRule of screenerRules) {
-      if ('field' in screenerRule) {
-        // Convert ScreenerRule to Rule
-        rules.push({
-          field: screenerRule.field,
-          operator: screenerRule.operator,
-          value: screenerRule.value,
-          entity: screenerRule.entity
-        });
-      } else {
-        // Convert ScreenerCriteria to RuleSet
-        rules.push({
-          condition: screenerRule.condition,
-          rules: this.convertScreenerRulesToQueryRules(screenerRule.rules)
-        });
-      }
-    }
-
-    return rules;
-  }
-
-  private isRule(item: Rule | RuleSet): item is Rule {
-    return 'field' in item && 'operator' in item;
+    
+    return result.data || { condition: 'and', rules: [] };
   }
 
   // Validation Methods
   isQueryValid(): boolean {
-    return this.queryValidationState && this.hasValidQuery();
+    return this.queryValidationState && this.hasValidQuery() && this.isApiCompatible();
   }
 
   hasValidQuery(): boolean {
     return this.currentQuery && this.currentQuery.rules && this.currentQuery.rules.length > 0;
+  }
+
+  private isApiCompatible(): boolean {
+    if (!this.currentQuery) {
+      return true; // Empty query is valid
+    }
+    
+    const validationErrors = this.queryConverter.validateApiCompatibility(this.currentQuery);
+    return validationErrors.length === 0;
   }
 
   getQueryValidationMessage(): string {
