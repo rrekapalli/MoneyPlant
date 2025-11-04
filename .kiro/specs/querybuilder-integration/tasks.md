@@ -20,14 +20,14 @@
     - Create operator mappings for different field types following Angular-QueryBuilder pattern
     - _Requirements: 3.3, 4.3_
 
-- [ ] 3. Implement core service layer replicating Angular-QueryBuilder logic
-  - [ ] 3.1 Create QueryBuilderService with exact Angular-QueryBuilder methods
+- [x] 3. Implement core service layer replicating Angular-QueryBuilder logic
+  - [x] 3.1 Create QueryBuilderService with exact Angular-QueryBuilder methods
     - Implement getOperators, getInputType, getOptions methods exactly as in Angular-QueryBuilder
     - Create addRule, addRuleSet, removeRule, removeRuleSet methods with same logic
     - Add validateRuleset method and query state management functionality
     - _Requirements: 2.3, 3.3_
 
-  - [ ] 3.2 Implement QueryBuilderConfigService following Angular-QueryBuilder pattern
+  - [x] 3.2 Implement QueryBuilderConfigService following Angular-QueryBuilder pattern
     - Create service to provide stock field configurations in Angular-QueryBuilder format
     - Implement methods to get operators for specific field types using same logic
     - Add field validation and constraint logic matching Angular-QueryBuilder behavior
