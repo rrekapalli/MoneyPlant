@@ -1,0 +1,30 @@
+.query-field-details {
+  display: flex;
+  align-items: center;
+  gap: var(--qb-spacing, 4px);
+  flex: 1;
+
+  .query-field-select {
+    flex: 0 0 auto;
+  }
+
+  .query-operator-select {
+    flex: 0 0 auto;
+  }
+
+  .query-value-input {
+    flex: 1;
+    min-width: 100px;
+  }
+
+  // Ensure all child components align properly
+  ::ng-deep {
+    .p-select,
+    .p-inputtext,
+    .p-inputnumber,
+    .p-calendar,
+    .p-multiselect {
+      width: 100%;
+    }
+  }
+}

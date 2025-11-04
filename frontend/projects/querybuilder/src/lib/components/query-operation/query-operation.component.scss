@@ -1,0 +1,28 @@
+.query-operation {
+  display: inline-flex;
+  align-items: center;
+
+  ::ng-deep {
+    .p-select {
+      .p-select-label {
+        font-size: var(--qb-font-size, 0.875rem);
+        text-align: left;
+      }
+
+      &.p-select-sm {
+        .p-select-dropdown {
+          width: 1.5rem;
+        }
+      }
+    }
+
+    .p-select-overlay {
+      .p-select-items {
+        .p-select-option {
+          font-size: var(--qb-font-size, 0.875rem);
+          white-space: nowrap;
+        }
+      }
+    }
+  }
+}

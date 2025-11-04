@@ -8,6 +8,12 @@ import { Option } from './option.model';
 import { Rule } from './rule.model';
 import { RuleSet } from './ruleset.model';
 
+// Re-export all the core types
+export { Field } from './field.model';
+export { Option } from './option.model';
+export { Rule, LocalRuleMeta } from './rule.model';
+export { RuleSet } from './ruleset.model';
+
 /**
  * Main QueryBuilder configuration interface matching Angular-QueryBuilder pattern
  */

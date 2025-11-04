@@ -1,0 +1,55 @@
+.query-entity {
+  margin-bottom: var(--qb-spacing, 4px);
+
+  &.query-entity-ruleset {
+    border: 1px solid var(--surface-border);
+    border-radius: var(--qb-border-radius, 4px);
+    padding: var(--qb-spacing, 4px);
+    background-color: var(--surface-ground);
+  }
+
+  &.query-entity-rule {
+    display: flex;
+    align-items: center;
+    gap: var(--qb-spacing, 4px);
+    padding: 2px 0;
+  }
+}
+
+.query-ruleset {
+  .query-ruleset-header {
+    display: flex;
+    align-items: center;
+    gap: var(--qb-spacing, 4px);
+    margin-bottom: calc(var(--qb-spacing, 4px) * 2);
+    padding-bottom: var(--qb-spacing, 4px);
+    border-bottom: 1px solid var(--surface-border);
+  }
+
+  .query-ruleset-body {
+    .query-empty-warning {
+      margin-bottom: var(--qb-spacing, 4px);
+    }
+
+    .query-rule-container {
+      display: flex;
+      align-items: center;
+      gap: var(--qb-spacing, 4px);
+      margin-bottom: 2px;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+
+      lib-query-entity {
+        flex: 1;
+      }
+    }
+  }
+}
+
+.query-rule {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}

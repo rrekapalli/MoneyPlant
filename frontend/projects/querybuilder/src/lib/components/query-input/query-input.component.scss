@@ -1,0 +1,90 @@
+.query-input {
+  display: flex;
+  align-items: center;
+  width: 100%;
+
+  .query-input-single {
+    width: 100%;
+
+    ::ng-deep {
+      .p-component {
+        width: 100%;
+      }
+
+      .p-checkbox {
+        width: auto;
+      }
+    }
+  }
+
+  .query-input-between {
+    display: flex;
+    align-items: center;
+    gap: calc(var(--qb-spacing, 4px) * 2);
+    width: 100%;
+
+    .query-input-between-item {
+      flex: 1;
+      min-width: 80px;
+
+      ::ng-deep {
+        .p-component {
+          width: 100%;
+        }
+      }
+    }
+
+    .query-input-between-separator {
+      font-size: var(--qb-font-size, 0.875rem);
+      color: var(--text-color-secondary);
+      font-weight: 500;
+      white-space: nowrap;
+    }
+  }
+
+  // Compact styling for all input components
+  ::ng-deep {
+    .p-inputtext,
+    .p-inputnumber-input,
+    .p-datepicker input {
+      height: var(--qb-input-height, 32px);
+      padding: var(--qb-padding, 4px 8px);
+      font-size: var(--qb-font-size, 0.875rem);
+    }
+
+    .p-select,
+    .p-multiselect {
+      height: var(--qb-input-height, 32px);
+      
+      .p-select-label,
+      .p-multiselect-label {
+        padding: var(--qb-padding, 4px 8px);
+        font-size: var(--qb-font-size, 0.875rem);
+      }
+    }
+
+    .p-checkbox {
+      .p-checkbox-box {
+        width: 18px;
+        height: 18px;
+      }
+    }
+
+    .p-datepicker {
+      .p-datepicker-input-icon-container {
+        .p-button {
+          height: var(--qb-input-height, 32px);
+          width: var(--qb-input-height, 32px);
+        }
+      }
+    }
+
+    .p-inputnumber {
+      .p-inputnumber-buttons-stacked {
+        .p-button {
+          height: calc(var(--qb-input-height, 32px) / 2);
+        }
+      }
+    }
+  }
+}
