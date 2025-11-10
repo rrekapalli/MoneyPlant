@@ -90,14 +90,11 @@
           </lib-query-builder>
         </div>
 
-        <!-- Validation messages for query builder -->
-        @if (!queryValidationState || queryValidationErrors.length > 0) {
+        <!-- Validation messages only shown after save attempt -->
+        @if (saveAttempted && queryValidationErrors.length > 0) {
         <div class="query-validation-messages">
           @for (error of queryValidationErrors; track error) {
-          <p-message severity="error" [text]="error" [closable]="false" styleClass="query-error-message"></p-message>
-          }
-          @if (!hasValidQuery() && queryValidationState) {
-          <p-message severity="info" text="Add at least one screening condition to create a valid screener" [closable]="false" styleClass="query-info-message"></p-message>
+          <p-message severity="warn" [text]="error" [closable]="true" styleClass="query-error-message"></p-message>
           }
         </div>
         }

@@ -3,20 +3,22 @@
   <!-- RuleSet Template -->
   <div *ngIf="meta.ruleset" class="query-ruleset">
     <div class="query-ruleset-header">
-      <lib-query-switch-group
-        [config]="config"
-        [condition]="getRuleSet().condition"
-        [disabled]="getDisabledState()"
-        (conditionChange)="onConditionChange($event)">
-      </lib-query-switch-group>
+      <div class="query-ruleset-controls">
+        <lib-query-switch-group
+          [config]="config"
+          [condition]="getRuleSet().condition"
+          [disabled]="getDisabledState()"
+          (conditionChange)="onConditionChange($event)">
+        </lib-query-switch-group>
 
-      <lib-query-button-group
-        [config]="config"
-        [allowRuleset]="allowRuleset"
-        [disabled]="getDisabledState()"
-        (addRule)="onAddRule()"
-        (addRuleSet)="onAddRuleSet()">
-      </lib-query-button-group>
+        <lib-query-button-group
+          [config]="config"
+          [allowRuleset]="allowRuleset"
+          [disabled]="getDisabledState()"
+          (addRule)="onAddRule()"
+          (addRuleSet)="onAddRuleSet()">
+        </lib-query-button-group>
+      </div>
 
       <lib-query-remove-button
         *ngIf="parentValue"

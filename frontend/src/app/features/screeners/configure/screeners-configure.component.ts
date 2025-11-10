@@ -73,6 +73,7 @@ export class ScreenersConfigureComponent implements OnInit, OnChanges {
   currentQuery: RuleSet = { condition: 'and', rules: [] };
   queryValidationState = true;
   queryValidationErrors: string[] = [];
+  saveAttempted = false;
 
 
   ngOnInit(): void {
@@ -86,6 +87,10 @@ export class ScreenersConfigureComponent implements OnInit, OnChanges {
   }
 
   private initializeForm(): void {
+    // Reset validation state
+    this.saveAttempted = false;
+    this.queryValidationErrors = [];
+    
     if (this.selectedScreener) {
       this.screenerForm = {
         name: this.selectedScreener.name,
@@ -131,14 +136,23 @@ export class ScreenersConfigureComponent implements OnInit, OnChanges {
       return;
     }
     
-    // Validate query before saving
-    if (!this.isQueryValid()) {
+    // Mark that save was attempted
+    this.saveAttempted = true;
+    
+    // Convert and validate query before saving
+    const criteria = this.convertQueryToScreenerCriteria(this.currentQuery);
+    
+    if (!criteria) {
+      // Show validation errors
       this.updateQueryValidationErrors();
       return;
     }
     
-    // Ensure criteria is updated from current query
-    this.screenerForm.criteria = this.convertQueryToScreenerCriteria(this.currentQuery);
+    // Update form with validated criteria
+    this.screenerForm.criteria = criteria;
+    
+    // Clear any previous validation errors
+    this.queryValidationErrors = [];
     
     this.saveScreener.emit(this.screenerForm);
   }
@@ -206,14 +220,17 @@ export class ScreenersConfigureComponent implements OnInit, OnChanges {
   // Query Builder Event Handlers
   onQueryChange(query: RuleSet): void {
     this.currentQuery = query;
-    // Convert query to screener criteria format and update form
-    this.screenerForm.criteria = this.convertQueryToScreenerCriteria(query);
+    // Clear any previous validation errors when editing
+    this.queryValidationErrors = [];
+    // Reset save attempted flag so errors don't show while editing
+    this.saveAttempted = false;
     this.cdr.detectChanges();
   }
 
   onQueryValidationChange(isValid: boolean): void {
     this.queryValidationState = isValid;
-    this.updateQueryValidationErrors();
+    // Don't show validation errors during editing
+    // They will be shown when user tries to save
     this.cdr.detectChanges();
   }
 
@@ -238,9 +255,9 @@ export class ScreenersConfigureComponent implements OnInit, OnChanges {
     const result = this.queryConverter.convertQueryToScreenerCriteria(query);
     
     if (!result.success) {
-      // Handle conversion errors
-      console.error('Failed to convert query to screener criteria:', result.errors);
+      // Store errors for display when saving
       this.queryValidationErrors = result.errors?.map(error => error.message) || ['Conversion failed'];
+      console.warn('Query conversion validation:', result.errors);
       return undefined;
     }
     
