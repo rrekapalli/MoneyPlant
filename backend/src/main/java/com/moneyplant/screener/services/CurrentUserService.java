@@ -35,7 +35,7 @@ public class CurrentUserService {
         log.debug("getCurrentUserId - Principal type: {}, value: {}", principal.getClass().getSimpleName(), principal);
         
         if (principal instanceof Long) {
-            // ScreenerJwtAuthenticationFilter sets user ID directly as principal
+            // Direct user ID as principal
             return (Long) principal;
         } else if (principal instanceof String) {
             String principalStr = (String) principal;
