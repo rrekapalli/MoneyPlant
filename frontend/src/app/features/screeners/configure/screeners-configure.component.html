@@ -73,17 +73,34 @@
       </div>
     </div>
 
-    <!-- Criteria Builder Section - Full Production Implementation -->
+    <!-- Criteria Builder Section - QueryBuilder Integration -->
     <div class="config-section">
       <h4 class="section-title">Screening Criteria</h4>
       <div class="criteria-builder-container">
-        <!-- Criteria builder placeholder - to be implemented -->
-        <div class="criteria-builder-placeholder">
-          <p>Criteria builder functionality will be implemented here.</p>
-          <p>This will allow users to build complex screening conditions using visual chips and logical operators.</p>
+        <!-- Query Builder Component with compact design -->
+        <div class="query-builder-wrapper">
+          <lib-query-builder
+            [config]="queryConfig"
+            [query]="currentQuery"
+            [allowRuleset]="true"
+            [allowEmpty]="true"
+            [emptyMessage]="'Add screening conditions to filter stocks'"
+            (queryChange)="onQueryChange($event)"
+            (validationChange)="onQueryValidationChange($event)">
+          </lib-query-builder>
         </div>
 
-        <!-- Validation messages will be added when criteria builder is implemented -->
+        <!-- Validation messages for query builder -->
+        @if (!queryValidationState || queryValidationErrors.length > 0) {
+        <div class="query-validation-messages">
+          @for (error of queryValidationErrors; track error) {
+          <p-message severity="error" [text]="error" [closable]="false" styleClass="query-error-message"></p-message>
+          }
+          @if (!hasValidQuery() && queryValidationState) {
+          <p-message severity="info" text="Add at least one screening condition to create a valid screener" [closable]="false" styleClass="query-info-message"></p-message>
+          }
+        </div>
+        }
       </div>
     </div>
 
@@ -92,7 +109,7 @@
       <div class="action-buttons-right">
         <button pButton label="Cancel" icon="pi pi-times" (click)="onClearSelection()" class="p-button-text"></button>
         <button pButton label="Save Changes" icon="pi pi-check" (click)="onSaveScreener()"
-          [disabled]="!screenerForm.name || loading" [loading]="loading"></button>
+          [disabled]="!screenerForm.name || loading || !isQueryValid()" [loading]="loading"></button>
       </div>
     </div>
   </div>

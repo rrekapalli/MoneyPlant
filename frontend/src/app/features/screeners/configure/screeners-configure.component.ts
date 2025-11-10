@@ -6,9 +6,16 @@ import { SelectModule } from 'primeng/select';
 import { InputTextModule } from 'primeng/inputtext';
 import { MessageModule } from 'primeng/message';
 
-import { ScreenerResp, ScreenerCreateReq, ScreenerCriteria } from '../../../services/entities/screener.entities';
-// Removed criteria-builder imports - functionality to be implemented later
-// No environment import needed - using configuration-based approach instead
+import { ScreenerResp, ScreenerCreateReq, ScreenerCriteria, ScreenerRule } from '../../../services/entities/screener.entities';
+// QueryBuilder imports
+import { 
+  QueryBuilderComponent, 
+  QueryBuilderConfig, 
+  RuleSet, 
+  Rule, 
+  STOCK_FIELDS,
+  QueryConverterService
+} from 'querybuilder';
 
 @Component({
   selector: 'app-screeners-configure',
@@ -20,7 +27,7 @@ import { ScreenerResp, ScreenerCreateReq, ScreenerCriteria } from '../../../serv
     SelectModule,
     InputTextModule,
     MessageModule,
-
+    QueryBuilderComponent
   ],
   templateUrl: './screeners-configure.component.html',
   styleUrl: './screeners-configure.component.scss'
@@ -30,9 +37,20 @@ export class ScreenersConfigureComponent implements OnInit, OnChanges {
   @Input() loading = false;
   @Input() universeOptions: any[] = [];
 
+  // ViewChild reference for query builder component
+  @ViewChild(QueryBuilderComponent) queryBuilder!: QueryBuilderComponent;
+
   constructor(
-    private cdr: ChangeDetectorRef
-  ) {}
+    private cdr: ChangeDetectorRef,
+    private queryConverter: QueryConverterService
+  ) {
+    // Initialize query builder configuration with stock fields
+    this.queryConfig = {
+      fields: STOCK_FIELDS,
+      allowEmptyRulesets: true,
+      allowRuleset: true
+    };
+  }
 
   @Output() createScreener = new EventEmitter<void>();
   @Output() clearSelection = new EventEmitter<void>();
@@ -50,8 +68,11 @@ export class ScreenersConfigureComponent implements OnInit, OnChanges {
   isEditingBasicInfo = false;
   originalBasicInfo: Partial<ScreenerCreateReq> = {};
 
-  // Placeholder for future criteria builder configuration
-  // This will be implemented when the criteria builder is added back
+  // Query Builder Configuration and State
+  queryConfig: QueryBuilderConfig;
+  currentQuery: RuleSet = { condition: 'and', rules: [] };
+  queryValidationState = true;
+  queryValidationErrors: string[] = [];
 
 
   ngOnInit(): void {
@@ -74,6 +95,9 @@ export class ScreenersConfigureComponent implements OnInit, OnChanges {
         criteria: this.selectedScreener.criteria
       };
       
+      // Initialize query from existing criteria
+      this.currentQuery = this.convertScreenerCriteriaToQuery(this.selectedScreener.criteria);
+      
       // Reset edit state
       this.isEditingBasicInfo = false;
       this.originalBasicInfo = {};
@@ -85,6 +109,10 @@ export class ScreenersConfigureComponent implements OnInit, OnChanges {
         defaultUniverse: '',
         criteria: undefined
       };
+      
+      // Initialize empty query
+      this.currentQuery = { condition: 'and', rules: [] };
+      
       this.isEditingBasicInfo = false;
       this.originalBasicInfo = {};
     }
@@ -102,6 +130,15 @@ export class ScreenersConfigureComponent implements OnInit, OnChanges {
     if (!this.screenerForm.name.trim()) {
       return;
     }
+    
+    // Validate query before saving
+    if (!this.isQueryValid()) {
+      this.updateQueryValidationErrors();
+      return;
+    }
+    
+    // Ensure criteria is updated from current query
+    this.screenerForm.criteria = this.convertQueryToScreenerCriteria(this.currentQuery);
     
     this.saveScreener.emit(this.screenerForm);
   }
@@ -166,6 +203,88 @@ export class ScreenersConfigureComponent implements OnInit, OnChanges {
     this.originalBasicInfo = {};
   }
 
-  // Placeholder methods for future criteria builder integration
-  // These will be implemented when the criteria builder is added back
+  // Query Builder Event Handlers
+  onQueryChange(query: RuleSet): void {
+    this.currentQuery = query;
+    // Convert query to screener criteria format and update form
+    this.screenerForm.criteria = this.convertQueryToScreenerCriteria(query);
+    this.cdr.detectChanges();
+  }
+
+  onQueryValidationChange(isValid: boolean): void {
+    this.queryValidationState = isValid;
+    this.updateQueryValidationErrors();
+    this.cdr.detectChanges();
+  }
+
+  private updateQueryValidationErrors(): void {
+    this.queryValidationErrors = [];
+    
+    if (!this.queryValidationState) {
+      this.queryValidationErrors.push('Query contains invalid rules or incomplete conditions');
+    }
+    
+    // Check API compatibility
+    if (this.currentQuery) {
+      const apiErrors = this.queryConverter.validateApiCompatibility(this.currentQuery);
+      if (apiErrors.length > 0) {
+        this.queryValidationErrors.push(...apiErrors.map(error => error.message));
+      }
+    }
+  }
+
+  // Conversion Methods between Query Format and Screener Criteria using QueryConverterService
+  private convertQueryToScreenerCriteria(query: RuleSet): ScreenerCriteria | undefined {
+    const result = this.queryConverter.convertQueryToScreenerCriteria(query);
+    
+    if (!result.success) {
+      // Handle conversion errors
+      console.error('Failed to convert query to screener criteria:', result.errors);
+      this.queryValidationErrors = result.errors?.map(error => error.message) || ['Conversion failed'];
+      return undefined;
+    }
+    
+    return result.data;
+  }
+
+  private convertScreenerCriteriaToQuery(criteria: ScreenerCriteria | undefined): RuleSet {
+    const result = this.queryConverter.convertScreenerCriteriaToQuery(criteria);
+    
+    if (!result.success) {
+      // Handle conversion errors
+      console.error('Failed to convert screener criteria to query:', result.errors);
+      this.queryValidationErrors = result.errors?.map(error => error.message) || ['Conversion failed'];
+      return { condition: 'and', rules: [] };
+    }
+    
+    return result.data || { condition: 'and', rules: [] };
+  }
+
+  // Validation Methods
+  isQueryValid(): boolean {
+    return this.queryValidationState && this.hasValidQuery() && this.isApiCompatible();
+  }
+
+  hasValidQuery(): boolean {
+    return this.currentQuery && this.currentQuery.rules && this.currentQuery.rules.length > 0;
+  }
+
+  private isApiCompatible(): boolean {
+    if (!this.currentQuery) {
+      return true; // Empty query is valid
+    }
+    
+    const validationErrors = this.queryConverter.validateApiCompatibility(this.currentQuery);
+    return validationErrors.length === 0;
+  }
+
+  getQueryValidationMessage(): string {
+    if (!this.queryValidationState) {
+      return 'Query contains invalid rules or incomplete conditions';
+    }
+    if (!this.hasValidQuery()) {
+      return 'Please add at least one screening condition';
+    }
+    return '';
+  }
 }

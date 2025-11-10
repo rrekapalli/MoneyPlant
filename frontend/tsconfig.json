@@ -28,12 +28,20 @@
       "dashboards/*": [
         "./dist/dashboards/*"
       ],
+      "querybuilder": ["./dist/querybuilder", "./projects/querybuilder/src/public-api"],
+      "querybuilder/*": [
+        "./dist/querybuilder/*"
+      ],
       "criteria-builder": [
         "./dist/criteria-builder"
       ],
       "@dashboards/*": ["./projects/dashboards/src/lib/*"],
       "@dashboards/public-api": [
         "./projects/dashboards/src/public-api"
+      ],
+      "@querybuilder/*": ["./projects/querybuilder/src/lib/*"],
+      "@querybuilder/public-api": [
+        "./projects/querybuilder/src/public-api"
       ],
       "echarts": ["./src/types/echarts"]
     },
@@ -51,10 +59,10 @@
   },
   "references": [
     {
-      "path": "./projects/criteria-builder/tsconfig.lib.json"
+      "path": "./projects/querybuilder/tsconfig.lib.json"
     },
     {
-      "path": "./projects/criteria-builder/tsconfig.spec.json"
+      "path": "./projects/querybuilder/tsconfig.spec.json"
     }
   ]
 }
