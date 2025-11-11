@@ -98,7 +98,8 @@ All code compiles successfully with zero errors.
 - ✅ PostgreSQL Database (postgres.tailce422e.ts.net:5432)
 - ✅ Kafka (via docker-compose.kafka.yml)
 - ✅ Trino (trino.tailce422e.ts.net:8080)
-- ✅ Spark (via engines/docker-compose.yml)
+- ✅ Spark Cluster (spark-master.tailce422e.ts.net:7077)
+  - Spark Master UI: http://spark-master.tailce422e.ts.net:8080/
 - ✅ Redis (via engines/docker-compose.yml)
 
 ### Requires Manual Start
@@ -108,14 +109,16 @@ Since Docker is not available in the current environment, the following services
 # Start Kafka
 docker compose -f docker-compose.kafka.yml up -d
 
-# Start Engines infrastructure (Spark, Trino, Redis)
+# Start Redis (if needed for caching)
 cd engines
-docker compose up -d
+docker compose up -d redis
 cd ..
 
 # Verify services
 docker ps
 ```
+
+**Note**: Spark cluster is already running externally at `spark-master.tailce422e.ts.net:7077`
 
 ### Requires Database Setup
 The TimescaleDB schema needs to be created:
@@ -153,8 +156,8 @@ CREATE EXTENSION IF NOT EXISTS timescaledb;
 
 3. **Verify Infrastructure**:
    - Kafka UI: http://localhost:8082
-   - Trino UI: http://localhost:8083
-   - Spark UI: http://localhost:8082
+   - Trino UI: http://localhost:8083 (or trino.tailce422e.ts.net:8080)
+   - Spark Master UI: http://spark-master.tailce422e.ts.net:8080/
 
 ### Ready for Implementation
 

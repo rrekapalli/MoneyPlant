@@ -26,23 +26,26 @@ docker ps | grep kafka
 # Access Kafka UI at http://localhost:8082
 ```
 
-### 2. Start Engines Infrastructure (Spark, Trino, Redis)
+### 2. Start Engines Infrastructure (Redis - optional)
 
 ```bash
 # From project root
 cd engines
-docker compose up -d
+docker compose up -d redis
 cd ..
 
 # Verify services are running
-docker ps | grep moneyplant-engines
+docker ps | grep redis
 ```
+
+**Note**: Spark cluster is already running externally at `spark-master.tailce422e.ts.net:7077`
+- Spark Master UI: http://spark-master.tailce422e.ts.net:8080/
 
 ### 3. Verify Infrastructure Services
 
 - **Kafka UI**: http://localhost:8082
-- **Trino UI**: http://localhost:8083
-- **Spark Master UI**: http://localhost:8082 (if using engines docker-compose)
+- **Trino UI**: http://localhost:8083 or http://trino.tailce422e.ts.net:8080
+- **Spark Master UI**: http://spark-master.tailce422e.ts.net:8080/
 
 ### 4. Setup Database Schema
 

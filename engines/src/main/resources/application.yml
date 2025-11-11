@@ -181,9 +181,13 @@ nse:
 # Spark Configuration
 spark:
   app-name: MoneyPlant-Engines
-  master: local[*]
+  # Use external Spark cluster instead of local mode
+  master: spark://spark-master.tailce422e.ts.net:7077
+  # Spark Master UI available at: http://spark-master.tailce422e.ts.net:8080/
   driver-memory: 2g
   executor-memory: 2g
+  executor-cores: 2
+  executor-instances: 2
   sql:
     adaptive:
       enabled: true
