@@ -77,6 +77,12 @@ public class OhlcvRepository {
         "ORDER BY time DESC " +
         "LIMIT ?";
     
+    private static final String SELECT_DATES_BY_SYMBOL_AND_TIMEFRAME_SQL = 
+        "SELECT DISTINCT DATE(time AT TIME ZONE 'Asia/Kolkata') as date " +
+        "FROM nse_eq_ohlcv_historic " +
+        "WHERE symbol = ? AND timeframe = ? AND time >= ? AND time < ? " +
+        "ORDER BY date ASC";
+    
     public OhlcvRepository(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
@@ -259,6 +265,33 @@ public class OhlcvRepository {
             SELECT_OHLCV_BY_SYMBOL_SQL,
             new Object[]{symbol, limit},
             new OhlcvDataRowMapper()
+        );
+    }
+    
+    /**
+     * Find all dates with data for a symbol and timeframe within a date range.
+     * Used for gap detection in backfill operations.
+     * 
+     * @param symbol the symbol to query
+     * @param timeframe the timeframe to query
+     * @param startDate start date (inclusive)
+     * @param endDate end date (exclusive)
+     * @return list of dates with data
+     */
+    @Transactional(readOnly = true)
+    public List<LocalDate> findDatesBySymbolAndTimeframe(
+            String symbol, Timeframe timeframe, LocalDate startDate, LocalDate endDate) {
+        
+        log.debug("Finding dates with data for symbol: {} timeframe: {} from {} to {}", 
+            symbol, timeframe, startDate, endDate);
+        
+        Instant startInstant = startDate.atStartOfDay(ZoneId.of("Asia/Kolkata")).toInstant();
+        Instant endInstant = endDate.atStartOfDay(ZoneId.of("Asia/Kolkata")).toInstant();
+        
+        return jdbcTemplate.query(
+            SELECT_DATES_BY_SYMBOL_AND_TIMEFRAME_SQL,
+            new Object[]{symbol, timeframe.getCode(), Timestamp.from(startInstant), Timestamp.from(endInstant)},
+            (rs, rowNum) -> rs.getDate("date").toLocalDate()
         );
     }
     

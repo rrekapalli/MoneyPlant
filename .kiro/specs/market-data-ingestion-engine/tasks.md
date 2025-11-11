@@ -177,21 +177,21 @@ This implementation plan focuses on the core functionality of the Ingestion Engi
     - Auto-register tables after write
     - _Requirements: 11.7_
 
-- [-] 8. Implement end-of-day archival service
-  - [ ] 8.1 Create EndOfDayArchivalService
+- [x] 8. Implement end-of-day archival service
+  - [x] 8.1 Create EndOfDayArchivalService
     - Implement scheduled job (cron: 5:30 PM IST daily)
     - Export tick data from TimescaleDB to Hudi
     - Verify data integrity (count matching)
     - Truncate nse_eq_ticks table after successful archival
     - _Requirements: 5.3, 5.4, 11.1, 11.2, 11.8_
   
-  - [ ] 8.2 Add archival status tracking
+  - [x] 8.2 Add archival status tracking
     - Log archival start, completion, and errors
     - Store archival metadata (date, record count, status)
     - _Requirements: 11.2_
 
-- [ ] 9. Implement core ingestion service
-  - [ ] 9.1 Create IngestionService orchestrating data flow
+- [-] 9. Implement core ingestion service
+  - [-] 9.1 Create IngestionService orchestrating data flow
     - Implement startHistoricalIngestion() for backfill
     - Coordinate provider → validator → normalizer → publisher → storage flow
     - Use reactive streams (Flux/Mono) for data pipeline
