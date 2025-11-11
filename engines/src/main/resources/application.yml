@@ -155,6 +155,11 @@ ingestion:
   storage:
     batch-size: 1000
     flush-interval-ms: 5000
+    archival:
+      enabled: true
+      schedule-cron: "0 0 12 * * MON-FRI"  # 5:30 PM IST = 12:00 PM UTC (noon)
+      verify-integrity: true
+      auto-truncate: true
   
   performance:
     parallelism: 10
