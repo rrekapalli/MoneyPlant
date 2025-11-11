@@ -165,19 +165,19 @@ This implementation plan focuses on the core functionality of the Ingestion Engi
     - _Requirements: 3.7_
 
 
-- [-] 7. Implement Apache Hudi integration for data lake
-  - [ ] 7.1 Create HudiWriter service
+- [x] 7. Implement Apache Hudi integration for data lake
+  - [x] 7.1 Create HudiWriter service
     - Configure Hudi write client with S3/MinIO path
     - Implement writeBatch() method for daily tick data export
     - Partition by date for efficient querying
     - _Requirements: 11.1, 11.3_
   
-  - [ ] 7.2 Register Hudi tables in Hive Metastore
+  - [x] 7.2 Register Hudi tables in Hive Metastore
     - Configure Hive Metastore connection
     - Auto-register tables after write
     - _Requirements: 11.7_
 
-- [ ] 8. Implement end-of-day archival service
+- [-] 8. Implement end-of-day archival service
   - [ ] 8.1 Create EndOfDayArchivalService
     - Implement scheduled job (cron: 5:30 PM IST daily)
     - Export tick data from TimescaleDB to Hudi
