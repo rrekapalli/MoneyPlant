@@ -224,14 +224,14 @@ export class ScreenersConfigureComponent implements OnInit, OnChanges {
     this.queryValidationErrors = [];
     // Reset save attempted flag so errors don't show while editing
     this.saveAttempted = false;
-    this.cdr.detectChanges();
+    // Don't trigger change detection on every keystroke
   }
 
   onQueryValidationChange(isValid: boolean): void {
     this.queryValidationState = isValid;
     // Don't show validation errors during editing
     // They will be shown when user tries to save
-    this.cdr.detectChanges();
+    // Don't trigger change detection on every keystroke
   }
 
   private updateQueryValidationErrors(): void {

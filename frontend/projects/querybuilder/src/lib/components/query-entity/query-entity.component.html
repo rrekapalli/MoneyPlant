@@ -33,7 +33,7 @@
         <p-message severity="warn" [text]="emptyMessage"></p-message>
       </div>
 
-      <div *ngFor="let rule of getRuleSet().rules; let i = index" class="query-rule-container">
+      <div *ngFor="let rule of getRuleSet().rules; let i = index; trackBy: trackByIndex" class="query-rule-container">
         <lib-query-entity
           [config]="config"
           [data]="rule"

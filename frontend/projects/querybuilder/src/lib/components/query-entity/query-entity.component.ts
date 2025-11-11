@@ -189,4 +189,12 @@ export class QueryEntityComponent implements OnInit {
            !this.allowEmpty && 
            this.data.rules.length === 0;
   }
+
+  /**
+   * TrackBy function for ngFor to prevent unnecessary re-renders
+   * This helps maintain input focus when values change
+   */
+  trackByIndex(index: number): number {
+    return index;
+  }
 }
