@@ -126,13 +126,24 @@
         </dependency>
 
         <!-- Apache Hudi for Data Lake -->
-        <!-- Note: Hudi will be added in later tasks when needed for archival -->
-        <!-- For now, commenting out to allow compilation -->
+        <!-- Note: Hudi dependency will be added in Task 7 when implementing data lake integration -->
+        <!-- The dependency requires additional Maven repository configuration -->
+        <!-- For now, we'll proceed with other tasks and add Hudi when needed for archival -->
         <!--
         <dependency>
             <groupId>org.apache.hudi</groupId>
             <artifactId>hudi-spark3.5-bundle_2.12</artifactId>
             <version>0.14.1</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-log4j12</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>log4j</groupId>
+                    <artifactId>log4j</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         -->
 
