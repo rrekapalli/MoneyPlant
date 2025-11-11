@@ -68,23 +68,23 @@ This implementation plan focuses on the core functionality of the Ingestion Engi
   - **Commit**: `[Ingestion Engine] Task 1: Set up project structure, infrastructure, and dependencies`
   - _Requirements: All requirements depend on proper project setup_
 
-- [ ] 2. Implement core data models
-  - [ ] 2.1 Create TickData model with symbol, timestamp, price, volume, bid, ask fields
+- [x] 2. Implement core data models
+  - [x] 2.1 Create TickData model with symbol, timestamp, price, volume, bid, ask fields
     - Implement as immutable record or @Data class with validation
     - _Requirements: 1.2, 4.1_
   
-  - [ ] 2.2 Create OhlcvData model for candlestick data
+  - [x] 2.2 Create OhlcvData model for candlestick data
     - Include timeframe enum (1min, 5min, 15min, 1hour, 1day)
     - _Requirements: 2.1, 2.4_
   
-  - [ ] 2.3 Use existing NseEquityMaster entity for symbol metadata
+  - [x] 2.3 Use existing NseEquityMaster entity for symbol metadata
     - Reference existing entity: `com.moneyplant.core.entities.NseEquityMaster`
     - Create SymbolUniverse enum with predefined queries (NSE 500, Nifty 50, FNO stocks)
     - Create DTOs for NSE API response parsing
     - _Requirements: 7.3, 7.6_
 
-- [ ] 3. Implement TimescaleDB repository layer
-  - [ ] 3.1 Create database schema initialization script
+- [x] 3. Implement TimescaleDB repository layer
+  - [x] 3.1 Create database schema initialization script
     - Create `nse_eq_ticks` hypertable for intraday data with proper indexes
     - Convert existing `nse_eq_ohlcv_historic` table to TimescaleDB hypertable (if not already)
     - Enable compression policy for `nse_eq_ohlcv_historic` (data older than 30 days)
@@ -92,80 +92,80 @@ This implementation plan focuses on the core functionality of the Ingestion Engi
     - Create continuous aggregate view for daily candles (optional)
     - _Requirements: 5.1, 5.2, 5.7_
   
-  - [ ] 3.2 Create TimescaleRepository for tick data operations
+  - [x] 3.2 Create TimescaleRepository for tick data operations
     - Implement save() method for single tick insert
     - Implement batchInsert() method using JDBC batch operations
     - Implement getTickDataForDate() for end-of-day export
     - Implement truncateTickTable() for daily cleanup
     - _Requirements: 5.1, 5.4, 5.5_
   
-  - [ ] 3.3 Create OhlcvRepository for historical OHLCV operations
+  - [x] 3.3 Create OhlcvRepository for historical OHLCV operations
     - Implement save() and batchInsert() for OHLCV data
     - Implement query methods with date range and timeframe filters
     - Support pagination for large result sets
     - _Requirements: 5.2, 5.8_
   
-  - [ ] 3.4 Create NseEquityMasterRepository for symbol operations
+  - [x] 3.4 Create NseEquityMasterRepository for symbol operations
     - Use existing `NseEquityMaster` entity from `com.moneyplant.core.entities`
     - Implement query methods for filtering by sector, industry, trading_status
     - Implement universe queries (Nifty 50 via pd_sector_ind, FNO via is_fno_sec)
     - Implement batchUpsert() method for symbol master updates
     - _Requirements: 7.3, 7.6_
 
-- [ ] 4. Implement data providers
-  - [ ] 4.1 Create NSE data provider for symbol master and historical data
+- [x] 4. Implement data providers
+  - [x] 4.1 Create NSE data provider for symbol master and historical data
     - Implement NseDataProvider with fetchEquityMasterData() method
     - Implement fetchHistorical() for NSE historical OHLCV data
     - Parse NSE JSON response to NseEquityMaster entities
     - Handle NSE-specific headers and cookies
     - _Requirements: 2.2, 7.1_
   
-  - [ ] 4.2 Create YahooFinanceProvider for historical data
+  - [x] 4.2 Create YahooFinanceProvider for historical data
     - Implement fetchHistorical() method using WebClient
     - Parse Yahoo Finance CSV response to OhlcvData
     - _Requirements: 2.1, 6.1_
   
-  - [ ] 4.3 Implement rate limiting for both providers
+  - [x] 4.3 Implement rate limiting for both providers
     - Use Resilience4j RateLimiter (NSE: 1000/hour, Yahoo: 2000/hour)
     - Add retry logic with exponential backoff
     - _Requirements: 2.3, 6.1_
   
-  - [ ] 4.4 Implement parallel symbol fetching with virtual threads
+  - [x] 4.4 Implement parallel symbol fetching with virtual threads
     - Use Java 21 virtual threads for concurrent requests
     - Process 2000+ symbols in parallel
     - _Requirements: 2.4_
 
-- [ ] 5. Implement data normalization and validation
-  - [ ] 5.1 Create DataNormalizer service
+- [x] 5. Implement data normalization and validation
+  - [x] 5.1 Create DataNormalizer service
     - Convert provider-specific formats to TickData/OhlcvData
     - Handle timezone conversions (IST for NSE)
     - _Requirements: 4.1_
   
-  - [ ] 5.2 Create DataValidator service
+  - [x] 5.2 Create DataValidator service
     - Validate price within circuit breaker limits (±20%)
     - Validate timestamp monotonicity per symbol
     - Validate volume is positive
     - _Requirements: 4.2, 4.3, 4.4_
 
-- [ ] 6. Implement Kafka integration
-  - [ ] 6.1 Configure Kafka producer with Avro serialization
+- [x] 6. Implement Kafka integration
+  - [x] 6.1 Configure Kafka producer with Avro serialization
     - Set up KafkaTemplate with proper configuration
     - Configure Avro schema registry integration
     - _Requirements: 3.5_
   
-  - [ ] 6.2 Create KafkaPublisher service
+  - [x] 6.2 Create KafkaPublisher service
     - Implement publishTick() method for market-data-ticks topic
     - Implement publishCandle() method for market-data-candles topic
     - Use symbol-based partitioning strategy
     - _Requirements: 3.1, 3.2, 3.6_
   
-  - [ ] 6.3 Implement basic error handling for Kafka failures
+  - [x] 6.3 Implement basic error handling for Kafka failures
     - Add retry logic (3 attempts with exponential backoff)
     - Log failed messages
     - _Requirements: 3.7_
 
 
-- [ ] 7. Implement Apache Hudi integration for data lake
+- [-] 7. Implement Apache Hudi integration for data lake
   - [ ] 7.1 Create HudiWriter service
     - Configure Hudi write client with S3/MinIO path
     - Implement writeBatch() method for daily tick data export

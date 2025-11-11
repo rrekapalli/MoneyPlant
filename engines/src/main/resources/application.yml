@@ -237,20 +237,33 @@ trino:
 
 # Apache Hudi Configuration
 hudi:
-  base-path: /tmp/hudi
-  table-name: market_data
+  base-path: /tmp/hudi/nse-eq-ticks
+  table-name: nse_eq_ticks_historical
   key-generator: org.apache.hudi.keygen.SimpleKeyGenerator
   partition-path-field: date
   write-options:
-    table.type: COPY_ON_WRITE
-    recordkey.field: symbol
-    partitionpath.field: date
-    precombine.field: timestamp
-    keygenerator.class: org.apache.hudi.keygen.SimpleKeyGenerator
-    hive.style.partitioning: true
+    table-type: COPY_ON_WRITE
+    recordkey-field: symbol,timestamp
+    partitionpath-field: date
+    precombine-field: timestamp
+    keygenerator-class: org.apache.hudi.keygen.SimpleKeyGenerator
+    hive-style-partitioning: true
     operation: upsert
-    table.name: market_data
-    base.path: /tmp/hudi
+    table-name: nse_eq_ticks_historical
+    base-path: /tmp/hudi/nse-eq-ticks
+    parallelism: 4
+    inline-compaction: false
+    max-delta-commits-before-compaction: 10
+  hive-metastore:
+    enabled: true
+    uris: thrift://localhost:9083
+    database: default
+    table: nse_eq_ticks_historical
+    partition-fields: date
+    partition-extractor-class: org.apache.hudi.hive.MultiPartKeysValueExtractor
+    jdbc-url: jdbc:hive2://localhost:10000
+    username: hive
+    password: ""
 
 # Apache Iceberg Configuration
 iceberg:
