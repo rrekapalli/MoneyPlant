@@ -114,12 +114,12 @@ export class QueryEntityComponent implements OnInit {
 
   onAddRule(): void {
     if (this.isRuleSet(this.data)) {
-      const newRule = this.queryBuilderService.addRule(this.data, this.config.fields?.[0]);
-      const updatedRuleSet = {
-        ...this.data,
-        rules: [...this.data.rules, newRule]
-      };
-      this.data = updatedRuleSet;
+      // Create a copy of the ruleset to avoid mutation
+      const rulesetCopy = { ...this.data, rules: [...this.data.rules] };
+      // Add rule to the copy
+      this.queryBuilderService.addRule(rulesetCopy, this.config.fields?.[0]);
+      // Emit the updated copy
+      this.data = rulesetCopy;
       this.dataChange.emit(this.data);
       this.updateMeta();
     }
@@ -127,12 +127,12 @@ export class QueryEntityComponent implements OnInit {
 
   onAddRuleSet(): void {
     if (this.isRuleSet(this.data)) {
-      const newRuleSet = this.queryBuilderService.addRuleSet(this.data);
-      const updatedRuleSet = {
-        ...this.data,
-        rules: [...this.data.rules, newRuleSet]
-      };
-      this.data = updatedRuleSet;
+      // Create a copy of the ruleset to avoid mutation
+      const rulesetCopy = { ...this.data, rules: [...this.data.rules] };
+      // Add ruleset to the copy
+      this.queryBuilderService.addRuleSet(rulesetCopy);
+      // Emit the updated copy
+      this.data = rulesetCopy;
       this.dataChange.emit(this.data);
       this.updateMeta();
     }
@@ -188,5 +188,13 @@ export class QueryEntityComponent implements OnInit {
     return this.isRuleSet(this.data) && 
            !this.allowEmpty && 
            this.data.rules.length === 0;
+  }
+
+  /**
+   * TrackBy function for ngFor to prevent unnecessary re-renders
+   * This helps maintain input focus when values change
+   */
+  trackByIndex(index: number): number {
+    return index;
   }
 }

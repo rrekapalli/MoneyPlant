@@ -615,107 +615,80 @@
   }
 }
 
-// Query Builder Integration Styles - Compact Design
+// Query Builder Integration Styles - Simplified
 .query-builder-wrapper {
-  background: var(--criteria-bg-primary);
+  background: #ffffff;
+  border: 1px solid #e0e0e0;
   border-radius: 6px;
-  padding: 0.75rem;
-  min-height: 200px;
+  padding: 1rem;
+  min-height: 250px;
+}
+
+:host ::ng-deep {
+  lib-query-builder {
+    display: block;
+    width: 100%;
+  }
   
-  // Compact query builder styling
-  ::ng-deep lib-query-builder {
-    .query-builder {
-      --qb-spacing: 4px;
-      --qb-input-height: 32px;
-      --qb-font-size: 0.875rem;
-      --qb-border-width: 1px;
+  .query-builder {
+    display: block;
+    width: 100%;
       
-      font-size: var(--qb-font-size);
-      
-      // Compact component sizing
-      .p-component {
-        font-size: var(--qb-font-size);
-        
-        &.p-inputtext, 
-        &.p-select, 
-        &.p-inputnumber,
-        &.p-calendar,
-        &.p-multiselect {
-          height: var(--qb-input-height);
-          padding: 4px 8px;
-          font-size: var(--qb-font-size);
-        }
-        
-        &.p-button {
-          height: var(--qb-input-height);
-          padding: 4px 8px;
-          min-width: auto;
-          font-size: var(--qb-font-size);
-        }
-        
-        &.p-checkbox {
-          width: 18px;
-          height: 18px;
-        }
-      }
-      
-      // Compact spacing for query entities
-      .query-entity {
-        margin-bottom: var(--qb-spacing);
-        padding: var(--qb-spacing);
-        
-        .query-field-details {
-          display: flex;
-          align-items: center;
-          gap: var(--qb-spacing);
-          flex-wrap: wrap;
-          
-          .field-select,
-          .operator-select,
-          .value-input {
-            min-width: 120px;
-            flex: 1;
-          }
-        }
-        
-        .query-button-group {
-          margin-left: var(--qb-spacing);
-          
-          .p-button {
-            margin-right: var(--qb-spacing);
-          }
-        }
-        
-        .query-remove-button {
-          margin-left: var(--qb-spacing);
-        }
-      }
-      
-      // Compact ruleset styling
-      .query-ruleset {
-        border: 1px solid var(--criteria-border-secondary);
-        border-radius: 4px;
-        padding: var(--qb-spacing);
-        margin-bottom: var(--qb-spacing);
-        background: var(--criteria-bg-secondary);
-        
-        .query-switch-group {
-          margin-bottom: var(--qb-spacing);
-          
-          .p-select {
-            width: auto;
-            min-width: 80px;
-          }
-        }
-      }
-      
-      // Empty state styling
-      .query-empty {
-        text-align: center;
-        padding: 1rem;
-        color: var(--criteria-text-muted);
-        font-style: italic;
-      }
+  }
+  
+  // All query builder components inherit PrimeNG styling automatically
+  // Just ensure they're visible
+  .query-entity,
+  .query-ruleset,
+  .query-ruleset-header,
+  .query-ruleset-controls,
+  .query-button-group,
+  .query-switch-group {
+    display: block;
+  }
+  
+  .query-ruleset-header,
+  .query-ruleset-controls,
+  .query-button-group,
+  .query-switch-group,
+  .query-rule,
+  .query-field-details,
+  .query-rule-container {
+    display: flex;
+  }
+  
+  // Fix PrimeNG dropdown overlay opacity
+  .p-select-overlay,
+  .p-select-panel {
+    opacity: 1 !important;
+    visibility: visible !important;
+    background-color: #ffffff !important;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15) !important;
+    border: 1px solid #e0e0e0 !important;
+    z-index: 1000 !important;
+  }
+  
+  .p-select-items {
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+  
+  .p-select-option,
+  .p-select-item {
+    opacity: 1 !important;
+    visibility: visible !important;
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    padding: 8px 12px !important;
+    
+    &:hover {
+      background-color: #f0f0f0 !important;
+      color: #000000 !important;
+    }
+    
+    &.p-selected {
+      background-color: #e3f2fd !important;
+      color: #1976d2 !important;
     }
   }
 }
@@ -724,25 +697,31 @@
 .query-validation-messages {
   margin-top: 0.75rem;
   
-  .query-error-message,
-  .query-info-message {
+  ::ng-deep .p-message {
     margin-bottom: 0.5rem;
     font-size: 0.875rem;
+    background: var(--yellow-50);
+    border: 1px solid var(--yellow-200);
+    color: var(--yellow-900);
     
     &:last-child {
       margin-bottom: 0;
     }
-  }
-  
-  .query-error-message {
-    ::ng-deep .p-message-text {
-      color: var(--criteria-error);
+    
+    .p-message-icon {
+      color: var(--yellow-700);
     }
-  }
-  
-  .query-info-message {
-    ::ng-deep .p-message-text {
-      color: var(--criteria-text-secondary);
+    
+    .p-message-text {
+      color: var(--yellow-900);
+    }
+    
+    .p-message-close {
+      color: var(--yellow-700);
+      
+      &:hover {
+        background: var(--yellow-100);
+      }
     }
   }
 }
