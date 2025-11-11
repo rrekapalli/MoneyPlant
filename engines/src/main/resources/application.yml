@@ -89,7 +89,24 @@ spring:
         
         # Dialect not explicitly set; Hibernate will auto-detect PostgreSQL dialect as per HHH90000025 guidance
 
-  # Kafka configuration moved to profile-specific files to avoid conflicts
+  # Kafka configuration
+  kafka:
+    enabled: true
+    bootstrap-servers: localhost:9093
+    schema-registry-url: http://localhost:8081
+    producer:
+      acks: all
+      retries: 3
+      batch-size: 16384
+      linger-ms: 10
+      buffer-memory: 33554432
+      compression-type: snappy
+      max-in-flight-requests: 5
+    consumer:
+      group-id: moneyplant-engines
+      auto-offset-reset: earliest
+      enable-auto-commit: true
+      auto-commit-interval-ms: 1000
   
   boot:
     admin:
@@ -106,6 +123,10 @@ kafka:
   topics:
     nse-indices-ticks: nse-indices-ticks
     market-data: market-data
+    market-data-ticks: market-data-ticks
+    market-data-candles: market-data-candles
+    data-quality-alerts: data-quality-alerts
+    symbol-universe-updates: symbol-universe-updates
     trading-signals: trading-signals
     backtest-results: backtest-results
   group-id: moneyplant-engines

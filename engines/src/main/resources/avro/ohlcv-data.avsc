@@ -1,0 +1,61 @@
+{
+  "type": "record",
+  "name": "OhlcvData",
+  "namespace": "com.moneyplant.engines.ingestion.avro",
+  "doc": "OHLCV candlestick data for aggregated market data",
+  "fields": [
+    {
+      "name": "symbol",
+      "type": "string",
+      "doc": "Trading symbol (e.g., RELIANCE, TCS)"
+    },
+    {
+      "name": "timestamp",
+      "type": "long",
+      "logicalType": "timestamp-millis",
+      "doc": "Timestamp representing the start of the candle period"
+    },
+    {
+      "name": "timeframe",
+      "type": "string",
+      "doc": "Timeframe for this candle (e.g., 1min, 5min, 1day)"
+    },
+    {
+      "name": "open",
+      "type": "string",
+      "doc": "Opening price for the period"
+    },
+    {
+      "name": "high",
+      "type": "string",
+      "doc": "Highest price during the period"
+    },
+    {
+      "name": "low",
+      "type": "string",
+      "doc": "Lowest price during the period"
+    },
+    {
+      "name": "close",
+      "type": "string",
+      "doc": "Closing price for the period"
+    },
+    {
+      "name": "volume",
+      "type": "long",
+      "doc": "Total trading volume during the period"
+    },
+    {
+      "name": "vwap",
+      "type": ["null", "string"],
+      "default": null,
+      "doc": "Volume-weighted average price (optional)"
+    },
+    {
+      "name": "tradeCount",
+      "type": ["null", "int"],
+      "default": null,
+      "doc": "Number of trades during the period (optional)"
+    }
+  ]
+}

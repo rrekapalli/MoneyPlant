@@ -1,0 +1,47 @@
+{
+  "type": "record",
+  "name": "TickData",
+  "namespace": "com.moneyplant.engines.ingestion.avro",
+  "doc": "Market tick data with price, volume, and bid-ask information",
+  "fields": [
+    {
+      "name": "symbol",
+      "type": "string",
+      "doc": "Trading symbol (e.g., RELIANCE, TCS)"
+    },
+    {
+      "name": "timestamp",
+      "type": "long",
+      "logicalType": "timestamp-millis",
+      "doc": "Timestamp when the tick was generated (milliseconds since epoch)"
+    },
+    {
+      "name": "price",
+      "type": "string",
+      "doc": "Last traded price (stored as string to preserve precision)"
+    },
+    {
+      "name": "volume",
+      "type": "long",
+      "doc": "Trading volume for this tick"
+    },
+    {
+      "name": "bid",
+      "type": ["null", "string"],
+      "default": null,
+      "doc": "Best bid price (optional)"
+    },
+    {
+      "name": "ask",
+      "type": ["null", "string"],
+      "default": null,
+      "doc": "Best ask price (optional)"
+    },
+    {
+      "name": "metadata",
+      "type": ["null", "string"],
+      "default": null,
+      "doc": "Additional metadata in JSON format (optional)"
+    }
+  ]
+}
