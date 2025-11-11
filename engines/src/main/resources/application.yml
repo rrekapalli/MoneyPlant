@@ -110,12 +110,34 @@ kafka:
     backtest-results: backtest-results
   group-id: moneyplant-engines
 
-# Ingestion auto-start configuration
+# Ingestion Engine Configuration
 ingestion:
   auto-start:
-    enabled: false  # Set to true to enable auto-start for other ingestion services
-    # Additional auto-start settings can be added here
-    # For example: yahoo-finance, alpha-vantage, polygon, etc.
+    enabled: false  # Set to true to enable auto-start for ingestion services
+    delay-seconds: 10  # Delay before starting ingestion (allows other services to initialize)
+  
+  providers:
+    nse:
+      enabled: true
+      api-url: https://www.nseindia.com/api
+      rate-limit-per-hour: 1000
+      timeout-sec: 15
+      retry-attempts: 3
+    
+    yahoo:
+      enabled: true
+      api-url: https://query1.finance.yahoo.com
+      rate-limit-per-hour: 2000
+      timeout-sec: 10
+      retry-attempts: 3
+  
+  storage:
+    batch-size: 1000
+    flush-interval-ms: 5000
+  
+  performance:
+    parallelism: 10
+    buffer-size: 10000
 
 # NSE WebSocket configuration
 nse:
