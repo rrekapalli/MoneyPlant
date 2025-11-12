@@ -155,10 +155,10 @@ public class KafkaConfig {
     }
 
     /**
-     * Kafka error handler for handling deserialization and processing errors
+     * Kafka listener error handler for handling deserialization and processing errors
      */
     @Bean
-    public org.springframework.kafka.listener.KafkaListenerErrorHandler kafkaErrorHandler() {
+    public org.springframework.kafka.listener.KafkaListenerErrorHandler kafkaListenerErrorHandler() {
         return (message, exception) -> {
             // Log the error
             org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(KafkaConfig.class);
