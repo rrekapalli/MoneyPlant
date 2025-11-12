@@ -3,23 +3,38 @@ spring:
   profiles:
     active: dev
   
+  # TimescaleDB configuration for development
+  datasource:
+    url: jdbc:postgresql://localhost:5432/MoneyPlant
+    username: postgres
+    password: postgres
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 1
+  
   # Kafka configuration for development
   kafka:
     bootstrap-servers: localhost:9093
+    schema-registry-url: http://localhost:8081
     consumer:
       group-id: moneyplant-engines-dev
       auto-offset-reset: earliest
       enable-auto-commit: false
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: io.confluent.kafka.serializers.KafkaAvroDeserializer
+      properties:
+        schema.registry.url: http://localhost:8081
+        specific.avro.reader: true
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
       acks: 1
       retries: 3
       batch-size: 16384
       linger-ms: 10
       buffer-memory: 33554432
+      properties:
+        schema.registry.url: http://localhost:8081
 
 # Ingestion configuration for development
 ingestion:
@@ -61,8 +76,16 @@ logging:
 
 # Hudi configuration for development (local filesystem)
 hudi:
-  base-path: /tmp/hudi-dev
-  table-name: market_data_dev
+  base-path: /tmp/hudi-dev/nse-eq-ticks
+  table-name: nse_eq_ticks_historical_dev
+  s3:
+    endpoint: http://localhost:9000
+    access-key: minioadmin
+    secret-key: minioadmin
+    bucket: moneyplant-datalake-dev
+    path-style-access: true
+  hive-metastore:
+    enabled: false  # Disable Hive Metastore in dev for simplicity
 
 # Management endpoints for development
 management:
