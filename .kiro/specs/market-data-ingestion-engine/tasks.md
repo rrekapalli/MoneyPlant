@@ -223,13 +223,13 @@ This implementation plan focuses on the core functionality of the Ingestion Engi
     - _Requirements: 7.4, 7.5, 7.7_
 
 - [-] 11. Implement REST API endpoints
-  - [-] 11.1 Create MarketDataController
+  - [x] 11.1 Create MarketDataController
     - GET /api/v1/market-data/quote/{symbol} - latest quote
     - GET /api/v1/market-data/ohlcv/{symbol} - historical OHLCV with pagination
     - GET /api/v1/market-data/symbols/search - symbol search
     - _Requirements: 12.1_
   
-  - [ ] 11.2 Create IngestionController
+  - [-] 11.2 Create IngestionController
     - POST /api/v1/ingestion/backfill - trigger backfill
     - GET /api/v1/ingestion/status - ingestion status
     - _Requirements: 2.8_
