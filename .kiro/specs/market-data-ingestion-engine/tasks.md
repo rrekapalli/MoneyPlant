@@ -190,34 +190,34 @@ This implementation plan focuses on the core functionality of the Ingestion Engi
     - Store archival metadata (date, record count, status)
     - _Requirements: 11.2_
 
-- [-] 9. Implement core ingestion service
-  - [-] 9.1 Create IngestionService orchestrating data flow
+- [x] 9. Implement core ingestion service
+  - [x] 9.1 Create IngestionService orchestrating data flow
     - Implement startHistoricalIngestion() for backfill
     - Coordinate provider → validator → normalizer → publisher → storage flow
     - Use reactive streams (Flux/Mono) for data pipeline
     - _Requirements: 2.1, 2.3, 2.4_
   
-  - [ ] 9.2 Implement backfill service for historical data
+  - [x] 9.2 Implement backfill service for historical data
     - Detect data gaps in TimescaleDB
     - Fetch missing data from Yahoo Finance
     - Batch insert into TimescaleDB
     - _Requirements: 2.5, 2.6_
 
-- [ ] 10. Implement symbol master ingestion and universe management
-  - [ ] 10.1 Create SymbolMasterIngestionService
+- [-] 10. Implement symbol master ingestion and universe management
+  - [x] 10.1 Create SymbolMasterIngestionService
     - Implement scheduled job (cron: 6:00 AM daily) for symbol master refresh
     - Fetch equity master data from NSE API
     - Parse and transform to NseEquityMaster entities
     - Batch upsert to nse_eq_master table
     - _Requirements: 7.1, 7.2, 7.8_
   
-  - [ ] 10.2 Create SymbolUniverseService using nse_eq_master queries
+  - [x] 10.2 Create SymbolUniverseService using nse_eq_master queries
     - Query predefined universes from nse_eq_master (NSE 500, Nifty 50, Nifty Bank)
     - Use pd_sector_ind, is_fno_sec, trading_status fields for filtering
     - Support custom filters (sector, industry, market cap ranges)
     - _Requirements: 7.3, 7.6_
   
-  - [ ] 10.3 Implement dynamic symbol subscription
+  - [-] 10.3 Implement dynamic symbol subscription
     - Add/remove symbols without restart
     - Publish universe change events to Kafka
     - _Requirements: 7.4, 7.5, 7.7_

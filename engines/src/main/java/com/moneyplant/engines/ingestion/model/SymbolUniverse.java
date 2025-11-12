@@ -1,151 +1,72 @@
 package com.moneyplant.engines.ingestion.model;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.Instant;
+import java.util.Set;
+
 /**
- * Enum representing predefined symbol universes for market data ingestion.
- * Each universe corresponds to a specific set of stocks that can be queried
- * from the nse_eq_master table using specific criteria.
+ * Represents a universe of symbols (stocks) grouped by specific criteria.
+ * Used for managing symbol subscriptions and filtering.
  * 
  * Requirements: 7.3, 7.6
  */
-public enum SymbolUniverse {
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class SymbolUniverse {
     
     /**
-     * All NSE listed equities with active trading status
+     * Unique name of the universe (e.g., "NIFTY_50", "FNO_STOCKS", "CUSTOM_TECH")
      */
-    ALL_NSE("All NSE Equities", 
-            "trading_status = 'Active'"),
+    private String name;
     
     /**
-     * Nifty 50 index constituents
-     * Query using pd_sector_ind field
+     * Human-readable description of the universe
      */
-    NIFTY_50("Nifty 50", 
-            "pd_sector_ind = 'NIFTY 50' AND trading_status = 'Active'"),
+    private String description;
     
     /**
-     * Nifty Bank index constituents
+     * Set of symbols in this universe
      */
-    NIFTY_BANK("Nifty Bank", 
-            "pd_sector_ind = 'NIFTY BANK' AND trading_status = 'Active'"),
+    private Set<String> symbols;
     
     /**
-     * Nifty Next 50 index constituents
+     * Type of universe (predefined or custom)
      */
-    NIFTY_NEXT_50("Nifty Next 50", 
-            "pd_sector_ind = 'NIFTY NEXT 50' AND trading_status = 'Active'"),
+    private UniverseType type;
     
     /**
-     * Nifty Midcap 50 index constituents
+     * Filter criteria used to create this universe (for custom universes)
      */
-    NIFTY_MIDCAP_50("Nifty Midcap 50", 
-            "pd_sector_ind = 'NIFTY MIDCAP 50' AND trading_status = 'Active'"),
+    private UniverseFilter filter;
     
     /**
-     * NSE 500 index constituents (top 500 companies by market cap)
+     * Timestamp when this universe was created
      */
-    NSE_500("NSE 500", 
-            "pd_sector_ind LIKE 'NIFTY%' AND trading_status = 'Active'"),
+    private Instant createdAt;
     
     /**
-     * Futures & Options (F&O) eligible stocks
-     * Query using is_fno_sec field
+     * Timestamp when this universe was last updated
      */
-    FNO_STOCKS("F&O Stocks", 
-            "is_fno_sec = 'Yes' AND trading_status = 'Active'"),
+    private Instant updatedAt;
     
     /**
-     * Securities Lending and Borrowing (SLB) eligible stocks
+     * Number of symbols in the universe
      */
-    SLB_STOCKS("SLB Stocks", 
-            "is_slb_sec = 'Yes' AND trading_status = 'Active'"),
-    
-    /**
-     * ETF securities
-     */
-    ETF_SECURITIES("ETF Securities", 
-            "is_etf_sec = 'Yes' AND trading_status = 'Active'"),
-    
-    /**
-     * Stocks in specific sector (requires parameter substitution)
-     * Example: sector = 'Financial Services'
-     */
-    SECTOR_BASED("Sector Based", 
-            "sector = ? AND trading_status = 'Active'"),
-    
-    /**
-     * Stocks in specific industry (requires parameter substitution)
-     * Example: industry = 'Banks'
-     */
-    INDUSTRY_BASED("Industry Based", 
-            "industry = ? AND trading_status = 'Active'"),
-    
-    /**
-     * Custom universe (requires custom query)
-     */
-    CUSTOM("Custom Universe", 
-            "");
-    
-    private final String displayName;
-    private final String whereClause;
-    
-    SymbolUniverse(String displayName, String whereClause) {
-        this.displayName = displayName;
-        this.whereClause = whereClause;
+    public int getSymbolCount() {
+        return symbols != null ? symbols.size() : 0;
     }
     
     /**
-     * Gets the display name for this universe
-     * 
-     * @return display name
+     * Enum for universe types
      */
-    public String getDisplayName() {
-        return displayName;
-    }
-    
-    /**
-     * Gets the SQL WHERE clause for querying this universe from nse_eq_master table
-     * 
-     * @return SQL WHERE clause
-     */
-    public String getWhereClause() {
-        return whereClause;
-    }
-    
-    /**
-     * Checks if this universe requires parameter substitution
-     * 
-     * @return true if parameters are needed
-     */
-    public boolean requiresParameters() {
-        return whereClause.contains("?");
-    }
-    
-    /**
-     * Gets the base SQL query for this universe
-     * 
-     * @return SQL query string
-     */
-    public String getQuery() {
-        if (whereClause.isEmpty()) {
-            return "SELECT symbol FROM nse_eq_master";
-        }
-        return "SELECT symbol FROM nse_eq_master WHERE " + whereClause;
-    }
-    
-    /**
-     * Parses a universe name to enum value
-     * 
-     * @param name universe name
-     * @return corresponding SymbolUniverse enum
-     * @throws IllegalArgumentException if name is not recognized
-     */
-    public static SymbolUniverse fromName(String name) {
-        for (SymbolUniverse universe : values()) {
-            if (universe.name().equalsIgnoreCase(name) || 
-                universe.displayName.equalsIgnoreCase(name)) {
-                return universe;
-            }
-        }
-        throw new IllegalArgumentException("Unknown symbol universe: " + name);
+    public enum UniverseType {
+        PREDEFINED,  // Built-in universes like NIFTY_50, FNO_STOCKS
+        CUSTOM       // User-defined universes with custom filters
     }
 }
