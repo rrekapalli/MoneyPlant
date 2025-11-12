@@ -365,6 +365,21 @@ LOGGING_LEVEL_COM_MONEYPLANT=DEBUG
 
 ### Profile-Specific Configuration
 
+**Activating Profiles**:
+
+Profiles should be activated via environment variables or command line arguments, NOT in profile-specific YAML files:
+
+```bash
+# Via environment variable
+export SPRING_PROFILES_ACTIVE=dev
+
+# Via command line
+java -jar target/engines-0.0.1-SNAPSHOT.jar --spring.profiles.active=dev
+
+# Via Maven
+mvn spring-boot:run -Dspring-boot.run.profiles=dev
+```
+
 #### Development Profile (`application-dev.yml`)
 
 ```yaml

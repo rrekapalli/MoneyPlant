@@ -53,8 +53,12 @@ spring:
     # Explicit transaction management settings
     defer-datasource-initialization: false
     
+    # Database platform
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    
     properties:
       hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
         
         # Connection and transaction management
