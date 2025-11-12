@@ -22,7 +22,8 @@ spring:
   
   # Kafka configuration for development
   kafka:
-    bootstrap-servers: localhost:9093
+    enabled: true  # Set to false to disable Kafka entirely
+    bootstrap-servers: localhost:9092
     schema-registry-url: http://localhost:8081
     consumer:
       group-id: moneyplant-engines-dev
@@ -36,7 +37,7 @@ spring:
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
-      acks: 1
+      acks: all
       retries: 3
       batch-size: 16384
       linger-ms: 10

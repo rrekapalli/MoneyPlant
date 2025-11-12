@@ -79,9 +79,24 @@ Added proper shutdown sequence in the `@PreDestroy` cleanup method:
 
 ## Configuration
 
-No configuration changes required. The fix works with existing settings:
-- `spring.kafka.enabled=true` (default)
-- All existing Kafka producer/consumer settings remain unchanged
+### Required Configuration Changes
+
+1. **Producer Acks Setting** (for idempotence):
+   ```yaml
+   spring:
+     kafka:
+       producer:
+         acks: all  # Required for idempotent producer
+   ```
+
+2. **Kafka Enabled Flag**:
+   ```yaml
+   spring:
+     kafka:
+       enabled: true  # default
+   ```
+
+All other existing Kafka producer/consumer settings remain unchanged.
 
 ## Benefits
 
