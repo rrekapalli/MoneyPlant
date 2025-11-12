@@ -222,7 +222,7 @@ This implementation plan focuses on the core functionality of the Ingestion Engi
     - Publish universe change events to Kafka
     - _Requirements: 7.4, 7.5, 7.7_
 
-- [-] 11. Implement REST API endpoints
+- [x] 11. Implement REST API endpoints
   - [x] 11.1 Create MarketDataController
     - GET /api/v1/market-data/quote/{symbol} - latest quote
     - GET /api/v1/market-data/ohlcv/{symbol} - historical OHLCV with pagination
@@ -234,20 +234,20 @@ This implementation plan focuses on the core functionality of the Ingestion Engi
     - GET /api/v1/ingestion/status - ingestion status
     - _Requirements: 2.8_
   
-  - [-] 11.3 Add JWT authentication for API endpoints
+  - [x] 11.3 Add JWT authentication for API endpoints
     - Integrate with existing auth system
     - Validate JWT tokens on protected endpoints
     - _Requirements: 12.3_
 
-- [ ] 12. Implement basic configuration and deployment
-  - [ ] 12.1 Create application.yml with profiles (dev, prod)
+- [x] 12. Implement basic configuration and deployment
+  - [x] 12.1 Create application.yml with profiles (dev, prod)
     - Configure Kafka bootstrap servers
     - Configure TimescaleDB connection
     - Configure Hudi S3/MinIO paths
     - Configure provider settings (Yahoo Finance)
     - _Requirements: 10.1, 10.2_
   
-  - [ ] 12.2 Create Dockerfile for containerization
+  - [x] 12.2 Create Dockerfile for containerization
     - Multi-stage build with Java 21
     - Optimize image size (<500MB)
     - _Requirements: 10.3_
@@ -259,26 +259,26 @@ This implementation plan focuses on the core functionality of the Ingestion Engi
     - Secret for sensitive data (DB passwords, API keys)
     - _Requirements: 10.4, 10.6_
 
-- [ ] 13. Integration testing and validation
-  - [ ] 13.1 Create integration tests with Testcontainers
+- [x] 13. Integration testing and validation
+  - [x] 13.1 Create integration tests with Testcontainers
     - Test TimescaleDB operations
     - Test Kafka publishing
     - Test end-to-end data flow
     - _Requirements: All requirements_
   
-  - [ ] 13.2 Validate against Python implementation
+  - [x] 13.2 Validate against Python implementation
     - Compare backtest results for same date range
     - Verify data completeness and accuracy
     - _Requirements: 2.8_
 
-- [ ] 14. Documentation and deployment guide
-  - [ ] 14.1 Create README with setup instructions
+- [-] 14. Documentation and deployment guide
+  - [x] 14.1 Create README with setup instructions
     - Prerequisites (Java 21, Docker, Kubernetes)
     - Local development setup
     - Configuration guide
     - _Requirements: All requirements_
   
-  - [ ] 14.2 Create deployment runbook
+  - [-] 14.2 Create deployment runbook
     - Step-by-step deployment process
     - Troubleshooting common issues
     - Rollback procedures
