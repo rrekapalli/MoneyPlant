@@ -1,0 +1,58 @@
+# Maven build artifacts
+target/
+!target/*.jar
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git files
+.git/
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+docs/
+
+# Test files
+src/test/
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Docker files
+Dockerfile*
+docker-compose*.yml
+
+# Scripts
+scripts/
+*.sh
+*.bat
+
+# Configuration files (use environment variables instead)
+*.env
+.env.*
+
+# Database files
+*.db
+*.sqlite
+
+# Backup files
+*.bak
+*.backup

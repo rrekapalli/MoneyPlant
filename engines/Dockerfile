@@ -1,57 +1,78 @@
-FROM openjdk:21-jdk-slim
+# Multi-stage Dockerfile for MoneyPlant Ingestion Engine
+# Stage 1: Build stage with Maven
+FROM eclipse-temurin:21-jdk-alpine AS builder
 
 # Set working directory
-WORKDIR /app
+WORKDIR /build
 
-# Install necessary packages
-RUN apt-get update && apt-get install -y \
-    curl \
-    wget \
-    unzip \
-    && rm -rf /var/lib/apt/lists/*
+# Install Maven
+RUN apk add --no-cache maven
 
-# Copy Maven wrapper and pom.xml
-COPY mvnw .
-COPY .mvn .mvn
+# Copy Maven configuration files
 COPY pom.xml .
 
-# Make Maven wrapper executable
-RUN chmod +x mvnw
-
-# Download dependencies
-RUN ./mvnw dependency:go-offline -B
+# Download dependencies (cached layer)
+RUN mvn dependency:go-offline -B
 
 # Copy source code
 COPY src src
 
 # Build the application
-RUN ./mvnw clean package -DskipTests
+RUN mvn clean package -DskipTests -B && \
+    # Extract JAR layers for better caching
+    java -Djarmode=layertools -jar target/*.jar extract
 
-# Create runtime image
-FROM openjdk:21-jre-slim
+# Stage 2: Runtime stage with optimized JRE
+FROM eclipse-temurin:21-jre-alpine
+
+# Metadata
+LABEL maintainer="MoneyPlant Team"
+LABEL description="MoneyPlant Ingestion Engine - Market Data Ingestion Service"
+LABEL version="1.0.0"
 
 # Set working directory
 WORKDIR /app
 
-# Install necessary runtime packages
-RUN apt-get update && apt-get install -y \
+# Install runtime dependencies (minimal)
+RUN apk add --no-cache \
     curl \
-    && rm -rf /var/lib/apt/lists/*
+    tzdata && \
+    # Set timezone to IST
+    cp /usr/share/zoneinfo/Asia/Kolkata /etc/localtime && \
+    echo "Asia/Kolkata" > /etc/timezone && \
+    # Cleanup
+    rm -rf /var/cache/apk/*
 
-# Copy the built JAR file
-COPY --from=0 /app/target/*.jar app.jar
+# Create non-root user for security
+RUN addgroup -S moneyplant && \
+    adduser -S -G moneyplant -h /app moneyplant && \
+    chown -R moneyplant:moneyplant /app
 
-# Create non-root user
-RUN groupadd -r moneyplant && useradd -r -g moneyplant moneyplant
-RUN chown -R moneyplant:moneyplant /app
+# Copy application layers from builder
+COPY --from=builder --chown=moneyplant:moneyplant /build/dependencies/ ./
+COPY --from=builder --chown=moneyplant:moneyplant /build/spring-boot-loader/ ./
+COPY --from=builder --chown=moneyplant:moneyplant /build/snapshot-dependencies/ ./
+COPY --from=builder --chown=moneyplant:moneyplant /build/application/ ./
+
+# Switch to non-root user
 USER moneyplant
 
-# Expose port
+# Expose application port
 EXPOSE 8081
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+# Health check endpoint
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
     CMD curl -f http://localhost:8081/engines/actuator/health || exit 1
 
-# Run the application
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# JVM optimization flags for containerized environment
+ENV JAVA_OPTS="-XX:+UseContainerSupport \
+    -XX:MaxRAMPercentage=75.0 \
+    -XX:InitialRAMPercentage=50.0 \
+    -XX:+UseG1GC \
+    -XX:+UseStringDeduplication \
+    -XX:+OptimizeStringConcat \
+    -Djava.security.egd=file:/dev/./urandom \
+    -Dspring.profiles.active=prod"
+
+# Run the application using Spring Boot's layered JAR approach
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS org.springframework.boot.loader.launch.JarLauncher"]
