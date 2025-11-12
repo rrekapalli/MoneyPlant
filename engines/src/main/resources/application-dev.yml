@@ -1,8 +1,5 @@
 # Development Profile Configuration
 spring:
-  profiles:
-    active: dev
-  
   # TimescaleDB configuration for development
   datasource:
     url: jdbc:postgresql://localhost:5432/MoneyPlant
