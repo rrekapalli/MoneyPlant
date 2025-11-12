@@ -254,4 +254,133 @@ public class NseEquityMasterCustomRepository {
             ps.setNull(paramIndex, java.sql.Types.REAL);
         }
     }
+    
+    /**
+     * Search symbols by query string, sector, and industry.
+     * Searches in symbol, company_name, sector, and industry fields.
+     * 
+     * @param query search query string
+     * @param sector optional sector filter
+     * @param industry optional industry filter
+     * @param limit maximum number of results
+     * @return list of matching symbols
+     */
+    @Transactional(readOnly = true)
+    public List<NseEquityMaster> searchSymbols(String query, String sector, String industry, int limit) {
+        StringBuilder sql = new StringBuilder(
+            "SELECT * FROM nse_eq_master WHERE trading_status = 'Active' AND ("
+        );
+        
+        sql.append("UPPER(symbol) LIKE UPPER(?) OR UPPER(company_name) LIKE UPPER(?)");
+        sql.append(")");
+        
+        if (sector != null && !sector.trim().isEmpty()) {
+            sql.append(" AND UPPER(sector) = UPPER(?)");
+        }
+        
+        if (industry != null && !industry.trim().isEmpty()) {
+            sql.append(" AND UPPER(industry) = UPPER(?)");
+        }
+        
+        sql.append(" ORDER BY symbol LIMIT ?");
+        
+        String searchPattern = "%" + query + "%";
+        
+        return jdbcTemplate.query(sql.toString(), ps -> {
+            int paramIndex = 1;
+            ps.setString(paramIndex++, searchPattern);
+            ps.setString(paramIndex++, searchPattern);
+            
+            if (sector != null && !sector.trim().isEmpty()) {
+                ps.setString(paramIndex++, sector);
+            }
+            
+            if (industry != null && !industry.trim().isEmpty()) {
+                ps.setString(paramIndex++, industry);
+            }
+            
+            ps.setInt(paramIndex, limit);
+        }, (rs, rowNum) -> mapRowToNseEquityMaster(rs));
+    }
+    
+    /**
+     * Find symbol by exact symbol code.
+     * 
+     * @param symbol the symbol code
+     * @return NseEquityMaster or null if not found
+     */
+    @Transactional(readOnly = true)
+    public NseEquityMaster findBySymbol(String symbol) {
+        String sql = "SELECT * FROM nse_eq_master WHERE symbol = ?";
+        
+        List<NseEquityMaster> results = jdbcTemplate.query(
+            sql,
+            new Object[]{symbol},
+            (rs, rowNum) -> mapRowToNseEquityMaster(rs)
+        );
+        
+        return results.isEmpty() ? null : results.get(0);
+    }
+    
+    /**
+     * Find symbols by sector.
+     * 
+     * @param sector the sector name
+     * @param limit maximum number of results
+     * @return list of symbols in the sector
+     */
+    @Transactional(readOnly = true)
+    public List<NseEquityMaster> findBySector(String sector, int limit) {
+        String sql = "SELECT * FROM nse_eq_master " +
+                    "WHERE UPPER(sector) = UPPER(?) AND trading_status = 'Active' " +
+                    "ORDER BY symbol LIMIT ?";
+        
+        return jdbcTemplate.query(
+            sql,
+            new Object[]{sector, limit},
+            (rs, rowNum) -> mapRowToNseEquityMaster(rs)
+        );
+    }
+    
+    /**
+     * Map ResultSet row to NseEquityMaster entity.
+     * Only maps essential fields for API responses.
+     */
+    private NseEquityMaster mapRowToNseEquityMaster(java.sql.ResultSet rs) throws SQLException {
+        NseEquityMaster master = new NseEquityMaster();
+        master.setSymbol(rs.getString("symbol"));
+        master.setCompanyName(rs.getString("company_name"));
+        master.setIndustry(rs.getString("industry"));
+        master.setSector(rs.getString("sector"));
+        master.setBasicIndustry(rs.getString("basic_industry"));
+        master.setIsin(rs.getString("isin"));
+        master.setSeries(rs.getString("series"));
+        master.setIsFnoSec(rs.getString("is_fno_sec"));
+        master.setIsSuspended(rs.getString("is_suspended"));
+        master.setIsDelisted(rs.getString("is_delisted"));
+        master.setTradingStatus(rs.getString("trading_status"));
+        master.setTradingSegment(rs.getString("trading_segment"));
+        master.setLastPrice(getFloatOrNull(rs, "last_price"));
+        master.setPreviousClose(getFloatOrNull(rs, "previous_close"));
+        master.setOpen(getFloatOrNull(rs, "open"));
+        master.setClose(getFloatOrNull(rs, "close"));
+        master.setVwap(getFloatOrNull(rs, "vwap"));
+        master.setTotalTradedVolume(getFloatOrNull(rs, "total_traded_volume"));
+        master.setPdSectorPe(getFloatOrNull(rs, "pd_sector_pe"));
+        master.setPdSymbolPe(getFloatOrNull(rs, "pd_symbol_pe"));
+        master.setPdSectorInd(rs.getString("pd_sector_ind"));
+        master.setFaceValue(getFloatOrNull(rs, "face_value"));
+        master.setIssuedSize(getFloatOrNull(rs, "issued_size"));
+        master.setListingDate(rs.getString("listing_date"));
+        master.setLastUpdateTime(rs.getString("last_update_time"));
+        return master;
+    }
+    
+    /**
+     * Helper method to get Float value or NULL from ResultSet
+     */
+    private Float getFloatOrNull(java.sql.ResultSet rs, String columnName) throws SQLException {
+        float value = rs.getFloat(columnName);
+        return rs.wasNull() ? null : value;
+    }
 }

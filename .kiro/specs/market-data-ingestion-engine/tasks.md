@@ -203,7 +203,7 @@ This implementation plan focuses on the core functionality of the Ingestion Engi
     - Batch insert into TimescaleDB
     - _Requirements: 2.5, 2.6_
 
-- [-] 10. Implement symbol master ingestion and universe management
+- [x] 10. Implement symbol master ingestion and universe management
   - [x] 10.1 Create SymbolMasterIngestionService
     - Implement scheduled job (cron: 6:00 AM daily) for symbol master refresh
     - Fetch equity master data from NSE API
@@ -217,13 +217,13 @@ This implementation plan focuses on the core functionality of the Ingestion Engi
     - Support custom filters (sector, industry, market cap ranges)
     - _Requirements: 7.3, 7.6_
   
-  - [-] 10.3 Implement dynamic symbol subscription
+  - [x] 10.3 Implement dynamic symbol subscription
     - Add/remove symbols without restart
     - Publish universe change events to Kafka
     - _Requirements: 7.4, 7.5, 7.7_
 
-- [ ] 11. Implement REST API endpoints
-  - [ ] 11.1 Create MarketDataController
+- [-] 11. Implement REST API endpoints
+  - [-] 11.1 Create MarketDataController
     - GET /api/v1/market-data/quote/{symbol} - latest quote
     - GET /api/v1/market-data/ohlcv/{symbol} - historical OHLCV with pagination
     - GET /api/v1/market-data/symbols/search - symbol search

@@ -207,13 +207,13 @@ public class TimescaleRepository {
     }
     
     /**
-     * Get the latest tick for a specific symbol.
+     * Get the latest tick for a specific symbol (synchronous).
      * 
      * @param symbol the symbol to query
      * @return the latest tick data or null if not found
      */
     @Transactional(readOnly = true)
-    public TickData getLatestTick(String symbol) {
+    public TickData getLatestTickSync(String symbol) {
         List<TickData> ticks = jdbcTemplate.query(
             GET_LATEST_TICK_SQL,
             new Object[]{symbol},
@@ -253,5 +253,22 @@ public class TimescaleRepository {
                 .metadata(rs.getString("metadata"))
                 .build();
         }
+    }
+    
+    /**
+     * Get the latest tick for a specific symbol (reactive wrapper).
+     * 
+     * @param symbol the symbol to query
+     * @return Mono of the latest tick data or empty if not found
+     */
+    public reactor.core.publisher.Mono<TickData> getLatestTick(String symbol) {
+        return reactor.core.publisher.Mono.fromCallable(() -> {
+            List<TickData> ticks = jdbcTemplate.query(
+                GET_LATEST_TICK_SQL,
+                new Object[]{symbol},
+                new TickDataRowMapper()
+            );
+            return ticks.isEmpty() ? null : ticks.get(0);
+        });
     }
 }

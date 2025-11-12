@@ -314,4 +314,61 @@ public class OhlcvRepository {
                 .build();
         }
     }
+    
+    /**
+     * Find OHLCV data by symbol, timeframe, and date range with pagination (reactive wrapper).
+     * Accepts Instant parameters for more flexible date/time handling.
+     * 
+     * @param symbol the symbol to query
+     * @param timeframe the timeframe to query
+     * @param startInstant start instant (inclusive)
+     * @param endInstant end instant (exclusive)
+     * @param pageable pagination parameters
+     * @return Mono of page of OHLCV data
+     */
+    public reactor.core.publisher.Mono<List<OhlcvData>> findBySymbolAndTimeframeAndDateRange(
+            String symbol, Timeframe timeframe, Instant startInstant, Instant endInstant, Pageable pageable) {
+        
+        return reactor.core.publisher.Mono.fromCallable(() -> {
+            log.debug("Querying OHLCV data with pagination for symbol: {} timeframe: {} from {} to {}", 
+                symbol, timeframe, startInstant, endInstant);
+            
+            // Get paginated results
+            List<OhlcvData> content = jdbcTemplate.query(
+                SELECT_OHLCV_BY_DATE_RANGE_PAGINATED_SQL,
+                new Object[]{
+                    symbol, 
+                    timeframe.getCode(), 
+                    Timestamp.from(startInstant), 
+                    Timestamp.from(endInstant),
+                    pageable.getPageSize(),
+                    pageable.getOffset()
+                },
+                new OhlcvDataRowMapper()
+            );
+            
+            return content;
+        });
+    }
+    
+    /**
+     * Count OHLCV records by symbol, timeframe, and date range.
+     * 
+     * @param symbol the symbol to query
+     * @param timeframe the timeframe to query
+     * @param startInstant start instant (inclusive)
+     * @param endInstant end instant (exclusive)
+     * @return count of matching records
+     */
+    public long countBySymbolAndTimeframeAndDateRange(
+            String symbol, Timeframe timeframe, Instant startInstant, Instant endInstant) {
+        
+        Long count = jdbcTemplate.queryForObject(
+            COUNT_OHLCV_BY_DATE_RANGE_SQL,
+            new Object[]{symbol, timeframe.getCode(), Timestamp.from(startInstant), Timestamp.from(endInstant)},
+            Long.class
+        );
+        
+        return count != null ? count : 0L;
+    }
 }
