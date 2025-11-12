@@ -15,6 +15,11 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 @Slf4j
+@org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(
+    name = "hudi.enabled",
+    havingValue = "true",
+    matchIfMissing = false
+)
 public class SparkConfig {
     
     @Value("${spark.app-name:MoneyPlant-Engines}")

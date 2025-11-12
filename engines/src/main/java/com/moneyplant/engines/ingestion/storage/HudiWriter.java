@@ -24,6 +24,11 @@ import java.util.Map;
  */
 @Component
 @Slf4j
+@org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(
+    name = "hudi.enabled",
+    havingValue = "true",
+    matchIfMissing = false
+)
 public class HudiWriter {
     
     private final HudiConfig hudiConfig;

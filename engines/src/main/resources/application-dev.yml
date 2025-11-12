@@ -1,4 +1,7 @@
 # Development Profile Configuration
+server:
+  port: 8081  # Ensure dev uses port 8081
+
 spring:
   # TimescaleDB configuration for development
   datasource:
@@ -11,6 +14,8 @@ spring:
   
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update  # Allow Hibernate to create missing tables in dev
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
@@ -77,8 +82,9 @@ logging:
     max-size: 10MB
     max-history: 7
 
-# Hudi configuration for development (local filesystem)
+# Hudi configuration for development (disabled for simplicity)
 hudi:
+  enabled: false  # Disable Hudi/Spark in dev to avoid dependencies
   base-path: /tmp/hudi-dev/nse-eq-ticks
   table-name: nse_eq_ticks_historical_dev
   s3:

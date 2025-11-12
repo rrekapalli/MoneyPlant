@@ -27,6 +27,11 @@ import java.util.List;
  */
 @Service
 @Slf4j
+@org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(
+    name = "hudi.enabled",
+    havingValue = "true",
+    matchIfMissing = false
+)
 public class EndOfDayArchivalService {
     
     private final TimescaleRepository timescaleRepository;

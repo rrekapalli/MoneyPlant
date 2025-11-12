@@ -23,6 +23,11 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/archival")
 @Slf4j
+@org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(
+    name = "hudi.enabled",
+    havingValue = "true",
+    matchIfMissing = false
+)
 public class ArchivalController {
     
     private final EndOfDayArchivalService archivalService;

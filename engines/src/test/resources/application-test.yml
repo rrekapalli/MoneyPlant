@@ -1,75 +1,99 @@
-# Test Profile Configuration
 spring:
-  # Use H2 in-memory database for tests
+  application:
+    name: moneyplant-engines-test
+  
   datasource:
-    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
-    username: sa
-    password: 
-    driver-class-name: org.h2.Driver
+    # Will be overridden by Testcontainers
+    url: jdbc:postgresql://localhost:5432/testdb
+    username: test
+    password: test
+    driver-class-name: org.postgresql.Driver
     hikari:
-      maximum-pool-size: 2
-      minimum-idle: 1
-      connection-timeout: 5000
-      connection-init-sql: SELECT 1  # Override PostgreSQL-specific init SQL
+      maximum-pool-size: 5
+      minimum-idle: 2
+      connection-timeout: 30000
   
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: none
     show-sql: false
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.H2Dialect
-        format_sql: false
-        jdbc:
-          time_zone: UTC
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
   
-  # Disable Kafka for tests
   kafka:
     enabled: false
-  
-  # Disable auto-start for ingestion services in tests
-  boot:
-    admin:
-      client:
-        enabled: false
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all
+      retries: 3
+    consumer:
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      group-id: test-group
+      auto-offset-reset: earliest
 
-# Disable ingestion auto-start in tests
+# Ingestion configuration
 ingestion:
   auto-start:
     enabled: false
-  
-  providers:
-    nse:
-      enabled: false
-    yahoo:
-      enabled: false
+  batch-size: 100
+  parallel-fetch:
+    enabled: true
+    max-threads: 4
 
-# Disable NSE WebSocket in tests
+# NSE configuration
 nse:
   websocket:
     enabled: false
   auto-start:
     enabled: false
+  api:
+    base-url: https://www.nseindia.com/api
+    rate-limit-per-hour: 1000
+    timeout-seconds: 15
 
-# Disable Spark in tests
-spark:
-  master: local[1]
+# Yahoo Finance configuration
+yahoo:
+  api:
+    base-url: https://query1.finance.yahoo.com
+    rate-limit-per-hour: 2000
+    timeout-seconds: 10
 
-# Logging configuration for tests
+# Archival configuration
+archival:
+  enabled: false
+  cron: "0 30 15 * * MON-FRI"
+  hudi:
+    base-path: file:///tmp/test-hudi
+    table-name: nse_eq_ticks_test
+
+# Resilience4j configuration
+resilience4j:
+  circuitbreaker:
+    instances:
+      kafkaPublisher:
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        sliding-window-size: 10
+  ratelimiter:
+    instances:
+      nseProvider:
+        limit-for-period: 100
+        limit-refresh-period: 1h
+      yahooProvider:
+        limit-for-period: 200
+        limit-refresh-period: 1h
+
+# Logging configuration
 logging:
   level:
-    root: WARN
-    com.moneyplant.engines: INFO
-    org.springframework: WARN
-    org.hibernate: WARN
-    org.apache.kafka: ERROR
-
-# Management endpoints for tests
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info
-  endpoint:
-    health:
-      show-details: always
+    root: INFO
+    com.moneyplant.engines: DEBUG
+    org.springframework.kafka: WARN
+    org.apache.kafka: WARN
+    org.testcontainers: INFO
+    com.zaxxer.hikari: WARN
