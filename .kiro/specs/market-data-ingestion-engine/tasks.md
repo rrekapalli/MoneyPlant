@@ -229,12 +229,12 @@ This implementation plan focuses on the core functionality of the Ingestion Engi
     - GET /api/v1/market-data/symbols/search - symbol search
     - _Requirements: 12.1_
   
-  - [-] 11.2 Create IngestionController
+  - [x] 11.2 Create IngestionController
     - POST /api/v1/ingestion/backfill - trigger backfill
     - GET /api/v1/ingestion/status - ingestion status
     - _Requirements: 2.8_
   
-  - [ ] 11.3 Add JWT authentication for API endpoints
+  - [-] 11.3 Add JWT authentication for API endpoints
     - Integrate with existing auth system
     - Validate JWT tokens on protected endpoints
     - _Requirements: 12.3_
