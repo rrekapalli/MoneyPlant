@@ -169,11 +169,11 @@
             </exclusions>
         </dependency>
 
-        <!-- Apache Spark Core for Hudi integration -->
+        <!-- Apache Spark Core - v3.5.3 (latest stable with better logging) -->
         <dependency>
             <groupId>org.apache.spark</groupId>
-            <artifactId>spark-core_2.12</artifactId>
-            <version>3.3.2</version>
+            <artifactId>spark-core_2.13</artifactId>
+            <version>3.5.3</version>
             <exclusions>
                 <!-- Exclude old Log4j 1.x -->
                 <exclusion>
@@ -192,11 +192,11 @@
             </exclusions>
         </dependency>
 
-        <!-- Apache Spark SQL for Hudi integration -->
+        <!-- Apache Spark SQL - v3.5.3 (latest stable with better logging) -->
         <dependency>
             <groupId>org.apache.spark</groupId>
-            <artifactId>spark-sql_2.12</artifactId>
-            <version>3.3.2</version>
+            <artifactId>spark-sql_2.13</artifactId>
+            <version>3.5.3</version>
             <exclusions>
                 <!-- Exclude old Log4j 1.x -->
                 <exclusion>
