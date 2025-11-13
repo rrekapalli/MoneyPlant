@@ -148,11 +148,11 @@
             <artifactId>reactor-core</artifactId>
         </dependency>
 
-        <!-- Apache Hudi for Data Lake -->
+        <!-- Apache Hudi for Data Lake - compatible with Spark 3.5 -->
         <dependency>
             <groupId>org.apache.hudi</groupId>
-            <artifactId>hudi-spark3.3-bundle_2.12</artifactId>
-            <version>0.14.0</version>
+            <artifactId>hudi-spark3.5-bundle_2.13</artifactId>
+            <version>0.15.0</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.slf4j</groupId>
