@@ -148,11 +148,11 @@
             <artifactId>reactor-core</artifactId>
         </dependency>
 
-        <!-- Apache Hudi for Data Lake - compatible with Spark 3.5 -->
+        <!-- Apache Hudi for Data Lake - compatible with Spark 4.0 -->
         <dependency>
             <groupId>org.apache.hudi</groupId>
-            <artifactId>hudi-spark3.5-bundle_2.13</artifactId>
-            <version>0.15.0</version>
+            <artifactId>hudi-spark-bundle_2.13</artifactId>
+            <version>1.0.0-beta1</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.slf4j</groupId>
@@ -169,11 +169,11 @@
             </exclusions>
         </dependency>
 
-        <!-- Apache Spark Core - v3.5.3 (latest stable with better logging) -->
+        <!-- Apache Spark Core - v4.0.0 with Jakarta EE support -->
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-core_2.13</artifactId>
-            <version>3.5.3</version>
+            <version>4.0.0</version>
             <exclusions>
                 <!-- Exclude old Log4j 1.x -->
                 <exclusion>
@@ -192,11 +192,11 @@
             </exclusions>
         </dependency>
 
-        <!-- Apache Spark SQL - v3.5.3 (latest stable with better logging) -->
+        <!-- Apache Spark SQL - v4.0.0 with Jakarta EE support -->
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-sql_2.13</artifactId>
-            <version>3.5.3</version>
+            <version>4.0.0</version>
             <exclusions>
                 <!-- Exclude old Log4j 1.x -->
                 <exclusion>
