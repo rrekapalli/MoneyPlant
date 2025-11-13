@@ -246,7 +246,7 @@ nse:
 # Spark Configuration
 spark:
   app-name: ${SPARK_APP_NAME:NSE-Bhav-Ingestion}
-  # Use external Spark cluster
+  # Use external Spark cluster via Tailscale
   # Spark Master: spark://100.118.80.70:7077
   master: ${SPARK_MASTER:spark://100.118.80.70:7077}
   # Spark Master UI available at: http://spark-master.tailce422e.ts.net:8080/

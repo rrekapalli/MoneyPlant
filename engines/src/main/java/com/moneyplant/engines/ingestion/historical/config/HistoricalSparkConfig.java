@@ -164,6 +164,9 @@ public class HistoricalSparkConfig {
             .setMaster(master)
             .set("spark.driver.memory", driverMemory)
             .set("spark.executor.memory", executorMemory)
+            // Network configuration for Tailscale connectivity
+            .set("spark.driver.host", "100.124.119.17") // Tailscale IP
+            .set("spark.driver.bindAddress", "0.0.0.0")
             // Adaptive query execution for optimal performance
             .set("spark.sql.adaptive.enabled", String.valueOf(sqlAdaptiveEnabled))
             .set("spark.sql.adaptive.coalescePartitions.enabled", String.valueOf(sqlAdaptiveCoalescePartitionsEnabled))
