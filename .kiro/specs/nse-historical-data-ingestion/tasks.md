@@ -131,15 +131,15 @@ This implementation plan focuses on building a Java-based service to download NS
     - Estimate time remaining based on average processing time per date
     - _Requirements: 5.7_
 
-- [ ] 8. Implement ingestion orchestration service
-  - [ ] 8.1 Create NseBhavCopyIngestionService
+- [x] 8. Implement ingestion orchestration service
+  - [x] 8.1 Create NseBhavCopyIngestionService
     - Implement startIngestion() to resolve date range
     - Use DateRangeResolver to determine date range
     - Use @Async for non-blocking execution
     - Return job ID immediately
     - _Requirements: 3.1, 4.5_
   
-  - [ ] 8.2 Implement ingestion pipeline
+  - [x] 8.2 Implement ingestion pipeline
     - Download bhavcopy files to staging directory
     - Trigger Spark processing for bulk insert
     - Clean up staging directory after processing
@@ -147,7 +147,7 @@ This implementation plan focuses on building a Java-based service to download NS
     - Handle errors and continue processing
     - _Requirements: 1.1, 1.2, 1.4, 1.5, 1.12, 2.2, 3.8, 3.10_
   
-  - [ ] 8.3 Implement logging
+  - [x] 8.3 Implement logging
     - Log ingestion start with date range and total days
     - Log progress for each date: "Processing date {date} ({current}/{total})"
     - Log number of records from Spark processing
@@ -156,13 +156,13 @@ This implementation plan focuses on building a Java-based service to download NS
     - Log summary on completion: total dates, records, errors, duration
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6_
   
-  - [ ] 8.4 Implement staging directory cleanup
+  - [x] 8.4 Implement staging directory cleanup
     - Delete all CSV files after successful processing
     - Delete staging directory
     - Handle cleanup errors gracefully
     - _Requirements: 1.12_
   
-  - [ ] 8.5 Implement timeout handling
+  - [x] 8.5 Implement timeout handling
     - Cancel job if execution exceeds configured timeout (default 6 hours)
     - Mark job as TIMEOUT status
     - _Requirements: 6.6_
