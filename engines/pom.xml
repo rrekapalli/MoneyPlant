@@ -115,6 +115,13 @@
             <artifactId>hibernate-validator</artifactId>
         </dependency>
 
+        <!-- Jakarta Servlet API for Spark 4.0 compatibility - using 5.0.0 which still has SingleThreadModel -->
+        <dependency>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
+            <version>5.0.0</version>
+        </dependency>
+
         <!-- Log4j to SLF4J bridge for Spark compatibility -->
         <!-- This routes Log4j calls from Spark to SLF4J/Logback -->
         <dependency>
@@ -148,11 +155,11 @@
             <artifactId>reactor-core</artifactId>
         </dependency>
 
-        <!-- Apache Hudi for Data Lake - compatible with Spark 4.0 -->
+        <!-- Apache Hudi for Data Lake - using Spark 3.5 bundle (most stable for now) -->
         <dependency>
             <groupId>org.apache.hudi</groupId>
-            <artifactId>hudi-spark-bundle_2.13</artifactId>
-            <version>1.0.0-beta1</version>
+            <artifactId>hudi-spark3.5-bundle_2.13</artifactId>
+            <version>0.15.0</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.slf4j</groupId>

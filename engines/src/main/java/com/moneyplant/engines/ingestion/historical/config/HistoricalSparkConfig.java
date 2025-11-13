@@ -155,8 +155,10 @@ public class HistoricalSparkConfig {
      */
     @Bean(name = "historicalSparkSession")
     public SparkSession historicalSparkSession() {
-        log.info("Initializing Historical SparkSession with master: {}, app: {}", master, appName);
+        log.info("=== Starting Historical SparkSession initialization ===");
+        log.info("Master: {}, App: {}", master, appName);
         
+        log.info("Creating SparkConf...");
         SparkConf sparkConf = new SparkConf()
             .setAppName(appName)
             .setMaster(master)
@@ -179,18 +181,31 @@ public class HistoricalSparkConfig {
             .set("spark.sql.shuffle.partitions", "8")
             // Serialization
             .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
-            // Logging
+            // Logging and UI
+            .set("spark.ui.enabled", "false") // Disable Spark UI to avoid Jetty issues
             .set("spark.ui.showConsoleProgress", "false")
             .set("spark.sql.warehouse.dir", "/tmp/spark-warehouse");
+        
+        log.info("SparkConf created successfully");
+        log.info("Building SparkSession...");
         
         sparkSession = SparkSession.builder()
             .config(sparkConf)
             .getOrCreate();
         
-        // Set log level to WARN to reduce noise
-        sparkSession.sparkContext().setLogLevel("WARN");
+        log.info("SparkSession created successfully");
         
-        log.info("Historical SparkSession initialized successfully");
+        // Try to set log level to WARN to reduce noise
+        // This may fail with SLF4J/Logback, so we catch and ignore
+        try {
+            log.info("Setting Spark log level to WARN...");
+            sparkSession.sparkContext().setLogLevel("WARN");
+            log.info("Spark log level set successfully");
+        } catch (Exception e) {
+            log.warn("Could not set Spark log level (expected with SLF4J/Logback): {}", e.getMessage());
+        }
+        
+        log.info("=== Historical SparkSession initialized successfully ===");
         
         return sparkSession;
     }

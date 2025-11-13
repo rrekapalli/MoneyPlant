@@ -50,7 +50,6 @@ public class RetryConfig {
     public Retry downloadRetry() {
         io.github.resilience4j.retry.RetryConfig config = io.github.resilience4j.retry.RetryConfig.custom()
             .maxAttempts(maxDownloadRetries)
-            .waitDuration(Duration.ofSeconds(1))
             .intervalFunction(attempt -> {
                 // Exponential backoff: 1s, 2s, 4s, 8s, 16s, 32s
                 long backoffSeconds = (long) Math.pow(retryBackoffMultiplier, attempt - 1);

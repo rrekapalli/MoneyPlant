@@ -343,7 +343,7 @@ iceberg:
 logging:
   level:
     root: WARN
-    com.moneyplant.engines: WARN
+    com.moneyplant.engines: INFO
     org.springframework.kafka: WARN
     org.apache.kafka: WARN
     org.springframework.web.socket: WARN
