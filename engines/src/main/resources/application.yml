@@ -247,7 +247,7 @@ nse:
 spark:
   app-name: ${SPARK_APP_NAME:NSE-Bhav-Ingestion}
   # Use external Spark cluster via Tailscale
-  # Spark Master: spark://100.118.80.70:7077
+  # CSV files are read locally on driver with file:// prefix, then distributed to cluster
   master: ${SPARK_MASTER:spark://100.118.80.70:7077}
   # Spark Master UI available at: http://spark-master.tailce422e.ts.net:8080/
   driver-memory: ${SPARK_DRIVER_MEMORY:2g}

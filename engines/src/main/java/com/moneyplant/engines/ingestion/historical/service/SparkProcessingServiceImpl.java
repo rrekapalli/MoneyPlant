@@ -70,15 +70,17 @@ public class SparkProcessingServiceImpl implements SparkProcessingService {
             
             try {
                 // 1. Read all CSV files from staging directory
+                // Note: For cluster mode, we read files locally on driver and distribute to cluster
                 String csvPath = stagingDirectory.toString() + "/*.csv";
-                log.debug("Reading CSV files from: {}", csvPath);
+                log.debug("Reading CSV files from local staging directory: {}", csvPath);
                 
+                // Use file:// prefix to ensure reading from local filesystem on driver
                 Dataset<Row> df = spark.read()
                     .option("header", "true")
                     .option("inferSchema", "true")
                     .option("mode", "DROPMALFORMED")  // Skip invalid rows
                     .option("dateFormat", "dd-MMM-yyyy")
-                    .csv(csvPath);
+                    .csv("file://" + csvPath);
                 
                 long totalRecords = df.count();
                 log.info("Read {} records from CSV files", totalRecords);
