@@ -36,13 +36,13 @@ This implementation plan focuses on building a Java-based service to download NS
     - Implement merge() method for combining results
     - _Requirements: 2.9_
 
-- [ ] 3. Implement NSE bhavcopy downloader
-  - [ ] 3.1 Create NseBhavCopyDownloader service
+- [x] 3. Implement NSE bhavcopy downloader
+  - [x] 3.1 Create NseBhavCopyDownloader service
     - Implement NSE session initialization with proper headers (User-Agent, Referer, Accept)
     - Visit NSE homepage to set cookies
     - _Requirements: 1.1, 1.3_
   
-  - [ ] 3.2 Implement download logic
+  - [x] 3.2 Implement download logic
     - Build URL: `https://www.nseindia.com/content/historical/EQUITIES/{year}/{month}/cm{DDMMMYYYY}bhav.csv.zip`
     - Download ZIP file using WebClient
     - Handle 404 as missing data (weekend/holiday)
@@ -50,7 +50,7 @@ This implementation plan focuses on building a Java-based service to download NS
     - Add 300ms delay between consecutive downloads
     - _Requirements: 1.2, 1.8, 1.9, 1.10, 6.1, 6.2_
   
-  - [ ] 3.3 Implement ZIP extraction to staging directory
+  - [x] 3.3 Implement ZIP extraction to staging directory
     - Extract ZIP file and save CSV to staging directory
     - Use filename format: bhav_{YYYYMMDD}.csv
     - Create staging directory: /tmp/bhav_staging/{jobId}/
