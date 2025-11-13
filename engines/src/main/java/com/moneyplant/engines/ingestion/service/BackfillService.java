@@ -3,6 +3,7 @@ package com.moneyplant.engines.ingestion.service;
 import com.moneyplant.engines.ingestion.model.OhlcvData;
 import com.moneyplant.engines.ingestion.model.Timeframe;
 import com.moneyplant.engines.ingestion.provider.YahooFinanceProvider;
+import com.moneyplant.engines.ingestion.provider.NseIndiaProvider;
 import com.moneyplant.engines.ingestion.repository.OhlcvRepository;
 import com.moneyplant.engines.ingestion.service.impl.IngestionServiceImpl;
 import lombok.Builder;
@@ -21,7 +22,7 @@ import java.util.stream.Collectors;
 
 /**
  * Service for detecting and filling data gaps in TimescaleDB.
- * Fetches missing historical data from Yahoo Finance and performs batch inserts.
+ * Fetches missing historical data from NSE India API and performs batch inserts.
  * 
  * Requirements: 2.5, 2.6
  */
@@ -31,15 +32,18 @@ public class BackfillService {
     
     private final OhlcvRepository ohlcvRepository;
     private final YahooFinanceProvider yahooFinanceProvider;
+    private final NseIndiaProvider nseIndiaProvider;
     private final IngestionServiceImpl ingestionService;
     
     @Autowired
     public BackfillService(
             OhlcvRepository ohlcvRepository,
             YahooFinanceProvider yahooFinanceProvider,
+            NseIndiaProvider nseIndiaProvider,
             IngestionServiceImpl ingestionService) {
         this.ohlcvRepository = ohlcvRepository;
         this.yahooFinanceProvider = yahooFinanceProvider;
+        this.nseIndiaProvider = nseIndiaProvider;
         this.ingestionService = ingestionService;
     }
     
@@ -110,7 +114,7 @@ public class BackfillService {
     }
     
     /**
-     * Fills data gaps by fetching missing data from Yahoo Finance.
+     * Fills data gaps by fetching missing data from NSE India API.
      * Groups gaps by symbol and date range for efficient fetching.
      * 
      * @param gaps List of data gaps to fill
@@ -171,7 +175,7 @@ public class BackfillService {
                                         .errorMessage(error.getMessage())
                                         .build());
                             });
-                }, 5) // Process 5 symbols concurrently
+                }, 100) // Process 100 symbols concurrently with virtual threads
                 .collectList()
                 .map(results -> {
                     int successCount = (int) results.stream().filter(GapFillResult::isSuccess).count();
@@ -192,7 +196,7 @@ public class BackfillService {
     }
     
     /**
-     * Fills gaps for a single symbol by fetching data from Yahoo Finance.
+     * Fills gaps for a single symbol by fetching data from NSE India API.
      * 
      * @param symbol Trading symbol
      * @param startDate Start date
@@ -208,7 +212,7 @@ public class BackfillService {
         
         log.debug("Fetching data for symbol {} from {} to {}", symbol, startDate, endDate);
         
-        return yahooFinanceProvider.fetchHistorical(symbol, startDate, endDate, timeframe)
+        return nseIndiaProvider.fetchHistorical(symbol, startDate, endDate, timeframe)
                 .flatMapMany(Flux::fromIterable)
                 .collectList()
                 .flatMap(ohlcvList -> {

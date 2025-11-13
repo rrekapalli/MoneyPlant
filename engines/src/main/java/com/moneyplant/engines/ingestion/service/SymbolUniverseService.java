@@ -76,7 +76,9 @@ public class SymbolUniverseService {
                     break;
                     
                 case ALL_ACTIVE:
-                    equities = repository.findByTradingStatus("Active");
+                    log.info("Fetching ALL_ACTIVE universe - fetching all symbols from nse_eq_master");
+                    equities = repository.findAll();
+                    log.info("Repository returned {} equities", equities.size());
                     break;
                     
                 default:
@@ -171,8 +173,8 @@ public class SymbolUniverseService {
             log.debug("Applying filter: {}", filter);
             
             if (filter == null || filter.isEmpty()) {
-                log.warn("Empty filter provided, returning all active symbols");
-                return repository.findByTradingStatus("Active");
+                log.warn("Empty filter provided, returning all symbols");
+                return repository.findAll();
             }
             
             // Start with all equities

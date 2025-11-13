@@ -35,33 +35,39 @@ public interface NseEquityMasterRepository extends JpaRepository<NseEquityMaster
     List<NseEquityMaster> findByTradingStatus(String tradingStatus);
     
     /**
+     * Find all symbols by status (Listed, Suspended, etc.)
+     * Using IgnoreCase to ensure case-insensitive matching
+     */
+    List<NseEquityMaster> findByStatusIgnoreCase(String status);
+    
+    /**
      * Find all symbols by sector and trading status
      */
     List<NseEquityMaster> findBySectorAndTradingStatus(String sector, String tradingStatus);
     
     /**
      * Find all FNO (Futures & Options) eligible stocks
-     * Uses is_fno_sec field
+     * Uses is_fno_sec field and status = 'Listed'
      */
-    @Query("SELECT e FROM NseEquityMaster e WHERE e.isFnoSec = 'Yes' AND e.tradingStatus = 'Active'")
+    @Query("SELECT e FROM NseEquityMaster e WHERE e.isFnoSec = 'True' AND e.status = 'Listed'")
     List<NseEquityMaster> findFnoEligibleStocks();
     
     /**
      * Find all symbols in Nifty 50 index
-     * Uses pd_sector_ind field
+     * Uses pd_sector_ind field and status = 'Listed'
      */
-    @Query("SELECT e FROM NseEquityMaster e WHERE e.pdSectorInd = 'NIFTY 50' AND e.tradingStatus = 'Active'")
+    @Query("SELECT e FROM NseEquityMaster e WHERE e.pdSectorInd = 'NIFTY 50' AND e.status = 'Listed'")
     List<NseEquityMaster> findNifty50Symbols();
     
     /**
      * Find all symbols in Nifty Bank index
      */
-    @Query("SELECT e FROM NseEquityMaster e WHERE e.pdSectorInd = 'NIFTY BANK' AND e.tradingStatus = 'Active'")
+    @Query("SELECT e FROM NseEquityMaster e WHERE e.pdSectorInd = 'NIFTY BANK' AND e.status = 'Listed'")
     List<NseEquityMaster> findNiftyBankSymbols();
     
     /**
      * Find all symbols in a specific index by pd_sector_ind
      */
-    @Query("SELECT e FROM NseEquityMaster e WHERE e.pdSectorInd = :indexName AND e.tradingStatus = 'Active'")
+    @Query("SELECT e FROM NseEquityMaster e WHERE e.pdSectorInd = :indexName AND e.status = 'Listed'")
     List<NseEquityMaster> findByIndex(@Param("indexName") String indexName);
 }

@@ -27,6 +27,7 @@ import java.util.Map;
 public class IngestionController {
     
     private final BackfillService backfillService;
+    private final com.moneyplant.engines.ingestion.service.EodIngestionScheduler eodScheduler;
     
     // Track ingestion metrics (in production, use a proper metrics service)
     private long totalTicksProcessed = 0;
@@ -37,8 +38,11 @@ public class IngestionController {
     private final Instant startTime = Instant.now();
     
     @Autowired
-    public IngestionController(BackfillService backfillService) {
+    public IngestionController(
+            BackfillService backfillService,
+            com.moneyplant.engines.ingestion.service.EodIngestionScheduler eodScheduler) {
         this.backfillService = backfillService;
+        this.eodScheduler = eodScheduler;
     }
     
     /**
@@ -228,5 +232,41 @@ public class IngestionController {
     @GetMapping("/health")
     public ResponseEntity<String> healthCheck() {
         return ResponseEntity.ok("Ingestion service is running");
+    }
+    
+    /**
+     * Trigger manual EOD ingestion for testing.
+     * 
+     * POST /api/v1/ingestion/eod/trigger
+     * 
+     * Optional query parameter: date (format: YYYY-MM-DD)
+     * If not provided, uses today's date.
+     * 
+     * @param dateStr optional date string (YYYY-MM-DD)
+     * @return success message
+     */
+    @PostMapping("/eod/trigger")
+    public ResponseEntity<String> triggerEodIngestion(
+            @RequestParam(required = false) String date) {
+        
+        try {
+            java.time.LocalDate targetDate = date != null 
+                ? java.time.LocalDate.parse(date)
+                : java.time.LocalDate.now(java.time.ZoneId.of("Asia/Kolkata"));
+            
+            log.info("Manual EOD ingestion triggered via API for date: {}", targetDate);
+            
+            // Trigger ingestion asynchronously
+            new Thread(() -> {
+                eodScheduler.triggerManualEodIngestion(targetDate);
+            }).start();
+            
+            return ResponseEntity.ok("EOD ingestion triggered for date: " + targetDate + 
+                ". Check logs for progress and results.");
+        } catch (Exception e) {
+            log.error("Error triggering EOD ingestion", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Error: " + e.getMessage());
+        }
     }
 }

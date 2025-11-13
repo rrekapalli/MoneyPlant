@@ -108,7 +108,8 @@ public class Resilience4jConfig {
     }
 
     /**
-     * Creates a rate limiter for NSE API (1000 requests per hour).
+     * Creates a rate limiter for NSE API (50 requests per second = 3000 per minute).
+     * NSE can handle much higher throughput with proper session management.
      * 
      * @param registry RateLimiterRegistry
      * @return RateLimiter for NSE
@@ -116,8 +117,8 @@ public class Resilience4jConfig {
     @Bean("nseRateLimiter")
     public RateLimiter nseRateLimiter(RateLimiterRegistry registry) {
         RateLimiterConfig config = RateLimiterConfig.custom()
-                .limitForPeriod(1000)
-                .limitRefreshPeriod(Duration.ofHours(1))
+                .limitForPeriod(50)
+                .limitRefreshPeriod(Duration.ofSeconds(1))
                 .timeoutDuration(Duration.ofSeconds(10))
                 .build();
 

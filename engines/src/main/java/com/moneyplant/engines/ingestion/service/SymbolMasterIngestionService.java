@@ -105,7 +105,10 @@ public class SymbolMasterIngestionService {
                         .toList());
                 
                 // Perform batch upsert using custom repository
-                return Mono.fromCallable(() -> customRepository.batchUpsert(masterDataList));
+                return Mono.fromCallable(() -> {
+                    customRepository.batchUpsert(masterDataList);
+                    return masterDataList.size();
+                });
             })
             .doOnSuccess(count -> {
                 log.info("Symbol master ingestion completed. Total records updated: {}", count);

@@ -1086,10 +1086,12 @@ public class NseIndicesServiceImpl extends TextWebSocketHandler implements NseIn
     /**
      * Kafka consumer method to read NSE indices data and publish to WebSocket topics
      * This enables real-time data flow from Kafka to WebSocket subscribers
+     * Only active when Kafka is enabled.
      */
     @KafkaListener(
         topics = "${kafka.topics.nse-indices-ticks:nse-indices-ticks}",
-        groupId = "engines-websocket-group"
+        groupId = "engines-websocket-group",
+        autoStartup = "${spring.kafka.enabled:true}"
     )
     public void consumeNseIndicesData(String message) {
         try {

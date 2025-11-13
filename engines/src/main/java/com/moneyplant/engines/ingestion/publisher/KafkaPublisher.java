@@ -28,6 +28,11 @@ import java.util.concurrent.CompletableFuture;
  */
 @Service
 @Slf4j
+@org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(
+    name = "spring.kafka.enabled",
+    havingValue = "true",
+    matchIfMissing = false
+)
 public class KafkaPublisher {
 
     private final KafkaTemplate<String, Object> avroKafkaTemplate;

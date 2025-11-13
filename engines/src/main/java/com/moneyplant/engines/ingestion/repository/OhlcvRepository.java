@@ -35,9 +35,11 @@ public class OhlcvRepository {
     
     private static final String INSERT_OHLCV_SQL = 
         "INSERT INTO nse_eq_ohlcv_historic " +
-        "(time, symbol, timeframe, open, high, low, close, volume, vwap, created_at, updated_at) " +
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) " +
-        "ON CONFLICT (symbol, timeframe, time) DO UPDATE SET " +
+        "(time, symbol, date, timeframe, open, high, low, close, volume, vwap, created_at, updated_at) " +
+        "VALUES (?, ?, DATE(?), ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) " +
+        "ON CONFLICT (symbol, time) DO UPDATE SET " +
+        "date = EXCLUDED.date, " +
+        "timeframe = EXCLUDED.timeframe, " +
         "open = EXCLUDED.open, " +
         "high = EXCLUDED.high, " +
         "low = EXCLUDED.low, " +
@@ -99,9 +101,11 @@ public class OhlcvRepository {
         log.debug("Saving OHLCV data for symbol: {} timeframe: {} at time: {}", 
             ohlcvData.getSymbol(), ohlcvData.getTimeframe(), ohlcvData.getTimestamp());
         
+        Timestamp timestamp = Timestamp.from(ohlcvData.getTimestamp());
         return jdbcTemplate.update(INSERT_OHLCV_SQL,
-            Timestamp.from(ohlcvData.getTimestamp()),
+            timestamp,
             ohlcvData.getSymbol(),
+            timestamp, // date is extracted from timestamp using DATE() function
             ohlcvData.getTimeframe().getCode(),
             ohlcvData.getOpen(),
             ohlcvData.getHigh(),
@@ -133,19 +137,21 @@ public class OhlcvRepository {
                 @Override
                 public void setValues(PreparedStatement ps, int i) throws SQLException {
                     OhlcvData ohlcv = ohlcvDataList.get(i);
-                    ps.setTimestamp(1, Timestamp.from(ohlcv.getTimestamp()));
+                    Timestamp timestamp = Timestamp.from(ohlcv.getTimestamp());
+                    ps.setTimestamp(1, timestamp);
                     ps.setString(2, ohlcv.getSymbol());
-                    ps.setString(3, ohlcv.getTimeframe().getCode());
-                    ps.setBigDecimal(4, ohlcv.getOpen());
-                    ps.setBigDecimal(5, ohlcv.getHigh());
-                    ps.setBigDecimal(6, ohlcv.getLow());
-                    ps.setBigDecimal(7, ohlcv.getClose());
-                    ps.setLong(8, ohlcv.getVolume());
+                    ps.setTimestamp(3, timestamp); // date is extracted from timestamp using DATE() function
+                    ps.setString(4, ohlcv.getTimeframe().getCode());
+                    ps.setBigDecimal(5, ohlcv.getOpen());
+                    ps.setBigDecimal(6, ohlcv.getHigh());
+                    ps.setBigDecimal(7, ohlcv.getLow());
+                    ps.setBigDecimal(8, ohlcv.getClose());
+                    ps.setLong(9, ohlcv.getVolume());
                     
                     if (ohlcv.getVwap() != null) {
-                        ps.setBigDecimal(9, ohlcv.getVwap());
+                        ps.setBigDecimal(10, ohlcv.getVwap());
                     } else {
-                        ps.setNull(9, java.sql.Types.NUMERIC);
+                        ps.setNull(10, java.sql.Types.NUMERIC);
                     }
                 }
                 

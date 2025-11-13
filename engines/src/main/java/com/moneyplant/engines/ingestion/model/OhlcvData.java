@@ -4,8 +4,11 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
+import lombok.ToString;
+import lombok.EqualsAndHashCode;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -17,8 +20,11 @@ import java.time.Instant;
  * 
  * Requirements: 2.1, 2.4
  */
-@Data
+@Getter
 @Builder
+@AllArgsConstructor
+@ToString
+@EqualsAndHashCode
 public class OhlcvData implements Serializable {
     
     /**

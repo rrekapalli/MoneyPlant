@@ -49,7 +49,7 @@ public class IngestionServiceImpl implements IngestionService {
     public IngestionServiceImpl(
             DataValidator dataValidator,
             DataNormalizer dataNormalizer,
-            KafkaPublisher kafkaPublisher,
+            @org.springframework.beans.factory.annotation.Autowired(required = false) KafkaPublisher kafkaPublisher,
             TimescaleRepository timescaleRepository,
             OhlcvRepository ohlcvRepository,
             YahooFinanceProvider yahooFinanceProvider) {
@@ -144,15 +144,19 @@ public class IngestionServiceImpl implements IngestionService {
                 .transform(dataValidator::validateOhlcv)
                 // Apply normalization
                 .transform(dataNormalizer::normalizeOhlcv)
-                // Publish to Kafka (non-blocking)
-                .flatMap(ohlcv -> 
-                    kafkaPublisher.publishCandle(ohlcv)
-                        .thenReturn(ohlcv)
-                        .onErrorResume(error -> {
-                            log.warn("Failed to publish to Kafka for {}: {}", symbol, error.getMessage());
-                            return Mono.just(ohlcv); // Continue even if Kafka fails
-                        })
-                )
+                // Publish to Kafka (non-blocking) - only if Kafka is enabled
+                .flatMap(ohlcv -> {
+                    if (kafkaPublisher != null) {
+                        return kafkaPublisher.publishCandle(ohlcv)
+                            .thenReturn(ohlcv)
+                            .onErrorResume(error -> {
+                                log.warn("Failed to publish to Kafka for {}: {}", symbol, error.getMessage());
+                                return Mono.just(ohlcv); // Continue even if Kafka fails
+                            });
+                    } else {
+                        return Mono.just(ohlcv); // Skip Kafka if disabled
+                    }
+                })
                 // Collect for batch storage
                 .collectList()
                 .flatMap(ohlcvList -> {
@@ -189,15 +193,19 @@ public class IngestionServiceImpl implements IngestionService {
                 .transform(dataValidator::validate)
                 // Apply normalization
                 .transform(dataNormalizer::normalize)
-                // Publish to Kafka (non-blocking)
-                .flatMap(tick -> 
-                    kafkaPublisher.publishTick(tick)
-                        .thenReturn(tick)
-                        .onErrorResume(error -> {
-                            log.warn("Failed to publish tick to Kafka: {}", error.getMessage());
-                            return Mono.just(tick); // Continue even if Kafka fails
-                        })
-                )
+                // Publish to Kafka (non-blocking) - only if Kafka is enabled
+                .flatMap(tick -> {
+                    if (kafkaPublisher != null) {
+                        return kafkaPublisher.publishTick(tick)
+                            .thenReturn(tick)
+                            .onErrorResume(error -> {
+                                log.warn("Failed to publish tick to Kafka: {}", error.getMessage());
+                                return Mono.just(tick); // Continue even if Kafka fails
+                            });
+                    } else {
+                        return Mono.just(tick); // Skip Kafka if disabled
+                    }
+                })
                 // Store in TimescaleDB
                 .flatMap(tick -> 
                     Mono.fromCallable(() -> {

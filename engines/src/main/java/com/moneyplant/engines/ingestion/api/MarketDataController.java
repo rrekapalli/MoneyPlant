@@ -160,7 +160,9 @@ public class MarketDataController {
         
         try {
             List<NseEquityMaster> results = nseEquityMasterRepository.searchSymbols(
-                    query, sector, industry, limit);
+                    query, sector, industry, limit)
+                    .collectList()
+                    .block();
             
             return ResponseEntity.ok(results);
         } catch (Exception error) {
@@ -184,7 +186,8 @@ public class MarketDataController {
         log.debug("Fetching symbol details for: {}", symbol);
         
         try {
-            NseEquityMaster symbolDetails = nseEquityMasterRepository.findBySymbol(symbol);
+            NseEquityMaster symbolDetails = nseEquityMasterRepository.findBySymbol(symbol)
+                    .block();
             
             if (symbolDetails != null) {
                 return ResponseEntity.ok(symbolDetails);
@@ -222,7 +225,9 @@ public class MarketDataController {
         log.debug("Fetching symbols for sector: {}, limit: {}", sector, limit);
         
         try {
-            List<NseEquityMaster> results = nseEquityMasterRepository.findBySector(sector, limit);
+            List<NseEquityMaster> results = nseEquityMasterRepository.findBySector(sector, limit)
+                    .collectList()
+                    .block();
             return ResponseEntity.ok(results);
         } catch (Exception error) {
             log.error("Error fetching symbols for sector: {}", sector, error);
