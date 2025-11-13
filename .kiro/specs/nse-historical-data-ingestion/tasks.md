@@ -56,8 +56,8 @@ This implementation plan focuses on building a Java-based service to download NS
     - Create staging directory: /tmp/bhav_staging/{jobId}/
     - _Requirements: 1.4, 1.12_
 
-- [ ] 4. Implement Spark processing service
-  - [ ] 4.1 Create SparkConfig
+- [x] 4. Implement Spark processing service
+  - [x] 4.1 Create SparkConfig
     - Configure SparkSession with optimal settings
     - Set master: local[*] (use all cores)
     - Set executor memory: 4GB
@@ -65,7 +65,7 @@ This implementation plan focuses on building a Java-based service to download NS
     - Enable adaptive query execution
     - _Requirements: 1.5_
   
-  - [ ] 4.2 Create SparkProcessingService
+  - [x] 4.2 Create SparkProcessingService
     - Implement processAndStore() method
     - Read all CSV files from staging directory using Spark
     - Apply schema mapping and transformations
@@ -73,14 +73,14 @@ This implementation plan focuses on building a Java-based service to download NS
     - Add timeframe column with value '1day'
     - _Requirements: 1.5, 1.6, 1.7_
   
-  - [ ] 4.3 Implement Spark JDBC bulk insert
+  - [x] 4.3 Implement Spark JDBC bulk insert
     - Use Spark JDBC writer with SaveMode.Append
     - Configure batch size: 10,000 records
     - Configure num partitions: 4 (parallel connections)
     - Write to nse_eq_ohlcv_historic table
     - _Requirements: 2.2, 2.3, 2.7_
   
-  - [ ] 4.4 Implement error handling
+  - [x] 4.4 Implement error handling
     - Log Spark processing errors
     - Skip invalid rows during transformation
     - Return ingestion statistics

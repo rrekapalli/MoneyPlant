@@ -1,0 +1,189 @@
+package com.moneyplant.engines.ingestion.historical.service;
+
+import com.moneyplant.engines.ingestion.historical.model.IngestionResult;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.spark.sql.Dataset;
+import org.apache.spark.sql.Row;
+import org.apache.spark.sql.SaveMode;
+import org.apache.spark.sql.SparkSession;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
+
+import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
+
+import static org.apache.spark.sql.functions.*;
+
+/**
+ * Implementation of SparkProcessingService for processing CSV files using Apache Spark.
+ * Handles bulk data processing and JDBC inserts for historical data ingestion.
+ * 
+ * Requirements: 1.5, 1.6, 1.7, 2.2, 2.3, 2.7, 1.11, 2.8
+ */
+@Service
+@Slf4j
+public class SparkProcessingServiceImpl implements SparkProcessingService {
+    
+    private final SparkSession spark;
+    
+    @Value("${spring.datasource.url}")
+    private String jdbcUrl;
+    
+    @Value("${spring.datasource.username}")
+    private String dbUser;
+    
+    @Value("${spring.datasource.password}")
+    private String dbPassword;
+    
+    @Value("${spark.jdbc.batch-size:10000}")
+    private int batchSize;
+    
+    @Value("${spark.jdbc.num-partitions:4}")
+    private int numPartitions;
+    
+    @Autowired
+    public SparkProcessingServiceImpl(@Qualifier("historicalSparkSession") SparkSession spark) {
+        this.spark = spark;
+    }
+    
+    /**
+     * Process all CSV files in the staging directory using Spark and store them in the database.
+     * 
+     * Requirements: 1.5, 1.6, 1.7, 2.2, 2.3, 2.7, 1.11, 2.8
+     */
+    @Override
+    public Mono<IngestionResult> processAndStore(Path stagingDirectory) {
+        return Mono.fromCallable(() -> {
+            Instant startTime = Instant.now();
+            log.info("Starting Spark processing for staging directory: {}", stagingDirectory);
+            
+            try {
+                // 1. Read all CSV files from staging directory
+                String csvPath = stagingDirectory.toString() + "/*.csv";
+                log.debug("Reading CSV files from: {}", csvPath);
+                
+                Dataset<Row> df = spark.read()
+                    .option("header", "true")
+                    .option("inferSchema", "true")
+                    .option("mode", "DROPMALFORMED")  // Skip invalid rows
+                    .option("dateFormat", "dd-MMM-yyyy")
+                    .csv(csvPath);
+                
+                long totalRecords = df.count();
+                log.info("Read {} records from CSV files", totalRecords);
+                
+                if (totalRecords == 0) {
+                    log.warn("No records found in staging directory: {}", stagingDirectory);
+                    return IngestionResult.builder()
+                        .totalRecordsProcessed(0)
+                        .totalRecordsInserted(0)
+                        .totalRecordsFailed(0)
+                        .duration(Duration.between(startTime, Instant.now()))
+                        .build();
+                }
+                
+                // 2. Apply schema mapping and transformations
+                log.debug("Applying schema mapping and transformations");
+                Dataset<Row> transformed = df
+                    // Rename columns to match database schema
+                    .withColumnRenamed("SYMBOL", "symbol")
+                    .withColumnRenamed("SERIES", "series")
+                    // Convert DATE1 to timestamp (TIMESTAMPTZ)
+                    .withColumn("time", to_timestamp(col("DATE1"), "dd-MMM-yyyy"))
+                    .withColumnRenamed("PREV_CLOSE", "prev_close")
+                    .withColumnRenamed("OPEN_PRICE", "open")
+                    .withColumnRenamed("HIGH_PRICE", "high")
+                    .withColumnRenamed("LOW_PRICE", "low")
+                    .withColumnRenamed("LAST_PRICE", "last")
+                    .withColumnRenamed("CLOSE_PRICE", "close")
+                    .withColumnRenamed("AVG_PRICE", "avg_price")
+                    .withColumnRenamed("TTL_TRD_QNTY", "volume")
+                    .withColumnRenamed("TURNOVER_LACS", "turnover_lacs")
+                    .withColumnRenamed("NO_OF_TRADES", "no_of_trades")
+                    .withColumnRenamed("DELIV_QTY", "deliv_qty")
+                    .withColumnRenamed("DELIV_PER", "deliv_per")
+                    // Add timeframe column with value '1day'
+                    .withColumn("timeframe", lit("1day"))
+                    // Select only the columns we need in the correct order
+                    .select(
+                        "time", "symbol", "series", "timeframe", "prev_close",
+                        "open", "high", "low", "last", "close", "avg_price",
+                        "volume", "turnover_lacs", "no_of_trades", "deliv_qty", "deliv_per"
+                    )
+                    // Filter out rows with null time (invalid dates)
+                    .filter(col("time").isNotNull());
+                
+                long validRecords = transformed.count();
+                long invalidRecords = totalRecords - validRecords;
+                
+                if (invalidRecords > 0) {
+                    log.warn("Skipped {} invalid rows during transformation", invalidRecords);
+                }
+                
+                if (validRecords == 0) {
+                    log.error("No valid records after transformation");
+                    return IngestionResult.builder()
+                        .totalRecordsProcessed((int) totalRecords)
+                        .totalRecordsInserted(0)
+                        .totalRecordsFailed((int) invalidRecords)
+                        .duration(Duration.between(startTime, Instant.now()))
+                        .build();
+                }
+                
+                // 3. Bulk insert to PostgreSQL using Spark JDBC writer
+                log.info("Writing {} valid records to PostgreSQL (batch size: {}, partitions: {})", 
+                    validRecords, batchSize, numPartitions);
+                
+                transformed.write()
+                    .mode(SaveMode.Append)
+                    .format("jdbc")
+                    .option("url", jdbcUrl)
+                    .option("dbtable", "nse_eq_ohlcv_historic")
+                    .option("user", dbUser)
+                    .option("password", dbPassword)
+                    .option("batchsize", String.valueOf(batchSize))
+                    .option("numPartitions", String.valueOf(numPartitions))
+                    .option("driver", "org.postgresql.Driver")
+                    .option("isolationLevel", "READ_COMMITTED")
+                    .option("truncate", "false")
+                    .save();
+                
+                Instant endTime = Instant.now();
+                Duration duration = Duration.between(startTime, endTime);
+                
+                log.info("Successfully inserted {} records in {} seconds", 
+                    validRecords, duration.getSeconds());
+                log.info("Throughput: {} records/second", 
+                    validRecords / Math.max(1, duration.getSeconds()));
+                
+                // 4. Return result
+                return IngestionResult.builder()
+                    .totalRecordsProcessed((int) totalRecords)
+                    .totalRecordsInserted((int) validRecords)
+                    .totalRecordsFailed((int) invalidRecords)
+                    .duration(duration)
+                    .build();
+                
+            } catch (Exception e) {
+                Instant endTime = Instant.now();
+                Duration duration = Duration.between(startTime, endTime);
+                
+                log.error("Error processing CSV files with Spark", e);
+                
+                // Return result with error information
+                return IngestionResult.builder()
+                    .totalRecordsProcessed(0)
+                    .totalRecordsInserted(0)
+                    .totalRecordsFailed(0)
+                    .duration(duration)
+                    .build();
+            }
+            
+        }).subscribeOn(Schedulers.boundedElastic());
+    }
+}
