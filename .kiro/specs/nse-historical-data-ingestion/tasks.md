@@ -116,8 +116,8 @@ This implementation plan focuses on building a Java-based service to download NS
     - Simple POJO with start and end LocalDate fields
     - _Requirements: 3.1_
 
-- [ ] 7. Implement job management service
-  - [ ] 7.1 Create HistoricalDataJobService
+- [x] 7. Implement job management service
+  - [x] 7.1 Create HistoricalDataJobService
     - Implement createJob() to initialize job record
     - Implement updateStatus() to update job status
     - Implement updateProgress() to track processed dates and records
@@ -126,7 +126,7 @@ This implementation plan focuses on building a Java-based service to download NS
     - Implement getJob() to query job status
     - _Requirements: 4.5, 4.6, 4.7, 4.8_
   
-  - [ ] 7.2 Implement progress calculation
+  - [x] 7.2 Implement progress calculation
     - Calculate progress percentage: (processedDates / totalDates) × 100
     - Estimate time remaining based on average processing time per date
     - _Requirements: 5.7_
