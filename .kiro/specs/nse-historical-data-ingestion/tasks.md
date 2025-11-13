@@ -97,8 +97,8 @@ This implementation plan focuses on building a Java-based service to download NS
     - findByJobId(), save(), update()
     - _Requirements: 4.5, 4.6_
 
-- [ ] 6. Implement date range resolution service
-  - [ ] 6.1 Create DateRangeResolver service
+- [x] 6. Implement date range resolution service
+  - [x] 6.1 Create DateRangeResolver service
     - Implement resolveDateRange() method
     - If both dates provided → use them
     - If no startDate → query nse_eq_ohlcv_historic for MAX(time)
@@ -107,12 +107,12 @@ This implementation plan focuses on building a Java-based service to download NS
     - If no endDate → use current date
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
   
-  - [ ] 6.2 Implement logging for date resolution
+  - [x] 6.2 Implement logging for date resolution
     - Log "Incremental ingestion from {max_date + 1} to {end_date}"
     - Log "Full ingestion from {start_date} to {end_date}"
     - _Requirements: 3.6, 3.7_
   
-  - [ ] 6.3 Create DateRange model
+  - [x] 6.3 Create DateRange model
     - Simple POJO with start and end LocalDate fields
     - _Requirements: 3.1_
 
