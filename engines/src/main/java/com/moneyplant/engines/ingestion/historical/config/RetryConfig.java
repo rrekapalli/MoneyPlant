@@ -1,7 +1,6 @@
 package com.moneyplant.engines.ingestion.historical.config;
 
 import io.github.resilience4j.retry.Retry;
-import io.github.resilience4j.retry.RetryConfig;
 import io.github.resilience4j.retry.RetryRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -49,7 +48,7 @@ public class RetryConfig {
      */
     @Bean(name = "downloadRetry")
     public Retry downloadRetry() {
-        RetryConfig config = RetryConfig.custom()
+        io.github.resilience4j.retry.RetryConfig config = io.github.resilience4j.retry.RetryConfig.custom()
             .maxAttempts(maxDownloadRetries)
             .waitDuration(Duration.ofSeconds(1))
             .intervalFunction(attempt -> {
@@ -108,7 +107,7 @@ public class RetryConfig {
      */
     @Bean(name = "databaseRetry")
     public Retry databaseRetry() {
-        RetryConfig config = RetryConfig.custom()
+        io.github.resilience4j.retry.RetryConfig config = io.github.resilience4j.retry.RetryConfig.custom()
             .maxAttempts(maxDbRetries)
             .waitDuration(Duration.ofSeconds(2))
             .retryOnException(throwable -> {
