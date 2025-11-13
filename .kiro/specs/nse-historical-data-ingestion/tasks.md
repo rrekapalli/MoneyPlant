@@ -86,13 +86,13 @@ This implementation plan focuses on building a Java-based service to download NS
     - Return ingestion statistics
     - _Requirements: 1.11, 2.8_
 
-- [ ] 5. Implement repository layer
-  - [ ] 5.1 Create HistoricalOhlcvRepository
+- [x] 5. Implement repository layer
+  - [x] 5.1 Create HistoricalOhlcvRepository
     - Implement getMaxDate() - returns MAX(time) across all data
     - Used for incremental ingestion detection
     - _Requirements: 3.1, 3.2_
   
-  - [ ] 5.2 Create IngestionJobRepository
+  - [x] 5.2 Create IngestionJobRepository
     - Implement CRUD operations for IngestionJob entity
     - findByJobId(), save(), update()
     - _Requirements: 4.5, 4.6_
