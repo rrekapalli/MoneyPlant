@@ -167,19 +167,19 @@ This implementation plan focuses on building a Java-based service to download NS
     - Mark job as TIMEOUT status
     - _Requirements: 6.6_
 
-- [ ] 9. Implement REST API endpoints
-  - [ ] 9.1 Create HistoricalIngestionController
+- [x] 9. Implement REST API endpoints
+  - [x] 9.1 Create HistoricalIngestionController
     - POST /api/v1/ingestion/historical/nse - trigger ingestion
     - Accept parameters: startDate (optional), endDate (optional)
     - Return job ID immediately
     - _Requirements: 4.1, 4.2, 4.5_
   
-  - [ ] 9.2 Implement job status endpoint
+  - [x] 9.2 Implement job status endpoint
     - GET /api/v1/ingestion/historical/nse/{jobId} - query job status
     - Return: status, progress percentage, current date, total records, inserted records, failed records, error message
     - _Requirements: 4.6, 4.7, 4.8, 5.7_
   
-  - [ ] 9.3 Create request/response DTOs
+  - [x] 9.3 Create request/response DTOs
     - IngestionRequest: startDate (optional), endDate (optional)
     - IngestionJobResponse: jobId, message, status, progressPercentage, currentDate, totalRecords, insertedRecords, failedRecords, errorMessage
     - _Requirements: 4.1, 4.2_
