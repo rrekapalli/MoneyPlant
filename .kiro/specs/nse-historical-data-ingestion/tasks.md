@@ -19,19 +19,19 @@ This implementation plan focuses on building a Java-based service to download NS
   - Create staging directory configuration
   - _Requirements: 1.1, 1.4, 2.1_
 
-- [ ] 2. Implement data models
-  - [ ] 2.1 Create BhavCopyData model
+- [x] 2. Implement data models
+  - [x] 2.1 Create BhavCopyData model
     - Include all bhav copy fields: symbol, series, date, time, prev_close, open, high, low, last, close, avg_price, volume, turnover_lacs, no_of_trades, deliv_qty, deliv_per
     - Add validation annotations
     - _Requirements: 1.5_
   
-  - [ ] 2.2 Create IngestionJob entity
+  - [x] 2.2 Create IngestionJob entity
     - Map to `ingestion_jobs` table
     - Include fields: jobId, jobType, status, startDate, endDate, symbols, totalDates, processedDates, totalRecords, insertedRecords, failedRecords, errorMessage, startedAt, completedAt
     - Create IngestionJobStatus enum (PENDING, RUNNING, COMPLETED, FAILED, TIMEOUT)
     - _Requirements: 3.5, 3.7, 3.8_
   
-  - [ ] 2.3 Create IngestionResult model
+  - [x] 2.3 Create IngestionResult model
     - Include summary fields: totalDatesProcessed, totalRecordsProcessed, totalRecordsInserted, totalRecordsFailed, duration
     - Implement merge() method for combining results
     - _Requirements: 2.9_
