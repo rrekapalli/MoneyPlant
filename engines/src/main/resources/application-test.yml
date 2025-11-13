@@ -7,12 +7,12 @@ spring:
 
 # Use local Spark for testing
 spark:
+  app-name: NSE-Bhav-Ingestion-Test
   master: local[1]  # Single thread for deterministic tests
   driver-memory: 1g
   executor-memory: 1g
-  jdbc:
-    batch-size: 100  # Small batch size for tests
-    num-partitions: 1  # Single partition for tests
+  jdbc-batch-size: 100  # Small batch size for tests
+  jdbc-num-partitions: 1  # Single partition for tests
 
 # Historical ingestion settings for testing
 ingestion:

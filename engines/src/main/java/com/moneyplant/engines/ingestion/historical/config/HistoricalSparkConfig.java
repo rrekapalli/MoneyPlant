@@ -1,43 +1,151 @@
 package com.moneyplant.engines.ingestion.historical.config;
 
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.SparkConf;
 import org.apache.spark.sql.SparkSession;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.validation.annotation.Validated;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 
 /**
  * Configuration for Apache Spark session used for NSE historical data ingestion.
  * Configures Spark with optimal settings for CSV processing and bulk JDBC inserts.
+ * Maps to 'spark' properties in application.yml.
  * 
- * Requirements: 1.5
+ * Requirements: 1.5, 2.3, 2.7
  */
 @Configuration
+@ConfigurationProperties(prefix = "spark")
+@Data
+@Validated
 @Slf4j
 public class HistoricalSparkConfig {
     
-    @Value("${spark.app-name:NSE-Bhav-Ingestion}")
-    private String appName;
+    /**
+     * Spark application name.
+     * Default: NSE-Bhav-Ingestion
+     * Requirement: 1.5
+     */
+    @NotBlank(message = "Spark app name must not be blank")
+    private String appName = "NSE-Bhav-Ingestion";
     
-    @Value("${spark.master:local[*]}")
-    private String master;
+    /**
+     * Spark master URL.
+     * Use 'local[*]' for local mode with all cores.
+     * Use 'spark://host:port' for cluster mode.
+     * Default: local[*]
+     * Requirement: 1.5
+     */
+    @NotBlank(message = "Spark master must not be blank")
+    private String master = "local[*]";
     
-    @Value("${spark.driver-memory:2g}")
-    private String driverMemory;
+    /**
+     * Spark driver memory allocation.
+     * Default: 2g
+     * Requirement: 1.5
+     */
+    @NotBlank(message = "Driver memory must not be blank")
+    private String driverMemory = "2g";
     
-    @Value("${spark.executor-memory:4g}")
-    private String executorMemory;
+    /**
+     * Spark executor memory allocation.
+     * Default: 4g
+     * Requirement: 1.5
+     */
+    @NotBlank(message = "Executor memory must not be blank")
+    private String executorMemory = "4g";
     
-    @Value("${spark.sql.adaptive.enabled:true}")
-    private boolean adaptiveEnabled;
+    /**
+     * JDBC batch size for bulk inserts.
+     * Default: 10000
+     * Requirement: 2.3
+     */
+    @Min(value = 100, message = "JDBC batch size must be at least 100")
+    private int jdbcBatchSize = 10000;
     
-    @Value("${spark.sql.adaptive.coalescePartitions.enabled:true}")
-    private boolean coalescePartitionsEnabled;
+    /**
+     * Number of parallel JDBC connections for writing.
+     * Default: 4
+     * Requirement: 2.7
+     */
+    @Min(value = 1, message = "JDBC num partitions must be at least 1")
+    private int jdbcNumPartitions = 4;
+    
+    /**
+     * Enable adaptive query execution.
+     * Default: true
+     */
+    private boolean sqlAdaptiveEnabled = true;
+    
+    /**
+     * Enable adaptive partition coalescing.
+     * Default: true
+     */
+    private boolean sqlAdaptiveCoalescePartitionsEnabled = true;
     
     private SparkSession sparkSession;
+    
+    /**
+     * Validate configuration on startup and log settings.
+     * Requirement: 7.9
+     */
+    @PostConstruct
+    public void init() {
+        log.info("=== Spark Configuration ===");
+        log.info("App Name: {}", appName);
+        log.info("Master: {}", master);
+        log.info("Driver Memory: {}", driverMemory);
+        log.info("Executor Memory: {}", executorMemory);
+        log.info("JDBC Batch Size: {}", jdbcBatchSize);
+        log.info("JDBC Num Partitions: {}", jdbcNumPartitions);
+        log.info("SQL Adaptive Enabled: {}", sqlAdaptiveEnabled);
+        log.info("SQL Adaptive Coalesce Partitions: {}", sqlAdaptiveCoalescePartitionsEnabled);
+        log.info("===========================");
+        
+        // Validate configuration
+        validateConfiguration();
+    }
+    
+    /**
+     * Validate configuration values.
+     * Fails fast if configuration is invalid.
+     * Requirement: 7.9
+     */
+    private void validateConfiguration() {
+        if (appName == null || appName.trim().isEmpty()) {
+            throw new IllegalStateException("Spark app name must be configured");
+        }
+        
+        if (master == null || master.trim().isEmpty()) {
+            throw new IllegalStateException("Spark master must be configured");
+        }
+        
+        if (driverMemory == null || driverMemory.trim().isEmpty()) {
+            throw new IllegalStateException("Spark driver memory must be configured");
+        }
+        
+        if (executorMemory == null || executorMemory.trim().isEmpty()) {
+            throw new IllegalStateException("Spark executor memory must be configured");
+        }
+        
+        if (jdbcBatchSize < 100) {
+            throw new IllegalStateException("JDBC batch size must be at least 100");
+        }
+        
+        if (jdbcNumPartitions < 1) {
+            throw new IllegalStateException("JDBC num partitions must be at least 1");
+        }
+        
+        log.info("Spark configuration validation passed");
+    }
     
     /**
      * Create SparkSession bean for historical data ingestion.
@@ -55,8 +163,8 @@ public class HistoricalSparkConfig {
             .set("spark.driver.memory", driverMemory)
             .set("spark.executor.memory", executorMemory)
             // Adaptive query execution for optimal performance
-            .set("spark.sql.adaptive.enabled", String.valueOf(adaptiveEnabled))
-            .set("spark.sql.adaptive.coalescePartitions.enabled", String.valueOf(coalescePartitionsEnabled))
+            .set("spark.sql.adaptive.enabled", String.valueOf(sqlAdaptiveEnabled))
+            .set("spark.sql.adaptive.coalescePartitions.enabled", String.valueOf(sqlAdaptiveCoalescePartitionsEnabled))
             // CSV processing optimizations
             .set("spark.sql.files.maxPartitionBytes", "134217728") // 128MB per partition
             .set("spark.sql.files.openCostInBytes", "4194304") // 4MB
@@ -85,6 +193,24 @@ public class HistoricalSparkConfig {
         log.info("Historical SparkSession initialized successfully");
         
         return sparkSession;
+    }
+    
+    /**
+     * Get JDBC batch size for bulk inserts.
+     * 
+     * @return JDBC batch size
+     */
+    public int getJdbcBatchSize() {
+        return jdbcBatchSize;
+    }
+    
+    /**
+     * Get number of parallel JDBC connections.
+     * 
+     * @return JDBC num partitions
+     */
+    public int getJdbcNumPartitions() {
+        return jdbcNumPartitions;
     }
     
     /**

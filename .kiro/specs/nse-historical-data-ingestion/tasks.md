@@ -184,8 +184,8 @@ This implementation plan focuses on building a Java-based service to download NS
     - IngestionJobResponse: jobId, message, status, progressPercentage, currentDate, totalRecords, insertedRecords, failedRecords, errorMessage
     - _Requirements: 4.1, 4.2_
 
-- [ ] 10. Implement configuration
-  - [ ] 10.1 Create HistoricalIngestionConfig
+- [x] 10. Implement configuration
+  - [x] 10.1 Create HistoricalIngestionConfig
     - Define configuration properties under `ingestion.nse.historical`
     - base-url (default: https://www.nseindia.com)
     - download-delay-ms (default: 300)
@@ -196,7 +196,7 @@ This implementation plan focuses on building a Java-based service to download NS
     - default-start-date (default: 1998-01-01)
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6_
   
-  - [ ] 10.2 Create SparkConfig
+  - [x] 10.2 Create SparkConfig
     - Define Spark configuration properties under `spark`
     - app-name (default: NSE-Bhav-Ingestion)
     - master (default: local[*])
@@ -206,12 +206,12 @@ This implementation plan focuses on building a Java-based service to download NS
     - jdbc.num-partitions (default: 4)
     - _Requirements: 1.5, 2.3, 2.7_
   
-  - [ ] 10.3 Configure Spring profiles
+  - [x] 10.3 Configure Spring profiles
     - Create application-dev.yml, application-test.yml, application-prod.yml
     - Support profile-specific overrides
     - _Requirements: 7.7_
   
-  - [ ] 10.4 Implement configuration validation
+  - [x] 10.4 Implement configuration validation
     - Validate required settings on startup
     - Fail fast if configuration is invalid
     - _Requirements: 7.9_

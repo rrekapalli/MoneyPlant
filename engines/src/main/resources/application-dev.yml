@@ -7,12 +7,12 @@ spring:
 
 # Use local Spark for development
 spark:
+  app-name: NSE-Bhav-Ingestion-Dev
   master: local[*]  # Use all available cores on local machine
   driver-memory: 2g
   executor-memory: 4g
-  jdbc:
-    batch-size: 5000  # Smaller batch size for dev
-    num-partitions: 2  # Fewer partitions for dev
+  jdbc-batch-size: 5000  # Smaller batch size for dev
+  jdbc-num-partitions: 2  # Fewer partitions for dev
 
 # Historical ingestion settings for development
 ingestion:

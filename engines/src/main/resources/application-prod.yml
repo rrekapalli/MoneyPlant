@@ -7,14 +7,14 @@ spring:
 
 # Use external Spark cluster for production
 spark:
+  app-name: NSE-Bhav-Ingestion-Prod
   master: ${SPARK_MASTER:spark://spark-master.tailce422e.ts.net:7077}
   driver-memory: 4g
   executor-memory: 8g
   executor-cores: 4
   executor-instances: 4
-  jdbc:
-    batch-size: 20000  # Larger batch size for production
-    num-partitions: 8  # More partitions for production
+  jdbc-batch-size: 20000  # Larger batch size for production
+  jdbc-num-partitions: 8  # More partitions for production
 
 # Historical ingestion settings for production
 ingestion:

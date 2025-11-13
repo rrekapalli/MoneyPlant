@@ -244,7 +244,7 @@ nse:
 
 # Spark Configuration
 spark:
-  app-name: ${SPARK_APP_NAME:MoneyPlant-Engines}
+  app-name: ${SPARK_APP_NAME:NSE-Bhav-Ingestion}
   # Use external Spark cluster instead of local mode
   # For local development, use: local[*] to use all available cores
   master: ${SPARK_MASTER:spark://spark-master.tailce422e.ts.net:7077}
@@ -253,22 +253,14 @@ spark:
   executor-memory: ${SPARK_EXECUTOR_MEMORY:4g}
   executor-cores: ${SPARK_EXECUTOR_CORES:2}
   executor-instances: ${SPARK_EXECUTOR_INSTANCES:2}
-  sql:
-    adaptive:
-      enabled: true
-      coalescePartitions:
-        enabled: true
-      skewJoin:
-        enabled: true
-      localShuffleReader:
-        enabled: true
-      optimizeSkewedJoin:
-        enabled: true
   
   # JDBC configuration for bulk inserts
-  jdbc:
-    batch-size: ${SPARK_JDBC_BATCH_SIZE:10000}
-    num-partitions: ${SPARK_JDBC_NUM_PARTITIONS:4}
+  jdbc-batch-size: ${SPARK_JDBC_BATCH_SIZE:10000}
+  jdbc-num-partitions: ${SPARK_JDBC_NUM_PARTITIONS:4}
+  
+  # SQL adaptive execution settings
+  sql-adaptive-enabled: ${SPARK_SQL_ADAPTIVE_ENABLED:true}
+  sql-adaptive-coalesce-partitions-enabled: ${SPARK_SQL_ADAPTIVE_COALESCE_PARTITIONS_ENABLED:true}
 
 # Trino Configuration
 trino:
