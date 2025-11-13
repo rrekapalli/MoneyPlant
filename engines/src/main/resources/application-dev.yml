@@ -1,108 +1,33 @@
 # Development Profile Configuration
-server:
-  port: 8081  # Ensure dev uses port 8081
+# Override settings for local development environment
 
 spring:
-  # TimescaleDB configuration for development
-  datasource:
-    url: jdbc:postgresql://postgres.tailce422e.ts.net:5432/MoneyPlant
-    username: postgres
-    password: mysecretpassword
-    hikari:
-      maximum-pool-size: 5
-      minimum-idle: 1
-  
-  jpa:
-    database-platform: org.hibernate.dialect.PostgreSQLDialect
-    hibernate:
-      ddl-auto: update  # Allow Hibernate to create missing tables in dev
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-  
-  # Kafka configuration for development
-  kafka:
-    enabled: true  # Set to false to disable Kafka entirely
-    bootstrap-servers: localhost:9092
-    schema-registry-url: http://localhost:8081
-    consumer:
-      group-id: moneyplant-engines-dev
-      auto-offset-reset: earliest
-      enable-auto-commit: false
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: io.confluent.kafka.serializers.KafkaAvroDeserializer
-      properties:
-        schema.registry.url: http://localhost:8081
-        specific.avro.reader: true
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
-      acks: all
-      retries: 3
-      batch-size: 16384
-      linger-ms: 10
-      buffer-memory: 33554432
-      properties:
-        schema.registry.url: http://localhost:8081
+  profiles:
+    active: dev
 
-# Ingestion configuration for development
+# Use local Spark for development
+spark:
+  master: local[*]  # Use all available cores on local machine
+  driver-memory: 2g
+  executor-memory: 4g
+  jdbc:
+    batch-size: 5000  # Smaller batch size for dev
+    num-partitions: 2  # Fewer partitions for dev
+
+# Historical ingestion settings for development
 ingestion:
-  auto-start:
-    enabled: false  # Disable auto-start in dev for manual testing
-  
   providers:
     nse:
-      enabled: true
-      rate-limit-per-hour: 500  # Lower rate limit for dev
-    yahoo:
-      enabled: true
-      rate-limit-per-hour: 1000  # Lower rate limit for dev
-  
-  storage:
-    batch-size: 100  # Smaller batch size for dev
-    flush-interval-ms: 2000  # More frequent flushes for dev
-  
-  performance:
-    parallelism: 5  # Lower parallelism for dev
-    buffer-size: 1000  # Smaller buffer for dev
+      historical:
+        staging-directory: /tmp/bhav_staging_dev
+        job-timeout-hours: 2  # Shorter timeout for dev
+        max-retries: 3  # Fewer retries for faster feedback
 
-# Logging configuration for development
+# Enable debug logging for development
 logging:
   level:
     root: INFO
     com.moneyplant.engines: DEBUG
-    com.moneyplant.engines.ingestion: DEBUG
-    org.springframework.kafka: INFO
-    org.apache.kafka: WARN
-    org.springframework.web.reactive: DEBUG
-    io.github.resilience4j: DEBUG
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
-  file:
-    name: engines/logs/ingestion-dev.log
-    max-size: 10MB
-    max-history: 7
-
-# Hudi configuration for development (disabled for simplicity)
-hudi:
-  enabled: false  # Disable Hudi/Spark in dev to avoid dependencies
-  base-path: /tmp/hudi-dev/nse-eq-ticks
-  table-name: nse_eq_ticks_historical_dev
-  s3:
-    endpoint: http://localhost:9000
-    access-key: minioadmin
-    secret-key: minioadmin
-    bucket: moneyplant-datalake-dev
-    path-style-access: true
-  hive-metastore:
-    enabled: false  # Disable Hive Metastore in dev for simplicity
-
-# Management endpoints for development
-management:
-  endpoints:
-    web:
-      exposure:
-        include: "*"
-  endpoint:
-    health:
-      show-details: always
+    com.moneyplant.engines.ingestion.historical: DEBUG
+    org.apache.spark: WARN
+    org.springframework.web: DEBUG

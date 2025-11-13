@@ -1,0 +1,33 @@
+# Test Profile Configuration
+# Override settings for testing environment
+
+spring:
+  profiles:
+    active: test
+
+# Use local Spark for testing
+spark:
+  master: local[1]  # Single thread for deterministic tests
+  driver-memory: 1g
+  executor-memory: 1g
+  jdbc:
+    batch-size: 100  # Small batch size for tests
+    num-partitions: 1  # Single partition for tests
+
+# Historical ingestion settings for testing
+ingestion:
+  providers:
+    nse:
+      historical:
+        staging-directory: /tmp/bhav_staging_test
+        job-timeout-hours: 1
+        max-retries: 2
+        download-delay-ms: 0  # No delay in tests
+
+# Minimal logging for tests
+logging:
+  level:
+    root: WARN
+    com.moneyplant.engines: INFO
+    org.apache.spark: ERROR
+    org.springframework: WARN

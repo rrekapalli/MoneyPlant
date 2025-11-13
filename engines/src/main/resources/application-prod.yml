@@ -1,116 +1,36 @@
 # Production Profile Configuration
-spring:
-  # TimescaleDB configuration for production
-  datasource:
-    url: ${TIMESCALEDB_URL:jdbc:postgresql://timescaledb:5432/MoneyPlant}
-    username: ${TIMESCALEDB_USERNAME:postgres}
-    password: ${TIMESCALEDB_PASSWORD}
-    hikari:
-      maximum-pool-size: 20
-      minimum-idle: 5
-      connection-timeout: 30000
-      idle-timeout: 600000
-      max-lifetime: 1800000
-  
-  # Kafka configuration for production
-  kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka:9092}
-    schema-registry-url: ${KAFKA_SCHEMA_REGISTRY_URL:http://schema-registry:8081}
-    consumer:
-      group-id: moneyplant-engines-prod
-      auto-offset-reset: latest
-      enable-auto-commit: false
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: io.confluent.kafka.serializers.KafkaAvroDeserializer
-      max-poll-records: 500
-      fetch-min-bytes: 1024
-      fetch-max-wait-ms: 500
-      properties:
-        schema.registry.url: ${KAFKA_SCHEMA_REGISTRY_URL:http://schema-registry:8081}
-        specific.avro.reader: true
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
-      acks: all
-      retries: 5
-      batch-size: 32768
-      linger-ms: 50
-      buffer-memory: 67108864
-      compression-type: snappy
-      max-in-flight-requests-per-connection: 5
-      enable-idempotence: true
-      properties:
-        schema.registry.url: ${KAFKA_SCHEMA_REGISTRY_URL:http://schema-registry:8081}
+# Override settings for production environment
 
-# Ingestion configuration for production
+spring:
+  profiles:
+    active: prod
+
+# Use external Spark cluster for production
+spark:
+  master: ${SPARK_MASTER:spark://spark-master.tailce422e.ts.net:7077}
+  driver-memory: 4g
+  executor-memory: 8g
+  executor-cores: 4
+  executor-instances: 4
+  jdbc:
+    batch-size: 20000  # Larger batch size for production
+    num-partitions: 8  # More partitions for production
+
+# Historical ingestion settings for production
 ingestion:
-  auto-start:
-    enabled: true  # Enable auto-start in production
-    delay-seconds: 30  # Longer delay for production startup
-  
   providers:
     nse:
-      enabled: true
-      rate-limit-per-hour: 1000
-    yahoo:
-      enabled: true
-      rate-limit-per-hour: 2000
-  
-  storage:
-    batch-size: 1000
-    flush-interval-ms: 5000
-  
-  performance:
-    parallelism: 20  # Higher parallelism for production
-    buffer-size: 50000  # Larger buffer for production
+      historical:
+        staging-directory: ${INGESTION_NSE_HISTORICAL_STAGING:/data/bhav_staging}
+        job-timeout-hours: 12  # Longer timeout for production
+        max-retries: 6
+        download-delay-ms: 300
 
-# Logging configuration for production
+# Production logging - minimal output
 logging:
   level:
     root: WARN
     com.moneyplant.engines: INFO
-    com.moneyplant.engines.ingestion: INFO
-    org.springframework.kafka: WARN
-    org.apache.kafka: ERROR
-    org.springframework.web.reactive: WARN
-    io.github.resilience4j: INFO
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
-  file:
-    name: /var/log/moneyplant/ingestion-prod.log
-    max-size: 100MB
-    max-history: 30
-
-# Hudi configuration for production (S3/MinIO)
-hudi:
-  base-path: ${HUDI_BASE_PATH:s3://moneyplant-datalake/nse-eq-ticks}
-  table-name: nse_eq_ticks_historical
-  s3:
-    endpoint: ${HUDI_S3_ENDPOINT:https://s3.amazonaws.com}
-    access-key: ${HUDI_S3_ACCESS_KEY}
-    secret-key: ${HUDI_S3_SECRET_KEY}
-    bucket: ${HUDI_S3_BUCKET:moneyplant-datalake}
-    path-style-access: ${HUDI_S3_PATH_STYLE_ACCESS:false}
-    region: ${HUDI_S3_REGION:us-east-1}
-  hive-metastore:
-    enabled: true
-    uris: ${HUDI_HIVE_METASTORE_URIS:thrift://hive-metastore:9083}
-    database: ${HUDI_HIVE_DATABASE:default}
-    jdbc-url: ${HUDI_HIVE_JDBC_URL:jdbc:hive2://hive-server:10000}
-    username: ${HUDI_HIVE_USERNAME:hive}
-    password: ${HUDI_HIVE_PASSWORD:}
-
-# Management endpoints for production
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,metrics,prometheus
-  endpoint:
-    health:
-      show-details: when-authorized
-  metrics:
-    export:
-      prometheus:
-        enabled: true
-        step: 1m
+    com.moneyplant.engines.ingestion.historical: INFO
+    org.apache.spark: WARN
+    org.springframework: WARN

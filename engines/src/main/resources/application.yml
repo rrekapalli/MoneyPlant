@@ -95,7 +95,7 @@ spring:
 
   # Kafka configuration
   kafka:
-    enabled: true
+    enabled: false
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9093}
     schema-registry-url: ${KAFKA_SCHEMA_REGISTRY_URL:http://localhost:8081}
     producer:
@@ -162,6 +162,16 @@ ingestion:
         accept: "application/json"
         accept-language: "en-US,en;q=0.9"
         accept-encoding: "gzip, deflate, br"
+      
+      # Historical data ingestion configuration
+      historical:
+        base-url: ${INGESTION_NSE_HISTORICAL_BASE_URL:https://www.nseindia.com}
+        download-delay-ms: ${INGESTION_NSE_HISTORICAL_DELAY:300}
+        max-retries: ${INGESTION_NSE_HISTORICAL_MAX_RETRIES:6}
+        retry-backoff-multiplier: ${INGESTION_NSE_HISTORICAL_BACKOFF:2.0}
+        job-timeout-hours: ${INGESTION_NSE_HISTORICAL_TIMEOUT:6}
+        staging-directory: ${INGESTION_NSE_HISTORICAL_STAGING:/tmp/bhav_staging}
+        default-start-date: ${INGESTION_NSE_HISTORICAL_DEFAULT_START:1998-01-01}
     
     yahoo:
       enabled: ${INGESTION_YAHOO_ENABLED:true}
@@ -229,19 +239,20 @@ nse:
   
   # Auto-start configuration for NSE indices ingestion
   auto-start:
-    enabled: true  # Set to false to disable auto-start
+    enabled: false  # Set to false to disable auto-start
     delay-seconds: 10  # Delay before starting ingestion (allows other services to initialize)
 
 # Spark Configuration
 spark:
-  app-name: MoneyPlant-Engines
+  app-name: ${SPARK_APP_NAME:MoneyPlant-Engines}
   # Use external Spark cluster instead of local mode
-  master: spark://spark-master.tailce422e.ts.net:7077
+  # For local development, use: local[*] to use all available cores
+  master: ${SPARK_MASTER:spark://spark-master.tailce422e.ts.net:7077}
   # Spark Master UI available at: http://spark-master.tailce422e.ts.net:8080/
-  driver-memory: 2g
-  executor-memory: 2g
-  executor-cores: 2
-  executor-instances: 2
+  driver-memory: ${SPARK_DRIVER_MEMORY:2g}
+  executor-memory: ${SPARK_EXECUTOR_MEMORY:4g}
+  executor-cores: ${SPARK_EXECUTOR_CORES:2}
+  executor-instances: ${SPARK_EXECUTOR_INSTANCES:2}
   sql:
     adaptive:
       enabled: true
@@ -253,6 +264,11 @@ spark:
         enabled: true
       optimizeSkewedJoin:
         enabled: true
+  
+  # JDBC configuration for bulk inserts
+  jdbc:
+    batch-size: ${SPARK_JDBC_BATCH_SIZE:10000}
+    num-partitions: ${SPARK_JDBC_NUM_PARTITIONS:4}
 
 # Trino Configuration
 trino:
