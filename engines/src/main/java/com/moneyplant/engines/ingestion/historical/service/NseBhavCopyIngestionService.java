@@ -63,6 +63,70 @@ public class NseBhavCopyIngestionService {
     private int jobTimeoutHours;
     
     /**
+     * Resumes a failed or timed-out ingestion job.
+     * 
+     * This method:
+     * 1. Retrieves the existing job
+     * 2. Validates that the job can be resumed
+     * 3. Adjusts the date range to start from the last processed date + 1
+     * 4. Resets the job status to RUNNING
+     * 5. Continues the ingestion from where it left off
+     * 
+     * Requirements: 6.8
+     * 
+     * @param jobId the job ID to resume
+     * @return Mono containing the job ID
+     */
+    public Mono<String> resumeIngestion(String jobId) {
+        log.info("Attempting to resume ingestion job: {}", jobId);
+        
+        return jobService.getJob(jobId)
+                .flatMap(job -> {
+                    // Validate that the job can be resumed
+                    if (!job.canResume()) {
+                        String error = String.format(
+                            "Job %s cannot be resumed. Status: %s, LastProcessedDate: %s, EndDate: %s",
+                            jobId, job.getStatus(), job.getLastProcessedDate(), job.getEndDate());
+                        log.error(error);
+                        return Mono.error(new IllegalStateException(error));
+                    }
+                    
+                    // Calculate the new date range (from last processed date + 1 to end date)
+                    LocalDate resumeStartDate = job.getLastProcessedDate().plusDays(1);
+                    LocalDate resumeEndDate = job.getEndDate();
+                    
+                    log.info("Resuming job {} from {} to {} (original range: {} to {})",
+                            jobId, resumeStartDate, resumeEndDate, 
+                            job.getStartDate(), job.getEndDate());
+                    
+                    // Create a new date range for the remaining work
+                    DateRange resumeRange = DateRange.builder()
+                            .start(resumeStartDate)
+                            .end(resumeEndDate)
+                            .build();
+                    
+                    // Update job status to RUNNING and clear error message
+                    job.setStatus(IngestionJobStatus.RUNNING);
+                    job.setErrorMessage(null);
+                    
+                    // Recalculate total dates for the remaining work
+                    long remainingDays = resumeRange.getDayCount();
+                    job.setTotalDates((int) remainingDays);
+                    job.setProcessedDates(0); // Reset processed dates for the resume
+                    
+                    // Execute the ingestion for the remaining date range
+                    executeIngestionAsync(job, resumeRange);
+                    
+                    log.info("Resumed ingestion job {} - processing {} remaining days", 
+                            jobId, remainingDays);
+                    
+                    return Mono.just(jobId);
+                })
+                .switchIfEmpty(Mono.error(
+                    new IllegalArgumentException("Job not found: " + jobId)));
+    }
+    
+    /**
      * Starts the historical data ingestion process.
      * 
      * This method:
@@ -217,7 +281,7 @@ public class NseBhavCopyIngestionService {
      * 2. Triggers Spark processing for bulk insert
      * 3. Returns ingestion statistics
      * 
-     * Requirements: 1.1, 1.2, 1.4, 1.5, 2.2, 5.3, 5.4
+     * Requirements: 1.1, 1.2, 1.4, 1.5, 2.2, 5.3, 5.4, 6.8
      * 
      * @param job the ingestion job
      * @param dateRange the date range to process
@@ -235,9 +299,21 @@ public class NseBhavCopyIngestionService {
         log.info("Job {} - Downloading bhavcopy files from {} to {}", 
                 jobId, dateRange.getStart(), dateRange.getEnd());
         
-        // 1. Download bhavcopy files to staging directory
+        // 1. Download bhavcopy files to staging directory with progress tracking
         return downloader.downloadToStaging(
-                dateRange.getStart(), dateRange.getEnd(), stagingDir)
+                dateRange.getStart(), 
+                dateRange.getEnd(), 
+                stagingDir,
+                // Callback to track last processed date for resume functionality
+                processedDate -> {
+                    jobService.updateLastProcessedDate(jobId, processedDate)
+                            .subscribe(
+                                v -> log.debug("Updated last processed date: {} for job: {}", 
+                                        processedDate, jobId),
+                                error -> log.error("Failed to update last processed date for job: {}", 
+                                        jobId, error)
+                            );
+                })
                 .then(Mono.defer(() -> {
                     // Log progress for Spark processing phase
                     log.info("Job {} - Starting Spark processing for staging directory: {}", 

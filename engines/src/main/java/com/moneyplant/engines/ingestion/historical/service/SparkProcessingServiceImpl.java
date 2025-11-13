@@ -1,6 +1,8 @@
 package com.moneyplant.engines.ingestion.historical.service;
 
 import com.moneyplant.engines.ingestion.historical.model.IngestionResult;
+import io.github.resilience4j.reactor.retry.RetryOperator;
+import io.github.resilience4j.retry.Retry;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
@@ -30,6 +32,7 @@ import static org.apache.spark.sql.functions.*;
 public class SparkProcessingServiceImpl implements SparkProcessingService {
     
     private final SparkSession spark;
+    private final Retry databaseRetry;
     
     @Value("${spring.datasource.url}")
     private String jdbcUrl;
@@ -47,8 +50,11 @@ public class SparkProcessingServiceImpl implements SparkProcessingService {
     private int numPartitions;
     
     @Autowired
-    public SparkProcessingServiceImpl(@Qualifier("historicalSparkSession") SparkSession spark) {
+    public SparkProcessingServiceImpl(
+            @Qualifier("historicalSparkSession") SparkSession spark,
+            @Qualifier("databaseRetry") Retry databaseRetry) {
         this.spark = spark;
+        this.databaseRetry = databaseRetry;
     }
     
     /**
@@ -135,23 +141,39 @@ public class SparkProcessingServiceImpl implements SparkProcessingService {
                         .build();
                 }
                 
-                // 3. Bulk insert to PostgreSQL using Spark JDBC writer
+                // 3. Bulk insert to PostgreSQL using Spark JDBC writer with retry
                 log.info("Writing {} valid records to PostgreSQL (batch size: {}, partitions: {})", 
                     validRecords, batchSize, numPartitions);
                 
-                transformed.write()
-                    .mode(SaveMode.Append)
-                    .format("jdbc")
-                    .option("url", jdbcUrl)
-                    .option("dbtable", "nse_eq_ohlcv_historic")
-                    .option("user", dbUser)
-                    .option("password", dbPassword)
-                    .option("batchsize", String.valueOf(batchSize))
-                    .option("numPartitions", String.valueOf(numPartitions))
-                    .option("driver", "org.postgresql.Driver")
-                    .option("isolationLevel", "READ_COMMITTED")
-                    .option("truncate", "false")
-                    .save();
+                // Wrap the Spark write operation with retry logic
+                try {
+                    databaseRetry.executeSupplier(() -> {
+                        try {
+                            transformed.write()
+                                .mode(SaveMode.Append)
+                                .format("jdbc")
+                                .option("url", jdbcUrl)
+                                .option("dbtable", "nse_eq_ohlcv_historic")
+                                .option("user", dbUser)
+                                .option("password", dbPassword)
+                                .option("batchsize", String.valueOf(batchSize))
+                                .option("numPartitions", String.valueOf(numPartitions))
+                                .option("driver", "org.postgresql.Driver")
+                                .option("isolationLevel", "READ_COMMITTED")
+                                .option("truncate", "false")
+                                .save();
+                            
+                            log.info("Successfully wrote {} records to database", validRecords);
+                            return null;
+                        } catch (Exception e) {
+                            log.error("Database write failed: {}", e.getMessage());
+                            throw new RuntimeException("Database write failed", e);
+                        }
+                    });
+                } catch (Exception e) {
+                    log.error("Database write failed after all retry attempts", e);
+                    throw e;
+                }
                 
                 Instant endTime = Instant.now();
                 Duration duration = Duration.between(startTime, endTime);

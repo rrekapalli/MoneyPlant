@@ -118,9 +118,14 @@ public class NseBhavCopyDownloader {
      * @param startDate Start date (inclusive)
      * @param endDate End date (inclusive)
      * @param stagingDir Staging directory to save CSV files
+     * @param onDateProcessed Optional callback invoked after each date is successfully processed
      * @return Mono that completes when all files are downloaded
      */
-    public Mono<Void> downloadToStaging(LocalDate startDate, LocalDate endDate, Path stagingDir) {
+    public Mono<Void> downloadToStaging(
+            LocalDate startDate, 
+            LocalDate endDate, 
+            Path stagingDir,
+            java.util.function.Consumer<LocalDate> onDateProcessed) {
         log.info("Starting bhav copy download from {} to {}, staging directory: {}", 
                 startDate, endDate, stagingDir);
         
@@ -148,10 +153,33 @@ public class NseBhavCopyDownloader {
                     // Download files sequentially with delay between downloads
                     return Flux.fromIterable(dates)
                             .concatMap(date -> downloadBhavCopyForDate(date, stagingDir)
+                                    .doOnSuccess(v -> {
+                                        // Invoke callback after successful download
+                                        if (onDateProcessed != null) {
+                                            onDateProcessed.accept(date);
+                                        }
+                                    })
                                     .delayElement(Duration.ofMillis(downloadDelayMs)))
                             .then();
                 }));
     }
+    
+    /**
+     * Download bhavcopy files for a date range and save to staging directory.
+     * Convenience method without progress callback.
+     * 
+     * Requirements: 1.1, 1.2, 1.4, 1.8, 1.9, 1.10, 1.12
+     * 
+     * @param startDate Start date (inclusive)
+     * @param endDate End date (inclusive)
+     * @param stagingDir Staging directory to save CSV files
+     * @return Mono that completes when all files are downloaded
+     */
+    public Mono<Void> downloadToStaging(LocalDate startDate, LocalDate endDate, Path stagingDir) {
+        return downloadToStaging(startDate, endDate, stagingDir, null);
+    }
+    
+
     
     /**
      * Download bhavcopy file for a specific date and extract to staging directory.

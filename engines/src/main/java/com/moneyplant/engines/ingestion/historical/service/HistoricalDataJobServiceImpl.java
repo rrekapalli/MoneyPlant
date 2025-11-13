@@ -299,4 +299,31 @@ public class HistoricalDataJobServiceImpl implements HistoricalDataJobService {
                 jobId, job.getProcessedDates(), job.getTotalDates(), job.getProgressPercentage());
         }).subscribeOn(Schedulers.boundedElastic()).then();
     }
+    
+    /**
+     * Updates the last successfully processed date for a job.
+     * This is used for resume functionality to track which dates have been completed.
+     * 
+     * @param jobId unique job identifier
+     * @param date the date that was successfully processed
+     * @return Mono that completes when the update is done
+     * 
+     * Requirements: 6.8
+     */
+    @Override
+    @Transactional
+    public Mono<Void> updateLastProcessedDate(String jobId, LocalDate date) {
+        return Mono.fromRunnable(() -> {
+            log.debug("Updating last processed date for job: jobId={}, date={}", jobId, date);
+            
+            IngestionJob job = jobRepository.findByJobId(jobId)
+                .orElseThrow(() -> new IllegalArgumentException("Job not found: " + jobId));
+            
+            job.updateLastProcessedDate(date);
+            jobRepository.save(job);
+            
+            log.info("Updated last processed date: jobId={}, lastProcessedDate={}", 
+                jobId, job.getLastProcessedDate());
+        }).subscribeOn(Schedulers.boundedElastic()).then();
+    }
 }

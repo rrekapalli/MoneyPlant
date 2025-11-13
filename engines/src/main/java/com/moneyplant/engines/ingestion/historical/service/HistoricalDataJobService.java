@@ -113,4 +113,16 @@ public interface HistoricalDataJobService {
      * Requirements: 4.7
      */
     Mono<Void> incrementProcessedDates(String jobId);
+    
+    /**
+     * Updates the last successfully processed date for a job.
+     * This is used for resume functionality to track which dates have been completed.
+     * 
+     * @param jobId unique job identifier
+     * @param date the date that was successfully processed
+     * @return Mono that completes when the update is done
+     * 
+     * Requirements: 6.8
+     */
+    Mono<Void> updateLastProcessedDate(String jobId, java.time.LocalDate date);
 }

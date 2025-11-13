@@ -135,6 +135,13 @@ public class IngestionJob implements Serializable {
     private Instant completedAt;
     
     /**
+     * Last successfully processed date (for resume functionality)
+     * Tracks the most recent date that was fully processed and stored
+     */
+    @Column(name = "last_processed_date")
+    private LocalDate lastProcessedDate;
+    
+    /**
      * Calculates the progress percentage of the job
      * 
      * @return progress percentage (0-100)
@@ -183,5 +190,27 @@ public class IngestionJob implements Serializable {
      */
     public void incrementProcessedDates() {
         this.processedDates++;
+    }
+    
+    /**
+     * Updates the last successfully processed date.
+     * This is used for resume functionality to track progress.
+     * 
+     * @param date the date that was successfully processed
+     */
+    public void updateLastProcessedDate(LocalDate date) {
+        this.lastProcessedDate = date;
+    }
+    
+    /**
+     * Checks if this job can be resumed.
+     * A job can be resumed if it failed or timed out and has a last processed date.
+     * 
+     * @return true if the job can be resumed
+     */
+    public boolean canResume() {
+        return (status == IngestionJobStatus.FAILED || status == IngestionJobStatus.TIMEOUT)
+                && lastProcessedDate != null
+                && lastProcessedDate.isBefore(endDate);
     }
 }

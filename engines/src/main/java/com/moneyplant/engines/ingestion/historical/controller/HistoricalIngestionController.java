@@ -193,6 +193,73 @@ public class HistoricalIngestionController {
     }
     
     /**
+     * Resumes a failed or timed-out ingestion job.
+     * 
+     * POST /api/v1/ingestion/historical/nse/{jobId}/resume
+     * 
+     * Response:
+     * {
+     *   "jobId": "550e8400-e29b-41d4-a716-446655440000",
+     *   "message": "Ingestion job resumed successfully",
+     *   "status": "RUNNING"
+     * }
+     * 
+     * The job will continue from the last successfully processed date.
+     * 
+     * Requirements: 6.8
+     * 
+     * @param jobId unique job identifier to resume
+     * @return Mono containing the job response
+     */
+    @PostMapping("/{jobId}/resume")
+    public Mono<ResponseEntity<IngestionJobResponse>> resumeIngestion(@PathVariable String jobId) {
+        
+        log.info("Received resume request for job: {}", jobId);
+        
+        return ingestionService.resumeIngestion(jobId)
+                .map(resumedJobId -> {
+                    log.info("Ingestion job resumed successfully - jobId: {}", resumedJobId);
+                    
+                    IngestionJobResponse response = IngestionJobResponse.builder()
+                            .jobId(resumedJobId)
+                            .message("Ingestion job resumed successfully. Use the jobId to query status.")
+                            .build();
+                    
+                    return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
+                })
+                .onErrorResume(IllegalArgumentException.class, error -> {
+                    log.warn("Job not found: {}", error.getMessage());
+                    
+                    IngestionJobResponse response = IngestionJobResponse.builder()
+                            .jobId(jobId)
+                            .message("Job not found: " + error.getMessage())
+                            .build();
+                    
+                    return Mono.just(ResponseEntity.status(HttpStatus.NOT_FOUND).body(response));
+                })
+                .onErrorResume(IllegalStateException.class, error -> {
+                    log.warn("Cannot resume job: {}", error.getMessage());
+                    
+                    IngestionJobResponse response = IngestionJobResponse.builder()
+                            .jobId(jobId)
+                            .message("Cannot resume job: " + error.getMessage())
+                            .build();
+                    
+                    return Mono.just(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response));
+                })
+                .onErrorResume(error -> {
+                    log.error("Error resuming ingestion for job {}", jobId, error);
+                    
+                    IngestionJobResponse response = IngestionJobResponse.builder()
+                            .jobId(jobId)
+                            .message("Failed to resume ingestion: " + error.getMessage())
+                            .build();
+                    
+                    return Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response));
+                });
+    }
+    
+    /**
      * Health check endpoint for historical ingestion service.
      * 
      * GET /api/v1/ingestion/historical/nse/health
