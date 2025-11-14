@@ -196,6 +196,13 @@ public class NseBhavCopyIngestionService {
         Path stagingDir = Paths.get(stagingBaseDir, jobId);
         Instant startTime = Instant.now();
         
+        log.info("===========================================");
+        log.info("=== EXECUTE INGESTION ASYNC CALLED ===");
+        log.info("Job ID: {}", jobId);
+        log.info("Date range: {} to {}", dateRange.getStart(), dateRange.getEnd());
+        log.info("Staging dir: {}", stagingDir);
+        log.info("===========================================");
+        
         log.info("Starting async ingestion execution for job: {}", jobId);
         
         try {
@@ -206,10 +213,16 @@ public class NseBhavCopyIngestionService {
             log.info("Job {} status updated to RUNNING", jobId);
             
             // Create CompletableFuture for timeout handling
+            log.info("Creating CompletableFuture for job: {}", jobId);
             CompletableFuture<IngestionResult> ingestionFuture = CompletableFuture.supplyAsync(() -> {
+                log.info("CompletableFuture executing for job: {}", jobId);
                 try {
-                    return performIngestion(job, dateRange, stagingDir).block();
+                    log.info("About to call performIngestion for job: {}", jobId);
+                    IngestionResult result = performIngestion(job, dateRange, stagingDir).block();
+                    log.info("performIngestion completed for job: {}", jobId);
+                    return result;
                 } catch (Exception e) {
+                    log.error("Exception in CompletableFuture for job: {}", jobId, e);
                     throw new RuntimeException("Ingestion failed", e);
                 }
             });
@@ -295,40 +308,69 @@ public class NseBhavCopyIngestionService {
         
         String jobId = job.getJobId();
         
+        log.info("=== performIngestion called for job {} ===", jobId);
+        log.info("Date range: {} to {}", dateRange.getStart(), dateRange.getEnd());
+        log.info("Staging directory: {}", stagingDir);
+        
         // Log progress for download phase
         log.info("Job {} - Downloading bhavcopy files from {} to {}", 
                 jobId, dateRange.getStart(), dateRange.getEnd());
         
         // 1. Download bhavcopy files to staging directory with progress tracking
-        return downloader.downloadToStaging(
-                dateRange.getStart(), 
-                dateRange.getEnd(), 
-                stagingDir,
-                // Callback to track last processed date for resume functionality
-                processedDate -> {
-                    jobService.updateLastProcessedDate(jobId, processedDate)
-                            .subscribe(
-                                v -> log.debug("Updated last processed date: {} for job: {}", 
-                                        processedDate, jobId),
-                                error -> log.error("Failed to update last processed date for job: {}", 
-                                        jobId, error)
-                            );
-                })
-                .then(Mono.defer(() -> {
-                    // Log progress for Spark processing phase
-                    log.info("Job {} - Starting Spark processing for staging directory: {}", 
-                            jobId, stagingDir);
-                    
-                    // 2. Process all CSV files using Spark and bulk insert
-                    return sparkProcessor.processAndStore(stagingDir)
-                            .doOnSuccess(result -> {
-                                // Log Spark bulk insert statistics
-                                log.info("Job {} - Spark processing completed - Records processed: {}, " +
-                                        "Inserted: {}, Failed: {}", 
-                                        jobId, result.getTotalRecordsProcessed(),
-                                        result.getTotalRecordsInserted(), result.getTotalRecordsFailed());
-                            });
-                }));
+        log.info("Starting download phase...");
+        
+        try {
+            downloader.downloadToStaging(
+                    dateRange.getStart(), 
+                    dateRange.getEnd(), 
+                    stagingDir,
+                    // Callback to track last processed date for resume functionality
+                    processedDate -> {
+                        log.info("Download callback: processed date {}", processedDate);
+                        jobService.updateLastProcessedDate(jobId, processedDate)
+                                .subscribe(
+                                    v -> log.debug("Updated last processed date: {} for job: {}", 
+                                            processedDate, jobId),
+                                    error -> log.error("Failed to update last processed date for job: {}", 
+                                            jobId, error)
+                                );
+                    });
+            
+            log.info("Download phase completed successfully");
+            
+        } catch (Exception e) {
+            log.error("Download phase failed", e);
+            return Mono.error(e);
+        }
+        
+        // Check what files were downloaded
+        log.info("Checking staging directory...");
+        try {
+            java.io.File[] files = stagingDir.toFile().listFiles();
+            if (files != null && files.length > 0) {
+                log.info("Found {} files in staging directory:", files.length);
+                for (java.io.File file : files) {
+                    log.info("  - {} ({} bytes)", file.getName(), file.length());
+                }
+            } else {
+                log.warn("No files found in staging directory!");
+            }
+        } catch (Exception e) {
+            log.error("Error listing staging directory", e);
+        }
+        
+        // 2. Process all CSV files using Spark and bulk insert
+        log.info("Job {} - Starting Spark processing for staging directory: {}", 
+                jobId, stagingDir);
+        
+        return sparkProcessor.processAndStore(stagingDir)
+                .doOnSuccess(result -> {
+                    // Log Spark bulk insert statistics
+                    log.info("Job {} - Spark processing completed - Records processed: {}, " +
+                            "Inserted: {}, Failed: {}", 
+                            jobId, result.getTotalRecordsProcessed(),
+                            result.getTotalRecordsInserted(), result.getTotalRecordsFailed());
+                });
     }
     
     /**

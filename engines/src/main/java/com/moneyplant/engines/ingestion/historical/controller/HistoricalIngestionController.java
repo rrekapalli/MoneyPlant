@@ -1,5 +1,7 @@
 package com.moneyplant.engines.ingestion.historical.controller;
 
+import com.moneyplant.engines.ingestion.historical.provider.NseBhavCopyDownloader;
+
 import com.moneyplant.engines.ingestion.historical.model.dto.IngestionJobResponse;
 import com.moneyplant.engines.ingestion.historical.model.dto.IngestionRequest;
 import com.moneyplant.engines.ingestion.historical.service.HistoricalDataJobService;
@@ -32,13 +34,19 @@ public class HistoricalIngestionController {
     
     private final NseBhavCopyIngestionService ingestionService;
     private final HistoricalDataJobService jobService;
+    private final NseBhavCopyDownloader downloader;
+    private final com.moneyplant.engines.ingestion.historical.service.SimpleHistoricalIngestionService simpleIngestionService;
     
     @Autowired
     public HistoricalIngestionController(
             NseBhavCopyIngestionService ingestionService,
-            HistoricalDataJobService jobService) {
+            HistoricalDataJobService jobService,
+            NseBhavCopyDownloader downloader,
+            com.moneyplant.engines.ingestion.historical.service.SimpleHistoricalIngestionService simpleIngestionService) {
         this.ingestionService = ingestionService;
         this.jobService = jobService;
+        this.downloader = downloader;
+        this.simpleIngestionService = simpleIngestionService;
     }
     
     /**
@@ -269,5 +277,79 @@ public class HistoricalIngestionController {
     @GetMapping("/health")
     public ResponseEntity<String> healthCheck() {
         return ResponseEntity.ok("Historical ingestion service is running");
+    }
+    
+    /**
+     * Simple ingestion endpoint - uses direct JDBC instead of Spark.
+     * 
+     * POST /api/v1/ingestion/historical/nse/simple
+     * 
+     * @param request ingestion request with optional start/end dates
+     * @return job ID
+     */
+    @PostMapping("/simple")
+    public ResponseEntity<IngestionJobResponse> startSimpleIngestion(@RequestBody @Valid IngestionRequest request) {
+        log.info("Simple ingestion request received: startDate={}, endDate={}", 
+                request.getStartDate(), request.getEndDate());
+        
+        try {
+            String jobId = simpleIngestionService.startSimpleIngestion(
+                    request.getStartDate(),
+                    request.getEndDate());
+            
+            if (jobId == null) {
+                return ResponseEntity.ok(IngestionJobResponse.builder()
+                        .message("No ingestion needed - data is up to date")
+                        .build());
+            }
+            
+            IngestionJobResponse response = IngestionJobResponse.builder()
+                    .jobId(jobId)
+                    .message("Simple ingestion job started successfully. Use the jobId to query status.")
+                    .status(com.moneyplant.engines.ingestion.historical.model.IngestionJobStatus.PENDING)
+                    .build();
+            
+            log.info("Simple ingestion job created successfully - jobId: {}", jobId);
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            log.error("Failed to start simple ingestion", e);
+            
+            IngestionJobResponse response = IngestionJobResponse.builder()
+                    .message("Failed to start ingestion: " + e.getMessage())
+                    .build();
+            
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+    
+    /**
+     * Test endpoint to verify URL building and download configuration.
+     * 
+     * GET /api/v1/ingestion/historical/nse/test/url?date=2024-01-08
+     * 
+     * @param date date to test (format: yyyy-MM-dd)
+     * @return URL that would be used for download
+     */
+    @GetMapping("/test/url")
+    public ResponseEntity<String> testUrl(@RequestParam String date) {
+        try {
+            java.time.LocalDate localDate = java.time.LocalDate.parse(date);
+            downloader.testUrlBuilding(localDate);
+            
+            // Build the URL manually to return it
+            int year = localDate.getYear();
+            String month = localDate.format(java.time.format.DateTimeFormatter.ofPattern("MMM", java.util.Locale.ENGLISH)).toUpperCase();
+            String dateStr = localDate.format(java.time.format.DateTimeFormatter.ofPattern("ddMMMyyyy", java.util.Locale.ENGLISH)).toUpperCase();
+            String url = String.format("https://archives.nseindia.com/content/historical/EQUITIES/%d/%s/cm%sbhav.csv.zip", 
+                    year, month, dateStr);
+            
+            return ResponseEntity.ok("URL for " + date + ": " + url);
+        } catch (Exception e) {
+            log.error("Error testing URL", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error: " + e.getMessage());
+        }
     }
 }

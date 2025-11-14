@@ -64,12 +64,44 @@ public class SparkProcessingServiceImpl implements SparkProcessingService {
      */
     @Override
     public Mono<IngestionResult> processAndStore(Path stagingDirectory) {
+        Instant startTime = Instant.now();
+        log.info("Starting Spark processing for staging directory: {}", stagingDirectory);
+        
+        // 1. Check if there are any CSV files in the staging directory BEFORE calling Spark
+        java.io.File stagingDir = stagingDirectory.toFile();
+        
+        if (!stagingDir.exists() || !stagingDir.isDirectory()) {
+            log.warn("Staging directory does not exist or is not a directory: {}", stagingDirectory);
+            return Mono.just(IngestionResult.builder()
+                .totalRecordsProcessed(0)
+                .totalRecordsInserted(0)
+                .totalRecordsFailed(0)
+                .duration(Duration.between(startTime, Instant.now()))
+                .build());
+        }
+        
+        java.io.File[] csvFiles = stagingDir.listFiles((dir, name) -> name.endsWith(".csv"));
+        
+        if (csvFiles == null || csvFiles.length == 0) {
+            log.warn("No CSV files found in staging directory: {} (all dates were likely holidays/weekends)", 
+                    stagingDirectory);
+            return Mono.just(IngestionResult.builder()
+                .totalRecordsProcessed(0)
+                .totalRecordsInserted(0)
+                .totalRecordsFailed(0)
+                .duration(Duration.between(startTime, Instant.now()))
+                .build());
+        }
+        
+        log.info("Found {} CSV files to process in staging directory", csvFiles.length);
+        for (java.io.File csvFile : csvFiles) {
+            log.debug("  - {}", csvFile.getName());
+        }
+        
+        // 2. Now proceed with Spark processing
         return Mono.fromCallable(() -> {
-            Instant startTime = Instant.now();
-            log.info("Starting Spark processing for staging directory: {}", stagingDirectory);
-            
             try {
-                // 1. Read all CSV files from staging directory
+                // Read all CSV files from staging directory
                 // Note: For cluster mode, we read files locally on driver and distribute to cluster
                 String csvPath = stagingDirectory.toString() + "/*.csv";
                 log.debug("Reading CSV files from local staging directory: {}", csvPath);
@@ -86,7 +118,7 @@ public class SparkProcessingServiceImpl implements SparkProcessingService {
                 log.info("Read {} records from CSV files", totalRecords);
                 
                 if (totalRecords == 0) {
-                    log.warn("No records found in staging directory: {}", stagingDirectory);
+                    log.warn("No records found in CSV files");
                     return IngestionResult.builder()
                         .totalRecordsProcessed(0)
                         .totalRecordsInserted(0)
@@ -95,7 +127,7 @@ public class SparkProcessingServiceImpl implements SparkProcessingService {
                         .build();
                 }
                 
-                // 2. Apply schema mapping and transformations
+                // 3. Apply schema mapping and transformations
                 log.debug("Applying schema mapping and transformations");
                 Dataset<Row> transformed = df
                     // Rename columns to match database schema
@@ -143,7 +175,7 @@ public class SparkProcessingServiceImpl implements SparkProcessingService {
                         .build();
                 }
                 
-                // 3. Bulk insert to PostgreSQL using Spark JDBC writer with retry
+                // 4. Bulk insert to PostgreSQL using Spark JDBC writer with retry
                 log.info("Writing {} valid records to PostgreSQL (batch size: {}, partitions: {})", 
                     validRecords, batchSize, numPartitions);
                 
@@ -185,7 +217,7 @@ public class SparkProcessingServiceImpl implements SparkProcessingService {
                 log.info("Throughput: {} records/second", 
                     validRecords / Math.max(1, duration.getSeconds()));
                 
-                // 4. Return result
+                // 5. Return result
                 return IngestionResult.builder()
                     .totalRecordsProcessed((int) totalRecords)
                     .totalRecordsInserted((int) validRecords)

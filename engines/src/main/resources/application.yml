@@ -165,7 +165,7 @@ ingestion:
       
       # Historical data ingestion configuration
       historical:
-        base-url: ${INGESTION_NSE_HISTORICAL_BASE_URL:https://www.nseindia.com}
+        base-url: ${INGESTION_NSE_HISTORICAL_BASE_URL:https://archives.nseindia.com}
         download-delay-ms: ${INGESTION_NSE_HISTORICAL_DELAY:300}
         max-retries: ${INGESTION_NSE_HISTORICAL_MAX_RETRIES:6}
         retry-backoff-multiplier: ${INGESTION_NSE_HISTORICAL_BACKOFF:2.0}
