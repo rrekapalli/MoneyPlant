@@ -131,6 +131,7 @@ public class SimpleHistoricalIngestionService {
                     while ((line = reader.readLine()) != null) {
                         if (isHeader) {
                             isHeader = false;
+                            log.info("CSV Header: {}", line);
                             continue; // Skip header
                         }
                         
@@ -142,9 +143,13 @@ public class SimpleHistoricalIngestionService {
                             
                             // Batch insert every 1000 records
                             if (batch.size() >= 1000) {
-                                insertedRecords += insertBatch(batch);
+                                int batchInserted = insertBatch(batch);
+                                insertedRecords += batchInserted;
+                                log.info("Batch processed: {} inserted", batchInserted);
                                 batch.clear();
                             }
+                        } else {
+                            log.debug("Skipping record with {} fields (need 13+)", fields.length);
                         }
                     }
                     
@@ -191,52 +196,75 @@ public class SimpleHistoricalIngestionService {
     }
     
     private int insertBatch(List<String[]> batch) {
+        // NSE CSV format: SYMBOL,SERIES,OPEN,HIGH,LOW,CLOSE,LAST,PREVCLOSE,TOTTRDQTY,TOTTRDVAL,TIMESTAMP,TOTALTRADES,ISIN,
+        // Database schema: symbol, date, time, timeframe, open, high, low, close, volume, series, previous_close
+        // Primary key is (symbol, time) so we use ON CONFLICT to handle duplicates
         String sql = "INSERT INTO nse_eq_ohlcv_historic " +
-                "(time, symbol, series, timeframe, prev_close, open, high, low, last, close, " +
-                "avg_price, volume, turnover_lacs, no_of_trades, deliv_qty, deliv_per) " +
-                "VALUES (?, ?, ?, '1day', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
-                "ON CONFLICT (symbol, time, timeframe) DO NOTHING";
+                "(symbol, date, time, timeframe, open, high, low, close, volume, series, previous_close) " +
+                "VALUES (?, ?, ?, '1day', ?, ?, ?, ?, ?, ?, ?) " +
+                "ON CONFLICT (symbol, time) DO NOTHING";
         
         List<Object[]> batchArgs = new ArrayList<>();
-        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd-MMM-yyyy");
+        // NSE uses uppercase month names: 08-JAN-2024
+        // Use case-insensitive parsing
+        DateTimeFormatter dateFormatter = new java.time.format.DateTimeFormatterBuilder()
+                .parseCaseInsensitive()
+                .appendPattern("dd-MMM-yyyy")
+                .toFormatter(java.util.Locale.ENGLISH);
         
         for (String[] fields : batch) {
             try {
+                if (fields.length < 13) {
+                    continue; // Skip incomplete records
+                }
+                
                 // Parse date from TIMESTAMP field (index 10)
-                LocalDate date = LocalDate.parse(fields[10], dateFormatter);
+                LocalDate date = LocalDate.parse(fields[10].trim(), dateFormatter);
                 java.sql.Timestamp timestamp = java.sql.Timestamp.valueOf(date.atTime(15, 30));
+                java.sql.Date sqlDate = java.sql.Date.valueOf(date);
                 
                 Object[] args = new Object[]{
+                        fields[0].trim(),                   // symbol (index 0)
+                        sqlDate,                            // date
                         timestamp,                          // time
-                        fields[0],                          // symbol
-                        fields[1],                          // series
-                        parseDouble(fields[7]),             // prev_close
-                        parseDouble(fields[2]),             // open
-                        parseDouble(fields[3]),             // high
-                        parseDouble(fields[4]),             // low
-                        parseDouble(fields[6]),             // last
-                        parseDouble(fields[5]),             // close
-                        parseDouble(fields[8]),             // avg_price
-                        parseLong(fields[9]),               // volume
-                        parseDouble(fields[11]),            // turnover_lacs
-                        parseLong(fields[12]),              // no_of_trades
-                        fields.length > 13 ? parseLong(fields[13]) : 0,  // deliv_qty
-                        fields.length > 14 ? parseDouble(fields[14]) : 0.0  // deliv_per
+                        parseDouble(fields[2]),             // open (index 2 - OPEN)
+                        parseDouble(fields[3]),             // high (index 3 - HIGH)
+                        parseDouble(fields[4]),             // low (index 4 - LOW)
+                        parseDouble(fields[5]),             // close (index 5 - CLOSE)
+                        parseLong(fields[8]),               // volume (index 8 - TOTTRDQTY)
+                        fields[1].trim(),                   // series (index 1)
+                        parseDouble(fields[7])              // previous_close (index 7 - PREVCLOSE)
                 };
                 
                 batchArgs.add(args);
                 
             } catch (Exception e) {
-                log.warn("Failed to parse record: {}", String.join(",", fields));
+                if (batchArgs.isEmpty()) {
+                    // Log first failure to understand the issue
+                    log.error("Failed to parse first record: {} - Error: {}", String.join(",", fields), e.getMessage(), e);
+                }
             }
         }
         
         if (batchArgs.isEmpty()) {
+            log.warn("No valid records to insert in this batch");
             return 0;
         }
         
-        int[] results = jdbcTemplate.batchUpdate(sql, batchArgs);
-        return results.length;
+        log.info("Inserting batch of {} records", batchArgs.size());
+        
+        try {
+            int[] results = jdbcTemplate.batchUpdate(sql, batchArgs);
+            int inserted = 0;
+            for (int result : results) {
+                if (result > 0) inserted++;
+            }
+            log.info("Batch insert completed: {} records inserted out of {}", inserted, results.length);
+            return inserted;
+        } catch (Exception e) {
+            log.error("Batch insert failed", e);
+            return 0;
+        }
     }
     
     private Double parseDouble(String value) {
