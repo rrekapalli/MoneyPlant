@@ -1,10 +1,6 @@
 # Development Profile Configuration
 # Override settings for local development environment
 
-spring:
-  profiles:
-    active: dev
-
 # Use local Spark for development
 spark:
   app-name: NSE-Bhav-Ingestion-Dev
@@ -14,20 +10,10 @@ spark:
   jdbc-batch-size: 5000  # Smaller batch size for dev
   jdbc-num-partitions: 2  # Fewer partitions for dev
 
-# Historical ingestion settings for development
-ingestion:
-  providers:
-    nse:
-      historical:
-        staging-directory: /tmp/bhav_staging_dev
-        job-timeout-hours: 2  # Shorter timeout for dev
-        max-retries: 3  # Fewer retries for faster feedback
-
 # Enable debug logging for development
 logging:
   level:
     root: INFO
     com.moneyplant.engines: DEBUG
-    com.moneyplant.engines.ingestion.historical: DEBUG
     org.apache.spark: WARN
     org.springframework.web: DEBUG

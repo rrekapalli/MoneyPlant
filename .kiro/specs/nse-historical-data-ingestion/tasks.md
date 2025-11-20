@@ -232,15 +232,15 @@ This implementation plan focuses on building a Java-based service to download NS
     - Support resuming interrupted jobs
     - _Requirements: 6.8_
 
-- [ ] 13. Testing
-  - [ ] 13.1 Create unit tests
+- [-] 13. Testing
+  - [x] 13.1 Create unit tests
     - Test DateRangeResolver logic
     - Test date range generation
     - Test URL formatting
     - Test Spark transformations with sample data
     - _Requirements: All_
   
-  - [ ] 13.2 Create integration tests
+  - [x] 13.2 Create integration tests
     - Test Spark processing with sample CSV files
     - Test database operations with Testcontainers
     - Test date range resolution with mock data

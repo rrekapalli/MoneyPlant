@@ -162,17 +162,6 @@ ingestion:
         accept: "application/json"
         accept-language: "en-US,en;q=0.9"
         accept-encoding: "gzip, deflate, br"
-      
-      # Historical data ingestion configuration
-      historical:
-        base-url: ${INGESTION_NSE_HISTORICAL_BASE_URL:https://archives.nseindia.com}
-        download-delay-ms: ${INGESTION_NSE_HISTORICAL_DELAY:300}
-        max-retries: ${INGESTION_NSE_HISTORICAL_MAX_RETRIES:6}
-        retry-backoff-multiplier: ${INGESTION_NSE_HISTORICAL_BACKOFF:2.0}
-        db-max-retries: ${INGESTION_NSE_HISTORICAL_DB_MAX_RETRIES:3}
-        job-timeout-hours: ${INGESTION_NSE_HISTORICAL_TIMEOUT:6}
-        staging-directory: ${INGESTION_NSE_HISTORICAL_STAGING:/tmp/bhav_staging}
-        default-start-date: ${INGESTION_NSE_HISTORICAL_DEFAULT_START:1998-01-01}
     
     yahoo:
       enabled: ${INGESTION_YAHOO_ENABLED:true}
