@@ -331,7 +331,7 @@
         <dependency>
             <groupId>com.zerodhatech.kiteconnect</groupId>
             <artifactId>kiteconnect</artifactId>
-            <version>3.2.0</version>
+            <version>3.5.1</version>
         </dependency>
 
         <!-- Testcontainers for Integration Testing -->

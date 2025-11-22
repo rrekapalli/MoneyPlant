@@ -67,7 +67,7 @@ public class KiteBatchRepository {
         
         log.info("Batch upserting {} instruments with batch size {}", instruments.size(), batchSize);
         
-        int[] results = jdbcTemplate.batchUpdate(sql, instruments, batchSize,
+        int[][] batchResults = jdbcTemplate.batchUpdate(sql, instruments, batchSize,
             (PreparedStatement ps, KiteInstrumentMaster instrument) -> {
                 ps.setString(1, instrument.getInstrumentToken());
                 ps.setString(2, instrument.getExchangeToken());
@@ -109,6 +109,11 @@ public class KiteBatchRepository {
                 ps.setString(12, instrument.getExchange());
             });
         
+        // Flatten the 2D array to 1D array
+        int[] results = Arrays.stream(batchResults)
+            .flatMapToInt(Arrays::stream)
+            .toArray();
+        
         int totalAffected = Arrays.stream(results).sum();
         log.info("Batch upsert completed. Total rows affected: {}", totalAffected);
         
@@ -120,12 +125,12 @@ public class KiteBatchRepository {
      * Uses INSERT ... ON CONFLICT DO NOTHING to avoid duplicates.
      * 
      * @param ohlcvData List of OHLCV records to insert
-     * @return Total number of records inserted
+     * @return Array of update counts for each record
      */
-    public int batchInsertOhlcv(List<KiteOhlcvHistoric> ohlcvData) {
+    public int[] batchInsertOhlcv(List<KiteOhlcvHistoric> ohlcvData) {
         if (ohlcvData == null || ohlcvData.isEmpty()) {
             log.warn("No OHLCV data to insert");
-            return 0;
+            return new int[0];
         }
         
         String sql = """
@@ -138,7 +143,7 @@ public class KiteBatchRepository {
         
         log.info("Batch inserting {} OHLCV records with batch size {}", ohlcvData.size(), batchSize);
         
-        int[] results = jdbcTemplate.batchUpdate(sql, ohlcvData, batchSize,
+        int[][] batchResults = jdbcTemplate.batchUpdate(sql, ohlcvData, batchSize,
             (PreparedStatement ps, KiteOhlcvHistoric ohlcv) -> {
                 ps.setString(1, ohlcv.getInstrumentToken());
                 ps.setString(2, ohlcv.getExchange());
@@ -151,10 +156,15 @@ public class KiteBatchRepository {
                 ps.setString(9, ohlcv.getCandleInterval().name());
             });
         
+        // Flatten the 2D array to 1D array
+        int[] results = Arrays.stream(batchResults)
+            .flatMapToInt(Arrays::stream)
+            .toArray();
+        
         int totalInserted = Arrays.stream(results).sum();
         log.info("Batch insert completed. Total rows inserted: {}", totalInserted);
         
-        return totalInserted;
+        return results;
     }
     
     /**
