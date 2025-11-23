@@ -146,10 +146,34 @@ public class NseIndicesServiceImpl extends TextWebSocketHandler implements NseIn
      */
     @PreDestroy
     public void cleanup() {
+        log.info("Starting cleanup of NSE Indices Service...");
+        
+        // First stop ingestion to prevent new messages
         stopNseIndicesIngestion();
+        
+        // Wait a bit for any pending Kafka sends to complete
+        try {
+            log.info("Waiting for pending Kafka operations to complete...");
+            Thread.sleep(2000); // Give 2 seconds for pending sends
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.warn("Interrupted while waiting for Kafka operations");
+        }
+        
+        // Shutdown executor
         if (reconnectExecutor != null && !reconnectExecutor.isShutdown()) {
             reconnectExecutor.shutdown();
+            try {
+                if (!reconnectExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
+                    reconnectExecutor.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                reconnectExecutor.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
         }
+        
+        log.info("NSE Indices Service cleanup completed");
     }
 
     /**
@@ -1020,6 +1044,12 @@ public class NseIndicesServiceImpl extends TextWebSocketHandler implements NseIn
      * Publish tick data to Kafka topic
      */
     private void publishToKafka(NseIndicesTickDto tickData) {
+        // Skip if not connected or Kafka is disabled
+        if (!kafkaEnabled) {
+            log.debug("Kafka is disabled, skipping publish");
+            return;
+        }
+        
         try {
             String messageKey = "nse-indices-" + System.currentTimeMillis();
             String messageValue = objectMapper.writeValueAsString(tickData);
@@ -1028,7 +1058,12 @@ public class NseIndicesServiceImpl extends TextWebSocketHandler implements NseIn
             
             future.whenComplete((result, throwable) -> {
                 if (throwable != null) {
-                    log.error("Failed to publish to Kafka topic {}: {}", kafkaTopic, throwable.getMessage(), throwable);
+                    // Check if it's a producer closed error
+                    if (throwable.getMessage() != null && throwable.getMessage().contains("Producer closed")) {
+                        log.warn("Kafka producer is closed, skipping message publish");
+                    } else {
+                        log.error("Failed to publish to Kafka topic {}: {}", kafkaTopic, throwable.getMessage());
+                    }
                 } else {
                     messagesPublished++;
                     log.debug("Successfully published to Kafka topic {}: partition={}, offset={}", 
@@ -1036,6 +1071,13 @@ public class NseIndicesServiceImpl extends TextWebSocketHandler implements NseIn
                 }
             });
             
+        } catch (org.apache.kafka.common.KafkaException e) {
+            // Handle Kafka-specific exceptions gracefully
+            if (e.getMessage() != null && e.getMessage().contains("Producer closed")) {
+                log.warn("Kafka producer is closed, cannot publish message");
+            } else {
+                log.error("Kafka error while publishing: {}", e.getMessage());
+            }
         } catch (Exception e) {
             log.error("Error publishing to Kafka: {}", e.getMessage(), e);
         }
@@ -1044,10 +1086,12 @@ public class NseIndicesServiceImpl extends TextWebSocketHandler implements NseIn
     /**
      * Kafka consumer method to read NSE indices data and publish to WebSocket topics
      * This enables real-time data flow from Kafka to WebSocket subscribers
+     * Only active when Kafka is enabled.
      */
     @KafkaListener(
         topics = "${kafka.topics.nse-indices-ticks:nse-indices-ticks}",
-        groupId = "engines-websocket-group"
+        groupId = "engines-websocket-group",
+        autoStartup = "${spring.kafka.enabled:true}"
     )
     public void consumeNseIndicesData(String message) {
         try {

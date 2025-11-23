@@ -108,43 +108,45 @@ services:
       - moneyplant-network
     restart: unless-stopped
 
-  spark-master:
-    image: bitnami/spark:3.5
-    container_name: moneyplant-engines-spark-master
-    environment:
-      - SPARK_MODE=master
-      - SPARK_RPC_AUTHENTICATION_ENABLED=no
-      - SPARK_RPC_ENCRYPTION_ENABLED=no
-      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
-      - SPARK_SSL_ENABLED=no
-    ports:
-      - "8082:8080"
-      - "7077:7077"
-    volumes:
-      - spark_data:/opt/bitnami/spark
-    networks:
-      - moneyplant-network
-    restart: unless-stopped
+  # Spark services commented out - image not available
+  # Will be added back when needed for distributed processing
+  # spark-master:
+  #   image: bitnami/spark:3.4
+  #   container_name: moneyplant-engines-spark-master
+  #   environment:
+  #     - SPARK_MODE=master
+  #     - SPARK_RPC_AUTHENTICATION_ENABLED=no
+  #     - SPARK_RPC_ENCRYPTION_ENABLED=no
+  #     - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+  #     - SPARK_SSL_ENABLED=no
+  #   ports:
+  #     - "8082:8080"
+  #     - "7077:7077"
+  #   volumes:
+  #     - spark_data:/opt/bitnami/spark
+  #   networks:
+  #     - moneyplant-network
+  #   restart: unless-stopped
 
-  spark-worker:
-    image: bitnami/spark:3.5
-    container_name: moneyplant-engines-spark-worker
-    environment:
-      - SPARK_MODE=worker
-      - SPARK_MASTER_URL=spark://spark-master:7077
-      - SPARK_WORKER_MEMORY=1G
-      - SPARK_WORKER_CORES=1
-      - SPARK_RPC_AUTHENTICATION_ENABLED=no
-      - SPARK_RPC_ENCRYPTION_ENABLED=no
-      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
-      - SPARK_SSL_ENABLED=no
-    depends_on:
-      - spark-master
-    volumes:
-      - spark_data:/opt/bitnami/spark
-    networks:
-      - moneyplant-network
-    restart: unless-stopped
+  # spark-worker:
+  #   image: bitnami/spark:3.4
+  #   container_name: moneyplant-engines-spark-worker
+  #   environment:
+  #     - SPARK_MODE=worker
+  #     - SPARK_MASTER_URL=spark://spark-master:7077
+  #     - SPARK_WORKER_MEMORY=1G
+  #     - SPARK_WORKER_CORES=1
+  #     - SPARK_RPC_AUTHENTICATION_ENABLED=no
+  #     - SPARK_RPC_ENCRYPTION_ENABLED=no
+  #     - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+  #     - SPARK_SSL_ENABLED=no
+  #   depends_on:
+  #     - spark-master
+  #   volumes:
+  #     - spark_data:/opt/bitnami/spark
+  #   networks:
+  #     - moneyplant-network
+  #   restart: unless-stopped
 
   trino:
     image: trinodb/trino:443

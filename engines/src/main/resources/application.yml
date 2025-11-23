@@ -20,9 +20,9 @@ spring:
       max-age: 3600
   
   datasource:
-    url: jdbc:postgresql://postgres.tailce422e.ts.net:5432/MoneyPlant
-    username: postgres
-    password: mysecretpassword
+    url: ${TIMESCALEDB_URL:jdbc:postgresql://postgres.tailce422e.ts.net:5432/MoneyPlant}
+    username: ${TIMESCALEDB_USERNAME:postgres}
+    password: ${TIMESCALEDB_PASSWORD:mysecretpassword}
     driver-class-name: org.postgresql.Driver
     hikari:
       connection-timeout: 30000
@@ -53,8 +53,12 @@ spring:
     # Explicit transaction management settings
     defer-datasource-initialization: false
     
+    # Database platform
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    
     properties:
       hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
         
         # Connection and transaction management
@@ -89,7 +93,33 @@ spring:
         
         # Dialect not explicitly set; Hibernate will auto-detect PostgreSQL dialect as per HHH90000025 guidance
 
-  # Kafka configuration moved to profile-specific files to avoid conflicts
+  # Kafka configuration
+  kafka:
+    enabled: false
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9093}
+    schema-registry-url: ${KAFKA_SCHEMA_REGISTRY_URL:http://localhost:8081}
+    producer:
+      acks: all
+      retries: 3
+      batch-size: 16384
+      linger-ms: 10
+      buffer-memory: 33554432
+      compression-type: snappy
+      max-in-flight-requests: 5
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
+      properties:
+        schema.registry.url: ${KAFKA_SCHEMA_REGISTRY_URL:http://localhost:8081}
+    consumer:
+      group-id: moneyplant-engines
+      auto-offset-reset: earliest
+      enable-auto-commit: true
+      auto-commit-interval-ms: 1000
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: io.confluent.kafka.serializers.KafkaAvroDeserializer
+      properties:
+        schema.registry.url: ${KAFKA_SCHEMA_REGISTRY_URL:http://localhost:8081}
+        specific.avro.reader: true
   
   boot:
     admin:
@@ -106,16 +136,62 @@ kafka:
   topics:
     nse-indices-ticks: nse-indices-ticks
     market-data: market-data
+    market-data-ticks: market-data-ticks
+    market-data-candles: market-data-candles
+    data-quality-alerts: data-quality-alerts
+    symbol-universe-updates: symbol-universe-updates
     trading-signals: trading-signals
     backtest-results: backtest-results
   group-id: moneyplant-engines
 
-# Ingestion auto-start configuration
+# Ingestion Engine Configuration
 ingestion:
   auto-start:
-    enabled: false  # Set to true to enable auto-start for other ingestion services
-    # Additional auto-start settings can be added here
-    # For example: yahoo-finance, alpha-vantage, polygon, etc.
+    enabled: false  # Set to true to enable auto-start for ingestion services
+    delay-seconds: 10  # Delay before starting ingestion (allows other services to initialize)
+  
+  providers:
+    nse:
+      enabled: ${INGESTION_NSE_ENABLED:true}
+      api-url: ${INGESTION_NSE_API_URL:https://www.nseindia.com/api}
+      rate-limit-per-hour: ${INGESTION_NSE_RATE_LIMIT:1000}
+      timeout-sec: ${INGESTION_NSE_TIMEOUT:15}
+      retry-attempts: ${INGESTION_NSE_RETRY_ATTEMPTS:3}
+      headers:
+        user-agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        accept: "application/json"
+        accept-language: "en-US,en;q=0.9"
+        accept-encoding: "gzip, deflate, br"
+    
+    yahoo:
+      enabled: ${INGESTION_YAHOO_ENABLED:true}
+      api-url: ${INGESTION_YAHOO_API_URL:https://query1.finance.yahoo.com}
+      rate-limit-per-hour: ${INGESTION_YAHOO_RATE_LIMIT:2000}
+      timeout-sec: ${INGESTION_YAHOO_TIMEOUT:10}
+      retry-attempts: ${INGESTION_YAHOO_RETRY_ATTEMPTS:3}
+      # Yahoo Finance API configuration
+      endpoints:
+        quote: /v8/finance/quote
+        chart: /v8/finance/chart/{symbol}
+        historical: /v7/finance/download/{symbol}
+      # Query parameters
+      params:
+        interval: 1d
+        range: 1mo
+        events: history
+  
+  storage:
+    batch-size: 1000
+    flush-interval-ms: 5000
+    archival:
+      enabled: true
+      schedule-cron: "0 0 12 * * MON-FRI"  # 5:30 PM IST = 12:00 PM UTC (noon)
+      verify-integrity: true
+      auto-truncate: true
+  
+  performance:
+    parallelism: 10
+    buffer-size: 10000
 
 # NSE WebSocket configuration
 nse:
@@ -153,26 +229,28 @@ nse:
   
   # Auto-start configuration for NSE indices ingestion
   auto-start:
-    enabled: true  # Set to false to disable auto-start
+    enabled: false  # Set to false to disable auto-start
     delay-seconds: 10  # Delay before starting ingestion (allows other services to initialize)
 
 # Spark Configuration
 spark:
-  app-name: MoneyPlant-Engines
-  master: local[*]
-  driver-memory: 2g
-  executor-memory: 2g
-  sql:
-    adaptive:
-      enabled: true
-      coalescePartitions:
-        enabled: true
-      skewJoin:
-        enabled: true
-      localShuffleReader:
-        enabled: true
-      optimizeSkewedJoin:
-        enabled: true
+  app-name: ${SPARK_APP_NAME:NSE-Bhav-Ingestion}
+  # Use external Spark cluster via Tailscale
+  # CSV files are read locally on driver with file:// prefix, then distributed to cluster
+  master: ${SPARK_MASTER:spark://100.118.80.70:7077}
+  # Spark Master UI available at: http://spark-master.tailce422e.ts.net:8080/
+  driver-memory: ${SPARK_DRIVER_MEMORY:2g}
+  executor-memory: ${SPARK_EXECUTOR_MEMORY:4g}
+  executor-cores: ${SPARK_EXECUTOR_CORES:2}
+  executor-instances: ${SPARK_EXECUTOR_INSTANCES:2}
+  
+  # JDBC configuration for bulk inserts
+  jdbc-batch-size: ${SPARK_JDBC_BATCH_SIZE:10000}
+  jdbc-num-partitions: ${SPARK_JDBC_NUM_PARTITIONS:4}
+  
+  # SQL adaptive execution settings
+  sql-adaptive-enabled: ${SPARK_SQL_ADAPTIVE_ENABLED:true}
+  sql-adaptive-coalesce-partitions-enabled: ${SPARK_SQL_ADAPTIVE_COALESCE_PARTITIONS_ENABLED:true}
 
 # Trino Configuration
 trino:
@@ -190,20 +268,45 @@ trino:
 
 # Apache Hudi Configuration
 hudi:
-  base-path: /tmp/hudi
-  table-name: market_data
+  base-path: ${HUDI_BASE_PATH:/tmp/hudi/nse-eq-ticks}
+  table-name: nse_eq_ticks_historical
   key-generator: org.apache.hudi.keygen.SimpleKeyGenerator
   partition-path-field: date
+  # S3/MinIO Configuration
+  s3:
+    endpoint: ${HUDI_S3_ENDPOINT:http://localhost:9000}
+    access-key: ${HUDI_S3_ACCESS_KEY:minioadmin}
+    secret-key: ${HUDI_S3_SECRET_KEY:minioadmin}
+    bucket: ${HUDI_S3_BUCKET:moneyplant-datalake}
+    path-style-access: true
   write-options:
-    table.type: COPY_ON_WRITE
-    recordkey.field: symbol
-    partitionpath.field: date
-    precombine.field: timestamp
-    keygenerator.class: org.apache.hudi.keygen.SimpleKeyGenerator
-    hive.style.partitioning: true
+    table-type: COPY_ON_WRITE
+    recordkey-field: symbol,timestamp
+    partitionpath-field: date
+    precombine-field: timestamp
+    keygenerator-class: org.apache.hudi.keygen.SimpleKeyGenerator
+    hive-style-partitioning: true
     operation: upsert
-    table.name: market_data
-    base.path: /tmp/hudi
+    table-name: nse_eq_ticks_historical
+    base-path: ${HUDI_BASE_PATH:/tmp/hudi/nse-eq-ticks}
+    parallelism: 4
+    inline-compaction: false
+    max-delta-commits-before-compaction: 10
+    # S3/MinIO specific options
+    hoodie.datasource.write.storage.type: ${HUDI_STORAGE_TYPE:COPY_ON_WRITE}
+    hoodie.datasource.write.recordkey.field: symbol,timestamp
+    hoodie.datasource.write.partitionpath.field: date
+    hoodie.datasource.write.precombine.field: timestamp
+  hive-metastore:
+    enabled: ${HUDI_HIVE_METASTORE_ENABLED:true}
+    uris: ${HUDI_HIVE_METASTORE_URIS:thrift://localhost:9083}
+    database: ${HUDI_HIVE_DATABASE:default}
+    table: nse_eq_ticks_historical
+    partition-fields: date
+    partition-extractor-class: org.apache.hudi.hive.MultiPartKeysValueExtractor
+    jdbc-url: ${HUDI_HIVE_JDBC_URL:jdbc:hive2://localhost:10000}
+    username: ${HUDI_HIVE_USERNAME:hive}
+    password: ${HUDI_HIVE_PASSWORD:}
 
 # Apache Iceberg Configuration
 iceberg:
@@ -229,7 +332,7 @@ iceberg:
 logging:
   level:
     root: WARN
-    com.moneyplant.engines: WARN
+    com.moneyplant.engines: INFO
     org.springframework.kafka: WARN
     org.apache.kafka: WARN
     org.springframework.web.socket: WARN

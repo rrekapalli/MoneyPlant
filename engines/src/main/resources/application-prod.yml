@@ -1,0 +1,36 @@
+# Production Profile Configuration
+# Override settings for production environment
+
+spring:
+  profiles:
+    active: prod
+
+# Use external Spark cluster for production
+spark:
+  app-name: NSE-Bhav-Ingestion-Prod
+  master: ${SPARK_MASTER:spark://spark-master.tailce422e.ts.net:7077}
+  driver-memory: 4g
+  executor-memory: 8g
+  executor-cores: 4
+  executor-instances: 4
+  jdbc-batch-size: 20000  # Larger batch size for production
+  jdbc-num-partitions: 8  # More partitions for production
+
+# Historical ingestion settings for production
+ingestion:
+  providers:
+    nse:
+      historical:
+        staging-directory: ${INGESTION_NSE_HISTORICAL_STAGING:/data/bhav_staging}
+        job-timeout-hours: 12  # Longer timeout for production
+        max-retries: 6
+        download-delay-ms: 300
+
+# Production logging - minimal output
+logging:
+  level:
+    root: WARN
+    com.moneyplant.engines: INFO
+    com.moneyplant.engines.ingestion.historical: INFO
+    org.apache.spark: WARN
+    org.springframework: WARN

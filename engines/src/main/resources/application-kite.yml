@@ -1,0 +1,40 @@
+# Kite Ingestion Configuration
+# This file contains configuration for the Kite Connect API integration
+
+kite:
+  api:
+    key: ${KITE_API_KEY:}
+    secret: ${KITE_API_SECRET:}
+    access-token: ${KITE_ACCESS_TOKEN:}
+    base-url: https://api.kite.trade
+  
+  ingestion:
+    batch-size: 1000
+    parallel-requests: 5
+    rate-limit:
+      requests-per-second: 3
+      burst-capacity: 10
+    retry:
+      max-attempts: 3
+      initial-delay-ms: 1000
+      multiplier: 2.0
+    circuit-breaker:
+      failure-rate-threshold: 50
+      wait-duration-seconds: 60
+      sliding-window-size: 10
+
+# Spring configuration for async execution
+spring:
+  task:
+    execution:
+      pool:
+        core-size: 5
+        max-size: 10
+        queue-capacity: 100
+      thread-name-prefix: kite-ingestion-
+
+# Logging configuration
+logging:
+  level:
+    com.moneyplant.engines.ingestion.kite: DEBUG
+    com.zerodhatech.kiteconnect: INFO

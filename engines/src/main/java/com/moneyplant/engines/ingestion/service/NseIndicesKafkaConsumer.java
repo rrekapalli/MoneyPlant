@@ -6,6 +6,7 @@ import com.moneyplant.engines.common.NseIndicesTickDto;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.messaging.handler.annotation.Header;
@@ -23,6 +24,7 @@ import java.time.Instant;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@ConditionalOnProperty(name = "spring.kafka.enabled", havingValue = "true", matchIfMissing = false)
 public class NseIndicesKafkaConsumer {
 
     private final ObjectMapper objectMapper;
@@ -44,6 +46,7 @@ public class NseIndicesKafkaConsumer {
 
     /**
      * Consume NSE indices data from Kafka topic 'nse-indices-ticks'
+     * Only active when Kafka is enabled.
      * 
      * @param message The JSON message from Kafka
      * @param topic The Kafka topic name
@@ -53,7 +56,8 @@ public class NseIndicesKafkaConsumer {
     @KafkaListener(
         topics = "${kafka.topics.nse-indices-ticks:nse-indices-ticks}",
         groupId = "${spring.kafka.consumer.group-id:moneyplant-engines}",
-        containerFactory = "kafkaListenerContainerFactory"
+        containerFactory = "kafkaListenerContainerFactory",
+        autoStartup = "${spring.kafka.enabled:true}"
     )
     public void consumeNseIndicesData(
             @Payload String message,

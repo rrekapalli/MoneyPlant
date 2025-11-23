@@ -1,0 +1,99 @@
+spring:
+  application:
+    name: moneyplant-engines-test
+  
+  datasource:
+    # Will be overridden by Testcontainers
+    url: jdbc:postgresql://localhost:5432/testdb
+    username: test
+    password: test
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 2
+      connection-timeout: 30000
+  
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+  
+  kafka:
+    enabled: false
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all
+      retries: 3
+    consumer:
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      group-id: test-group
+      auto-offset-reset: earliest
+
+# Ingestion configuration
+ingestion:
+  auto-start:
+    enabled: false
+  batch-size: 100
+  parallel-fetch:
+    enabled: true
+    max-threads: 4
+
+# NSE configuration
+nse:
+  websocket:
+    enabled: false
+  auto-start:
+    enabled: false
+  api:
+    base-url: https://www.nseindia.com/api
+    rate-limit-per-hour: 1000
+    timeout-seconds: 15
+
+# Yahoo Finance configuration
+yahoo:
+  api:
+    base-url: https://query1.finance.yahoo.com
+    rate-limit-per-hour: 2000
+    timeout-seconds: 10
+
+# Archival configuration
+archival:
+  enabled: false
+  cron: "0 30 15 * * MON-FRI"
+  hudi:
+    base-path: file:///tmp/test-hudi
+    table-name: nse_eq_ticks_test
+
+# Resilience4j configuration
+resilience4j:
+  circuitbreaker:
+    instances:
+      kafkaPublisher:
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        sliding-window-size: 10
+  ratelimiter:
+    instances:
+      nseProvider:
+        limit-for-period: 100
+        limit-refresh-period: 1h
+      yahooProvider:
+        limit-for-period: 200
+        limit-refresh-period: 1h
+
+# Logging configuration
+logging:
+  level:
+    root: INFO
+    com.moneyplant.engines: DEBUG
+    org.springframework.kafka: WARN
+    org.apache.kafka: WARN
+    org.testcontainers: INFO
+    com.zaxxer.hikari: WARN

@@ -84,6 +84,12 @@ public class KafkaConfig {
         configProps.put(ProducerConfig.REQUEST_TIMEOUT_MS_CONFIG, 10000); // 10 seconds
         configProps.put(ProducerConfig.DELIVERY_TIMEOUT_MS_CONFIG, 30000); // 30 seconds
         
+        // Enable idempotence for safer retries
+        configProps.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, true);
+        
+        // Configure graceful shutdown behavior
+        configProps.put(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, 5);
+        
         return new DefaultKafkaProducerFactory<>(configProps);
     }
 
@@ -116,12 +122,27 @@ public class KafkaConfig {
     }
 
     /**
-     * Kafka template configuration
+     * Kafka template configuration with graceful shutdown
      */
     @Bean
     @Primary
     public KafkaTemplate<String, Object> kafkaTemplate() {
-        return new KafkaTemplate<>(producerFactory());
+        KafkaTemplate<String, Object> template = new KafkaTemplate<>(producerFactory());
+        
+        // Add shutdown hook to flush pending messages
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(KafkaConfig.class);
+                log.info("Flushing Kafka producer before shutdown...");
+                template.flush();
+                log.info("Kafka producer flushed successfully");
+            } catch (Exception e) {
+                org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(KafkaConfig.class);
+                log.warn("Error flushing Kafka producer during shutdown: {}", e.getMessage());
+            }
+        }));
+        
+        return template;
     }
 
     /**
@@ -155,10 +176,10 @@ public class KafkaConfig {
     }
 
     /**
-     * Kafka error handler for handling deserialization and processing errors
+     * Kafka listener error handler for handling deserialization and processing errors
      */
     @Bean
-    public org.springframework.kafka.listener.KafkaListenerErrorHandler kafkaErrorHandler() {
+    public org.springframework.kafka.listener.KafkaListenerErrorHandler kafkaListenerErrorHandler() {
         return (message, exception) -> {
             // Log the error
             org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(KafkaConfig.class);

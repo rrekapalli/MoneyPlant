@@ -1,0 +1,137 @@
+version: '3.8'
+
+services:
+  ingestion-engine:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: moneyplant/ingestion-engine:latest
+    container_name: moneyplant-ingestion-engine
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      # Spring Profile
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      
+      # TimescaleDB Configuration
+      TIMESCALEDB_URL: jdbc:postgresql://timescaledb:5432/MoneyPlant
+      TIMESCALEDB_USERNAME: ${TIMESCALEDB_USERNAME:-postgres}
+      TIMESCALEDB_PASSWORD: ${TIMESCALEDB_PASSWORD:-postgres}
+      
+      # Kafka Configuration
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
+      KAFKA_SCHEMA_REGISTRY_URL: ${KAFKA_SCHEMA_REGISTRY_URL:-http://schema-registry:8081}
+      
+      # Hudi S3/MinIO Configuration
+      HUDI_BASE_PATH: ${HUDI_BASE_PATH:-s3://moneyplant-datalake/nse-eq-ticks}
+      HUDI_S3_ENDPOINT: ${HUDI_S3_ENDPOINT:-http://minio:9000}
+      HUDI_S3_ACCESS_KEY: ${HUDI_S3_ACCESS_KEY:-minioadmin}
+      HUDI_S3_SECRET_KEY: ${HUDI_S3_SECRET_KEY:-minioadmin}
+      HUDI_S3_BUCKET: ${HUDI_S3_BUCKET:-moneyplant-datalake}
+      HUDI_S3_PATH_STYLE_ACCESS: ${HUDI_S3_PATH_STYLE_ACCESS:-true}
+      
+      # Hudi Hive Metastore Configuration
+      HUDI_HIVE_METASTORE_ENABLED: ${HUDI_HIVE_METASTORE_ENABLED:-true}
+      HUDI_HIVE_METASTORE_URIS: ${HUDI_HIVE_METASTORE_URIS:-thrift://hive-metastore:9083}
+      HUDI_HIVE_DATABASE: ${HUDI_HIVE_DATABASE:-default}
+      HUDI_HIVE_JDBC_URL: ${HUDI_HIVE_JDBC_URL:-jdbc:hive2://hive-server:10000}
+      HUDI_HIVE_USERNAME: ${HUDI_HIVE_USERNAME:-hive}
+      HUDI_HIVE_PASSWORD: ${HUDI_HIVE_PASSWORD:-}
+      
+      # Ingestion Provider Configuration
+      INGESTION_NSE_ENABLED: ${INGESTION_NSE_ENABLED:-true}
+      INGESTION_NSE_RATE_LIMIT: ${INGESTION_NSE_RATE_LIMIT:-1000}
+      INGESTION_YAHOO_ENABLED: ${INGESTION_YAHOO_ENABLED:-true}
+      INGESTION_YAHOO_RATE_LIMIT: ${INGESTION_YAHOO_RATE_LIMIT:-2000}
+      
+      # JVM Options
+      JAVA_OPTS: >-
+        -XX:+UseContainerSupport
+        -XX:MaxRAMPercentage=75.0
+        -XX:InitialRAMPercentage=50.0
+        -XX:+UseG1GC
+        -XX:+UseStringDeduplication
+        -Djava.security.egd=file:/dev/./urandom
+    
+    volumes:
+      # Mount logs directory
+      - ./logs:/app/logs
+      # Mount temporary Hudi directory (if using local filesystem)
+      - ./data/hudi:/tmp/hudi
+    
+    networks:
+      - moneyplant-network
+    
+    depends_on:
+      - timescaledb
+      - kafka
+      - schema-registry
+      - minio
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/engines/actuator/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
+
+  # TimescaleDB service (if not already running)
+  timescaledb:
+    image: timescale/timescaledb:latest-pg15
+    container_name: moneyplant-timescaledb
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: MoneyPlant
+      POSTGRES_USER: ${TIMESCALEDB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${TIMESCALEDB_PASSWORD:-postgres}
+    volumes:
+      - timescaledb-data:/var/lib/postgresql/data
+    networks:
+      - moneyplant-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MinIO service (S3-compatible storage)
+  minio:
+    image: minio/minio:latest
+    container_name: moneyplant-minio
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: ${HUDI_S3_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${HUDI_S3_SECRET_KEY:-minioadmin}
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio-data:/data
+    networks:
+      - moneyplant-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+networks:
+  moneyplant-network:
+    driver: bridge
+
+volumes:
+  timescaledb-data:
+  minio-data:
